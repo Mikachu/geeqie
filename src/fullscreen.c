@@ -183,6 +183,7 @@ static void fullscreen_saver_deactivate(void)
 {
 	static gboolean checked = FALSE;
 	static gboolean found = FALSE;
+	return;
 
 	if (!checked)
 		{

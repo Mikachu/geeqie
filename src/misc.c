@@ -128,7 +128,7 @@ gchar *expand_tilde(const gchar *filename)
 int runcmd(gchar *cmd)
 {
 #if 1
-	return system(cmd);
+	return printf("Would have run: %s\n", cmd);
 	return 0;
 #else
 	/* For debugging purposes */
