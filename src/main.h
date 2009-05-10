@@ -73,7 +73,7 @@
  *----------------------------------------------------------------------------
  */
 
-#define USE_XDG 1
+#define USE_XDG 0
 
 #define GQ_APPNAME "Geeqie"
 #define GQ_APPNAME_LC "geeqie"
