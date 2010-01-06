@@ -2887,7 +2887,7 @@ void file_util_copy_path_to_clipboard(FileData *fd)
 	if (!fd || !*fd->path) return;
 
 	clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-	gtk_clipboard_set_text(clipboard, g_shell_quote(fd->path), -1);
+	gtk_clipboard_set_text(clipboard, fd->path, -1);
 }
 
 void file_util_copy_path_list_to_clipboard(GList *list)
