@@ -18,7 +18,7 @@ install-data-hook: html
 	if [ -x "$(GNOME_DOC_TOOL)" ]; then \
 		$(MKDIR_P) "$(DESTDIR)$(helpdir)" || exit 1; \
 		cd html; for f in * ; do $(INSTALL_DATA) "$$f" "$(DESTDIR)$(helpdir)/$$f" ; done; \
-		ln -s GuideIndex.html "$(DESTDIR)$(helpdir)/index.html" ; \
+		ln -fs GuideIndex.html "$(DESTDIR)$(helpdir)/index.html" ; \
 	fi
 	
 uninstall-hook:
