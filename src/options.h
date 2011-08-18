@@ -93,6 +93,7 @@ struct _ConfOptions
 		gint max_width;
 		gint max_height;
 		gboolean enable_caching;
+		gboolean enable_sim_caching;
 		gboolean cache_into_dirs;
 		gboolean use_xvpics;
 		gboolean spec_standard;

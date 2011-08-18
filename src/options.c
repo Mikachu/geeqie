@@ -139,6 +139,7 @@ ConfOptions *init_options(ConfOptions *options)
 
 	options->thumbnails.cache_into_dirs = FALSE;
 	options->thumbnails.enable_caching = TRUE;
+	options->thumbnails.enable_sim_caching = TRUE;
 	options->thumbnails.max_height = DEFAULT_THUMB_HEIGHT;
 	options->thumbnails.max_width = DEFAULT_THUMB_WIDTH;
 	options->thumbnails.quality = GDK_INTERP_TILES;

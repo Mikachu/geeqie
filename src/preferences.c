@@ -250,6 +250,7 @@ static void config_window_apply(void)
 		options->thumbnails.quality = c_options->thumbnails.quality;
 		}
 	options->thumbnails.enable_caching = c_options->thumbnails.enable_caching;
+	options->thumbnails.enable_sim_caching = c_options->thumbnails.enable_sim_caching;
 	options->thumbnails.cache_into_dirs = c_options->thumbnails.cache_into_dirs;
 	options->thumbnails.use_exif = c_options->thumbnails.use_exif;
 	options->thumbnails.spec_standard = c_options->thumbnails.spec_standard;
@@ -1405,6 +1406,9 @@ static void config_tab_general(GtkWidget *notebook)
 
 	ct_button = pref_checkbox_new_int(group, _("Cache thumbnails"),
 					  options->thumbnails.enable_caching, &c_options->thumbnails.enable_caching);
+
+	pref_checkbox_new_int(group, _("Cache similarity data"),
+					  options->thumbnails.enable_sim_caching, &c_options->thumbnails.enable_sim_caching);
 
 	subgroup = pref_box_new(group, FALSE, GTK_ORIENTATION_VERTICAL, PREF_PAD_GAP);
 	pref_checkbox_link_sensitivity(ct_button, subgroup);

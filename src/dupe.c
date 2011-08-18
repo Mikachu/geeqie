@@ -1390,7 +1390,7 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
 			di->width = gdk_pixbuf_get_width(pixbuf);
 			di->height = gdk_pixbuf_get_height(pixbuf);
 			}
-		if (options->thumbnails.enable_caching)
+		if (options->thumbnails.enable_sim_caching)
 			{
 			dupe_item_write_cache(di);
 			}
@@ -1448,14 +1448,14 @@ static gboolean dupe_check_cb(gpointer data)
 					dupe_window_update_progress(dw, _("Reading checksums..."),
 						dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1) / dw->setup_count, FALSE);
 
-					if (options->thumbnails.enable_caching)
+					if (options->thumbnails.enable_sim_caching)
 						{
 						dupe_item_read_cache(di);
 						if (di->md5sum) return TRUE;
 						}
 
 					di->md5sum = md5_text_from_file_utf8(di->fd->path, "");
-					if (options->thumbnails.enable_caching)
+					if (options->thumbnails.enable_sim_caching)
 						{
 						dupe_item_write_cache(di);
 						}
@@ -1481,14 +1481,14 @@ static gboolean dupe_check_cb(gpointer data)
 					dupe_window_update_progress(dw, _("Reading dimensions..."),
 						dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1) / dw->setup_count, FALSE);
 
-					if (options->thumbnails.enable_caching)
+					if (options->thumbnails.enable_sim_caching)
 						{
 						dupe_item_read_cache(di);
 						if (di->width != 0 || di->height != 0) return TRUE;
 						}
 
 					image_load_dimensions(di->fd, &di->width, &di->height);
-					if (options->thumbnails.enable_caching)
+					if (options->thumbnails.enable_sim_caching)
 						{
 						dupe_item_write_cache(di);
 						}
@@ -1515,7 +1515,7 @@ static gboolean dupe_check_cb(gpointer data)
 					dupe_window_update_progress(dw, _("Reading similarity data..."),
 						dw->setup_count == 0 ? 0.0 : (gdouble)dw->setup_n / dw->setup_count, FALSE);
 
-					if (options->thumbnails.enable_caching)
+					if (options->thumbnails.enable_sim_caching)
 						{
 						dupe_item_read_cache(di);
 						if (cache_sim_data_filled(di->simd))
