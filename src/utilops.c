@@ -2898,6 +2898,7 @@ void file_util_copy_path_list_to_clipboard(GList *list)
 
 	clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
+	if (list->next) {
 	new = g_string_new("");
 	work = list;
 	while (work) {
@@ -2909,6 +2910,15 @@ void file_util_copy_path_list_to_clipboard(GList *list)
 		g_string_append(new, g_shell_quote(fd->path));
 		if (work) g_string_append_c(new, ' ');
 		}
+	} else {
+		FileData *fd = work->data;
+		if (fd)
+			new = g_string_new(fd->path);
+		else {
+			filelist_free(list);
+			return;
+		}
+	}
 
 	gtk_clipboard_set_text(clipboard, new->str, new->len);
 	g_string_free(new, TRUE);
