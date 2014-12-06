@@ -506,7 +506,7 @@ static GtkWidget *layout_image_pop_menu(LayoutWindow *lw)
 	item = submenu_add_alter(menu, G_CALLBACK(li_pop_menu_alter_cb), lw);
 
 	item = menu_item_add_stock(menu, _("View in _new window"), GTK_STOCK_NEW, G_CALLBACK(li_pop_menu_new_cb), lw);
-	if (!path || fullscreen) gtk_widget_set_sensitive(item, FALSE);
+	if (!path) gtk_widget_set_sensitive(item, FALSE);
 
 	item = menu_item_add(menu, _("_Go to directory view"), G_CALLBACK(li_set_layout_path_cb), lw);
 	if (!path || li_check_if_current_path(lw, path)) gtk_widget_set_sensitive(item, FALSE);
