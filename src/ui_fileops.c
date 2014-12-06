@@ -880,7 +880,7 @@ gboolean recursive_mkdir_if_not_exists(const gchar *path, mode_t mode)
 					DEBUG_1("creating sub dir:%s", npath);
 					if (!mkdir_utf8(npath, mode))
 						{
-						log_printf("create dir failed: %s\n", npath);
+						//log_printf("create dir failed: %s\n", npath);
 						g_free(npath);
 						return FALSE;
 						}

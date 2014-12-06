@@ -495,11 +495,11 @@ static void mkdir_if_not_exists(const gchar *path)
 {
 	if (isdir(path)) return;
 
-	log_printf(_("Creating %s dir:%s\n"), GQ_APPNAME, path);
+	//log_printf(_("Creating %s dir:%s\n"), GQ_APPNAME, path);
 
 	if (!recursive_mkdir_if_not_exists(path, 0755))
 		{
-		log_printf(_("Could not create dir:%s\n"), path);
+		//log_printf(_("Could not create dir:%s\n"), path);
 		}
 }
 
