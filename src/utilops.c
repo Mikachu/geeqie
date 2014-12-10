@@ -2911,7 +2911,7 @@ void file_util_copy_path_list_to_clipboard(GList *list)
 		if (work) g_string_append_c(new, ' ');
 		}
 	} else {
-		FileData *fd = work->data;
+		FileData *fd = list->data;
 		if (fd)
 			new = g_string_new(fd->path);
 		else {
