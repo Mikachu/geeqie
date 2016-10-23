@@ -327,8 +327,6 @@ void fullscreen_stop(FullScreenData *fs)
 
     gtk_widget_destroy(fs->window);
 
-    gtk_window_present(fs->normal_window);
-
     g_free(fs);
 }
 
