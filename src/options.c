@@ -70,6 +70,7 @@ ConfOptions *init_options(ConfOptions *options)
     options->file_sort.ascending = TRUE;
     options->file_sort.case_sensitive = FALSE;
     options->file_sort.method = SORT_NAME;
+    options->file_sort.natural = FALSE;
 
     options->fullscreen.above = FALSE;
     options->fullscreen.clean_flip = FALSE;
