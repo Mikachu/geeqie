@@ -355,6 +355,7 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_INT(*options, file_sort.method);
     WRITE_NL(); WRITE_BOOL(*options, file_sort.ascending);
     WRITE_NL(); WRITE_BOOL(*options, file_sort.case_sensitive);
+    WRITE_NL(); WRITE_BOOL(*options, file_sort.natural);
 
     /* Fullscreen Options */
     WRITE_NL(); WRITE_INT(*options, fullscreen.screen);
@@ -627,6 +628,7 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_UINT(*options, file_sort.method)) continue;
         if (READ_BOOL(*options, file_sort.ascending)) continue;
         if (READ_BOOL(*options, file_sort.case_sensitive)) continue;
+        if (READ_BOOL(*options, file_sort.natural)) continue;
 
         /* File operations *options */
         if (READ_BOOL(*options, file_ops.enable_in_place_rename)) continue;
