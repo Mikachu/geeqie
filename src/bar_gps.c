@@ -927,4 +927,3 @@ void bar_pane_gps_update_from_config(GtkWidget *pane, const gchar **attribute_na
 #endif
 #endif
 
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
