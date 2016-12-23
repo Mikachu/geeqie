@@ -69,6 +69,10 @@ Makefile.in
 # /src/icons/
 /src/icons/icons_inline.h
 
+# /src/pan-view/
+/src/pan-view/.deps
+/src/pan-view/.dirstamp
+
 /build-stamp
 /debian/geeqie*
 /debian/files

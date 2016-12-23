@@ -21,7 +21,8 @@ AC_INIT([geeqie], m4_esyscmd_s(git rev-parse --quiet --verify --short master), [
 AC_CONFIG_SRCDIR([src/main.c])
 
 AC_CONFIG_AUX_DIR(auxdir)
-AM_INIT_AUTOMAKE
+# Require Automake 1.14 for %reldir% support
+AM_INIT_AUTOMAKE([1.14.1 subdir-objects])
 
 AC_CONFIG_HEADER([config.h])
 
