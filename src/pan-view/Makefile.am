@@ -13,4 +13,9 @@ module_pan_view = \
 	%D%/pan-util.c	\
 	%D%/pan-util.h	\
 	%D%/pan-view.c	\
-	%D%/pan-view.h
+	%D%/pan-view.h	\
+	%D%/pan-view-filter.c	\
+	%D%/pan-view-filter.h	\
+	%D%/pan-view-search.c	\
+	%D%/pan-view-search.h
+
