@@ -24,13 +24,14 @@
 #include "pan-item.h"
 #include "pan-util.h"
 #include "pan-view.h"
+#include "pan-view-filter.h"
 
 void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *height)
 {
     GList *list;
     GList *work;
     gint x, y;
-    time_t tc;
+    time_t group_start_date;
     gint total;
     gint count;
     PanItem *pi_month = NULL;
@@ -41,6 +42,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
     gint y_height;
 
     list = pan_list_tree(dir_fd, SORT_NONE, TRUE, pw->ignore_symlinks);
+    pan_filter_fd_list(&list, pw->filter_ui->filter_elements);
 
     if (pw->cache_list && pw->exif_date_enable)
     {
@@ -61,7 +63,8 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
     day_start = month_start;
     x_width = 0;
     y_height = 0;
-    tc = 0;
+    group_start_date = 0;
+    // total and count are used to enforce a stride of PAN_GROUP_MAX thumbs.
     total = 0;
     count = 0;
     work = list;
@@ -73,13 +76,15 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
         fd = work->data;
         work = work->next;
 
-        if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
+        if (!pan_date_compare(fd->dat.tv_sec, group_start_date, PAN_DATE_LENGTH_DAY))
         {
+            // FD starts a new day group.
             GList *needle;
             gchar *buf;
 
-            if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_MONTH))
+            if (!pan_date_compare(fd->dat.tv_sec, group_start_date, PAN_DATE_LENGTH_MONTH))
             {
+                // FD starts a new month group.
                 pi_day = NULL;
 
                 if (pi_month)
@@ -114,7 +119,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 
             if (pi_day) x = pi_day->x + pi_day->width + PAN_BOX_BORDER;
 
-            tc = fd->dat.tv_sec;
+            group_start_date = fd->dat.tv_sec;
             total = 1;
             count = 0;
 
@@ -124,7 +129,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
                 FileData *nfd;
 
                 nfd = needle->data;
-                if (pan_date_compare(nfd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
+                if (pan_date_compare(nfd->dat.tv_sec, group_start_date, PAN_DATE_LENGTH_DAY))
                 {
                     needle = needle->next;
                     total++;

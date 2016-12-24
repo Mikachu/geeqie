@@ -25,6 +25,7 @@
 
 #include "pan-item.h"
 #include "pan-util.h"
+#include "pan-view-filter.h"
 
 static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
 {
@@ -242,6 +243,8 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     f = filelist_sort(f, SORT_NAME, TRUE);
     d = filelist_sort(d, SORT_NAME, TRUE);
 
+    pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
+
     pi_box = pan_item_text_new(pw, x, y, dir_fd->path, PAN_TEXT_ATTR_NONE,
                    PAN_TEXT_BORDER_SIZE,
                    PAN_TEXT_COLOR, 255);
@@ -385,6 +388,8 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
 
     f = filelist_sort(f, SORT_NAME, TRUE);
     d = filelist_sort(d, SORT_NAME, TRUE);
+
+    pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
 
     *x = PAN_BOX_BORDER + ((*level) * MAX(PAN_BOX_BORDER, PAN_THUMB_GAP));
 
