@@ -25,6 +25,7 @@
 
 #include "pan-item.h"
 #include "pan-util.h"
+#include "pan-view-filter.h"
 
 void pan_grid_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *height)
 {
@@ -35,6 +36,7 @@ void pan_grid_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *height
     gint next_y;
 
     list = pan_list_tree(dir_fd, SORT_NAME, TRUE, pw->ignore_symlinks);
+    pan_filter_fd_list(&list, pw->filter_ui->filter_elements);
 
     grid_size = (gint)sqrt((gdouble)g_list_length(list));
     if (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE)

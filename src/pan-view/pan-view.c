@@ -39,6 +39,8 @@
 #include "pan-item.h"
 #include "pan-timeline.h"
 #include "pan-util.h"
+#include "pan-view-filter.h"
+#include "pan-view-search.h"
 #include "pixbuf-renderer.h"
 #include "pixbuf_util.h"
 #include "thumb.h"
@@ -78,9 +80,6 @@ static GList *pan_window_list = NULL;
 static void pan_layout_update_idle(PanWindow *pw);
 
 static void pan_fullscreen_toggle(PanWindow *pw, gboolean force_off);
-
-static void pan_search_toggle_visible(PanWindow *pw, gboolean enable);
-static void pan_search_activate(PanWindow *pw);
 
 static void pan_window_close(PanWindow *pw);
 
@@ -1073,7 +1072,7 @@ static void pan_layout_update_idle(PanWindow *pw)
     }
 }
 
-static void pan_layout_update(PanWindow *pw)
+void pan_layout_update(PanWindow *pw)
 {
     pan_window_message(pw, _("Sorting images..."));
     pan_layout_update_idle(pw);
@@ -1135,7 +1134,8 @@ static gboolean pan_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, g
     imd_widget = gtk_container_get_focus_child(GTK_CONTAINER(pw->imd->widget));
     focused = (pw->fs || (imd_widget && gtk_widget_has_focus(imd_widget)));
     on_entry = (gtk_widget_has_focus(pw->path_entry) ||
-            gtk_widget_has_focus(pw->search_entry));
+            gtk_widget_has_focus(pw->search_ui->search_entry) ||
+            gtk_widget_has_focus(pw->filter_ui->filter_entry));
 
     if (focused)
     {
@@ -1249,6 +1249,7 @@ static gboolean pan_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, g
 
         if (stop_signal) return stop_signal;
 
+        // Don't steal characters from entry boxes.
         if (!on_entry)
         {
             stop_signal = TRUE;
@@ -1324,7 +1325,7 @@ static void pan_info_add_exif(PanTextAlignment *ta, FileData *fd)
 }
 
 
-static void pan_info_update(PanWindow *pw, PanItem *pi)
+void pan_info_update(PanWindow *pw, PanItem *pi)
 {
     PanTextAlignment *ta;
     PanItem *pbox;
@@ -1445,399 +1446,6 @@ static void pan_info_update(PanWindow *pw, PanItem *pi)
     }
 
     pan_layout_resize(pw);
-}
-
-
-/*
- *-----------------------------------------------------------------------------
- * search
- *-----------------------------------------------------------------------------
- */
-
-static void pan_search_status(PanWindow *pw, const gchar *text)
-{
-    gtk_label_set_text(GTK_LABEL(pw->search_label), (text) ? text : "");
-}
-
-static gint pan_search_by_path(PanWindow *pw, const gchar *path)
-{
-    PanItem *pi;
-    GList *list;
-    GList *found;
-    PanItemType type;
-    gchar *buf;
-
-    type = (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE) ? PAN_ITEM_IMAGE : PAN_ITEM_THUMB;
-
-    list = pan_item_find_by_path(pw, type, path, FALSE, FALSE);
-    if (!list) return FALSE;
-
-    found = g_list_find(list, pw->click_pi);
-    if (found && found->next)
-    {
-        found = found->next;
-        pi = found->data;
-    }
-    else
-    {
-        pi = list->data;
-    }
-
-    pan_info_update(pw, pi);
-    image_scroll_to_point(pw->imd, pi->x + pi->width / 2, pi->y + pi->height / 2, 0.5, 0.5);
-
-    buf = g_strdup_printf("%s ( %d / %d )",
-                  (path[0] == G_DIR_SEPARATOR) ? _("path found") : _("filename found"),
-                  g_list_index(list, pi) + 1,
-                  g_list_length(list));
-    pan_search_status(pw, buf);
-    g_free(buf);
-
-    g_list_free(list);
-
-    return TRUE;
-}
-
-static gboolean pan_search_by_partial(PanWindow *pw, const gchar *text)
-{
-    PanItem *pi;
-    GList *list;
-    GList *found;
-    PanItemType type;
-    gchar *buf;
-
-    type = (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE) ? PAN_ITEM_IMAGE : PAN_ITEM_THUMB;
-
-    list = pan_item_find_by_path(pw, type, text, TRUE, FALSE);
-    if (!list) list = pan_item_find_by_path(pw, type, text, FALSE, TRUE);
-    if (!list)
-    {
-        gchar *needle;
-
-        needle = g_utf8_strdown(text, -1);
-        list = pan_item_find_by_path(pw, type, needle, TRUE, TRUE);
-        g_free(needle);
-    }
-    if (!list) return FALSE;
-
-    found = g_list_find(list, pw->click_pi);
-    if (found && found->next)
-    {
-        found = found->next;
-        pi = found->data;
-    }
-    else
-    {
-        pi = list->data;
-    }
-
-    pan_info_update(pw, pi);
-    image_scroll_to_point(pw->imd, pi->x + pi->width / 2, pi->y + pi->height / 2, 0.5, 0.5);
-
-    buf = g_strdup_printf("%s ( %d / %d )",
-                  _("partial match"),
-                  g_list_index(list, pi) + 1,
-                  g_list_length(list));
-    pan_search_status(pw, buf);
-    g_free(buf);
-
-    g_list_free(list);
-
-    return TRUE;
-}
-
-static gboolean valid_date_separator(gchar c)
-{
-    return (c == '/' || c == '-' || c == ' ' || c == '.' || c == ',');
-}
-
-static GList *pan_search_by_date_val(PanWindow *pw, PanItemType type,
-                     gint year, gint month, gint day,
-                     const gchar *key)
-{
-    GList *list = NULL;
-    GList *work;
-
-    work = g_list_last(pw->list_static);
-    while (work)
-    {
-        PanItem *pi;
-
-        pi = work->data;
-        work = work->prev;
-
-        if (pi->fd && (pi->type == type || type == PAN_ITEM_NONE) &&
-            ((!key && !pi->key) || (key && pi->key && strcmp(key, pi->key) == 0)))
-        {
-            struct tm *tl;
-
-            tl = localtime(&pi->fd->dat.tv_sec);
-            if (tl)
-            {
-                gint match;
-
-                match = (tl->tm_year == year - 1900);
-                if (match && month >= 0) match = (tl->tm_mon == month - 1);
-                if (match && day > 0) match = (tl->tm_mday == day);
-
-                if (match) list = g_list_prepend(list, pi);
-            }
-        }
-    }
-
-    return g_list_reverse(list);
-}
-
-static gboolean pan_search_by_date(PanWindow *pw, const gchar *text)
-{
-    PanItem *pi = NULL;
-    GList *list = NULL;
-    GList *found;
-    gint year;
-    gint month = -1;
-    gint day = -1;
-    gchar *ptr;
-    gchar *mptr;
-    struct tm *lt;
-    time_t t;
-    gchar *message;
-    gchar *buf;
-    gchar *buf_count;
-
-    if (!text) return FALSE;
-
-    ptr = (gchar *)text;
-    while (*ptr != '\0')
-    {
-        if (!g_unichar_isdigit(*ptr) && !valid_date_separator(*ptr)) return FALSE;
-        ptr++;
-    }
-
-    t = time(NULL);
-    if (t == -1) return FALSE;
-    lt = localtime(&t);
-    if (!lt) return FALSE;
-
-    if (valid_date_separator(*text))
-    {
-        year = -1;
-        mptr = (gchar *)text;
-    }
-    else
-    {
-        year = (gint)strtol(text, &mptr, 10);
-        if (mptr == text) return FALSE;
-    }
-
-    if (*mptr != '\0' && valid_date_separator(*mptr))
-    {
-        gchar *dptr;
-
-        mptr++;
-        month = strtol(mptr, &dptr, 10);
-        if (dptr == mptr)
-        {
-            if (valid_date_separator(*dptr))
-            {
-                month = lt->tm_mon + 1;
-                dptr++;
-            }
-            else
-            {
-                month = -1;
-            }
-        }
-        if (dptr != mptr && *dptr != '\0' && valid_date_separator(*dptr))
-        {
-            gchar *eptr;
-            dptr++;
-            day = strtol(dptr, &eptr, 10);
-            if (dptr == eptr)
-            {
-                day = lt->tm_mday;
-            }
-        }
-    }
-
-    if (year == -1)
-    {
-        year = lt->tm_year + 1900;
-    }
-    else if (year < 100)
-    {
-        if (year > 70)
-            year+= 1900;
-        else
-            year+= 2000;
-    }
-
-    if (year < 1970 ||
-        month < -1 || month == 0 || month > 12 ||
-        day < -1 || day == 0 || day > 31) return FALSE;
-
-    t = pan_date_to_time(year, month, day);
-    if (t < 0) return FALSE;
-
-    if (pw->layout == PAN_LAYOUT_CALENDAR)
-    {
-        list = pan_search_by_date_val(pw, PAN_ITEM_BOX, year, month, day, "day");
-    }
-    else
-    {
-        PanItemType type;
-
-        type = (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE) ? PAN_ITEM_IMAGE : PAN_ITEM_THUMB;
-        list = pan_search_by_date_val(pw, type, year, month, day, NULL);
-    }
-
-    if (list)
-    {
-        found = g_list_find(list, pw->search_pi);
-        if (found && found->next)
-        {
-            found = found->next;
-            pi = found->data;
-        }
-        else
-        {
-            pi = list->data;
-        }
-    }
-
-    pw->search_pi = pi;
-
-    if (pw->layout == PAN_LAYOUT_CALENDAR && pi && pi->type == PAN_ITEM_BOX)
-    {
-        pan_info_update(pw, NULL);
-        pan_calendar_update(pw, pi);
-        image_scroll_to_point(pw->imd,
-                      pi->x + pi->width / 2,
-                      pi->y + pi->height / 2, 0.5, 0.5);
-    }
-    else if (pi)
-    {
-        pan_info_update(pw, pi);
-        image_scroll_to_point(pw->imd,
-                      pi->x - PAN_BOX_BORDER * 5 / 2,
-                      pi->y, 0.0, 0.5);
-    }
-
-    if (month > 0)
-    {
-        buf = pan_date_value_string(t, PAN_DATE_LENGTH_MONTH);
-        if (day > 0)
-        {
-            gchar *tmp;
-            tmp = buf;
-            buf = g_strdup_printf("%d %s", day, tmp);
-            g_free(tmp);
-        }
-    }
-    else
-    {
-        buf = pan_date_value_string(t, PAN_DATE_LENGTH_YEAR);
-    }
-
-    if (pi)
-    {
-        buf_count = g_strdup_printf("( %d / %d )",
-                        g_list_index(list, pi) + 1,
-                        g_list_length(list));
-    }
-    else
-    {
-        buf_count = g_strdup_printf("(%s)", _("no match"));
-    }
-
-    message = g_strdup_printf("%s %s %s", _("Date:"), buf, buf_count);
-    g_free(buf);
-    g_free(buf_count);
-    pan_search_status(pw, message);
-    g_free(message);
-
-    g_list_free(list);
-
-    return TRUE;
-}
-
-static void pan_search_activate_cb(const gchar *text, gpointer data)
-{
-    PanWindow *pw = data;
-
-    if (!text) return;
-
-    tab_completion_append_to_history(pw->search_entry, text);
-
-    if (pan_search_by_path(pw, text)) return;
-
-    if ((pw->layout == PAN_LAYOUT_TIMELINE ||
-         pw->layout == PAN_LAYOUT_CALENDAR) &&
-        pan_search_by_date(pw, text))
-    {
-        return;
-    }
-
-    if (pan_search_by_partial(pw, text)) return;
-
-    pan_search_status(pw, _("no match"));
-}
-
-static void pan_search_activate(PanWindow *pw)
-{
-    gchar *text;
-
-    text = g_strdup(gtk_entry_get_text(GTK_ENTRY(pw->search_entry)));
-    pan_search_activate_cb(text, pw);
-    g_free(text);
-}
-
-static void pan_search_toggle_cb(GtkWidget *button, gpointer data)
-{
-    PanWindow *pw = data;
-    gboolean visible;
-
-    visible = gtk_widget_get_visible(pw->search_box);
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)) == visible) return;
-
-    if (visible)
-    {
-        gtk_widget_hide(pw->search_box);
-        gtk_arrow_set(GTK_ARROW(pw->search_button_arrow), GTK_ARROW_UP, GTK_SHADOW_NONE);
-    }
-    else
-    {
-        gtk_widget_show(pw->search_box);
-        gtk_arrow_set(GTK_ARROW(pw->search_button_arrow), GTK_ARROW_DOWN, GTK_SHADOW_NONE);
-        gtk_widget_grab_focus(pw->search_entry);
-    }
-}
-
-static void pan_search_toggle_visible(PanWindow *pw, gboolean enable)
-{
-    if (pw->fs) return;
-
-    if (enable)
-    {
-        if (gtk_widget_get_visible(pw->search_box))
-        {
-            gtk_widget_grab_focus(pw->search_entry);
-        }
-        else
-        {
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pw->search_button), TRUE);
-        }
-    }
-    else
-    {
-        if (gtk_widget_get_visible(pw->search_entry))
-        {
-            if (gtk_widget_has_focus(pw->search_entry))
-            {
-                gtk_widget_grab_focus(GTK_WIDGET(pw->imd->widget));
-            }
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pw->search_button), FALSE);
-        }
-    }
 }
 
 
@@ -2127,6 +1735,8 @@ static void pan_window_close(PanWindow *pw)
     }
 
     pan_fullscreen_toggle(pw, TRUE);
+    pan_search_ui_destroy(&pw->search_ui);
+    pan_filter_ui_destroy(&pw->filter_ui);
     gtk_widget_destroy(pw->window);
 
     pan_window_items_free(pw);
@@ -2272,24 +1882,12 @@ static void pan_window_new_real(FileData *dir_fd)
 
     /* find bar */
 
-    pw->search_box = gtk_hbox_new(FALSE, PREF_PAD_SPACE);
-    gtk_box_pack_start(GTK_BOX(vbox), pw->search_box, FALSE, FALSE, 2);
+    pw->search_ui = pan_search_ui_new(pw);
+    gtk_box_pack_start(GTK_BOX(vbox), pw->search_ui->search_box, FALSE, FALSE, 2);
 
-    pref_spacer(pw->search_box, 0);
-    pref_label_new(pw->search_box, _("Find:"));
-
-    hbox = gtk_hbox_new(TRUE, PREF_PAD_SPACE);
-    gtk_box_pack_start(GTK_BOX(pw->search_box), hbox, TRUE, TRUE, 0);
-    gtk_widget_show(hbox);
-
-    combo = tab_completion_new_with_history(&pw->search_entry, "", "pan_view_search", -1,
-                        pan_search_activate_cb, pw);
-    gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
-    gtk_widget_show(combo);
-
-    pw->search_label = gtk_label_new("");
-    gtk_box_pack_start(GTK_BOX(hbox), pw->search_label, TRUE, TRUE, 0);
-    gtk_widget_show(pw->search_label);
+    /* filter bar */
+    pw->filter_ui = pan_filter_ui_new(pw);
+    gtk_box_pack_start(GTK_BOX(vbox), pw->filter_ui->filter_box, FALSE, FALSE, 2);
 
     /* status bar */
 
@@ -2318,21 +1916,13 @@ static void pan_window_new_real(FileData *dir_fd)
     gtk_container_add(GTK_CONTAINER(frame), pw->label_zoom);
     gtk_widget_show(pw->label_zoom);
 
-    pw->search_button = gtk_toggle_button_new();
-    gtk_button_set_relief(GTK_BUTTON(pw->search_button), GTK_RELIEF_NONE);
-    gtk_button_set_focus_on_click(GTK_BUTTON(pw->search_button), FALSE);
-    hbox = gtk_hbox_new(FALSE, PREF_PAD_GAP);
-    gtk_container_add(GTK_CONTAINER(pw->search_button), hbox);
-    gtk_widget_show(hbox);
-    pw->search_button_arrow = gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE);
-    gtk_box_pack_start(GTK_BOX(hbox), pw->search_button_arrow, FALSE, FALSE, 0);
-    gtk_widget_show(pw->search_button_arrow);
-    pref_label_new(hbox, _("Find"));
+    // Add the "Find" button to the status bar area.
+    gtk_box_pack_end(GTK_BOX(box), pw->search_ui->search_button, FALSE, FALSE, 0);
+    gtk_widget_show(pw->search_ui->search_button);
 
-    gtk_box_pack_end(GTK_BOX(box), pw->search_button, FALSE, FALSE, 0);
-    gtk_widget_show(pw->search_button);
-    g_signal_connect(G_OBJECT(pw->search_button), "clicked",
-             G_CALLBACK(pan_search_toggle_cb), pw);
+    // Add the "Filter" button to the status bar area.
+    gtk_box_pack_end(GTK_BOX(box), pw->filter_ui->filter_button, FALSE, FALSE, 0);
+    gtk_widget_show(pw->filter_ui->filter_button);
 
     g_signal_connect(G_OBJECT(pw->window), "delete_event",
              G_CALLBACK(pan_window_delete_cb), pw);

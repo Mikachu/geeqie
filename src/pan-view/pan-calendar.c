@@ -26,6 +26,7 @@
 
 #include "pan-util.h"
 #include "pan-view.h"
+#include "pan-view-filter.h"
 #include "pixbuf_util.h"
 
 #define PAN_CAL_POPUP_COLOR 220, 220, 220
@@ -200,6 +201,7 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
     gint end_month = 0;
 
     list = pan_list_tree(dir_fd, SORT_NONE, TRUE, pw->ignore_symlinks);
+    pan_filter_fd_list(&list, pw->filter_ui->filter_elements);
 
     if (pw->cache_list && pw->exif_date_enable)
     {
