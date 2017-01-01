@@ -309,6 +309,16 @@ static void layout_menu_delete_cb(GtkAction *action, gpointer data)
     file_util_delete(NULL, layout_selection_list(lw), layout_window(lw));
 }
 
+static void layout_menu_delete_key_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+
+    if (options->file_ops.enable_delete_key)
+    {
+        file_util_delete(NULL, layout_selection_list(lw), layout_window(lw));
+    }
+}
+
 static void layout_menu_disable_grouping_cb(GtkAction *action, gpointer data)
 {
     LayoutWindow *lw = data;
@@ -1498,8 +1508,8 @@ static GtkActionEntry menu_entries[] = {
   { "Move",     NULL,           N_("_Move..."),             "<control>M",       N_("Move..."),              CB(layout_menu_move_cb) },
   { "Rename",       NULL,           N_("_Rename..."),           "<control>R",       N_("Rename..."),            CB(layout_menu_rename_cb) },
   { "Delete",       GTK_STOCK_DELETE,   N_("_Delete..."),           "<control>D",       N_("Delete..."),            CB(layout_menu_delete_cb) },
-  { "DeleteAlt1",   GTK_STOCK_DELETE,   N_("_Delete..."),           "Delete",       N_("Delete..."),            CB(layout_menu_delete_cb) },
-  { "DeleteAlt2",   GTK_STOCK_DELETE,   N_("_Delete..."),           "KP_Delete",        N_("Delete..."),            CB(layout_menu_delete_cb) },
+  { "DeleteAlt1",   GTK_STOCK_DELETE,   N_("_Delete..."),           "Delete",       N_("Delete..."),            CB(layout_menu_delete_key_cb) },
+  { "DeleteAlt2",   GTK_STOCK_DELETE,   N_("_Delete..."),           "KP_Delete",        N_("Delete..."),            CB(layout_menu_delete_key_cb) },
   { "EnableGrouping",   NULL,           N_("Enable file _grouping"),        NULL,           N_("Enable file grouping"),     CB(layout_menu_enable_grouping_cb) },
   { "DisableGrouping",  NULL,           N_("Disable file groupi_ng"),       NULL,           N_("Disable file grouping"),        CB(layout_menu_disable_grouping_cb) },
   { "CopyPath",     NULL,           N_("_Copy path to clipboard"),      NULL,           N_("Copy path to clipboard"),       CB(layout_menu_copy_path_cb) },
