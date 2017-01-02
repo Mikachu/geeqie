@@ -1295,7 +1295,7 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
             {
                 GtkWidget *menu;
 
-                sd->click_fd = mfd->fd;
+                sd->click_fd = mfd ? mfd->fd : NULL;
                 menu = search_result_menu(sd, (mfd != NULL), (search_result_count(sd, NULL) > 0));
                 gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
                            search_result_menu_pos_cb, sd, 0, GDK_CURRENT_TIME);
