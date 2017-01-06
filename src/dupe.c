@@ -1760,6 +1760,40 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
 
     if (!di) return;
 
+    /* Ensure images in the lists have unique FileDatas */
+    GList *work;
+    DupeItem *di_list;
+    work = g_list_first(dw->list);
+    while (work)
+    {
+        di_list = work->data;
+        if (di_list->fd == di->fd)
+        {
+            return;
+        }
+        else
+        {
+            work = work->next;
+        }
+    }
+
+    if (dw->second_list)
+    {
+        work = g_list_first(dw->second_list);
+        while (work)
+        {
+            di_list = work->data;
+            if (di_list->fd == di->fd)
+            {
+                return;
+            }
+            else
+            {
+                work = work->next;
+            }
+        }
+    }
+
     if (dw->second_drop)
     {
         dupe_second_add(dw, di);
