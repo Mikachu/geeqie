@@ -2157,15 +2157,6 @@ static void config_tab_behavior(GtkWidget *notebook)
     pref_checkbox_new_int(group, _("Navigation by left or middle click on image"),
                   options->image_lm_click_nav, &c_options->image_lm_click_nav);
 
-    group = pref_group_new(vbox, FALSE, _("Similarities"), GTK_ORIENTATION_VERTICAL);
-
-    pref_spin_new_int(group, _("Custom similarity threshold:"), NULL,
-              0, 100, 1, options->duplicates_similarity_threshold, (int *)&c_options->duplicates_similarity_threshold);
-    pref_spin_new_int(group, _("Compare only files within day range:"), NULL,
-              0, 3650, 1, options->duplicates_days_threshold, (int *)&c_options->duplicates_days_threshold);
-    pref_checkbox_new_int(group, _("Rotation invariant duplicate check"),
-                  options->rot_invariant_sim, &c_options->rot_invariant_sim);
-
 #ifdef DEBUG
     group = pref_group_new(vbox, FALSE, _("Debugging"), GTK_ORIENTATION_VERTICAL);
 
