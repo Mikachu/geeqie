@@ -1170,7 +1170,7 @@ gboolean layout_geometry_get_tools(LayoutWindow *lw, gint *x, gint *y, gint *w, 
         return FALSE;
     }
 
-    window = gtk_widget_get_window(lw->window);
+    window = gtk_widget_get_window(lw->tools);
     gdk_window_get_root_origin(window, x, y);
     *w = gdk_window_get_width(window);
     *h = gdk_window_get_height(window);
