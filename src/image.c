@@ -413,7 +413,7 @@ void image_alter_orientation(ImageWindow *imd, AlterType type)
             break;
     }
 
-    if (imd->orientation != imd->image_fd->exif_orientation ? imd->image_fd->exif_orientation : 1)
+    if (imd->orientation != (imd->image_fd->exif_orientation ? imd->image_fd->exif_orientation : 1))
     {
         if (!options->metadata.write_orientation)
         {
@@ -1061,6 +1061,7 @@ void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboo
        here before it is taken over by the renderer. */
     if (pixbuf) g_object_ref(pixbuf);
 
+    imd->orientation = EXIF_ORIENTATION_TOP_LEFT;
     if (imd->image_fd)
     {
         if (imd->image_fd->user_orientation)
