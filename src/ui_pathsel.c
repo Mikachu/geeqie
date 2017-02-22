@@ -354,7 +354,7 @@ static void dest_dnd_set_data(GtkWidget *view,
 
     list = g_list_append(list, path);
 
-    gchar **uris = uris_from_filelist(list);
+    gchar **uris = uris_from_pathlist(list);
     gboolean ret = gtk_selection_data_set_uris(selection_data, uris);
     if (!ret)
     {
