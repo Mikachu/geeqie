@@ -1190,7 +1190,7 @@ gboolean layout_geometry_get_tools(LayoutWindow *lw, gint *x, gint *y, gint *w, 
 
 static void layout_tools_geometry_sync(LayoutWindow *lw)
 {
-    layout_geometry_get_tools(lw, &lw->options.float_window.x, &lw->options.float_window.x,
+    layout_geometry_get_tools(lw, &lw->options.float_window.x, &lw->options.float_window.y,
                   &lw->options.float_window.w, &lw->options.float_window.h, &lw->options.float_window.vdivider_pos);
 }
 
