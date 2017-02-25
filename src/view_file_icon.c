@@ -1360,13 +1360,13 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
  *-------------------------------------------------------------------
  */
 
-static gboolean vficon_motion_cb(GtkWidget *widget, GdkEventMotion *mevent, gpointer data)
+static gboolean vficon_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
     ViewFile *vf = data;
-    gint x = mevent->x,
-         y = mevent->y,
-         x_root = mevent->x_root,
-         y_root = mevent->y_root;
+    gint x = event->x,
+         y = event->y,
+         x_root = event->x_root,
+         y_root = event->y_root;
 
     tip_update(vf, x, y, x_root, y_root);
 
