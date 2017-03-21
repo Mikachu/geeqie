@@ -87,6 +87,8 @@ struct _ConfOptions
         gboolean use_custom_border_color_in_fullscreen;
         gboolean use_custom_border_color;
         GdkColor border_color;
+        GdkColor alpha_color_1;
+        GdkColor alpha_color_2;
     } image;
 
     /* thumbnails */
