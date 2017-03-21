@@ -78,6 +78,15 @@ ConfOptions *init_options(ConfOptions *options)
     options->fullscreen.screen = -1;
 
     memset(&options->image.border_color, 0, sizeof(options->image.border_color));
+    memset(&options->image.alpha_color_1, 0, sizeof(options->image.alpha_color_1));
+    memset(&options->image.alpha_color_2, 0, sizeof(options->image.alpha_color_2));
+/* alpha channel checkerboard background (same as gimp) */
+    options->image.alpha_color_1.red = 0x009999;
+    options->image.alpha_color_1.green = 0x009999;
+    options->image.alpha_color_1.blue = 0x009999;
+    options->image.alpha_color_2.red = 0x006666;
+    options->image.alpha_color_2.green = 0x006666;
+    options->image.alpha_color_2.blue = 0x006666;
     options->image.enable_read_ahead = TRUE;
     options->image.exif_rotate_enable = TRUE;
     options->image.exif_proof_rotate_enable = TRUE;

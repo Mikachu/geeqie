@@ -300,6 +300,9 @@ static void config_window_apply(void)
         view_window_colors_update();
     }
 
+    options->image.alpha_color_1 = c_options->image.alpha_color_1;
+    options->image.alpha_color_2 = c_options->image.alpha_color_2;
+
     options->fullscreen.screen = c_options->fullscreen.screen;
     options->fullscreen.clean_flip = c_options->fullscreen.clean_flip;
     options->fullscreen.disable_saver = c_options->fullscreen.disable_saver;
@@ -1530,6 +1533,17 @@ static void config_tab_image(GtkWidget *notebook)
 
     pref_color_button_new(group, _("Border color"), &options->image.border_color,
                   G_CALLBACK(pref_color_button_set_cb), &c_options->image.border_color);
+
+    c_options->image.border_color = options->image.border_color;
+
+    pref_color_button_new(group, _("Alpha channel color 1"), &options->image.alpha_color_1,
+                  G_CALLBACK(pref_color_button_set_cb), &c_options->image.alpha_color_1);
+
+    pref_color_button_new(group, _("Alpha channel color 2"), &options->image.alpha_color_2,
+                  G_CALLBACK(pref_color_button_set_cb), &c_options->image.alpha_color_2);
+
+    c_options->image.alpha_color_1 = options->image.alpha_color_1;
+    c_options->image.alpha_color_2 = options->image.alpha_color_2;
 
     group = pref_group_new(vbox, FALSE, _("Convenience"), GTK_ORIENTATION_VERTICAL);
 

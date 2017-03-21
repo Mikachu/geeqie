@@ -1272,7 +1272,13 @@ static void rt_tile_get_region(gboolean has_alpha,
                      scale_x, scale_y,
                      interp_type,
                      255, check_x, check_y,
-                     PR_ALPHA_CHECK_SIZE, PR_ALPHA_CHECK1, PR_ALPHA_CHECK2);
+                     PR_ALPHA_CHECK_SIZE,
+                     ((options->image.alpha_color_1.red << 8 & 0x00FF0000) +
+                     (options->image.alpha_color_1.green & 0x00FF00) +
+                     (options->image.alpha_color_1.blue >> 8 & 0x00FF)),
+                     ((options->image.alpha_color_2.red << 8 & 0x00FF0000) +
+                     (options->image.alpha_color_2.green & 0x00FF00) +
+                     (options->image.alpha_color_2.blue >> 8 & 0x00FF)));
     }
 }
 
