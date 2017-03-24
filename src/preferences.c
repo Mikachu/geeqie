@@ -145,12 +145,6 @@ static void zoom_mode_cb(GtkWidget *widget, gpointer data)
         c_options->image.zoom_mode = GPOINTER_TO_INT(data);
 }
 
-static void scroll_reset_cb(GtkWidget *widget, gpointer data)
-{
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
-        c_options->image.scroll_reset_method = GPOINTER_TO_INT(data);
-}
-
 static void zoom_increment_cb(GtkWidget *spin, gpointer data)
 {
     c_options->image.zoom_increment = (gint)(gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin)) * 100.0 + 0.01);
@@ -1495,33 +1489,6 @@ static void config_tab_image(GtkWidget *notebook)
                  0.01, 4.0, 0.01, 2, (gdouble)options->image.zoom_increment / 100.0,
                  G_CALLBACK(zoom_increment_cb), NULL);
     gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(spin), GTK_UPDATE_ALWAYS);
-
-    group = pref_group_new(vbox, FALSE, _("When new image is selected:"), GTK_ORIENTATION_HORIZONTAL);
-
-    vbox2 = pref_box_new(group, TRUE, GTK_ORIENTATION_VERTICAL, PREF_PAD_SPACE);
-    c_options->image.zoom_mode = options->image.zoom_mode;
-    button = pref_radiobutton_new(vbox2, NULL, _("Zoom to original size"),
-                      (options->image.zoom_mode == ZOOM_RESET_ORIGINAL),
-                      G_CALLBACK(zoom_mode_cb), GINT_TO_POINTER(ZOOM_RESET_ORIGINAL));
-    button = pref_radiobutton_new(vbox2, button, _("Fit image to window"),
-                      (options->image.zoom_mode == ZOOM_RESET_FIT_WINDOW),
-                      G_CALLBACK(zoom_mode_cb), GINT_TO_POINTER(ZOOM_RESET_FIT_WINDOW));
-    button = pref_radiobutton_new(vbox2, button, _("Leave Zoom at previous setting"),
-                      (options->image.zoom_mode == ZOOM_RESET_NONE),
-                      G_CALLBACK(zoom_mode_cb), GINT_TO_POINTER(ZOOM_RESET_NONE));
-
-    vbox2 = pref_box_new(group, TRUE, GTK_ORIENTATION_VERTICAL, PREF_PAD_SPACE);
-    c_options->image.scroll_reset_method = options->image.scroll_reset_method;
-    button = pref_radiobutton_new(vbox2, NULL, _("Scroll to top left corner"),
-                      (options->image.scroll_reset_method == SCROLL_RESET_TOPLEFT),
-                      G_CALLBACK(scroll_reset_cb), GINT_TO_POINTER(SCROLL_RESET_TOPLEFT));
-    button = pref_radiobutton_new(vbox2, button, _("Scroll to image center"),
-                      (options->image.scroll_reset_method == SCROLL_RESET_CENTER),
-                      G_CALLBACK(scroll_reset_cb), GINT_TO_POINTER(SCROLL_RESET_CENTER));
-    button = pref_radiobutton_new(vbox2, button, _("Keep the region from previous image"),
-                      (options->image.scroll_reset_method == SCROLL_RESET_NOCHANGE),
-                      G_CALLBACK(scroll_reset_cb), GINT_TO_POINTER(SCROLL_RESET_NOCHANGE));
-
 
     group = pref_group_new(vbox, FALSE, _("Appearance"), GTK_ORIENTATION_VERTICAL);
 
