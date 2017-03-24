@@ -61,7 +61,7 @@
 #define TOOLWINDOW_DEF_HEIGHT 450
 
 #define PROGRESS_WIDTH 150
-#define ZOOM_LABEL_WIDTH 64
+#define ZOOM_LABEL_WIDTH 80
 
 #define PANE_DIVIDER_SIZE 10
 
@@ -395,6 +395,113 @@ static GtkWidget *layout_sort_button(LayoutWindow *lw)
     return button;
 }
 
+static void layout_zoom_menu_cb(GtkWidget *widget, gpointer data)
+{
+    ZoomMode mode;
+
+    if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))) return;
+
+    mode = (ZoomMode)GPOINTER_TO_INT(data);
+    options->image.zoom_mode = mode;
+}
+
+static void layout_scroll_menu_cb(GtkWidget *widget, gpointer data)
+{
+    guint scroll_type;
+
+    if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))) return;
+
+    scroll_type = GPOINTER_TO_UINT(data);
+    options->image.scroll_reset_method = scroll_type;
+    image_options_sync();
+}
+
+static void layout_zoom_menu_hide_cb(GtkWidget *widget, gpointer data)
+{
+    /* destroy the menu */
+    g_object_unref(widget);
+}
+
+static void layout_zoom_button_press_cb(GtkWidget *widget, gpointer data)
+{
+    LayoutWindow *lw = data;
+    GtkWidget *menu;
+    GdkEvent *event;
+    guint32 etime;
+
+    menu = submenu_add_zoom(NULL, G_CALLBACK(layout_zoom_menu_cb),
+            lw, FALSE, FALSE, TRUE, options->image.zoom_mode);
+
+    /* take ownership of menu */
+#ifdef GTK_OBJECT_FLOATING
+    /* GTK+ < 2.10 */
+    g_object_ref(G_OBJECT(menu));
+    gtk_object_sink(GTK_OBJECT(menu));
+#else
+    /* GTK+ >= 2.10 */
+    g_object_ref_sink(G_OBJECT(menu));
+#endif
+
+    menu_item_add_divider(menu);
+
+    menu_item_add_radio(menu, _("Scroll to top left corner"),
+            GUINT_TO_POINTER(SCROLL_RESET_TOPLEFT),
+            options->image.scroll_reset_method == SCROLL_RESET_TOPLEFT,
+            G_CALLBACK(layout_scroll_menu_cb),
+            GUINT_TO_POINTER(SCROLL_RESET_TOPLEFT));
+    menu_item_add_radio(menu, _("Scroll to image center"),
+            GUINT_TO_POINTER(SCROLL_RESET_CENTER),
+            options->image.scroll_reset_method == SCROLL_RESET_CENTER,
+            G_CALLBACK(layout_scroll_menu_cb),
+            GUINT_TO_POINTER(SCROLL_RESET_CENTER));
+    menu_item_add_radio(menu, _("Keep the region from previous image"),
+            GUINT_TO_POINTER(SCROLL_RESET_NOCHANGE),
+            options->image.scroll_reset_method == SCROLL_RESET_NOCHANGE,
+            G_CALLBACK(layout_scroll_menu_cb),
+            GUINT_TO_POINTER(SCROLL_RESET_NOCHANGE));
+
+    g_signal_connect(G_OBJECT(menu), "selection_done",
+             G_CALLBACK(layout_zoom_menu_hide_cb), NULL);
+
+    event = gtk_get_current_event();
+    if (event)
+    {
+        etime = gdk_event_get_time(event);
+        gdk_event_free(event);
+    }
+    else
+    {
+        etime = 0;
+    }
+
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, etime);
+}
+
+static GtkWidget *layout_zoom_button(LayoutWindow *lw, GtkWidget *box, gint size, gboolean expand)
+{
+    GtkWidget *button;
+    GtkWidget *frame;
+
+
+    frame = gtk_frame_new(NULL);
+    if (size) gtk_widget_set_size_request(frame, size, -1);
+    gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
+
+    gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
+
+    gtk_widget_show(frame);
+
+    button = gtk_button_new_with_label("1:1");
+    g_signal_connect(G_OBJECT(button), "clicked",
+             G_CALLBACK(layout_zoom_button_press_cb), lw);
+    gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+
+    gtk_container_add(GTK_CONTAINER(frame), button);
+    gtk_widget_show(button);
+
+    return button;
+}
+
 /*
  *-----------------------------------------------------------------------------
  * status bar
@@ -494,7 +601,7 @@ void layout_status_update_image(LayoutWindow *lw)
 
     if (!n)
     {
-        gtk_label_set_text(GTK_LABEL(lw->info_zoom), "");
+        gtk_button_set_label(GTK_BUTTON(lw->info_zoom), "");
         gtk_label_set_text(GTK_LABEL(lw->info_details), "");
     }
     else
@@ -503,7 +610,7 @@ void layout_status_update_image(LayoutWindow *lw)
         gchar *b;
 
         text = image_zoom_get_as_text(lw->image);
-        gtk_label_set_text(GTK_LABEL(lw->info_zoom), text);
+        gtk_button_set_label(GTK_BUTTON(lw->info_zoom), text);
         g_free(text);
 
         b = image_get_fd(lw->image) ? text_from_size(image_get_fd(lw->image)->size) : g_strdup("0");
@@ -626,7 +733,10 @@ static void layout_status_setup(LayoutWindow *lw, GtkWidget *box, gboolean small
     gtk_widget_show(toolbar_frame);
     gtk_widget_show(toolbar);
     gtk_box_pack_end(GTK_BOX(hbox), toolbar_frame, FALSE, FALSE, 0);
-    lw->info_zoom = layout_status_label(NULL, hbox, FALSE, ZOOM_LABEL_WIDTH, FALSE);
+    lw->info_zoom = layout_zoom_button(lw, hbox, ZOOM_LABEL_WIDTH, TRUE);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(lw->info_zoom), _("Select zoom mode"));
+    gtk_widget_show(lw->info_zoom);
+
     if (small_format)
     {
         hbox = gtk_hbox_new(FALSE, 0);
