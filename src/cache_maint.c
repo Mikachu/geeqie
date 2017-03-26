@@ -1033,11 +1033,8 @@ static GtkWidget *cache_manager_location_label(GtkWidget *group, const gchar *su
 {
     GtkWidget *label;
     gchar *buf;
-    gchar *path;
 
-    path = g_build_filename(homedir(), subdir, NULL);
-    buf = g_strdup_printf(_("Location: %s"), path);
-    g_free(path);
+    buf = g_strdup_printf(_("Location: %s"), subdir);
     label = pref_label_new(group, buf);
     g_free(buf);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
@@ -1052,6 +1049,7 @@ void cache_manager_show(void)
     GtkWidget *button;
     GtkWidget *table;
     GtkSizeGroup *sizegroup;
+    gchar *path;
 
     if (cache_manager)
     {
@@ -1094,7 +1092,9 @@ void cache_manager_show(void)
 
     group = pref_group_new(gd->vbox, FALSE, _("Shared thumbnail cache"), GTK_ORIENTATION_VERTICAL);
 
-    cache_manager_location_label(group, THUMB_FOLDER_GLOBAL);
+    path = g_build_filename(homedir(), THUMB_FOLDER_GLOBAL, NULL);
+    cache_manager_location_label(group, path);
+    g_free(path);
 
     table = pref_table_new(group, 2, 2, FALSE, FALSE);
 
