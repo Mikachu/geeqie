@@ -1147,6 +1147,9 @@ GtkWidget *path_selection_new_with_files(GtkWidget *entry, const gchar *path,
         store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
 
         dd->filter_combo = gtk_combo_box_new_with_model_and_entry(GTK_TREE_MODEL(store));
+        gtk_combo_box_set_entry_text_column(GTK_COMBO_BOX(dd->filter_combo),
+                                                        FILTER_COLUMN_FILTER);
+
         g_object_unref(store);
         gtk_cell_layout_clear(GTK_CELL_LAYOUT(dd->filter_combo));
         renderer = gtk_cell_renderer_text_new();
