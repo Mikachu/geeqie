@@ -423,6 +423,7 @@ static FileData *file_data_new(const gchar *path_utf8, struct stat *st, gboolean
     fd->mode = st->st_mode;
     fd->ref = 1;
     fd->magick = FD_MAGICK;
+    fd->exifdate = 0;
 
     if (disable_sidecars) fd->disable_grouping = TRUE;
 
@@ -459,21 +460,6 @@ FileData *file_data_new_simple(const gchar *path_utf8)
     }
 
     return fd;
-}
-
-void init_exif_time_data(GList *files)
-{
-    FileData *file;
-    DEBUG_1("%s init_exif_time_data: ...", get_exec_time());
-    while (files)
-    {
-        file = files->data;
-
-        if (file)
-            file->exifdate = 0;
-
-        files = files->next;
-    }
 }
 
 void read_exif_time_data(FileData *file)
@@ -1279,9 +1265,6 @@ static gboolean filelist_read_real(const gchar *dir_path, GList **files, GList *
         *files = filelist_filter_out_sidecars(flist);
     }
     if (basename_hash) file_data_basename_hash_free(basename_hash);
-
-    // Call a separate function to initialize the exif datestamps for the found files..
-    if (files) init_exif_time_data(*files);
 
     return TRUE;
 }
