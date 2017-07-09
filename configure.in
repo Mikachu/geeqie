@@ -15,7 +15,7 @@ dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 dnl GNU General Public License for more details.
 
 AC_PREREQ(2.57)
-AC_INIT([geeqie], m4_esyscmd_s(git rev-parse --quiet --verify --short master), [geeqie-devel@lists.sourceforge.net], [], [http://www.geeqie.org/])
+AC_INIT([geeqie], m4_esyscmd_s(git rev-parse --quiet --verify --short HEAD), [geeqie-devel@lists.sourceforge.net], [], [http://www.geeqie.org/])
 
 # Check for rightly dirs
 AC_CONFIG_SRCDIR([src/main.c])
@@ -126,6 +126,7 @@ fi
 
 AC_ISC_POSIX
 AC_PROG_CC
+AC_PROG_CC_C99
 AC_PROG_CXX
 AC_STDC_HEADERS
 AC_ARG_PROGRAM
