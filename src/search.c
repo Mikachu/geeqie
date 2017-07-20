@@ -2725,6 +2725,8 @@ void search_new(FileData *dir_fd, FileData *example_file)
     tab_completion_add_select_button(sd->entry_similarity, NULL, FALSE);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
+    pref_checkbox_new_int(hbox, _("Ignore rotation"),
+                options->rot_invariant_sim, &options->rot_invariant_sim);
 
     /* Search for image keywords */
     hbox = menu_choice(sd->box_search, &sd->check_keywords, &sd->menu_keywords,
