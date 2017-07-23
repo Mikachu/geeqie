@@ -139,12 +139,6 @@ static GtkWidget *sidecar_ext_entry;
  *-----------------------------------------------------------------------------
  */
 
-static void zoom_mode_cb(GtkWidget *widget, gpointer data)
-{
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
-        c_options->image.zoom_mode = GPOINTER_TO_INT(data);
-}
-
 static void scroll_reset_cb(GtkWidget *widget, gpointer data)
 {
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
@@ -227,7 +221,6 @@ static void config_window_apply(void)
     options->tools_restore_state = c_options->tools_restore_state;
     options->save_window_positions = c_options->save_window_positions;
     options->use_saved_window_positions_for_new_windows = c_options->use_saved_window_positions_for_new_windows;
-    options->image.zoom_mode = c_options->image.zoom_mode;
     options->image.scroll_reset_method = c_options->image.scroll_reset_method;
     options->image.zoom_2pass = c_options->image.zoom_2pass;
     options->image.fit_window_to_image = c_options->image.fit_window_to_image;
