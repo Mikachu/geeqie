@@ -1270,7 +1270,7 @@ static void rt_tile_get_region(gboolean has_alpha,
                      offset_x,
                      offset_y,
                      scale_x, scale_y,
-                     interp_type,
+                     (scale_x == 1.0 && scale_y == 1.0) ? GDK_INTERP_NEAREST : interp_type,
                      255, check_x, check_y,
                      PR_ALPHA_CHECK_SIZE,
                      ((options->image.alpha_color_1.red << 8 & 0x00FF0000) +
