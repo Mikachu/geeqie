@@ -39,6 +39,7 @@
 #include "ui_menu.h"
 #include "ui_tree_edit.h"
 #include "uri_utils.h"
+#include "view_file.h"
 
 #include "icons/marker.xpm"
 #define MARKER_WIDTH 26
@@ -842,6 +843,23 @@ static void collection_table_popup_add_filelist_cb(GtkWidget *widget, gpointer d
     }
 }
 
+static void collection_table_popup_add_file_selection_cb(GtkWidget *widget, gpointer data)
+{
+    CollectTable *ct = data;
+    GList *list;
+    LayoutWindow *lw = NULL;
+
+    if (!layout_valid(&lw)) return;
+
+    list = vf_selection_get_list(lw->vf);
+
+    if (list)
+    {
+        collection_table_add_filelist(ct, list);
+        filelist_free(list);
+    }
+}
+
 static void collection_table_popup_add_collection_cb(GtkWidget *widget, gpointer data)
 {
     CollectTable *ct = data;
@@ -910,6 +928,8 @@ static GtkWidget *collection_table_popup_menu(CollectTable *ct, gboolean over_ic
     menu_item_add_stock_sensitive(menu, _("Rem_ove"), GTK_STOCK_REMOVE, over_icon,
             G_CALLBACK(collection_table_popup_remove_cb), ct);
 
+    menu_item_add_stock(menu, _("Append from file selection"), GTK_STOCK_ADD,
+            G_CALLBACK(collection_table_popup_add_file_selection_cb), ct);
     menu_item_add_stock(menu, _("Append from file list"), GTK_STOCK_ADD,
             G_CALLBACK(collection_table_popup_add_filelist_cb), ct);
     menu_item_add_stock(menu, _("Append from collection..."), GTK_STOCK_OPEN,
