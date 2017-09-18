@@ -36,6 +36,10 @@ void history_list_item_remove(const gchar *key, const gchar *path);
 
 const gchar *history_list_find_last_path_by_key(const gchar *key);
 
+const gchar *history_chain_back(void);
+const gchar *history_chain_forward(void);
+void history_chain_append_end(const gchar *path);
+
 /* the returned GList is internal, don't free it */
 GList *history_list_get_by_key(const gchar *key);
 
