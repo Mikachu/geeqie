@@ -25,6 +25,7 @@
 #include "color-man.h"
 #include "filedata.h"
 #include "histogram.h"
+#include "history_list.h"
 #include "image.h"
 #include "image-overlay.h"
 #include "layout_config.h"
@@ -1018,7 +1019,11 @@ gboolean layout_set_fd(LayoutWindow *lw, FileData *fd)
         if (isfile(fd->path)) have_file = TRUE;
     }
 
-    if (lw->path_entry) tab_completion_append_to_history(lw->path_entry, lw->dir_fd->path);
+    history_chain_append_end(lw->dir_fd->path);
+    if (lw->path_entry)
+    {
+        tab_completion_append_to_history(lw->path_entry, lw->dir_fd->path);
+    }
     layout_sync_path(lw);
     layout_list_sync_sort(lw);
 
