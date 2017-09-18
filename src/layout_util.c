@@ -1207,24 +1207,23 @@ static void layout_menu_back_cb(GtkAction *action, gpointer data)
 {
     LayoutWindow *lw = data;
     FileData *dir_fd;
-    gchar *path = NULL;
-    GList *list = history_list_get_by_key("path_list");
-    gint n = 0;
 
-    while (list)
-    {
-        if (n == 1) {
-            /* Previous path from history */
-            path = (gchar *)list->data;
-            break;
-    }
-        list = list->next;
-        n++;
-    }
-
+    /* Obtain previous path */
+    const gchar *path = history_chain_back();
     if (!path) return;
+    dir_fd = file_data_new_dir(path);
+    layout_set_fd(lw, dir_fd);
+    file_data_unref(dir_fd);
+}
 
-    /* Open previous path */
+static void layout_menu_forward_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+    FileData *dir_fd;
+
+    /* Obtain next path */
+    const gchar *path = history_chain_forward();
+    if (!path) return;
     dir_fd = file_data_new_dir(path);
     layout_set_fd(lw, dir_fd);
     file_data_unref(dir_fd);
@@ -1490,6 +1489,7 @@ static GtkActionEntry menu_entries[] = {
   { "NextImageAlt2",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "KP_Page_Down",     N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "LastImage",    GTK_STOCK_GOTO_BOTTOM,  N_("_Last Image"),          "End",          N_("Last Image"),           CB(layout_menu_image_last_cb) },
   { "Back",     GTK_STOCK_GO_BACK,  N_("_Back"),                NULL,           N_("Back"),             CB(layout_menu_back_cb) },
+  { "Forward",  GTK_STOCK_GO_FORWARD,   N_("_Forward"),         NULL,           N_("Forward"),              CB(layout_menu_forward_cb) },
   { "Home",     GTK_STOCK_HOME,     N_("_Home"),                NULL,           N_("Home"),             CB(layout_menu_home_cb) },
   { "Up",       GTK_STOCK_GO_UP,    N_("_Up"),              NULL,           N_("Up"),               CB(layout_menu_up_cb) },
   { "PrevFolder",   GTK_STOCK_GO_UP,    N_("_Previous Folder"), "<control><shift>space",    N_("Previous Folder"),  CB(layout_menu_dir_prev_cb) },
@@ -1686,6 +1686,7 @@ static const gchar *menu_ui_description =
 "      <menuitem action='LastImage'/>"
 "      <separator/>"
 "      <menuitem action='Back'/>"
+"      <menuitem action='Forward'/>"
 "      <menuitem action='Up'/>"
 "      <menuitem action='PrevFolder'/>"
 "      <menuitem action='NextFolder'/>"
@@ -1855,6 +1856,7 @@ static const gchar *menu_ui_description =
 "  <toolbar name='ToolBar'>"
 "    <toolitem action='Thumbnails'/>"
 "    <toolitem action='Back'/>"
+"    <toolitem action='Forward'/>"
 "    <toolitem action='Up'/>"
 "    <toolitem action='Home'/>"
 "    <toolitem action='Refresh'/>"
