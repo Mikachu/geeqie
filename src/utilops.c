@@ -883,6 +883,10 @@ void file_util_perform_ci(UtilityData *ud)
             gchar *text = g_strdup_printf(_("%s\nUnable to start external command.\n"), editor_get_error_str(flags));
             file_util_warning_dialog(ud->messages.fail, text, GTK_STOCK_DIALOG_ERROR, NULL);
             g_free(text);
+
+            ud->gd = NULL;
+            ud->phase = UTILITY_PHASE_CANCEL;
+            file_util_dialog_run(ud);
         }
     }
     else
