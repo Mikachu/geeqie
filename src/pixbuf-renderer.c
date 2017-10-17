@@ -1237,24 +1237,38 @@ static void pr_zoom_adjust_real(PixbufRenderer *pr, gdouble increment,
 
 	if (increment < 0.0)
 		{
-		if (zoom >= 1.0 && zoom + increment < 1.0)
+		if (zoom >= 1.0)
 			{
-			zoom = zoom + increment - 2.0;
+			if (zoom / -(increment - 1.0) < 1.0)
+				{
+				zoom = 1.0 / (zoom / (increment - 1.0));
+				}
+			else
+				{
+				zoom = zoom / -(increment - 1.0) ;
+				}
 			}
 		else
 			{
-			zoom = zoom + increment;
+			zoom = zoom * -(increment - 1.0);
 			}
 		}
 	else
 		{
-		if (zoom <= -1.0 && zoom + increment > -1.0)
+		if (zoom <= -1.0 )
 			{
-			zoom = zoom + increment + 2.0;
+			if (zoom / (increment + 1.0) > -1.0)
+				{
+				zoom = -(1.0 / (zoom / (increment + 1.0)));
+				}
+			else
+				{
+				zoom = zoom / (increment + 1.0) ;
+				}
 			}
 		else
 			{
-			zoom = zoom + increment;
+			zoom = zoom * (increment + 1.0);
 			}
 		}
 
