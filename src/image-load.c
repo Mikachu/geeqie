@@ -1076,23 +1076,6 @@ GdkPixbuf *image_loader_get_pixbuf(ImageLoader *il)
     return ret;
 }
 
-gchar *image_loader_get_format(ImageLoader *il)
-{
-    gchar **mimev;
-    gchar *mime;
-
-    if (!il || !il->loader) return NULL;
-
-    mimev = il->backend.get_format_mime_types(il->loader);
-    if (!mimev) return NULL;
-
-    /* return first member of mimev, as GdkPixbufLoader has no way to tell us which exact one ? */
-    mime = g_strdup(mimev[0]);
-    g_strfreev(mimev);
-
-    return mime;
-}
-
 void image_loader_set_requested_size(ImageLoader *il, gint width, gint height)
 {
     if (!il) return;
