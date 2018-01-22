@@ -20,7 +20,6 @@ icon_DATA = geeqie.png
 
 EXTRA_DIST = \
 	$(readme_DATA)	\
-	$(desktop_DATA)	\
 	$(desktop_in_files)	\
 	$(icon_DATA)	\
 	geeqie.spec.in	\
@@ -31,3 +30,4 @@ dist-hook: geeqie.spec
 	cp $(top_builddir)/geeqie.spec $(distdir)
 
 DISTCLEANFILES = config.report
+CLEANFILES = $(desktop_DATA)
