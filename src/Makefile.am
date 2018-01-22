@@ -261,6 +261,7 @@ geeqie_SOURCES = \
 geeqie_LDADD = $(GTK_LIBS) $(GLIB_LIBS) $(INTLLIBS) $(JPEG_LIBS) $(TIFF_LIBS) $(LCMS_LIBS) $(EXIV2_LIBS) $(LIBCHAMPLAIN_LIBS) $(LIBCHAMPLAIN_GTK_LIBS) $(LUA_LIBS) $(CLUTTER_LIBS) $(CLUTTER_GTK_LIBS)
 
 EXTRA_DIST = \
+	keymap_template.c \
 	$(extra_SLIK)
 
 gq-marshal.h: gq-marshal.list

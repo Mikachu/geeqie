@@ -5,4 +5,5 @@ gq_desktop_in_files = geeqie-import-geeqie.desktop.in geeqie-import-gqview.deskt
 gq_desktop_DATA = $(gq_desktop_in_files:.desktop.in=.desktop)
 @INTLTOOL_DESKTOP_RULE@
 
-EXTRA_DIST = $(gq_desktop_DATA) $(gq_desktop_in_files)
+EXTRA_DIST = $(gq_desktop_in_files)
+CLEANFILES = $(gq_desktop_DATA)
