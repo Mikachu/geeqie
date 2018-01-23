@@ -731,6 +731,8 @@ static void bookmark_dnd_get_data(GtkWidget *widget,
     if (!bm->editable) return;
 
     uris = gtk_selection_data_get_uris(selection_data);
+    if (!uris) return;
+
     list = uri_pathlist_from_uris(uris, &errors);
     if(errors)
     {
