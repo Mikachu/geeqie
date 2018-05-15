@@ -904,6 +904,7 @@ static void view_window_collection_unref_cb(GtkWidget *widget, gpointer data)
 void view_window_new(FileData *fd)
 {
     GList *list;
+    if (!fd) return;
 
     if (file_extension_match(fd->path, GQ_COLLECTION_EXT))
     {
