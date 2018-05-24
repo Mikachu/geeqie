@@ -1709,18 +1709,6 @@ static void pan_window_entry_activate_cb(const gchar *new_text, gpointer data)
     g_free(path);
 }
 
-static void pan_window_entry_change_cb(GtkWidget *combo, gpointer data)
-{
-    PanWindow *pw = data;
-    gchar *text;
-
-    if (gtk_combo_box_get_active(GTK_COMBO_BOX(combo)) < 0) return;
-
-    text = g_strdup(gtk_entry_get_text(GTK_ENTRY(pw->path_entry)));
-    pan_window_entry_activate_cb(text, pw);
-    g_free(text);
-}
-
 static void pan_window_close(PanWindow *pw)
 {
     pan_window_list = g_list_remove(pan_window_list, pw);
@@ -1810,8 +1798,6 @@ static void pan_window_new_real(FileData *dir_fd)
     pref_label_new(box, _("Location:"));
     combo = tab_completion_new_with_history(&pw->path_entry, dir_fd->path, "pan_view_path", -1,
                         pan_window_entry_activate_cb, pw);
-    g_signal_connect(G_OBJECT(gtk_widget_get_parent(pw->path_entry)), "changed",
-             G_CALLBACK(pan_window_entry_change_cb), pw);
     gtk_box_pack_start(GTK_BOX(box), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
 
