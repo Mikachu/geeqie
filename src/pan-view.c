@@ -2454,6 +2454,21 @@ static void pan_new_window_cb(GtkWidget *widget, gpointer data)
 		}
 }
 
+static void pan_go_to_original_cb(GtkWidget *widget, gpointer data)
+{
+	LayoutWindow *lw = NULL;
+	PanWindow *pw = data;
+	FileData *fd;
+
+	if (!layout_valid(&lw)) return;
+
+	fd = pan_menu_click_fd(pw);
+	if (fd)
+		{
+		layout_set_fd(lw, fd);
+		}
+}
+
 static void pan_edit_cb(GtkWidget *widget, gpointer data)
 {
 	PanWindow *pw;
@@ -2624,6 +2639,8 @@ static GtkWidget *pan_popup_menu(PanWindow *pw)
 
 	menu_item_add_stock_sensitive(menu, _("View in _new window"), GTK_STOCK_NEW, active,
 				      G_CALLBACK(pan_new_window_cb), pw);
+	menu_item_add_stock(menu, _("Go to original"), GTK_STOCK_FIND,
+			G_CALLBACK(pan_go_to_original_cb), pw);
 
 	menu_item_add_divider(menu);
 	menu_item_add_stock_sensitive(menu, _("_Copy..."), GTK_STOCK_COPY, active,
