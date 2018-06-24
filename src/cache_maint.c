@@ -1116,6 +1116,7 @@ void cache_manager_show(void)
                    G_CALLBACK(cache_manager_render_cb), cache_manager);
     gtk_size_group_add_widget(sizegroup, button);
     pref_table_label(table, 1, 1, _("Render thumbnails for a specific folder."), 0.0);
+    gtk_widget_set_sensitive(group, options->thumbnails.enable_caching);
 
     group = pref_group_new(gd->vbox, FALSE, _("Metadata"), GTK_ORIENTATION_VERTICAL);
 
