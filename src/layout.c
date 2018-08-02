@@ -271,6 +271,24 @@ static void layout_path_entry_tab_append_cb(const gchar *path, gpointer data, gi
     gtk_widget_set_sensitive(lw->back_button, (n > 1));
 }
 
+static gboolean path_entry_tooltip_cb(GtkWidget *widget, gpointer data)
+{
+    LayoutWindow *lw = data;
+    GList *box_child_list;
+    GtkComboBox *path_entry;
+    gchar *current_path;
+
+    box_child_list = gtk_container_get_children(GTK_CONTAINER(widget));
+    path_entry = box_child_list->data;
+    current_path = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(path_entry));
+    gtk_widget_set_tooltip_text(GTK_WIDGET(widget), current_path);
+
+    g_free(current_path);
+    g_list_free(box_child_list);
+
+    return FALSE;
+}
+
 static GtkWidget *layout_tool_setup(LayoutWindow *lw)
 {
     GtkWidget *box;
@@ -293,6 +311,8 @@ static GtkWidget *layout_tool_setup(LayoutWindow *lw)
     tab_completion_add_append_func(lw->path_entry, layout_path_entry_tab_append_cb, lw);
     gtk_box_pack_start(GTK_BOX(box), tabcomp, FALSE, FALSE, 0);
     gtk_widget_show(tabcomp);
+    gtk_widget_set_has_tooltip(GTK_WIDGET(tabcomp), TRUE);
+    g_signal_connect(G_OBJECT(tabcomp), "query_tooltip", G_CALLBACK(path_entry_tooltip_cb), lw);
 
     g_signal_connect(G_OBJECT(gtk_widget_get_parent(lw->path_entry)), "changed",
              G_CALLBACK(layout_path_entry_changed_cb), lw);
