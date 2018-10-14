@@ -29,6 +29,7 @@
 #include "filedata.h"
 #include "fullscreen.h"
 #include "image.h"
+#include "image-load.h"
 #include "image-overlay.h"
 #include "layout.h"
 #include "layout_image.h"
@@ -875,21 +876,8 @@ static ViewWindow *real_view_window_new(FileData *fd, GList *list, CollectionDat
 		}
 
 	/* Wait until image is loaded otherwise size is not defined */
-	int count;
-	for (count = 10; count && !w && !h; count++)
-		{
-		image_get_image_size(vw->imd, &w, &h);
-		usleep(100000);
-		}
+	image_load_dimensions(fd, &w, &h);
 
-	if (image_zoom_get(vw->imd) == 0.0)
-		{
-		image_get_image_size(vw->imd, &w, &h);
-		}
-	else
-		{
-		pixbuf_renderer_get_scaled_size(PIXBUF_RENDERER(vw->imd->pr), &w, &h);
-		}
 	if (options->image.limit_window_size)
 		{
 		gint mw = gdk_screen_width() * options->image.max_window_size / 100;

@@ -929,6 +929,8 @@ static gboolean image_scroll_cb(GtkWidget *widget, GdkEventScroll *event, gpoint
 void image_attach_window(ImageWindow *imd, GtkWidget *window,
 			 const gchar *title, const gchar *title_right, gboolean show_zoom)
 {
+	LayoutWindow *lw;
+
 	imd->top_window = window;
 	g_free(imd->title);
 	imd->title = g_strdup(title);
@@ -936,7 +938,9 @@ void image_attach_window(ImageWindow *imd, GtkWidget *window,
 	imd->title_right = g_strdup(title_right);
 	imd->title_show_zoom = show_zoom;
 
-	if (!options->image.fit_window_to_image) window = NULL;
+	lw = layout_find_by_image(imd);
+
+	if (!(options->image.fit_window_to_image && lw && lw->options.tools_float)) window = NULL;
 
 	pixbuf_renderer_set_parent((PixbufRenderer *)imd->pr, (GtkWindow *)window);
 
