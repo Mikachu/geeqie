@@ -851,6 +851,9 @@ static ViewWindow *real_view_window_new(FileData *fd, GList *list, CollectionDat
 	if (cd && info)
 		{
 		image_change_from_collection(vw->imd, cd, info, image_zoom_get_default(NULL));
+		/* Grab the fd so we can correctly size the window in
+		   the call to image_load_dimensions() below. */
+		fd = info->fd;
 		if (options->image.enable_read_ahead)
 			{
 			CollectInfo * r_info = collection_next_by_info(cd, info);
