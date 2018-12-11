@@ -866,6 +866,8 @@ static ViewWindow *real_view_window_new(FileData *fd, GList *list, CollectionDat
 		view_window_set_list(vw, list);
 		vw->list_pointer = vw->list;
 		image_change_fd(vw->imd, (FileData *)vw->list->data, image_zoom_get_default(NULL));
+		/* Set fd to first in list */
+		fd = vw->list->data;
 
 		if (options->image.enable_read_ahead)
 			{
