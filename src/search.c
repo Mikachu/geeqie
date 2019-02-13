@@ -2579,9 +2579,15 @@ static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
     file_data_unref(sd->search_dir_fd);
 
     g_free(sd->search_name);
-    g_regex_unref(sd->search_name_regex);
+    if(sd->search_name_regex)
+    {
+        g_regex_unref(sd->search_name_regex);
+    }
     g_free(sd->search_comment);
-    g_regex_unref(sd->search_comment_regex);
+    if(sd->search_comment_regex)
+    {
+        g_regex_unref(sd->search_comment_regex);
+    }
     g_free(sd->search_similarity_path);
     string_list_free(sd->search_keyword_list);
 
