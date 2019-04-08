@@ -473,7 +473,7 @@ static void vd_pop_menu_slide_rec_cb(GtkWidget *widget, gpointer data)
     if (!vd->layout) return;
     if (!vd->click_fd) return;
 
-    list = filelist_recursive(vd->click_fd);
+    list = filelist_recursive_full(vd->click_fd, vd->layout->sort_method, vd->layout->sort_ascend);
 
     layout_image_slideshow_stop(vd->layout);
     layout_image_slideshow_start_from_list(vd->layout, list);

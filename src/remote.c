@@ -418,9 +418,14 @@ static void gr_fullscreen_stop(const gchar *text, GIOChannel *channel, gpointer 
 
 static void gr_slideshow_start_rec(const gchar *text, GIOChannel *channel, gpointer data)
 {
+    LayoutWindow *lw = NULL;
     GList *list;
     FileData *dir_fd = file_data_new_dir(text);
-    list = filelist_recursive(dir_fd);
+
+    if (layout_valid(&lw))
+        list = filelist_recursive_full(dir_fd, lw->sort_method, lw->sort_ascend);
+    else
+        list = filelist_recursive(dir_fd);
     file_data_unref(dir_fd);
     if (!list) return;
 //printf("length: %d\n", g_list_length(list));

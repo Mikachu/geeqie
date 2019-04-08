@@ -86,6 +86,7 @@ GList *filelist_filter(GList *list, gboolean is_dir_list);
 
 GList *filelist_sort_path(GList *list);
 GList *filelist_recursive(FileData *dir_fd);
+GList *filelist_recursive_full(FileData *dir_fd, SortType method, gboolean ascend);
 
 typedef gboolean (* FileDataGetMarkFunc)(FileData *fd, gint n, gpointer data);
 typedef gboolean (* FileDataSetMarkFunc)(FileData *fd, gint n, gboolean value, gpointer data);
