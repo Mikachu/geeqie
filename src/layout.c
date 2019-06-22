@@ -1981,18 +1981,30 @@ static void home_path_set_current_cb(GtkWidget *widget, gpointer data)
 static void startup_path_set_current_cb(GtkWidget *widget, gpointer data)
 {
     LayoutConfig *lc = data;
+    if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+    {
+        return;
+    }
     lc->options.startup_path = STARTUP_PATH_CURRENT;
 }
 
 static void startup_path_set_last_cb(GtkWidget *widget, gpointer data)
 {
     LayoutConfig *lc = data;
+    if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+    {
+        return;
+    }
     lc->options.startup_path = STARTUP_PATH_LAST;
 }
 
 static void startup_path_set_home_cb(GtkWidget *widget, gpointer data)
 {
     LayoutConfig *lc = data;
+    if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+    {
+        return;
+    }
     lc->options.startup_path = STARTUP_PATH_HOME;
 }
 
