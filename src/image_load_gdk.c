@@ -26,7 +26,17 @@
 
 static gchar* image_loader_gdk_get_format_name(gpointer loader)
 {
-	return gdk_pixbuf_format_get_name(gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader)));
+	GdkPixbufFormat *format;
+
+	format = gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader));
+	if (format)
+		{
+		return gdk_pixbuf_format_get_name(format);
+		}
+	else
+		{
+		return NULL;
+		}
 }
 static gchar** image_loader_gdk_get_format_mime_types(gpointer loader)
 {
