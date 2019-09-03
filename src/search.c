@@ -261,6 +261,7 @@ static gint search_result_count(SearchData *sd, gint64 *bytes);
 static void search_window_close(SearchData *sd);
 
 static void search_notify_cb(FileData *fd, NotifyType type, gpointer data);
+static void search_start_cb(GtkWidget *widget, gpointer data);
 
 /*
  *-------------------------------------------------------------------
@@ -1326,6 +1327,9 @@ static gboolean search_window_keypress_cb(GtkWidget *widget, GdkEventKey *event,
                 break;
             case 'W': case 'w':
                 search_window_close(sd);
+                break;
+            case GDK_KEY_Return: case GDK_KEY_KP_Enter:
+                search_start_cb(NULL, sd);
                 break;
             default:
                 stop_signal = FALSE;
