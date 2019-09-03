@@ -264,6 +264,7 @@ static void search_window_close(SearchData *sd);
 
 static void search_notify_cb(FileData *fd, NotifyType type, gpointer data);
 static void search_start_cb(GtkWidget *widget, gpointer data);
+void mfd_list_free(GList *list);
 
 /*
  *-------------------------------------------------------------------
@@ -2541,7 +2542,7 @@ static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
 
     search_result_update_idle_cancel(sd);
 
-    filelist_free(sd->search_buffer_list);
+    mfd_list_free(sd->search_buffer_list);
     sd->search_buffer_list = NULL;
 
     search_stop(sd);
@@ -2933,4 +2934,21 @@ static void search_notify_cb(FileData *fd, NotifyType type, gpointer data)
             break;
     }
 }
+
+void mfd_list_free(GList *list)
+{
+    GList *work;
+
+    work = list;
+    while (work)
+    {
+        MatchFileData *mfd = work->data;
+        file_data_unref(mfd->fd);
+        g_free(mfd);
+        work = work->next;
+    }
+
+    g_list_free(list);
+}
+
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
