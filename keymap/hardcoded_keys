@@ -9,8 +9,8 @@
 "Right Border" "<Shift><Control>Right"
 "Scroll" "Up"
 "FastScroll" "<Shift>Up"
-"Uper Border" "<Control>Up"
-"Uper Border" "<Shift><Control>Up"
+"Upper Border" "<Control>Up"
+"Upper Border" "<Shift><Control>Up"
 "Scroll" "Down"
 "FastScroll" "<Shift>Down"
 "Lower Border" "<Control>Down"
@@ -27,4 +27,3 @@
 "ScrollDown" "<Shift>MW5"
 "ZoomIn" "<Control>MW4"
 "ZoomOut" "<Control>MW5"
-
