@@ -977,6 +977,17 @@ void file_util_check_ci(UtilityData *ud)
             error = file_data_verify_ci_list(ud->flist, &desc, ud->with_sidecars);
         }
     }
+    else
+    {
+        if (ud->type == UTILITY_TYPE_CREATE_FOLDER || ud->type == UTILITY_TYPE_RENAME_FOLDER)
+        {
+            if (isdir(ud->dest_path) || isfile(ud->dest_path))
+            {
+                error = CHANGE_DEST_EXISTS;
+                desc = g_strdup_printf(_("%s already exists"), ud->dest_path);
+            }
+        }
+    }
 
     if (!error)
     {
