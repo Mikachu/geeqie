@@ -98,6 +98,8 @@ gboolean layout_geometry_get_dividers(LayoutWindow *lw, gint *h, gint *v);
 void layout_views_set(LayoutWindow *lw, DirViewType dir_view_type, FileViewType file_view_type);
 gboolean layout_views_get(LayoutWindow *lw, DirViewType *dir_view_type, FileViewType *file_view_type);
 
+void layout_views_set_sort(LayoutWindow *lw, SortType method, gboolean ascend);
+
 void layout_status_update(LayoutWindow *lw, const gchar *text);
 
 void layout_style_set(LayoutWindow *lw, gint style, const gchar *order);

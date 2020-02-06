@@ -317,8 +317,8 @@ static GtkWidget *layout_tool_setup(LayoutWindow *lw)
     g_signal_connect(G_OBJECT(gtk_widget_get_parent(lw->path_entry)), "changed",
              G_CALLBACK(layout_path_entry_changed_cb), lw);
 
-    lw->vd = vd_new(lw->options.dir_view_type, lw->dir_fd);
-    vd_set_layout(lw->vd, lw);
+    lw->vd = vd_new(lw);
+
     vd_set_select_func(lw->vd, layout_vd_select_cb, lw);
 
     lw->dir_view = lw->vd->widget;
@@ -1217,6 +1217,18 @@ void layout_views_set(LayoutWindow *lw, DirViewType dir_view_type, FileViewType 
 
     lw->options.dir_view_type = dir_view_type;
     lw->options.file_view_type = file_view_type;
+
+    layout_style_set(lw, -1, NULL);
+}
+
+void layout_views_set_sort(LayoutWindow *lw, SortType method, gboolean ascend)
+{
+    if (!layout_valid(&lw)) return;
+
+    if (lw->options.dir_view_list_sort.method == method && lw->options.dir_view_list_sort.ascend == ascend) return;
+
+    lw->options.dir_view_list_sort.method = method;
+    lw->options.dir_view_list_sort.ascend = ascend;
 
     layout_style_set(lw, -1, NULL);
 }
@@ -2415,6 +2427,8 @@ void layout_write_attributes(LayoutOptions *layout, GString *outstr, gint indent
     WRITE_NL(); WRITE_CHAR(*layout, order);
     WRITE_NL(); WRITE_UINT(*layout, dir_view_type);
     WRITE_NL(); WRITE_UINT(*layout, file_view_type);
+    WRITE_NL(); WRITE_UINT(*layout, dir_view_list_sort.method);
+    WRITE_NL(); WRITE_BOOL(*layout, dir_view_list_sort.ascend);
     WRITE_NL(); WRITE_BOOL(*layout, show_marks);
     WRITE_NL(); WRITE_BOOL(*layout, show_thumbnails);
     WRITE_NL(); WRITE_BOOL(*layout, show_directory_date);
@@ -2487,6 +2501,8 @@ void layout_load_attributes(LayoutOptions *layout, const gchar **attribute_names
 
         if (READ_UINT(*layout, dir_view_type)) continue;
         if (READ_UINT(*layout, file_view_type)) continue;
+        if (READ_UINT(*layout, dir_view_list_sort.method)) continue;
+        if (READ_BOOL(*layout, dir_view_list_sort.ascend)) continue;
         if (READ_BOOL(*layout, show_marks)) continue;
         if (READ_BOOL(*layout, show_thumbnails)) continue;
         if (READ_BOOL(*layout, show_directory_date)) continue;
