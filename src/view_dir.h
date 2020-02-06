@@ -32,7 +32,7 @@ enum {
 
 #define VIEW_DIR_TYPES_COUNT 2
 
-ViewDir *vd_new(DirViewType type, FileData *dir_fd);
+ViewDir *vd_new(LayoutWindow *lw);
 
 void vd_set_select_func(ViewDir *vdl, void (*func)(ViewDir *vdl, FileData *fd, gpointer data), gpointer data);
 

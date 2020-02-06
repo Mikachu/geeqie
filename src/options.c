@@ -224,6 +224,8 @@ LayoutOptions *init_layout_options(LayoutOptions *options)
     memset(options, 0, sizeof(LayoutOptions));
 
     options->dir_view_type = DIRVIEW_LIST;
+    options->dir_view_list_sort.ascend = TRUE;
+    options->dir_view_list_sort.method = SORT_NAME;
     options->file_view_type = FILEVIEW_LIST;
     options->float_window.h = 450;
     options->float_window.vdivider_pos = -1;

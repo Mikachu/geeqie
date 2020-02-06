@@ -31,6 +31,9 @@ gchar *sort_type_get_text(SortType method);
 GtkWidget *submenu_add_sort(GtkWidget *menu, GCallback func, gpointer data,
                 gboolean include_none, gboolean include_path,
                 gboolean show_current, SortType type);
+GtkWidget *submenu_add_dir_sort(GtkWidget *menu, GCallback func, gpointer data,
+                gboolean include_none, gboolean include_path,
+                gboolean show_current, SortType type);
 GtkWidget *submenu_add_zoom(GtkWidget *menu, GCallback func, gpointer data,
                 gboolean include_none, gboolean include_path,
                 gboolean show_current, ZoomMode mode);
