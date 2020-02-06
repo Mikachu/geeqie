@@ -220,6 +220,32 @@ GtkWidget *submenu_add_sort(GtkWidget *menu, GCallback func, gpointer data,
     return submenu;
 }
 
+GtkWidget *submenu_add_dir_sort(GtkWidget *menu, GCallback func, gpointer data,
+                gboolean include_none, gboolean include_path,
+                gboolean show_current, SortType type)
+{
+    GtkWidget *submenu;
+
+    submenu = gtk_menu_new();
+    g_object_set_data(G_OBJECT(submenu), "submenu_data", data);
+
+    submenu_add_sort_item(submenu, func, SORT_NAME, show_current, type);
+    submenu_add_sort_item(submenu, func, SORT_TIME, show_current, type);
+    if (include_path) submenu_add_sort_item(submenu, func, SORT_PATH, show_current, type);
+    if (include_none) submenu_add_sort_item(submenu, func, SORT_NONE, show_current, type);
+
+    if (menu)
+    {
+        GtkWidget *item;
+
+        item = menu_item_add(menu, _("Sort"), NULL, NULL);
+        gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
+        return item;
+    }
+
+    return submenu;
+}
+
 gchar *zoom_type_get_text(ZoomMode method)
 {
     switch (method)
