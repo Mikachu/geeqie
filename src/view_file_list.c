@@ -729,11 +729,14 @@ static gboolean vflist_select_cb(GtkTreeSelection *selection, GtkTreeModel *stor
 {
 	ViewFile *vf = data;
 	GtkTreeIter iter;
+	GtkTreePath *cursor_path;
 
-	if (!path_currently_selected &&
-	    gtk_tree_model_get_iter(store, &iter, tpath))
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(vf->listview), &cursor_path, NULL);
+	if (cursor_path)
 		{
+		gtk_tree_model_get_iter(store, &iter, cursor_path);
 		gtk_tree_model_get(store, &iter, FILE_COLUMN_POINTER, &VFLIST(vf)->select_fd, -1);
+		gtk_tree_path_free(cursor_path);
 		}
 	else
 		{
