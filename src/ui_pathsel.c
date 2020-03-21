@@ -49,6 +49,7 @@
 #include "ui_tabcomp.h"
 #include "ui_tree_edit.h"
 #include "uri_utils.h"
+#include "utilops.h"
 
 
 #define DEST_WIDTH 250
@@ -734,24 +735,14 @@ static void dest_new_dir_cb(GtkWidget *widget, gpointer data)
 {
     Dest_Data *dd = data;
     gchar *path;
-    gchar *buf;
-    const gchar *tmp;
-    gboolean from_text = FALSE;
+    GtkWidget *dialog_window;
 
-    tmp = gtk_entry_get_text(GTK_ENTRY(dd->entry));
-    if (!isname(tmp))
+    dialog_window = gtk_widget_get_toplevel(widget);
+    path = new_folder(GTK_WINDOW(dialog_window), dd->path);
+
+    if (path == NULL)
     {
-        buf = remove_trailing_slash(tmp);
-        path = g_strdup(buf);
-        g_free(buf);
-        buf = remove_level_from_path(path);
-        from_text = TRUE;
-    }
-    else
-    {
-        buf = g_build_filename(dd->path, _("New folder"), NULL);
-        path = unique_filename(buf, NULL, " ", FALSE);
-        g_free(buf);
+        return;
     }
 
     if (!mkdir_utf8(path, 0755))
@@ -769,12 +760,6 @@ static void dest_new_dir_cb(GtkWidget *widget, gpointer data)
         GtkListStore *store;
         const gchar *text;
 
-        if (from_text)
-        {
-            dest_populate(dd, buf);
-            g_free(buf);
-        }
-
         store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dd->d_view)));
 
         text = filename_from_path(path);
@@ -785,10 +770,10 @@ static void dest_new_dir_cb(GtkWidget *widget, gpointer data)
         if (dd->right_click_path) gtk_tree_path_free(dd->right_click_path);
         dd->right_click_path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
 
-        tree_edit_by_path(GTK_TREE_VIEW(dd->d_view), dd->right_click_path, 0, text,
-                  dest_view_rename_cb, dd);
         gtk_entry_set_text(GTK_ENTRY(dd->entry), path);
     }
+
+    gtk_widget_grab_focus(GTK_WIDGET(dd->entry));
 
     g_free(path);
 }

@@ -555,10 +555,14 @@ static void vd_toggle_show_hidden_files_cb(GtkWidget *widget, gpointer data)
     if (vd->layout) layout_refresh(vd->layout);
 }
 
-static void vd_pop_menu_new_rename_cb(gboolean success, const gchar *new_path, gpointer data)
+static void vd_pop_menu_new_folder_cb(gboolean success, const gchar *new_path, gpointer data)
 {
     ViewDir *vd = data;
     FileData *fd = NULL;
+    GtkTreeIter iter;
+    GtkTreePath *tpath;
+    GtkTreeModel *store;
+
     if (!success) return;
 
     switch (vd->type)
@@ -577,7 +581,13 @@ static void vd_pop_menu_new_rename_cb(gboolean success, const gchar *new_path, g
         }
             break;
     }
-    vd_rename_by_data(vd, fd);
+
+    if (!fd || !vd_find_row(vd, fd, &iter)) return;
+    store = gtk_tree_view_get_model(GTK_TREE_VIEW(vd->view));
+    tpath = gtk_tree_model_get_path(store, &iter);
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(vd->view), tpath, NULL, FALSE);
+
+    gtk_tree_path_free(tpath);
 }
 
 static void vd_pop_menu_new_cb(GtkWidget *widget, gpointer data)
@@ -601,7 +611,7 @@ static void vd_pop_menu_new_cb(GtkWidget *widget, gpointer data)
             break;
     }
 
-    file_util_create_dir(dir_fd, widget, vd_pop_menu_new_rename_cb, vd);
+    file_util_create_dir(dir_fd, vd->layout->window, vd_pop_menu_new_folder_cb, vd);
 }
 
 static void vd_pop_menu_rename_cb(GtkWidget *widget, gpointer data)
@@ -731,7 +741,7 @@ GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd)
 
 void vd_new_folder(ViewDir *vd, FileData *dir_fd)
 {
-    file_util_create_dir(dir_fd, vd->widget, vd_pop_menu_new_rename_cb, vd);
+    file_util_create_dir(dir_fd, vd->layout->window, vd_pop_menu_new_folder_cb, vd);
 }
 
 /*
