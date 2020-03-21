@@ -580,6 +580,41 @@ static void vd_pop_menu_new_rename_cb(gboolean success, const gchar *new_path, g
     vd_rename_by_data(vd, fd);
 }
 
+static void vd_pop_menu_new_folder_cb(gboolean success, const gchar *new_path, gpointer data)
+{
+    ViewDir *vd = data;
+    FileData *fd = NULL;
+    GtkTreeIter iter;
+    GtkTreePath *tpath;
+    GtkTreeModel *store;
+
+    if (!success) return;
+
+    switch (vd->type)
+    {
+        case DIRVIEW_LIST:
+        {
+            vd_refresh(vd);
+            fd = vdlist_row_by_path(vd, new_path, NULL);
+        };
+            break;
+        case DIRVIEW_TREE:
+        {
+            FileData *new_fd = file_data_new_dir(new_path);
+            fd = vdtree_populate_path(vd, new_fd, TRUE, TRUE);
+            file_data_unref(new_fd);
+        }
+            break;
+    }
+
+    if (!fd || !vd_find_row(vd, fd, &iter)) return;
+    store = gtk_tree_view_get_model(GTK_TREE_VIEW(vd->view));
+    tpath = gtk_tree_model_get_path(store, &iter);
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(vd->view), tpath, NULL, FALSE);
+
+    gtk_tree_path_free(tpath);
+}
+
 static void vd_pop_menu_new_cb(GtkWidget *widget, gpointer data)
 {
     ViewDir *vd = data;
@@ -601,7 +636,7 @@ static void vd_pop_menu_new_cb(GtkWidget *widget, gpointer data)
             break;
     }
 
-    file_util_create_dir(dir_fd, widget, vd_pop_menu_new_rename_cb, vd);
+    file_util_create_dir(dir_fd, vd->layout->window, vd_pop_menu_new_folder_cb, vd);
 }
 
 static void vd_pop_menu_rename_cb(GtkWidget *widget, gpointer data)
@@ -731,7 +766,7 @@ GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd)
 
 void vd_new_folder(ViewDir *vd, FileData *dir_fd)
 {
-    file_util_create_dir(dir_fd, vd->widget, vd_pop_menu_new_rename_cb, vd);
+    file_util_create_dir(dir_fd, vd->layout->window, vd_pop_menu_new_folder_cb, vd);
 }
 
 /*

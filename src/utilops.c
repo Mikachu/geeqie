@@ -2703,16 +2703,23 @@ static void file_util_create_dir_full(FileData *fd, const gchar *dest_path, GtkW
 
     if (dest_path)
     {
+        g_assert_not_reached(); // not used in current design
         ud->dest_path = g_strdup(dest_path);
     }
     else
     {
-        gchar *buf = g_build_filename(fd->path, _("New folder"), NULL);
-        ud->dest_path = unique_filename(buf, NULL, " ", FALSE);
-        g_free(buf);
+        gchar *buf = new_folder(GTK_WINDOW(parent), fd->path);
+        if (!buf)
+        {
+            ud->phase = UTILITY_PHASE_CANCEL;
+            ud->dir_fd = NULL;
+        }
+        else
+        {
+            ud->dest_path = buf;
+            ud->dir_fd = file_data_new_dir(ud->dest_path);
+        }
     }
-
-    ud->dir_fd = file_data_new_dir(ud->dest_path);
 
     ud->done_func = done_func;
     ud->done_data = done_data;
@@ -2938,5 +2945,121 @@ void file_util_copy_path_list_to_clipboard(GList *list)
     gtk_clipboard_set_text(clipboard, new->str, new->len);
     g_string_free(new, TRUE);
     filelist_free(list);
+}
+
+static gboolean new_folder_entry_activate_cb(GtkWidget *widget, gpointer data)
+{
+    GtkDialog *dialog = data;
+
+    gtk_dialog_response(dialog, GTK_RESPONSE_ACCEPT);
+}
+
+gchar *new_folder(GtkWindow *window , gchar *path)
+{
+    GtkWidget *hbox;
+    GtkWidget *vbox;
+    GtkWidget *label;
+    gchar *buf;
+    gchar *folder_name;
+    gchar *folder_path;
+    GtkWidget *image;
+    GtkWidget *folder_name_entry;
+    GtkWidget *dialog;
+    GtkWidget *dialog_warning;
+    GtkWidget *content_area;
+    gboolean ok_or_cancel = FALSE;
+    gint result;
+    gchar *new_folder_name;
+    gchar *new_folder_path_full = NULL;
+    gchar *window_title;
+    PangoLayout *layout;
+    gint width, height;
+
+    buf = g_build_filename(path, _("New folder"), NULL);
+    folder_path = unique_filename(buf, NULL, " ", FALSE);
+    folder_name = g_path_get_basename(folder_path);
+    window_title = g_strconcat(_("Create Folder - "), GQ_APPNAME, NULL);
+
+    dialog = gtk_dialog_new_with_buttons(window_title,
+                                        GTK_WINDOW(window),
+                                        GTK_DIALOG_MODAL,
+                                        GTK_STOCK_CANCEL,
+                                        GTK_RESPONSE_REJECT,
+                                        GTK_STOCK_OK,
+                                        GTK_RESPONSE_ACCEPT,
+                                        NULL);
+
+    layout = gtk_widget_create_pango_layout(GTK_WIDGET(dialog), window_title);
+    pango_layout_get_pixel_size(layout, &width, &height);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), width * 2, -1);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    vbox = gtk_vbox_new(FALSE, PREF_PAD_GAP);
+    gtk_box_pack_start(GTK_BOX(content_area), vbox, FALSE, FALSE, 0);
+
+    hbox = gtk_hbox_new(FALSE, PREF_PAD_GAP);
+    gtk_container_set_border_width(GTK_CONTAINER(hbox), PREF_PAD_GAP);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+    image = gtk_image_new_from_icon_name("dialog-question", GTK_ICON_SIZE_DIALOG);
+    gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
+    label = gtk_label_new(_("Create new folder"));
+    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+
+    folder_name_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(folder_name_entry), folder_name);
+    gtk_box_pack_start(GTK_BOX(vbox), folder_name_entry, FALSE, FALSE, PREF_PAD_SPACE);
+    g_signal_connect(G_OBJECT(folder_name_entry), "activate", G_CALLBACK(new_folder_entry_activate_cb), dialog);
+
+    gtk_widget_show_all(dialog);
+
+    while (ok_or_cancel == FALSE)
+    {
+        result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+        switch (result)
+        {
+            case GTK_RESPONSE_ACCEPT:
+                new_folder_name = g_strdup(gtk_entry_get_text(GTK_ENTRY(folder_name_entry)));
+                new_folder_path_full = g_build_filename(path, new_folder_name, NULL);
+                if (isname(new_folder_path_full))
+                {
+                    dialog_warning = gtk_message_dialog_new(GTK_WINDOW(window),
+                                            GTK_DIALOG_MODAL,
+                                            GTK_MESSAGE_WARNING,
+                                            GTK_BUTTONS_OK,
+                                            _("Cannot create folder:"));
+                    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog_warning), "%s", new_folder_name);
+                    gtk_window_set_title(GTK_WINDOW(dialog_warning), GQ_APPNAME);
+
+                    gtk_dialog_run(GTK_DIALOG(dialog_warning));
+
+                    gtk_widget_destroy(dialog_warning);
+                    g_free(new_folder_path_full);
+                    new_folder_path_full = NULL;
+                    ok_or_cancel = FALSE;
+                }
+                else
+                {
+                    ok_or_cancel = TRUE;
+                }
+                g_free(new_folder_name);
+                break;
+            case GTK_RESPONSE_REJECT:
+                ok_or_cancel = TRUE;
+                break;
+            default:
+                ok_or_cancel = TRUE;
+                break;
+          }
+    }
+
+    g_free(buf);
+    g_free(folder_path);
+    g_free(folder_name);
+    g_object_unref(layout);
+    g_free(window_title);
+    gtk_widget_destroy(dialog);
+
+    return new_folder_path_full;
 }
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

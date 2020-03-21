@@ -71,5 +71,6 @@ void file_util_delete_dir(FileData *source_fd, GtkWidget *parent);
 void file_util_copy_path_to_clipboard(FileData *fd);
 void file_util_copy_path_list_to_clipboard(GList *list);
 
+gchar *new_folder(GtkWindow *window, gchar *path);
 #endif
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
