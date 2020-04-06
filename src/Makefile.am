@@ -264,6 +264,8 @@ EXTRA_DIST = \
 	keymap_template.c \
 	$(extra_SLIK)
 
+image-load.o: gq-marshal.h
+
 gq-marshal.h: gq-marshal.list
 	$(GLIB_GENMARSHAL) --prefix=gq_marshal $(srcdir)/gq-marshal.list --header >$@
 
