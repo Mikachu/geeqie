@@ -1155,13 +1155,15 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
 		if (b->width == 0) image_load_dimensions(b->fd, &b->width, &b->height);
 		if (a->width != b->width || a->height != b->height) return FALSE;
 		}
-	if (mask & DUPE_MATCH_SIM_HIGH ||
-	    mask & DUPE_MATCH_SIM_MED ||
-	    mask & DUPE_MATCH_SIM_LOW ||
-	    mask & DUPE_MATCH_SIM_CUSTOM)
+	if (mask & (DUPE_MATCH_SIM_HIGH | DUPE_MATCH_SIM_MED | DUPE_MATCH_SIM_LOW | DUPE_MATCH_SIM_CUSTOM))
 		{
 		gdouble f;
 		gdouble m;
+		if (options->duplicates_days_threshold) {
+		    if (abs(a->fd->date - b->fd->date) > 86400 * options->duplicates_days_threshold) {
+			return FALSE;
+		    }
+		}
 
 		if (mask & DUPE_MATCH_SIM_HIGH) m = 0.95;
 		else if (mask & DUPE_MATCH_SIM_MED) m = 0.90;

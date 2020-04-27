@@ -41,6 +41,7 @@ struct _ConfOptions
 	gboolean update_on_time_change;
 
 	guint duplicates_similarity_threshold;
+	guint duplicates_days_threshold;
 	gboolean rot_invariant_sim;
 
 	gint open_recent_list_maxsize;
@@ -152,14 +153,14 @@ struct _ConfOptions
 		gchar *template_string;
 		gint x;
 		gint y;
-		guint16 text_red;
-		guint16 text_green;
-		guint16 text_blue;
-		guint16 text_alpha;
-		guint16 background_red;
-		guint16 background_green;
-		guint16 background_blue;
-		guint16 background_alpha;
+		guint text_red;
+		guint text_green;
+		guint text_blue;
+		guint text_alpha;
+		guint background_red;
+		guint background_green;
+		guint background_blue;
+		guint background_alpha;
 		gchar *font;
 	} image_overlay;
 

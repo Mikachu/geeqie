@@ -292,6 +292,7 @@ static void write_global_attributes(GString *outstr, gint indent)
 	WRITE_NL(); WRITE_UINT(*options, keyboard_scroll_step);
 
 	WRITE_NL(); WRITE_UINT(*options, duplicates_similarity_threshold);
+	WRITE_NL(); WRITE_UINT(*options, duplicates_days_threshold);
 	WRITE_NL(); WRITE_BOOL(*options, rot_invariant_sim);
 	WRITE_SEPARATOR();
 
@@ -569,6 +570,7 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
 		if (READ_BOOL(*options, update_on_time_change)) continue;
 
 		if (READ_UINT_CLAMP(*options, duplicates_similarity_threshold, 0, 100)) continue;
+		if (READ_UINT(*options, duplicates_days_threshold)) continue;
 		if (READ_BOOL(*options, rot_invariant_sim)) continue;
 
 		if (READ_BOOL(*options, progressive_key_scrolling)) continue;

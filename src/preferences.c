@@ -321,6 +321,7 @@ static void config_window_apply(void)
 	options->image.exif_proof_rotate_enable = c_options->image.exif_proof_rotate_enable;
 
 	options->duplicates_similarity_threshold = c_options->duplicates_similarity_threshold;
+	options->duplicates_days_threshold = c_options->duplicates_days_threshold;
 	options->rot_invariant_sim = c_options->rot_invariant_sim;
 
 	options->tree_descend_subdirs = c_options->tree_descend_subdirs;
@@ -2151,6 +2152,8 @@ static void config_tab_behavior(GtkWidget *notebook)
 
 	pref_spin_new_int(group, _("Custom similarity threshold:"), NULL,
 			  0, 100, 1, options->duplicates_similarity_threshold, (int *)&c_options->duplicates_similarity_threshold);
+	pref_spin_new_int(group, _("Compare only files within day range:"), NULL,
+			  0, 3650, 1, options->duplicates_days_threshold, (int *)&c_options->duplicates_days_threshold);
 	pref_checkbox_new_int(group, _("Rotation invariant duplicate check"),
 			      options->rot_invariant_sim, &c_options->rot_invariant_sim);
 

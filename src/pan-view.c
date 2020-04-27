@@ -30,6 +30,7 @@
 #include "fullscreen.h"
 #include "history_list.h"
 #include "img-view.h"
+#include "layout.h"
 #include "menu.h"
 #include "misc.h"
 #include "pan-types.h"
