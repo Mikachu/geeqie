@@ -1726,7 +1726,7 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
     }
     else if (fd)
     {
-        if (isfile(fd->path))
+        if (isfile(fd->path) && !g_file_test(fd->path, G_FILE_TEST_IS_SYMLINK))
         {
             di = dupe_item_new(fd);
         }
