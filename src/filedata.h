@@ -158,7 +158,4 @@ gboolean file_data_register_notify_func(FileDataNotifyFunc func, gpointer data, 
 gboolean file_data_unregister_notify_func(FileDataNotifyFunc func, gpointer data);
 void file_data_send_notification(FileData *fd, NotifyType type);
 
-gboolean file_data_register_real_time_monitor(FileData *fd);
-gboolean file_data_unregister_real_time_monitor(FileData *fd);
-
 #endif
