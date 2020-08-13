@@ -872,20 +872,13 @@ static void image_change_real(ImageWindow *imd, FileData *fd,
 	imd->collection = cd;
 	imd->collection_info = info;
 
-	if (imd->auto_refresh && imd->image_fd)
-		file_data_unregister_real_time_monitor(imd->image_fd);
-
 	file_data_unref(imd->image_fd);
 	imd->image_fd = file_data_ref(fd);
-
 
 	image_change_complete(imd, zoom);
 
 	image_update_title(imd);
 	image_state_set(imd, IMAGE_STATE_IMAGE);
-
-	if (imd->auto_refresh && imd->image_fd)
-		file_data_register_real_time_monitor(imd->image_fd);
 }
 
 /*
@@ -1034,17 +1027,11 @@ FileData *image_get_fd(ImageWindow *imd)
 /* merely changes path string, does not change the image! */
 void image_set_fd(ImageWindow *imd, FileData *fd)
 {
-	if (imd->auto_refresh && imd->image_fd)
-		file_data_unregister_real_time_monitor(imd->image_fd);
-
 	file_data_unref(imd->image_fd);
 	imd->image_fd = file_data_ref(fd);
 
 	image_update_title(imd);
 	image_state_set(imd, IMAGE_STATE_IMAGE);
-
-	if (imd->auto_refresh && imd->image_fd)
-		file_data_register_real_time_monitor(imd->image_fd);
 }
 
 /* load a new image */
@@ -1524,13 +1511,7 @@ static void image_notify_cb(FileData *fd, NotifyType type, gpointer data)
 
 void image_auto_refresh_enable(ImageWindow *imd, gboolean enable)
 {
-	if (!enable && imd->auto_refresh && imd->image_fd)
-		file_data_unregister_real_time_monitor(imd->image_fd);
-
-	if (enable && !imd->auto_refresh && imd->image_fd)
-		file_data_register_real_time_monitor(imd->image_fd);
-
-	imd->auto_refresh = enable;
+	imd->auto_refresh = 0;
 }
 
 void image_top_window_set_sync(ImageWindow *imd, gboolean allow_sync)
@@ -1763,9 +1744,6 @@ void image_options_sync(void)
 static void image_free(ImageWindow *imd)
 {
 	image_list = g_list_remove(image_list, imd);
-
-	if (imd->auto_refresh && imd->image_fd)
-		file_data_unregister_real_time_monitor(imd->image_fd);
 
 	file_data_unregister_notify_func(image_notify_cb, imd);
 

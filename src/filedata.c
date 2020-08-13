@@ -1294,6 +1294,9 @@ FileData *file_data_new_group(const gchar *path_utf8)
 
 	dir = remove_level_from_path(path_utf8);
 
+	if (!file_data_pool)
+		file_data_pool = g_hash_table_new(g_str_hash, g_str_equal);
+
 	fd = g_hash_table_lookup(file_data_pool, path_utf8);
 	if (!fd) fd = file_data_new(path_utf8, &st, TRUE);
 	if (fd)
@@ -2930,77 +2933,4 @@ void file_data_send_notification(FileData *fd, NotifyType type)
     */
 }
 
-static GHashTable *file_data_monitor_pool = NULL;
-static guint realtime_monitor_id = 0; /* event source id */
-
-static void realtime_monitor_check_cb(gpointer key, gpointer value, gpointer data)
-{
-	FileData *fd = key;
-
-	file_data_check_changed_files(fd);
-
-	DEBUG_1("monitor %s", fd->path);
-}
-
-static gboolean realtime_monitor_cb(gpointer data)
-{
-	if (!options->update_on_time_change) return TRUE;
-	g_hash_table_foreach(file_data_monitor_pool, realtime_monitor_check_cb, NULL);
-	return TRUE;
-}
-
-gboolean file_data_register_real_time_monitor(FileData *fd)
-{
-	gint count;
-
-	file_data_ref(fd);
-
-	if (!file_data_monitor_pool)
-		file_data_monitor_pool = g_hash_table_new(g_direct_hash, g_direct_equal);
-
-	count = GPOINTER_TO_INT(g_hash_table_lookup(file_data_monitor_pool, fd));
-
-	DEBUG_1("Register realtime %d %s", count, fd->path);
-
-	count++;
-	g_hash_table_insert(file_data_monitor_pool, fd, GINT_TO_POINTER(count));
-
-	if (!realtime_monitor_id)
-		{
-		realtime_monitor_id = g_timeout_add(5000, realtime_monitor_cb, NULL);
-		}
-
-	return TRUE;
-}
-
-gboolean file_data_unregister_real_time_monitor(FileData *fd)
-{
-	gint count;
-
-	g_assert(file_data_monitor_pool);
-
-	count = GPOINTER_TO_INT(g_hash_table_lookup(file_data_monitor_pool, fd));
-
-	DEBUG_1("Unregister realtime %d %s", count, fd->path);
-
-	g_assert(count > 0);
-
-	count--;
-
-	if (count == 0)
-		g_hash_table_remove(file_data_monitor_pool, fd);
-	else
-		g_hash_table_insert(file_data_monitor_pool, fd, GINT_TO_POINTER(count));
-
-	file_data_unref(fd);
-
-	if (g_hash_table_size(file_data_monitor_pool) == 0)
-		{
-		g_source_remove(realtime_monitor_id);
-		realtime_monitor_id = 0;
-		return FALSE;
-		}
-
-	return TRUE;
-}
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

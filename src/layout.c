@@ -877,11 +877,9 @@ gboolean layout_set_fd(LayoutWindow *lw, FileData *fd)
 		{
 		if (lw->dir_fd)
 			{
-			file_data_unregister_real_time_monitor(lw->dir_fd);
 			file_data_unref(lw->dir_fd);
 			}
 		lw->dir_fd = file_data_ref(fd);
-		file_data_register_real_time_monitor(fd);
 		}
 	else
 		{
@@ -897,11 +895,9 @@ gboolean layout_set_fd(LayoutWindow *lw, FileData *fd)
 			{
 			if (lw->dir_fd)
 				{
-				file_data_unregister_real_time_monitor(lw->dir_fd);
 				file_data_unref(lw->dir_fd);
 				}
 			lw->dir_fd = file_data_new_dir(base);
-			file_data_register_real_time_monitor(lw->dir_fd);
 			g_free(base);
 			}
 		else
@@ -1562,7 +1558,6 @@ void layout_style_set(LayoutWindow *lw, gint style, const gchar *order)
 	layout_image_full_screen_stop(lw);
 
 	dir_fd = lw->dir_fd;
-	if (dir_fd) file_data_unregister_real_time_monitor(dir_fd);
 	lw->dir_fd = NULL;
 
 	layout_geometry_get_dividers(lw, &lw->options.main_window.hdivider_pos, &lw->options.main_window.vdivider_pos);
@@ -2064,7 +2059,6 @@ void layout_free(LayoutWindow *lw)
 
 	if (lw->dir_fd)
 		{
-		file_data_unregister_real_time_monitor(lw->dir_fd);
 		file_data_unref(lw->dir_fd);
 		}
 
