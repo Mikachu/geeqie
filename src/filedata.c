@@ -1209,40 +1209,39 @@ static gboolean filelist_read_real(const gchar *dir_path, GList **files, GList *
         if (!options->file_filter.show_hidden_files && is_hidden_file(name))
             continue;
 
+        errno = 0;
         filepath = g_build_filename(pathl, name, NULL);
-        if (stat_func(filepath, &ent_sbuf) >= 0)
+        /* don't stat files if we don't care about them */
+        if (dir->d_type == DT_DIR || ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) && stat_func(filepath, &ent_sbuf) >= 0&&
+                          S_ISDIR(ent_sbuf.st_mode)))
         {
-            if (S_ISDIR(ent_sbuf.st_mode))
+            /* we ignore the .thumbnails dir for cleanliness */
+            if (dirs &&
+                !(name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) &&
+                strcmp(name, GQ_CACHE_LOCAL_THUMB) != 0 &&
+                strcmp(name, GQ_CACHE_LOCAL_METADATA) != 0 &&
+                strcmp(name, THUMB_FOLDER_LOCAL) != 0 &&
+                ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) || stat_func(filepath, &ent_sbuf) >= 0))
             {
-                /* we ignore the .thumbnails dir for cleanliness */
-                if (dirs &&
-                    !(name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) &&
-                    strcmp(name, GQ_CACHE_LOCAL_THUMB) != 0 &&
-                    strcmp(name, GQ_CACHE_LOCAL_METADATA) != 0 &&
-                    strcmp(name, THUMB_FOLDER_LOCAL) != 0)
-                {
                     dlist = g_list_prepend(dlist, file_data_new_local(filepath, &ent_sbuf, TRUE));
-                }
-            }
-            else
-            {
-                if (files && filter_name_exists(name))
-                {
-                    FileData *fd = file_data_new_local(filepath, &ent_sbuf, FALSE);
-                    flist = g_list_prepend(flist, fd);
-                    if (fd->sidecar_priority && !fd->disable_grouping)
-                    {
-                        file_data_basename_hash_insert(basename_hash, fd);
-                    }
-                }
             }
         }
         else
         {
-            if (errno == EOVERFLOW)
+            if (files && filter_name_exists(name) &&
+                ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) || stat_func(filepath, &ent_sbuf) >= 0))
             {
-                log_printf("stat(): EOVERFLOW, skip '%s'", filepath);
+                FileData *fd = file_data_new_local(filepath, &ent_sbuf, FALSE);
+                flist = g_list_prepend(flist, fd);
+                if (fd->sidecar_priority && !fd->disable_grouping)
+                {
+                    file_data_basename_hash_insert(basename_hash, fd);
+                }
             }
+        }
+        if (errno == EOVERFLOW)
+        {
+            log_printf("stat(): EOVERFLOW, skip '%s'", filepath);
         }
         g_free(filepath);
     }
@@ -1293,6 +1292,9 @@ FileData *file_data_new_group(const gchar *path_utf8)
         return file_data_new(path_utf8, &st, TRUE);
 
     dir = remove_level_from_path(path_utf8);
+
+    if (!file_data_pool)
+        file_data_pool = g_hash_table_new(g_str_hash, g_str_equal);
 
     fd = g_hash_table_lookup(file_data_pool, path_utf8);
     if (!fd) fd = file_data_new(path_utf8, &st, TRUE);
@@ -2930,77 +2932,4 @@ void file_data_send_notification(FileData *fd, NotifyType type)
     */
 }
 
-static GHashTable *file_data_monitor_pool = NULL;
-static guint realtime_monitor_id = 0; /* event source id */
-
-static void realtime_monitor_check_cb(gpointer key, gpointer value, gpointer data)
-{
-    FileData *fd = key;
-
-    file_data_check_changed_files(fd);
-
-    DEBUG_1("monitor %s", fd->path);
-}
-
-static gboolean realtime_monitor_cb(gpointer data)
-{
-    if (!options->update_on_time_change) return TRUE;
-    g_hash_table_foreach(file_data_monitor_pool, realtime_monitor_check_cb, NULL);
-    return TRUE;
-}
-
-gboolean file_data_register_real_time_monitor(FileData *fd)
-{
-    gint count;
-
-    file_data_ref(fd);
-
-    if (!file_data_monitor_pool)
-        file_data_monitor_pool = g_hash_table_new(g_direct_hash, g_direct_equal);
-
-    count = GPOINTER_TO_INT(g_hash_table_lookup(file_data_monitor_pool, fd));
-
-    DEBUG_1("Register realtime %d %s", count, fd->path);
-
-    count++;
-    g_hash_table_insert(file_data_monitor_pool, fd, GINT_TO_POINTER(count));
-
-    if (!realtime_monitor_id)
-    {
-        realtime_monitor_id = g_timeout_add(5000, realtime_monitor_cb, NULL);
-    }
-
-    return TRUE;
-}
-
-gboolean file_data_unregister_real_time_monitor(FileData *fd)
-{
-    gint count;
-
-    g_assert(file_data_monitor_pool);
-
-    count = GPOINTER_TO_INT(g_hash_table_lookup(file_data_monitor_pool, fd));
-
-    DEBUG_1("Unregister realtime %d %s", count, fd->path);
-
-    g_assert(count > 0);
-
-    count--;
-
-    if (count == 0)
-        g_hash_table_remove(file_data_monitor_pool, fd);
-    else
-        g_hash_table_insert(file_data_monitor_pool, fd, GINT_TO_POINTER(count));
-
-    file_data_unref(fd);
-
-    if (g_hash_table_size(file_data_monitor_pool) == 0)
-    {
-        g_source_remove(realtime_monitor_id);
-        realtime_monitor_id = 0;
-        return FALSE;
-    }
-
-    return TRUE;
-}
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
