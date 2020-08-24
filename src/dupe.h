@@ -85,6 +85,9 @@ struct _DupeWindow
     GtkWidget *status_label;
     GtkWidget *extra_label;
     GtkWidget *button_thumbs;
+    GList *add_files_queue;
+    guint add_files_queue_id;
+    GtkWidget *controls_box;
 
     gboolean show_thumbs;
 

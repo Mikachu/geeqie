@@ -53,6 +53,7 @@
 
 #define DUPE_DEF_WIDTH 800
 #define DUPE_DEF_HEIGHT 400
+#define DUPE_PROGRESS_PULSE_STEP 0.0001
 
 /* column assignment order (simply change them here) */
 enum {
@@ -1362,6 +1363,17 @@ static void dupe_check_stop(DupeWindow *dw)
         widget_set_cursor(dw->listview, -1);
     }
 
+    if (dw->add_files_queue_id)
+    {
+        g_source_remove(dw->add_files_queue_id);
+        dw->add_files_queue_id = 0;
+        gtk_widget_set_sensitive(dw->controls_box, TRUE);
+        filelist_free(dw->add_files_queue);
+        dw->add_files_queue = NULL;
+        dupe_window_update_progress(dw, NULL, 0.0, FALSE);
+        widget_set_cursor(dw->listview, -1);
+    }
+
     thumb_loader_free(dw->thumb_loader);
     dw->thumb_loader = NULL;
 
@@ -1611,6 +1623,15 @@ static void dupe_check_start(DupeWindow *dw)
     dw->idle_id = g_idle_add(dupe_check_cb, dw);
 }
 
+static gboolean dupe_check_start_cb(gpointer data)
+{
+    DupeWindow *dw = data;
+
+    dupe_check_start(dw);
+
+    return FALSE;
+}
+
 /*
  * ------------------------------------------------------------------
  * Item addition, removal
@@ -1715,6 +1736,136 @@ static gboolean dupe_item_remove_by_path(DupeWindow *dw, const gchar *path)
     return TRUE;
 }
 
+static gboolean dupe_files_add_queue_cb(gpointer data)
+{
+    DupeItem *di = NULL;
+    DupeWindow *dw = data;
+    FileData *fd;
+    GList *queue = dw->add_files_queue;
+
+    gtk_progress_bar_pulse(GTK_PROGRESS_BAR(dw->extra_label));
+
+    if (!queue)
+    {
+        dw->add_files_queue_id = 0;
+        g_idle_add(dupe_check_start_cb, dw);
+        gtk_widget_set_sensitive(dw->controls_box, TRUE);
+        return FALSE;
+    }
+
+    fd = queue->data;
+    if (fd)
+    {
+        if (isfile(fd->path) && !g_file_test(fd->path, G_FILE_TEST_IS_SYMLINK))
+        {
+            di = dupe_item_new(fd);
+        }
+        else if (isdir(fd->path))
+        {
+            GList *f, *d;
+            dw->add_files_queue = g_list_remove(dw->add_files_queue, g_list_first(dw->add_files_queue)->data);
+
+            if (filelist_read(fd, &f, &d))
+            {
+                GList *work;
+
+                f = filelist_filter(f, FALSE);
+                d = filelist_filter(d, TRUE);
+
+                work = f;
+                while (work)
+                {
+                    dw->add_files_queue = g_list_prepend(dw->add_files_queue, work->data);
+                    work = work->next;
+                }
+                g_list_free(f);
+                work = d;
+                while (work)
+                {
+                    dw->add_files_queue = g_list_prepend(dw->add_files_queue, work->data);
+                    work = work->next;
+                }
+                g_list_free(d);
+            }
+            file_data_unref(fd);
+        }
+        else
+        {
+            /* Not a file and not a dir */
+            file_data_unref(fd);
+            dw->add_files_queue = g_list_remove(dw->add_files_queue, g_list_first(dw->add_files_queue)->data);
+        }
+    }
+
+    if (!di)
+    {
+        /* A dir was found. Process the contents on next entry */
+        return TRUE;
+    }
+
+    dw->add_files_queue = g_list_remove(dw->add_files_queue, g_list_first(dw->add_files_queue)->data);
+    file_data_unref(fd);
+
+    dupe_item_read_cache(di);
+
+    /* Ensure images in the lists have unique FileDatas */
+    GList *work;
+    DupeItem *di_list;
+    work = g_list_first(dw->list);
+    while (work)
+    {
+        di_list = work->data;
+        if (di_list->fd == di->fd)
+        {
+            dupe_item_free(di);
+            return TRUE;
+        }
+        else
+        {
+            work = work->next;
+        }
+    }
+
+    if (dw->second_list)
+    {
+        work = g_list_first(dw->second_list);
+        while (work)
+        {
+            di_list = work->data;
+            if (di_list->fd == di->fd)
+            {
+                dupe_item_free(di);
+                return TRUE;
+            }
+            else
+            {
+                work = work->next;
+            }
+        }
+    }
+
+    if (dw->second_drop)
+    {
+        dupe_second_add(dw, di);
+    }
+    else
+    {
+        dw->list = g_list_prepend(dw->list, di);
+    }
+
+    if (dw->add_files_queue)
+    {
+        return TRUE;
+    }
+    else
+    {
+        dw->add_files_queue_id = 0;
+        g_idle_add(dupe_check_start_cb, dw);
+        gtk_widget_set_sensitive(dw->controls_box, TRUE);
+        return FALSE;
+    }
+}
+
 static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectInfo *info,
                FileData *fd, gboolean recurse)
 {
@@ -1769,6 +1920,7 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
         di_list = work->data;
         if (di_list->fd == di->fd)
         {
+            dupe_item_free(di);
             return;
         }
         else
@@ -1785,6 +1937,7 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
             di_list = work->data;
             if (di_list->fd == di->fd)
             {
+                dupe_item_free(di);
                 return;
             }
             else
@@ -1827,11 +1980,39 @@ void dupe_window_add_files(DupeWindow *dw, GList *list, gboolean recurse)
     {
         FileData *fd = work->data;
         work = work->next;
+        if (isdir(fd->path) && !recurse)
+        {
+            GList *f, *d;
 
-        dupe_files_add(dw, NULL, NULL, fd, recurse);
+            if (filelist_read(fd, &f, &d))
+            {
+                GList *work_file;
+                work_file = f;
+
+                while (work_file)
+                {
+                    /* Add only the files, ignore the dirs when no recurse */
+                    dw->add_files_queue = g_list_prepend(dw->add_files_queue, work_file->data);
+                    work_file = work_file->next;
+                }
+                g_list_free(f);
+                filelist_free(d);
+            }
+        }
+        else
+        {
+            dw->add_files_queue = g_list_prepend(dw->add_files_queue, file_data_ref(fd));
+        }
     }
+    if (dw->add_files_queue_id == 0)
+    {
+        gtk_progress_bar_pulse(GTK_PROGRESS_BAR(dw->extra_label));
+        gtk_progress_bar_set_pulse_step(GTK_PROGRESS_BAR(dw->extra_label), DUPE_PROGRESS_PULSE_STEP);
+        gtk_progress_bar_set_text(GTK_PROGRESS_BAR(dw->extra_label), _("Loading file list"));
 
-    dupe_check_start(dw);
+        dw->add_files_queue_id = g_idle_add(dupe_files_add_queue_cb, dw);
+        gtk_widget_set_sensitive(dw->controls_box, FALSE);
+    }
 }
 
 static void dupe_item_update(DupeWindow *dw, DupeItem *di)
@@ -3158,6 +3339,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     GtkWidget *scrolled;
     GtkWidget *frame;
     GtkWidget *status_box;
+    GtkWidget *controls_box;
     GtkWidget *label;
     GtkWidget *button;
     GtkListStore *store;
@@ -3165,6 +3347,8 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     GdkGeometry geometry;
 
     dw = g_new0(DupeWindow, 1);
+    dw->add_files_queue = NULL;
+    dw->add_files_queue_id = 0;
 
     dw->match_mask = match_mask;
 
@@ -3261,21 +3445,22 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
 
     pref_line(dw->second_vbox, GTK_ORIENTATION_HORIZONTAL);
 
-    status_box = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
+    controls_box = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
+    dw->controls_box = controls_box;
 
     label = gtk_label_new(_("Compare by:"));
-    gtk_box_pack_start(GTK_BOX(status_box), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
 
     dupe_menu_setup(dw);
-    gtk_box_pack_start(GTK_BOX(status_box), dw->combo, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(controls_box), dw->combo, FALSE, FALSE, 0);
     gtk_widget_show(dw->combo);
 
     dw->button_thumbs = gtk_check_button_new_with_label(_("Thumbnails"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dw->button_thumbs), dw->show_thumbs);
     g_signal_connect(G_OBJECT(dw->button_thumbs), "toggled",
              G_CALLBACK(dupe_window_show_thumb_cb), dw);
-    gtk_box_pack_start(GTK_BOX(status_box), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(dw->button_thumbs);
 
     button = gtk_check_button_new_with_label(_("Ignore Rotation"));
@@ -3283,14 +3468,14 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), options->rot_invariant_sim);
     g_signal_connect(G_OBJECT(button), "toggled",
              G_CALLBACK(dupe_window_rotation_invariant_cb), dw);
-    gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
     button = gtk_check_button_new_with_label(_("Compare two file sets"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dw->second_set);
     g_signal_connect(G_OBJECT(button), "toggled",
              G_CALLBACK(dupe_second_set_toggle_cb), dw);
-    gtk_box_pack_end(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_end(GTK_BOX(controls_box), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
     status_box = gtk_hbox_new(FALSE, 0);
@@ -3493,6 +3678,13 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
     GtkWidget *source;
     GList *list = NULL;
     GList *work;
+
+    if (dw->add_files_queue_id > 0)
+    {
+        warning_dialog(_("Find duplicates"), _("Please wait for the current file selection to be loaded."), GTK_STOCK_DIALOG_INFO, dw->window);
+
+        return;
+    }
 
     source = gtk_drag_get_source_widget(context);
     if (source == dw->listview || source == dw->second_listview) return;
