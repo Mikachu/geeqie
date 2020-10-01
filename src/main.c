@@ -134,7 +134,7 @@ static void parse_command_line_add_file(const gchar *file_path, gchar **path, gc
     {
         if (!*path) *path = remove_level_from_path(path_parsed);
         if (!*file) *file = g_strdup(path_parsed);
-        *list = g_list_prepend(*list, file_data_new_group(path_parsed));
+        *list = g_list_prepend(*list, file_data_new_no_grouping(path_parsed));
     }
 }
 
