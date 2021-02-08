@@ -211,7 +211,7 @@ static RemoteConnection *remote_server_open(const gchar *path)
     addr.sun_family = AF_UNIX;
     sun_path_len = MIN(strlen(path) + 1, UNIX_PATH_MAX);
     strncpy(addr.sun_path, path, sun_path_len);
-    if (bind(fd, &addr, sizeof(addr)) == -1 ||
+    if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1 ||
         listen(fd, REMOTE_SERVER_BACKLOG) == -1)
     {
         log_printf("error subscribing to socket: %s\n", strerror(errno));
@@ -260,7 +260,7 @@ static RemoteConnection *remote_client_open(const gchar *path)
     addr.sun_family = AF_UNIX;
     sun_path_len = MIN(strlen(path) + 1, UNIX_PATH_MAX);
     strncpy(addr.sun_path, path, sun_path_len);
-    if (connect(fd, &addr, sizeof(addr)) == -1)
+    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
         DEBUG_1("error connecting to socket: %s", strerror(errno));
         close(fd);
