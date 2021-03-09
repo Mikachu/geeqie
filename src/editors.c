@@ -113,6 +113,7 @@ static GList *editor_mime_types_to_extensions(gchar **mime_types)
     {"image/gif",       ".gif"},
     {"image/jpeg",      ".jpeg;.jpg"},
     {"image/jpg",       ".jpg;.jpeg"},
+    {"image/webp",      ".webp"},
     {"image/pcx",       ".pcx"},
     {"image/png",       ".png"},
     {"image/svg",       ".svg"},
