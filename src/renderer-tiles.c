@@ -123,7 +123,7 @@ struct _RendererTiles
     RendererFuncs f;
     PixbufRenderer *pr;
 
-    gint tile_cache_max;        /* max mb to use for offscreen buffer */
+    gint tile_cache_max;        /* max MiB to use for offscreen buffer */
 
     gint tile_width;
     gint tile_height;

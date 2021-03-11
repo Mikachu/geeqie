@@ -38,7 +38,7 @@
  */
 #define PR_MIN_SCALE_SIZE 8
 
-/* default size of tile cache (mb) */
+/* default size of tile cache (MiB) */
 #define PR_CACHE_SIZE_DEFAULT 8
 
 /* round A up/down to integer count of B */

@@ -1436,7 +1436,7 @@ static void config_tab_general(GtkWidget *notebook)
 
     group = pref_group_new(vbox, FALSE, _("Image loading and caching"), GTK_ORIENTATION_VERTICAL);
 
-    pref_spin_new_int(group, _("Decoded image cache size (Mb):"), NULL,
+    pref_spin_new_int(group, _("Decoded image cache size (MiB):"), NULL,
               0, 1024, 1, options->image.image_cache_max, &c_options->image.image_cache_max);
     pref_checkbox_new_int(group, _("Preload next image"),
                   options->image.enable_read_ahead, &c_options->image.enable_read_ahead);
@@ -2092,7 +2092,7 @@ static void config_tab_behavior(GtkWidget *notebook)
     pref_checkbox_link_sensitivity(ct_button, hbox);
 
     pref_spacer(hbox, PREF_PAD_INDENT - PREF_PAD_GAP);
-    spin = pref_spin_new_int(hbox, _("Maximum size:"), _("MB"),
+    spin = pref_spin_new_int(hbox, _("Maximum size:"), _("MiB"),
                  0, 2048, 1, options->file_ops.safe_delete_folder_maxsize, &c_options->file_ops.safe_delete_folder_maxsize);
     gtk_widget_set_tooltip_markup(spin, _("Set to 0 for unlimited size"));
     button = pref_button_new(NULL, NULL, _("View"), FALSE,
