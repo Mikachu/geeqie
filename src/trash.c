@@ -206,7 +206,7 @@ gchar *file_util_safe_delete_status(void)
         {
             gchar *buf2;
             if (options->file_ops.safe_delete_folder_maxsize > 0)
-                buf2 = g_strdup_printf(_(" (max. %d MB)"), options->file_ops.safe_delete_folder_maxsize);
+                buf2 = g_strdup_printf(_(" (max. %d MiB)"), options->file_ops.safe_delete_folder_maxsize);
             else
                 buf2 = g_strdup("");
 

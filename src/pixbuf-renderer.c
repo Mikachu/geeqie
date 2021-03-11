@@ -268,7 +268,7 @@ static void pixbuf_renderer_class_init(PixbufRendererClass *class)
     g_object_class_install_property(gobject_class,
                     PROP_CACHE_SIZE_DISPLAY,
                     g_param_spec_uint("cache_display",
-                              "Display cache size MB",
+                              "Display cache size MiB",
                               NULL,
                               0,
                               128,
