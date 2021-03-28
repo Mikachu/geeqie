@@ -87,6 +87,8 @@ struct _DupeWindow
     GtkWidget *button_thumbs;
     GList *add_files_queue;
     guint add_files_queue_id;
+    GHashTable *list_cache;
+    GHashTable *second_list_cache;
     GtkWidget *controls_box;
 
     gboolean show_thumbs;

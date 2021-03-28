@@ -93,6 +93,9 @@ static void dupe_dnd_init(DupeWindow *dw);
 
 static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data);
 
+static void dupe_init_list_cache(DupeWindow *dw);
+static void dupe_destroy_list_cache(DupeWindow *dw);
+static gboolean dupe_insert_in_list_cache(DupeWindow *dw, FileData *fd);
 /*
  * ------------------------------------------------------------------
  * Window updates
@@ -1367,6 +1370,7 @@ static void dupe_check_stop(DupeWindow *dw)
     {
         g_source_remove(dw->add_files_queue_id);
         dw->add_files_queue_id = 0;
+        dupe_destroy_list_cache(dw);
         gtk_widget_set_sensitive(dw->controls_box, TRUE);
         filelist_free(dw->add_files_queue);
         dw->add_files_queue = NULL;
@@ -1748,6 +1752,7 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
     if (!queue)
     {
         dw->add_files_queue_id = 0;
+        dupe_destroy_list_cache(dw);
         g_idle_add(dupe_check_start_cb, dw);
         gtk_widget_set_sensitive(dw->controls_box, TRUE);
         return FALSE;
@@ -1767,25 +1772,11 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
 
             if (filelist_read(fd, &f, &d))
             {
-                GList *work;
-
                 f = filelist_filter(f, FALSE);
                 d = filelist_filter(d, TRUE);
 
-                work = f;
-                while (work)
-                {
-                    dw->add_files_queue = g_list_prepend(dw->add_files_queue, work->data);
-                    work = work->next;
-                }
-                g_list_free(f);
-                work = d;
-                while (work)
-                {
-                    dw->add_files_queue = g_list_prepend(dw->add_files_queue, work->data);
-                    work = work->next;
-                }
-                g_list_free(d);
+                dw->add_files_queue = g_list_concat(f, dw->add_files_queue);
+                dw->add_files_queue = g_list_concat(d, dw->add_files_queue);
             }
             file_data_unref(fd);
         }
@@ -1809,39 +1800,10 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
     dupe_item_read_cache(di);
 
     /* Ensure images in the lists have unique FileDatas */
-    GList *work;
-    DupeItem *di_list;
-    work = g_list_first(dw->list);
-    while (work)
+    if (!dupe_insert_in_list_cache(dw, di->fd))
     {
-        di_list = work->data;
-        if (di_list->fd == di->fd)
-        {
-            dupe_item_free(di);
-            return TRUE;
-        }
-        else
-        {
-            work = work->next;
-        }
-    }
-
-    if (dw->second_list)
-    {
-        work = g_list_first(dw->second_list);
-        while (work)
-        {
-            di_list = work->data;
-            if (di_list->fd == di->fd)
-            {
-                dupe_item_free(di);
-                return TRUE;
-            }
-            else
-            {
-                work = work->next;
-            }
-        }
+        dupe_item_free(di);
+        return TRUE;
     }
 
     if (dw->second_drop)
@@ -1860,6 +1822,7 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
     else
     {
         dw->add_files_queue_id = 0;
+        dupe_destroy_list_cache(dw);
         g_idle_add(dupe_check_start_cb, dw);
         gtk_widget_set_sensitive(dw->controls_box, TRUE);
         return FALSE;
@@ -1957,6 +1920,43 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
     }
 }
 
+static void dupe_init_list_cache(DupeWindow *dw)
+{
+    dw->list_cache = g_hash_table_new(g_direct_hash, g_direct_equal);
+    dw->second_list_cache = g_hash_table_new(g_direct_hash, g_direct_equal);
+
+    for (GList *i = dw->list; i != NULL; i = i->next)
+    {
+        DupeItem *di = i->data;
+
+        g_hash_table_add(dw->list_cache, di->fd);
+    }
+
+    for (GList *i = dw->second_list; i != NULL; i = i->next)
+    {
+        DupeItem *di = i->data;
+
+        g_hash_table_add(dw->second_list_cache, di->fd);
+    }
+}
+
+static void dupe_destroy_list_cache(DupeWindow *dw)
+{
+    g_hash_table_destroy(dw->list_cache);
+    g_hash_table_destroy(dw->second_list_cache);
+}
+
+/* Return true if the fd was not in the cache */
+static gboolean dupe_insert_in_list_cache(DupeWindow *dw, FileData *fd)
+{
+    GHashTable *table[] = { dw->list_cache, dw->second_list_cache };
+
+    if (g_hash_table_contains(table[!dw->second_drop], fd))
+        return FALSE;
+
+    return g_hash_table_add(table[dw->second_drop], fd);
+}
+
 void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection)
 {
     CollectInfo *info;
@@ -2010,6 +2010,7 @@ void dupe_window_add_files(DupeWindow *dw, GList *list, gboolean recurse)
         gtk_progress_bar_set_pulse_step(GTK_PROGRESS_BAR(dw->extra_label), DUPE_PROGRESS_PULSE_STEP);
         gtk_progress_bar_set_text(GTK_PROGRESS_BAR(dw->extra_label), _("Loading file list"));
 
+        dupe_init_list_cache(dw);
         dw->add_files_queue_id = g_idle_add(dupe_files_add_queue_cb, dw);
         gtk_widget_set_sensitive(dw->controls_box, FALSE);
     }
