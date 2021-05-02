@@ -607,7 +607,6 @@ struct _LayoutOptions
     gboolean toolbar_hidden;
 
     gchar *home_path;
-    gchar *last_path;
 
     StartUpPath startup_path;
 

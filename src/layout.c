@@ -2181,9 +2181,6 @@ void layout_sync_options_with_current_state(LayoutWindow *lw)
 
     lw->options.image_overlay.histogram_channel = histogram->histogram_channel;
     lw->options.image_overlay.histogram_mode = histogram->histogram_mode;
-
-    g_free(lw->options.last_path);
-    lw->options.last_path = g_strdup(layout_get_path(lw));
 }
 
 void layout_apply_options(LayoutWindow *lw, LayoutOptions *lop)
@@ -2437,7 +2434,6 @@ void layout_write_attributes(LayoutOptions *layout, GString *outstr, gint indent
     WRITE_NL(); WRITE_BOOL(*layout, show_thumbnails);
     WRITE_NL(); WRITE_BOOL(*layout, show_directory_date);
     WRITE_NL(); WRITE_CHAR(*layout, home_path);
-    WRITE_NL(); WRITE_CHAR(*layout, last_path);
     WRITE_NL(); WRITE_UINT(*layout, startup_path);
     WRITE_NL(); WRITE_BOOL(*layout, exit_on_close);
     WRITE_SEPARATOR();
@@ -2511,7 +2507,6 @@ void layout_load_attributes(LayoutOptions *layout, const gchar **attribute_names
         if (READ_BOOL(*layout, show_thumbnails)) continue;
         if (READ_BOOL(*layout, show_directory_date)) continue;
         if (READ_CHAR(*layout, home_path)) continue;
-        if (READ_CHAR(*layout, last_path)) continue;
         if (READ_UINT_CLAMP(*layout, startup_path, 0, STARTUP_PATH_HOME)) continue;
         if (READ_BOOL(*layout, exit_on_close)) continue;
 
@@ -2560,8 +2555,10 @@ static void layout_config_startup_path(LayoutOptions *lop, gchar **path)
 {
     switch (lop->startup_path)
     {
+        const char *last;
         case STARTUP_PATH_LAST:
-            *path = (lop->last_path && isdir(lop->last_path)) ? g_strdup(lop->last_path) : get_current_dir();
+            last = history_list_find_last_path_by_key("path_list");
+            *path = (last && isdir(last)) ? g_strdup(last) : get_current_dir();
             break;
         case STARTUP_PATH_HOME:
             *path = (lop->home_path && isdir(lop->home_path)) ? g_strdup(lop->home_path) : g_strdup(homedir());
