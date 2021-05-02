@@ -208,7 +208,6 @@ void copy_layout_options(LayoutOptions *dest, const LayoutOptions *src)
     dest->id = g_strdup(src->id);
     dest->order = g_strdup(src->order);
     dest->home_path = g_strdup(src->home_path);
-    dest->last_path = g_strdup(src->last_path);
 }
 
 void free_layout_options_content(LayoutOptions *dest)
@@ -216,7 +215,6 @@ void free_layout_options_content(LayoutOptions *dest)
     g_free(dest->id);
     g_free(dest->order);
     g_free(dest->home_path);
-    g_free(dest->last_path);
 }
 
 LayoutOptions *init_layout_options(LayoutOptions *options)
