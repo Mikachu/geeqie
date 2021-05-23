@@ -1980,8 +1980,7 @@ static void file_util_mark_ungrouped_files(GList *work)
     }
 }
 
-
-static void file_util_delete_full(FileData *source_fd, GList *flist, GtkWidget *parent, UtilityPhase phase)
+static void file_util_delete_full(FileData *source_fd, GList *flist, GtkWidget *parent, UtilityPhase phase, FileUtilDoneFunc done_func, gpointer done_data)
 {
     UtilityData *ud;
     GList *ungrouped = NULL;
@@ -2015,6 +2014,8 @@ static void file_util_delete_full(FileData *source_fd, GList *flist, GtkWidget *
     ud->flist = flist;
     ud->content_list = NULL;
     ud->parent = parent;
+    ud->done_data = done_data;
+    ud->done_func = done_func;
 
     ud->details_func = file_util_details_dialog;
 
@@ -2822,7 +2823,12 @@ static gboolean file_util_write_metadata_first(UtilityType type, UtilityPhase ph
 
 void file_util_delete(FileData *source_fd, GList *source_list, GtkWidget *parent)
 {
-    file_util_delete_full(source_fd, source_list, parent, options->file_ops.confirm_delete ? UTILITY_PHASE_START : UTILITY_PHASE_ENTERING);
+    file_util_delete_full(source_fd, source_list, parent, options->file_ops.confirm_delete ? UTILITY_PHASE_START : UTILITY_PHASE_ENTERING, NULL, NULL);
+}
+
+void file_util_delete_notify_done(FileData *source_fd, GList *source_list, GtkWidget *parent, FileUtilDoneFunc done_func, gpointer done_data)
+{
+    file_util_delete_full(source_fd, source_list, parent, options->file_ops.confirm_delete ? UTILITY_PHASE_START : UTILITY_PHASE_ENTERING, done_func, done_data);
 }
 
 void file_util_write_metadata(FileData *source_fd, GList *source_list, GtkWidget *parent, gboolean force_dialog, FileUtilDoneFunc done_func, gpointer done_data)

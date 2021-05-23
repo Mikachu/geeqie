@@ -92,6 +92,7 @@ static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di);
 static void dupe_dnd_init(DupeWindow *dw);
 
 static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data);
+static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointer data);
 
 static void dupe_init_list_cache(DupeWindow *dw);
 static void dupe_destroy_list_cache(DupeWindow *dw);
@@ -2397,7 +2398,7 @@ static void dupe_menu_delete_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
 
-    file_util_delete(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window);
+    file_util_delete_notify_done(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window, delete_finished_cb, dw);
 }
 
 static void dupe_menu_copy_path_cb(GtkWidget *widget, gpointer data)
@@ -3842,7 +3843,7 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
         case FILEDATA_CHANGE_COPY:
             break;
         case FILEDATA_CHANGE_DELETE:
-            while (dupe_item_remove_by_path(dw, fd->path));
+            /* Update the UI only once, after the operation finishes */
             break;
         case FILEDATA_CHANGE_UNSPECIFIED:
         case FILEDATA_CHANGE_WRITE_METADATA:
@@ -3850,4 +3851,27 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
     }
 
 }
+
+/**
+ * @brief Refresh window after a file delete operation
+ * @param success (ud->phase != UTILITY_PHASE_CANCEL) #file_util_dialog_run
+ * @param dest_path Not used
+ * @param data #DupeWindow
+ * 
+ * If the window is refreshed after each file of a large set is deleted,
+ * the UI slows to an unacceptable level. The #FileUtilDoneFunc is used
+ * to call this function once, when the entire delete operation is completed.
+ */
+static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointer data)
+{
+    DupeWindow *dw = data;
+
+    if (!success)
+    {
+        return;
+    }
+
+    dupe_window_remove_selection(dw, dw->listview);
+}
+
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
