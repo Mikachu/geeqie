@@ -231,7 +231,7 @@ gboolean tree_edit_by_path(GtkTreeView *tree, GtkTreePath *tpath, gint column, c
     ted->column = tcolumn;
     ted->cell = cell;
 
-    gtk_tree_view_scroll_to_cell(ted->tree, ted->path, ted->column, FALSE, 0.0, 0.0);
+    gtk_tree_view_scroll_to_cell(ted->tree, ted->path, ted->column, TRUE, 0.5, 0.0);
 
     /* create the window */
 
