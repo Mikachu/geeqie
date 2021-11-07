@@ -394,7 +394,7 @@ static void bookmark_menu_position_cb(GtkMenu *menu, gint *x, gint *y, gint *pus
     GtkWidget *button = data;
     GtkAllocation allocation;
 
-    gtk_widget_set_allocation(button, &allocation);
+    gtk_widget_get_allocation(button, &allocation);
     gdk_window_get_origin(gtk_widget_get_window(button), x, y);
     *y += allocation.y + allocation.height;
 }
