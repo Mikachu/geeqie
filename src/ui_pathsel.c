@@ -200,7 +200,8 @@ static void dest_populate(Dest_Data *dd, const gchar *path)
 			{
 			gchar *name = dir->d_name;
 			gchar *filepath = g_build_filename(pathl, name, NULL);
-			if (stat(filepath, &ent_sbuf) >= 0 && S_ISDIR(ent_sbuf.st_mode))
+			if (dir->d_type == DT_DIR || ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) &&
+			    (stat(filepath, &ent_sbuf) >= 0 && S_ISDIR(ent_sbuf.st_mode))))
 				{
 				path_list = g_list_prepend(path_list, path_to_utf8(name));
 				}

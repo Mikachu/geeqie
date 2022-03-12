@@ -1209,40 +1209,39 @@ static gboolean filelist_read_real(const gchar *dir_path, GList **files, GList *
 		if (!options->file_filter.show_hidden_files && is_hidden_file(name))
 			continue;
 
+		errno = 0;
 		filepath = g_build_filename(pathl, name, NULL);
-		if (stat_func(filepath, &ent_sbuf) >= 0)
+		/* don't stat files if we don't care about them */
+		if (dir->d_type == DT_DIR || ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) && stat_func(filepath, &ent_sbuf) >= 0&&
+					      S_ISDIR(ent_sbuf.st_mode)))
 			{
-			if (S_ISDIR(ent_sbuf.st_mode))
+			/* we ignore the .thumbnails dir for cleanliness */
+			if (dirs &&
+				!(name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) &&
+				strcmp(name, GQ_CACHE_LOCAL_THUMB) != 0 &&
+				strcmp(name, GQ_CACHE_LOCAL_METADATA) != 0 &&
+				strcmp(name, THUMB_FOLDER_LOCAL) != 0 &&
+				((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) || stat_func(filepath, &ent_sbuf) >= 0))
 				{
-				/* we ignore the .thumbnails dir for cleanliness */
-				if (dirs &&
-				    !(name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) &&
-				    strcmp(name, GQ_CACHE_LOCAL_THUMB) != 0 &&
-				    strcmp(name, GQ_CACHE_LOCAL_METADATA) != 0 &&
-				    strcmp(name, THUMB_FOLDER_LOCAL) != 0)
-					{
 					dlist = g_list_prepend(dlist, file_data_new_local(filepath, &ent_sbuf, TRUE));
-					}
-				}
-			else
-				{
-				if (files && filter_name_exists(name))
-					{
-					FileData *fd = file_data_new_local(filepath, &ent_sbuf, FALSE);
-					flist = g_list_prepend(flist, fd);
-					if (fd->sidecar_priority && !fd->disable_grouping)
-						{
-						file_data_basename_hash_insert(basename_hash, fd);
-						}
-					}
 				}
 			}
 		else
 			{
-			if (errno == EOVERFLOW)
+			if (files && filter_name_exists(name) &&
+			    ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) || stat_func(filepath, &ent_sbuf) >= 0))
 				{
-				log_printf("stat(): EOVERFLOW, skip '%s'", filepath);
+				FileData *fd = file_data_new_local(filepath, &ent_sbuf, FALSE);
+				flist = g_list_prepend(flist, fd);
+				if (fd->sidecar_priority && !fd->disable_grouping)
+					{
+					file_data_basename_hash_insert(basename_hash, fd);
+					}
 				}
+			}
+		if (errno == EOVERFLOW)
+			{
+			log_printf("stat(): EOVERFLOW, skip '%s'", filepath);
 			}
 		g_free(filepath);
 		}
