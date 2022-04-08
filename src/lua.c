@@ -100,7 +100,7 @@ static int lua_image_get_date(lua_State *L)
     FileData *fd;
 
     fd = lua_check_image(L, 1);
-    lua_pushnumber(L, fd->date);
+    lua_pushnumber(L, fd->dat.tv_sec);
     return 1;
 }
 
