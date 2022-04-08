@@ -145,13 +145,17 @@ static gint collection_list_sort_cb(gconstpointer a, gconstpointer b)
 			return 0;
 			break;
 		case SORT_TIME:
-			if (cia->fd->date < cib->fd->date) return -1;
-			if (cia->fd->date > cib->fd->date) return 1;
+			if (cia->fd->dat.tv_sec < cib->fd->dat.tv_sec) return -1;
+			if (cia->fd->dat.tv_sec > cib->fd->dat.tv_sec) return 1;
+			if (cia->fd->dat.tv_nsec < cib->fd->dat.tv_nsec) return -1;
+			if (cia->fd->dat.tv_nsec > cib->fd->dat.tv_nsec) return 1;
 			return 0;
 			break;
 		case SORT_CTIME:
-			if (cia->fd->cdate < cib->fd->cdate) return -1;
-			if (cia->fd->cdate > cib->fd->cdate) return 1;
+			if (cia->fd->cdat.tv_sec < cib->fd->cdat.tv_sec) return -1;
+			if (cia->fd->cdat.tv_sec > cib->fd->cdat.tv_sec) return 1;
+			if (cia->fd->cdat.tv_nsec < cib->fd->cdat.tv_nsec) return -1;
+			if (cia->fd->cdat.tv_nsec > cib->fd->cdat.tv_nsec) return 1;
 			return 0;
 			break;
 		case SORT_PATH:

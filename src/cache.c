@@ -62,7 +62,8 @@ CacheData *cache_sim_data_new(void)
 	CacheData *cd;
 
 	cd = g_new0(CacheData, 1);
-	cd->date = -1;
+	cd->dat.tv_sec = -1;
+	cd->dat.tv_nsec = 0;
 
 	return cd;
 }
@@ -95,7 +96,7 @@ static gboolean cache_sim_write_date(SecureSaveInfo *ssi, CacheData *cd)
 {
 	if (!cd || !cd->have_date) return FALSE;
 
-	secure_fprintf(ssi, "Date=[%ld]\n", cd->date);
+	secure_fprintf(ssi, "Date=[%ld]\n", cd->dat.tv_sec);
 
 	return TRUE;
 }
@@ -282,7 +283,7 @@ static gboolean cache_sim_read_date(FILE *f, gchar *buf, gint s, CacheData *cd)
 			}
 
 		buf[p] = '\0';
-		cd->date = strtol(buf, NULL, 10);
+		cd->dat.tv_sec = strtol(buf, NULL, 10);
 
 		cd->have_date = TRUE;
 
@@ -483,11 +484,12 @@ void cache_sim_data_set_dimensions(CacheData *cd, gint w, gint h)
 	cd->dimensions = TRUE;
 }
 
-void cache_sim_data_set_date(CacheData *cd, time_t date)
+void cache_sim_data_set_date(CacheData *cd, struct timespec dat)
 {
 	if (!cd) return;
 
-	cd->date = date;
+	cd->dat.tv_sec = dat.tv_sec;
+	cd->dat.tv_nsec = dat.tv_nsec;
 	cd->have_date = TRUE;
 }
 

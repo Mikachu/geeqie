@@ -520,8 +520,8 @@ struct _FileData {
 	gchar *collate_key_name;
 	gchar *collate_key_name_nocase;
 	gint64 size;
-	time_t date;
-	time_t cdate;
+	struct timespec dat;
+	struct timespec cdat;
 	mode_t mode; /* this is needed at least for notification in view_dir because it is preserved after the file/directory is deleted */
 	gint sidecar_priority;
 

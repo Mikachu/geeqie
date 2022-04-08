@@ -110,7 +110,7 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
 		PanItem *plabel;
 		gchar *buf;
 
-		buf = pan_date_value_string(pi_day->fd->date, PAN_DATE_LENGTH_WEEK);
+		buf = pan_date_value_string(pi_day->fd->dat.tv_sec, PAN_DATE_LENGTH_WEEK);
 		plabel = pan_item_text_new(pw, x, y, buf, PAN_TEXT_ATTR_BOLD | PAN_TEXT_ATTR_HEADING,
 					   PAN_TEXT_BORDER_SIZE,
 					   PAN_CAL_POPUP_TEXT_COLOR, 255);
@@ -220,10 +220,10 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 		fd = work->data;
 		work = work->next;
 
-		if (!pan_date_compare(fd->date, tc, PAN_DATE_LENGTH_DAY))
+		if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
 			{
 			count = 0;
-			tc = fd->date;
+			tc = fd->dat.tv_sec;
 			}
 		else
 			{
@@ -240,16 +240,16 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 		{
 		FileData *fd = list->data;
 
-		year = pan_date_value(fd->date, PAN_DATE_LENGTH_YEAR);
-		month = pan_date_value(fd->date, PAN_DATE_LENGTH_MONTH);
+		year = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_YEAR);
+		month = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_MONTH);
 		}
 
 	work = g_list_last(list);
 	if (work)
 		{
 		FileData *fd = work->data;
-		end_year = pan_date_value(fd->date, PAN_DATE_LENGTH_YEAR);
-		end_month = pan_date_value(fd->date, PAN_DATE_LENGTH_MONTH);
+		end_year = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_YEAR);
+		end_month = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_MONTH);
 		}
 
 	*width = PAN_BOX_BORDER * 2;
@@ -275,7 +275,7 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 		dt -= 60 * 60 * 24;
 
 		/* anything to show this month? */
-		if (!pan_date_compare(((FileData *)(work->data))->date, dt, PAN_DATE_LENGTH_MONTH))
+		if (!pan_date_compare(((FileData *)(work->data))->dat.tv_sec, dt, PAN_DATE_LENGTH_MONTH))
 			{
 			month ++;
 			if (month > 12)
@@ -327,7 +327,8 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 
 			g_snprintf(fake_path, sizeof(fake_path), "//%04d-%02d-%02d", year, month, day);
 			fd = file_data_new_no_grouping(fake_path);
-			fd->date = dt;
+			fd->dat.tv_sec = dt;
+			fd->dat.tv_nsec = 0;
 			pi_day = pan_item_box_new(pw, fd, x, y, PAN_CAL_DAY_WIDTH, PAN_CAL_DAY_HEIGHT,
 						  PAN_CAL_DAY_BORDER,
 						  PAN_CAL_DAY_COLOR, PAN_CAL_DAY_ALPHA,
@@ -338,7 +339,7 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 			dy = y + PAN_CAL_DOT_GAP * 2;
 
 			fd = (work) ? work->data : NULL;
-			while (fd && pan_date_compare(fd->date, dt, PAN_DATE_LENGTH_DAY))
+			while (fd && pan_date_compare(fd->dat.tv_sec, dt, PAN_DATE_LENGTH_DAY))
 				{
 				PanItem *pi;
 

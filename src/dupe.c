@@ -544,7 +544,7 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
 	text[DUPE_COLUMN_THUMB] = "";
 	text[DUPE_COLUMN_NAME] = (gchar *)di->fd->name;
 	text[DUPE_COLUMN_SIZE] = text_from_size(di->fd->size);
-	text[DUPE_COLUMN_DATE] = (gchar *)text_from_time(di->fd->date);
+	text[DUPE_COLUMN_DATE] = (gchar *)text_from_time(di->fd->dat.tv_sec);
 	if (di->width > 0 && di->height > 0)
 		{
 		text[DUPE_COLUMN_DIMENSIONS] = g_strdup_printf("%d x %d", di->width, di->height);
@@ -1139,7 +1139,9 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
 		}
 	if (mask & DUPE_MATCH_DATE)
 		{
-		if (a->fd->date != b->fd->date) return FALSE;
+		if (a->fd->dat.tv_sec != b->fd->dat.tv_sec &&
+		    a->fd->dat.tv_nsec != b->fd->dat.tv_nsec)
+			return FALSE;
 		}
 	if (mask & DUPE_MATCH_SUM)
 		{
@@ -1160,7 +1162,7 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
 		gdouble f;
 		gdouble m;
 		if (options->duplicates_days_threshold) {
-		    if (abs(a->fd->date - b->fd->date) > 86400 * options->duplicates_days_threshold) {
+		    if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) > 86400 * options->duplicates_days_threshold) {
 			return FALSE;
 		    }
 		}
@@ -1910,7 +1912,7 @@ static void dupe_display_stats(DupeWindow *dw, DupeItem *di)
 	buf = text_from_size(di->fd->size);
 	dupe_display_label(gd->vbox, "size:", buf);
 	g_free(buf);
-	dupe_display_label(gd->vbox, "date:", text_from_time(di->fd->date));
+	dupe_display_label(gd->vbox, "date:", text_from_time(di->fd->dat.tv_sec));
 	buf = g_strdup_printf("%d x %d", di->width, di->height);
 	dupe_display_label(gd->vbox, "dimensions:", buf);
 	g_free(buf);

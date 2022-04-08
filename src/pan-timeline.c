@@ -71,12 +71,12 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 		fd = work->data;
 		work = work->next;
 
-		if (!pan_date_compare(fd->date, tc, PAN_DATE_LENGTH_DAY))
+		if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
 			{
 			GList *needle;
 			gchar *buf;
 
-			if (!pan_date_compare(fd->date, tc, PAN_DATE_LENGTH_MONTH))
+			if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_MONTH))
 				{
 				pi_day = NULL;
 
@@ -91,7 +91,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 
 				y = PAN_BOX_BORDER;
 
-				buf = pan_date_value_string(fd->date, PAN_DATE_LENGTH_MONTH);
+				buf = pan_date_value_string(fd->dat.tv_sec, PAN_DATE_LENGTH_MONTH);
 				pi = pan_item_text_new(pw, x, y, buf,
 						       PAN_TEXT_ATTR_BOLD | PAN_TEXT_ATTR_HEADING,
 						       PAN_TEXT_BORDER_SIZE,
@@ -112,7 +112,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 
 			if (pi_day) x = pi_day->x + pi_day->width + PAN_BOX_BORDER;
 
-			tc = fd->date;
+			tc = fd->dat.tv_sec;
 			total = 1;
 			count = 0;
 
@@ -122,7 +122,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 				FileData *nfd;
 
 				nfd = needle->data;
-				if (pan_date_compare(nfd->date, tc, PAN_DATE_LENGTH_DAY))
+				if (pan_date_compare(nfd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
 					{
 					needle = needle->next;
 					total++;
@@ -133,7 +133,7 @@ void pan_timeline_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
 					}
 				}
 
-			buf = pan_date_value_string(fd->date, PAN_DATE_LENGTH_WEEK);
+			buf = pan_date_value_string(fd->dat.tv_sec, PAN_DATE_LENGTH_WEEK);
 			pi = pan_item_text_new(pw, x, y, buf, PAN_TEXT_ATTR_NONE,
 					       PAN_TEXT_BORDER_SIZE,
 					       PAN_TEXT_COLOR, 255);

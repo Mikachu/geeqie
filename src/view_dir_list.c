@@ -202,7 +202,7 @@ static gboolean vdlist_populate(ViewDir *vd, gboolean clear)
 				{
 				pixbuf = vd->pf->close;
 				if (vd->layout && vd->layout->options.show_directory_date)
-					date = text_from_time(fd->date);
+					date = text_from_time(fd->dat.tv_sec);
 				}
 			}
 		else

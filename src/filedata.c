@@ -169,11 +169,12 @@ void file_data_increment_version(FileData *fd)
 static gboolean file_data_check_changed_single_file(FileData *fd, struct stat *st)
 {
 	if (fd->size != st->st_size ||
-	    fd->date != st->st_mtime)
+	    fd->dat.tv_sec != st->st_mtim.tv_sec ||
+	    fd->dat.tv_nsec != st->st_mtim.tv_nsec)
 		{
 		fd->size = st->st_size;
-		fd->date = st->st_mtime;
-		fd->cdate = st->st_ctime;
+		fd->dat = st->st_mtim;
+		fd->cdat = st->st_ctim;
 		fd->mode = st->st_mode;
 		if (fd->thumb_pixbuf) g_object_unref(fd->thumb_pixbuf);
 		fd->thumb_pixbuf = NULL;
@@ -201,7 +202,8 @@ static gboolean file_data_check_changed_files_recursive(FileData *fd, struct sta
 		if (!stat_utf8(sfd->path, &st))
 			{
 			fd->size = 0;
-			fd->date = 0;
+			fd->dat.tv_sec = 0;
+			fd->dat.tv_nsec = 0;
 			file_data_ref(sfd);
 			file_data_disconnect_sidecar_file(fd, sfd);
 			ret = TRUE;
@@ -233,7 +235,8 @@ gboolean file_data_check_changed_files(FileData *fd)
 		/* parent is missing, we have to rebuild whole group */
 		ret = TRUE;
 		fd->size = 0;
-		fd->date = 0;
+		fd->dat.tv_sec = 0;
+		fd->dat.tv_nsec = 0;
 
 		/* file_data_disconnect_sidecar_file might delete the file,
 		   we have to keep the reference to prevent this */
@@ -402,8 +405,8 @@ static FileData *file_data_new(const gchar *path_utf8, struct stat *st, gboolean
 #endif
 
 	fd->size = st->st_size;
-	fd->date = st->st_mtime;
-	fd->cdate = st->st_ctime;
+	fd->dat = st->st_mtim;
+	fd->cdat = st->st_ctim;
 	fd->mode = st->st_mode;
 	fd->ref = 1;
 	fd->magick = FD_MAGICK;
@@ -1003,13 +1006,17 @@ gint filelist_sort_compare_filedata(FileData *fa, FileData *fb)
 			/* fall back to name */
 			break;
 		case SORT_TIME:
-			if (fa->date < fb->date) return -1;
-			if (fa->date > fb->date) return 1;
+			if (fa->dat.tv_sec < fb->dat.tv_sec) return -1;
+			if (fa->dat.tv_sec > fb->dat.tv_sec) return 1;
+			if (fa->dat.tv_nsec < fb->dat.tv_nsec) return -1;
+			if (fa->dat.tv_nsec > fb->dat.tv_nsec) return 1;
 			/* fall back to name */
 			break;
 		case SORT_CTIME:
-			if (fa->cdate < fb->cdate) return -1;
-			if (fa->cdate > fb->cdate) return 1;
+			if (fa->cdat.tv_sec < fb->cdat.tv_sec) return -1;
+			if (fa->cdat.tv_sec > fb->cdat.tv_sec) return 1;
+			if (fa->cdat.tv_nsec < fb->cdat.tv_nsec) return -1;
+			if (fa->cdat.tv_nsec > fb->cdat.tv_nsec) return 1;
 			/* fall back to name */
 			break;
 		case SORT_EXIFTIME:

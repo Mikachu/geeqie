@@ -521,7 +521,7 @@ static void search_result_append(SearchData *sd, MatchFileData *mfd)
 				SEARCH_COLUMN_THUMB, fd->thumb_pixbuf,
 				SEARCH_COLUMN_NAME, fd->name,
 				SEARCH_COLUMN_SIZE, text_size,
-				SEARCH_COLUMN_DATE, text_from_time(fd->date),
+				SEARCH_COLUMN_DATE, text_from_time(fd->dat.tv_sec),
 				SEARCH_COLUMN_DIMENSIONS, text_dim,
 				SEARCH_COLUMN_PATH, fd->path,
 				-1);
@@ -1726,7 +1726,7 @@ static gboolean search_file_next(SearchData *sd)
 			{
 			struct tm *lt;
 
-			lt = localtime(&fd->date);
+			lt = localtime(&fd->dat.tv_sec);
 			match = (lt &&
 				 lt->tm_year == sd->search_date_y - 1900 &&
 				 lt->tm_mon == sd->search_date_m - 1 &&
@@ -1734,11 +1734,11 @@ static gboolean search_file_next(SearchData *sd)
 			}
 		else if (sd->match_date == SEARCH_MATCH_UNDER)
 			{
-			match = (fd->date < convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y));
+			match = (fd->dat.tv_sec < convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y));
 			}
 		else if (sd->match_date == SEARCH_MATCH_OVER)
 			{
-			match = (fd->date > convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y) + 60 * 60 * 24 - 1);
+			match = (fd->dat.tv_sec > convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y) + 60 * 60 * 24 - 1);
 			}
 		else if (sd->match_date == SEARCH_MATCH_BETWEEN)
 			{
@@ -1753,7 +1753,7 @@ static gboolean search_file_next(SearchData *sd)
 				{
 				a += 60 * 60 * 24 - 1;
 				}
-			match = MATCH_IS_BETWEEN(fd->date, a, b);
+			match = MATCH_IS_BETWEEN(fd->dat.tv_sec, a, b);
 			}
 		}
 
@@ -2265,8 +2265,10 @@ static gint search_result_sort_cb(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIt
 			return 0;
 			break;
 		case SEARCH_COLUMN_DATE:
-			if (fda->fd->date > fdb->fd->date) return 1;
-			if (fda->fd->date < fdb->fd->date) return -1;
+			if (fda->fd->dat.tv_sec < fdb->fd->dat.tv_sec) return -1;
+			if (fda->fd->dat.tv_sec > fdb->fd->dat.tv_sec) return 1;
+			if (fda->fd->dat.tv_nsec < fdb->fd->dat.tv_nsec) return -1;
+			if (fda->fd->dat.tv_nsec > fdb->fd->dat.tv_nsec) return 1;
 			return 0;
 			break;
 		case SEARCH_COLUMN_DIMENSIONS:

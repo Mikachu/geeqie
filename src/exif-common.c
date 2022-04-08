@@ -832,7 +832,7 @@ gchar *metadata_file_info(FileData *fd, const gchar *key, MetadataFormat format)
 		}
 	if (strcmp(key, "file.date") == 0)
 		{
-		return g_strdup(text_from_time(fd->date));
+		return g_strdup(text_from_time(fd->dat.tv_sec));
 		}
 	if (strcmp(key, "file.mode") == 0)
 		{

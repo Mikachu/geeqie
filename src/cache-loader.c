@@ -155,7 +155,7 @@ static gboolean cache_loader_process(CacheLoader *cl)
 			g_free(text);
 			}
 
-		cl->cd->date = date;
+		cl->cd->dat.tv_sec = date;
 		cl->cd->have_date = TRUE;
 
 		cl->done_mask |= CACHE_LOADER_DATE;

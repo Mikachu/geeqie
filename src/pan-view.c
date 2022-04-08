@@ -615,9 +615,9 @@ void pan_cache_sync_date(PanWindow *pw, GList *list)
 			pc = needle->data;
 			if (pc->fd == fd)
 				{
-				if (pc->cd && pc->cd->have_date && pc->cd->date >= 0)
+				if (pc->cd && pc->cd->have_date && pc->cd->dat.tv_sec >= 0)
 					{
-					fd->date = pc->cd->date;
+					fd->dat.tv_sec = pc->cd->dat.tv_sec;
 					}
 
 				haystack = g_list_delete_link(haystack, needle);
@@ -1375,7 +1375,7 @@ static void pan_info_update(PanWindow *pw, PanItem *pi)
 	buf = remove_level_from_path(pi->fd->path);
 	pan_text_alignment_add(ta, _("Location:"), buf);
 	g_free(buf);
-	pan_text_alignment_add(ta, _("Date:"), text_from_time(pi->fd->date));
+	pan_text_alignment_add(ta, _("Date:"), text_from_time(pi->fd->dat.tv_sec));
 	buf = text_from_size(pi->fd->size);
 	pan_text_alignment_add(ta, _("Size:"), buf);
 	g_free(buf);
@@ -1563,7 +1563,7 @@ static GList *pan_search_by_date_val(PanWindow *pw, PanItemType type,
 			{
 			struct tm *tl;
 
-			tl = localtime(&pi->fd->date);
+			tl = localtime(&pi->fd->dat.tv_sec);
 			if (tl)
 				{
 				gint match;

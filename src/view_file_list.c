@@ -821,7 +821,7 @@ static void vflist_setup_iter(ViewFile *vf, GtkTreeStore *store, GtkTreeIter *it
 	gchar *size;
 	gchar *sidecars = NULL;
 	gchar *name;
-	const gchar *time = text_from_time(fd->date);
+	const gchar *time = text_from_time(fd->dat.tv_sec);
 	gchar *link = islink(fd->path) ? GQ_LINK_STR : "";
 	const gchar *disabled_grouping;
 	gchar *formatted;
