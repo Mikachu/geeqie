@@ -109,9 +109,6 @@ void history_chain_append_end(const gchar *path)
  *-----------------------------------------------------------------------------
  */
 
-#define HISTORY_DEFAULT_KEY_COUNT 16
-
-
 typedef struct _HistoryData HistoryData;
 struct _HistoryData
 {
@@ -338,7 +335,7 @@ void history_list_add_to_key(const gchar *key, const gchar *path, gint max)
 
     hd->list = g_list_prepend(hd->list, g_strdup(path));
 
-    if (max == -1) max = HISTORY_DEFAULT_KEY_COUNT;
+    if (max == -1) max = options->open_recent_list_maxsize;
     if (max > 0)
     {
         gint len = 0;
