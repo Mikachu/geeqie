@@ -1167,10 +1167,19 @@ const gchar *image_loader_get_error(ImageLoader *il)
     return ret;
 }
 
-
-/* FIXME - this can be rather slow and blocks until the size is known */
 gboolean image_load_dimensions(FileData *fd, gint *width, gint *height)
 {
+    gint width_file = 0;
+    gint height_file = 0;
+
+    if (gdk_pixbuf_get_file_info(fd->path, &width_file, &height_file))
+    {
+        if (width) *width = width_file;
+        if (height) *height = height_file;
+        return TRUE;
+    }
+
+    /* Fall back to full image load for formats unknown to gdk (e.g. RAW) */
     ImageLoader *il;
     gboolean success;
 
@@ -1181,12 +1190,13 @@ gboolean image_load_dimensions(FileData *fd, gint *width, gint *height)
     if (success && il->pixbuf)
     {
         if (width) *width = gdk_pixbuf_get_width(il->pixbuf);
-        if (height) *height = gdk_pixbuf_get_height(il->pixbuf);;
+        if (height) *height = gdk_pixbuf_get_height(il->pixbuf);
     }
     else
     {
         if (width) *width = -1;
         if (height) *height = -1;
+        success = FALSE;
     }
 
     image_loader_free(il);
