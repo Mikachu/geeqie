@@ -125,9 +125,7 @@ struct _ExifData
 	Exiv2::XmpData::const_iterator xmpIter; /* for exif_get_next_item */
 #endif
 
-	virtual ~_ExifData()
-	{
-	}
+	virtual ~_ExifData() = default;
 
 	virtual void writeMetadata(gchar *path = NULL)
 	{
@@ -226,46 +224,46 @@ public:
 			}
 	}
 
-	virtual ~_ExifDataOriginal()
+	~_ExifDataOriginal() override
 	{
 		if (cp_data_) g_free(cp_data_);
 		if (pathl_) g_free(pathl_);
 	}
 
-	virtual Exiv2::Image *image()
+	Exiv2::Image *image() override
 	{
 		if (!valid_) return NULL;
 		return image_.get();
 	}
 
-	virtual Exiv2::ExifData &exifData ()
+	Exiv2::ExifData &exifData () override
 	{
 		if (!valid_) return emptyExifData_;
 		return image_->exifData();
 	}
 
-	virtual Exiv2::IptcData &iptcData ()
+	Exiv2::IptcData &iptcData () override
 	{
 		if (!valid_) return emptyIptcData_;
 		return image_->iptcData();
 	}
 
 #if EXIV2_TEST_VERSION(0,16,0)
-	virtual Exiv2::XmpData &xmpData ()
+	Exiv2::XmpData &xmpData () override
 	{
 		if (!valid_) return emptyXmpData_;
 		return image_->xmpData();
 	}
 #endif
 
-	virtual void add_jpeg_color_profile(unsigned char *cp_data, guint cp_length)
+	void add_jpeg_color_profile(unsigned char *cp_data, guint cp_length) override
 	{
 		if (cp_data_) g_free(cp_data_);
 		cp_data_ = cp_data;
 		cp_length_ = cp_length;
 	}
 
-	virtual guchar *get_jpeg_color_profile(guint *data_len)
+	guchar *get_jpeg_color_profile(guint *data_len) override
 	{
 		if (cp_data_)
 		{
@@ -328,12 +326,12 @@ public:
 			}
 	}
 
-	virtual ExifData *original()
+	ExifData *original() override
 	{
 		return imageData_.get();
 	}
 
-	virtual void writeMetadata(gchar *path = NULL)
+	void writeMetadata(gchar *path = NULL) override
 	{
 		if (!path)
 			{
@@ -384,34 +382,34 @@ public:
 			}
 	}
 
-	virtual Exiv2::Image *image()
+	Exiv2::Image *image() override
 	{
 		return imageData_->image();
 	}
 
-	virtual Exiv2::ExifData &exifData ()
+	Exiv2::ExifData &exifData () override
 	{
 		return exifData_;
 	}
 
-	virtual Exiv2::IptcData &iptcData ()
+	Exiv2::IptcData &iptcData () override
 	{
 		return iptcData_;
 	}
 
 #if EXIV2_TEST_VERSION(0,16,0)
-	virtual Exiv2::XmpData &xmpData ()
+	Exiv2::XmpData &xmpData () override
 	{
 		return xmpData_;
 	}
 #endif
 
-	virtual void add_jpeg_color_profile(unsigned char *cp_data, guint cp_length)
+	void add_jpeg_color_profile(unsigned char *cp_data, guint cp_length) override
 	{
 		imageData_->add_jpeg_color_profile(cp_data, cp_length);
 	}
 
-	virtual guchar *get_jpeg_color_profile(guint *data_len)
+	guchar *get_jpeg_color_profile(guint *data_len) override
 	{
 		return imageData_->get_jpeg_color_profile(data_len);
 	}
