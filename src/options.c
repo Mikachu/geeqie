@@ -110,7 +110,7 @@ ConfOptions *init_options(ConfOptions *options)
     options->image_overlay.template_string = NULL;
     options->image_overlay.x = 10;
     options->image_overlay.y = -10;
-    options->image_overlay.font = NULL;
+    options->image_overlay.font = g_strdup("Sans 10");
     options->image_overlay.text_red = 0;
     options->image_overlay.text_green = 0;
     options->image_overlay.text_blue = 0;
