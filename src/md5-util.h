@@ -41,26 +41,25 @@
 #include <glib.h>
 
 
-typedef struct _MD5Context {
-    guint32 buf[4];
-    guint32 bits[2];
-    guchar in[64];
-    gint doByteReverse;
-} MD5Context;
-
-
-/* raw routines */
-void md5_init(MD5Context *ctx);
-void md5_update(MD5Context *ctx, const guchar *buf, guint32 len);
-void md5_final(MD5Context *ctx, guchar digest[16]);
-
-/* generate digest from memory buffer */
-void md5_get_digest(const guchar *buffer, gint buffer_size, guchar digest[16]);
+/**
+ * @headerfile md5_get_string
+ * generate digest from memory buffer as a hexadecimal string
+ */
+gchar *md5_get_string(const guchar *buffer, gint buffer_size);
 
 /* generate digest from file */
 gboolean md5_get_digest_from_file(const gchar *path, guchar digest[16]);
 
-/* convert digest to/from a NULL terminated text string, in ascii encoding */
+/**
+ * @headerfile md5_get_string_from_file
+ * generate digest from file as a hexadecimal string
+ */
+gchar *md5_get_string_from_file(const gchar *path);
+
+/**
+ * @headerfile md5_digest_to_text
+ * convert digest to a NULL terminated text string, in ascii encoding
+ */
 gchar *md5_digest_to_text(guchar digest[16]);
 gboolean md5_digest_from_text(const gchar *text, guchar digest[16]);
 
