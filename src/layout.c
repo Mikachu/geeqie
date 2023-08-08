@@ -615,14 +615,10 @@ void layout_status_update_info(LayoutWindow *lw, const gchar *text)
 
 void layout_status_update_image(LayoutWindow *lw)
 {
-    guint64 n;
-
     if (!layout_valid(&lw) || !lw->image) return;
     if (!lw->info_zoom || !lw->info_details) return; /*called from layout_style_set */
 
-    n = layout_list_count(lw, NULL);
-
-    if (!n)
+    if (!image_get_fd(lw->image))
     {
         gtk_button_set_label(GTK_BUTTON(lw->info_zoom), "");
         gtk_label_set_text(GTK_LABEL(lw->info_details), "");
