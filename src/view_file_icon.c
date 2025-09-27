@@ -363,8 +363,14 @@ static void vficon_mark_toggled_cb(GtkCellRendererToggle *cell, gchar *path_str,
     IconData *id;
 
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
-    if (!path || !gtk_tree_model_get_iter(store, &row, path))
+    if (!path)
         return;
+    if (!gtk_tree_model_get_iter(store, &row, path))
+    {
+        gtk_tree_path_free(path);
+        return;
+    }
+    gtk_tree_path_free(path);
 
     gtk_tree_model_get(store, &row, FILE_COLUMN_POINTER, &list, -1);
 

@@ -423,7 +423,7 @@ GList *editor_get_desktop_files(void)
     else
         xdg_data_dirs = g_strdup("/usr/share");
 
-    all_dirs = g_strconcat(get_rc_dir(), ":", GQ_APP_DIR, ":", xdg_data_home_get(), ":", xdg_data_dirs, NULL);
+    all_dirs = g_strjoin(":", get_rc_dir(), GQ_APP_DIR, xdg_data_home_get(), xdg_data_dirs, NULL);
 
     g_free(xdg_data_dirs);
 
@@ -984,7 +984,7 @@ static void editor_child_exit_cb(GPid pid, gint status, gpointer data)
 static EditorFlags editor_command_one(const EditorDescription *editor, GList *list, EditorData *ed)
 {
     gchar *command;
-    FileData *fd = (ed->flags & EDITOR_NO_PARAM) ? NULL : list->data;;
+    FileData *fd = (ed->flags & EDITOR_NO_PARAM) ? NULL : list->data;
     GPid pid;
     gint standard_output;
     gint standard_error;

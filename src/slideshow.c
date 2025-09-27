@@ -450,15 +450,9 @@ gboolean slideshow_paused(SlideShowData *ss)
     return ss->paused;
 }
 
-void slideshow_pause_set(SlideShowData *ss, gboolean paused)
+void slideshow_pause_toggle(SlideShowData *ss)
 {
     if (!ss) return;
 
-    ss->paused = paused;
-}
-
-gboolean slideshow_pause_toggle(SlideShowData *ss)
-{
-    slideshow_pause_set(ss, !slideshow_paused(ss));
-    return slideshow_paused(ss);
+    ss->paused = !ss->paused;
 }

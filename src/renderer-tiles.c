@@ -152,7 +152,6 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h, I
 
 
 static void rt_tile_free_all(RendererTiles *rt);
-static void rt_tile_invalidate_region(RendererTiles *rt, gint x, gint y, gint w, gint h);
 static gboolean rt_tile_is_visible(RendererTiles *rt, ImageTile *it);
 static void rt_queue_clear(RendererTiles *rt);
 static void rt_queue_merge(QueueData *parent, QueueData *qd);
@@ -401,35 +400,6 @@ static void rt_tile_invalidate_all(RendererTiles *rt)
 
         it->w = MIN(rt->tile_width, pr->width - it->x);
         it->h = MIN(rt->tile_height, pr->height - it->y);
-    }
-}
-
-static void rt_tile_invalidate_region(RendererTiles *rt, gint x, gint y, gint w, gint h)
-{
-    gint x1, x2;
-    gint y1, y2;
-    GList *work;
-
-    x1 = ROUND_DOWN(x, rt->tile_width);
-    x2 = ROUND_UP(x + w, rt->tile_width);
-
-    y1 = ROUND_DOWN(y, rt->tile_height);
-    y2 = ROUND_UP(y + h, rt->tile_height);
-
-    work = rt->tiles;
-    while (work)
-    {
-        ImageTile *it;
-
-        it = work->data;
-        work = work->next;
-
-        if (it->x < x2 && it->x + it->w > x1 &&
-            it->y < y2 && it->y + it->h > y1)
-        {
-            it->render_done = TILE_RENDER_NONE;
-            it->render_todo = TILE_RENDER_ALL;
-        }
     }
 }
 
@@ -1465,16 +1435,16 @@ static gboolean rt_tile_is_visible(RendererTiles *rt, ImageTile *it)
  *-------------------------------------------------------------------
  */
 
-static gint rt_get_queued_area(GList *work)
+static gint rt_get_queued_area(const RendererTiles *rt)
 {
     gint area = 0;
 
-    while (work)
+    for (GList *work = rt->draw_queue; work; work = work->next)
     {
         QueueData *qd = work->data;
         area += qd->w * qd->h;
-        work = work->next;
     }
+
     return area;
 }
 
@@ -1482,8 +1452,6 @@ static gint rt_get_queued_area(GList *work)
 static gboolean rt_queue_schedule_next_draw(RendererTiles *rt, gboolean force_set)
 {
     PixbufRenderer *pr = rt->pr;
-    gfloat percent;
-    gint visible_area = pr->vis_width * pr->vis_height;
 
     if (!pr->loading)
     {
@@ -1494,15 +1462,8 @@ static gboolean rt_queue_schedule_next_draw(RendererTiles *rt, gboolean force_se
         return FALSE;
     }
 
-    if (visible_area == 0)
-    {
-        /* not known yet */
-        percent = 100.0;
-    }
-    else
-    {
-        percent = 100.0 * rt_get_queued_area(rt->draw_queue) / visible_area;
-    }
+    const gint visible_area = pr->vis_width * pr->vis_height;
+    const gfloat percent = visible_area ? (100.0 * rt_get_queued_area(rt) / visible_area) : 100.0;
 
     if (percent > 10.0)
     {
@@ -1939,7 +1900,32 @@ static void renderer_update_zoom(void *renderer, gboolean lazy)
 
 static void renderer_invalidate_region(void *renderer, gint x, gint y, gint w, gint h)
 {
-    rt_tile_invalidate_region((RendererTiles *)renderer, x, y, w, h);
+    RendererTiles *rt = renderer;
+    gint x1, x2;
+    gint y1, y2;
+    GList *work;
+
+    x1 = ROUND_DOWN(x, rt->tile_width);
+    x2 = ROUND_UP(x + w, rt->tile_width);
+
+    y1 = ROUND_DOWN(y, rt->tile_height);
+    y2 = ROUND_UP(y + h, rt->tile_height);
+
+    work = rt->tiles;
+    while (work)
+    {
+        ImageTile *it;
+
+        it = work->data;
+        work = work->next;
+
+        if (it->x < x2 && it->x + it->w > x1 &&
+            it->y < y2 && it->y + it->h > y1)
+        {
+            it->render_done = TILE_RENDER_NONE;
+            it->render_todo = TILE_RENDER_ALL;
+        }
+    }
 }
 
 static void renderer_update_viewport(void *renderer)

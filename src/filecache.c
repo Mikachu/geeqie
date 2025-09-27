@@ -42,6 +42,25 @@ struct _FileCacheEntry {
 static void file_cache_notify_cb(FileData *fd, NotifyType type, gpointer data);
 static void file_cache_remove_fd(FileCacheData *fc, FileData *fd);
 
+static gint file_cache_entry_compare_fd(gconstpointer a, gconstpointer b)
+{
+    const FileCacheEntry *fe = a;
+    return (fe->fd == b) ? 0 : 1;
+}
+
+static void file_cache_remove_entry(FileCacheData *fc, GList *link)
+{
+    FileCacheEntry *fe = link->data;
+
+    DEBUG_1("cache remove: fc=%p %s", fc, fe->fd->path);
+
+    fc->list = g_list_delete_link(fc->list, link);
+    fc->size -= fe->size;
+    fc->release(fe->fd);
+    file_data_unref(fe->fd);
+    g_free(fe);
+}
+
 FileCacheData *file_cache_new(FileCacheReleaseFunc release, gulong max_size)
 {
     FileCacheData *fc = g_new(FileCacheData, 1);
@@ -58,59 +77,48 @@ FileCacheData *file_cache_new(FileCacheReleaseFunc release, gulong max_size)
 
 gboolean file_cache_get(FileCacheData *fc, FileData *fd)
 {
-    GList *work;
-
     g_assert(fc && fd);
 
-    work = fc->list;
-    while (work)
+    GList *work = g_list_find_custom(fc->list, fd, file_cache_entry_compare_fd);
+    if (!work)
     {
-        FileCacheEntry *fce = work->data;
-        if (fce->fd == fd)
-        {
-            /* entry exists */
-            DEBUG_2("cache hit: fc=%p %s", fc, fd->path);
-            if (work == fc->list) return TRUE; /* already at the beginning */
-            /* move it to the beginning */
-            DEBUG_2("cache move to front: fc=%p %s", fc, fd->path);
-            fc->list = g_list_remove_link(fc->list, work);
-            fc->list = g_list_concat(work, fc->list);
-
-            if (file_data_check_changed_files(fd)) {
-                /* file has been changed, cance entry is no longer valid */
-                file_cache_remove_fd(fc, fd);
-                return FALSE;
-        }
-            if (debug_file_cache) file_cache_dump(fc);
-            return TRUE;
-        }
-        work = work->next;
+        DEBUG_2("cache miss: fc=%p %s", fc, fd->path);
+        return FALSE;
     }
-    DEBUG_2("cache miss: fc=%p %s", fc, fd->path);
-    return FALSE;
+
+    /* entry exists */
+    DEBUG_2("cache hit: fc=%p %s", fc, fd->path);
+
+    if (work == fc->list) return TRUE; /* already at the beginning */
+
+    /* move it to the beginning */
+    DEBUG_2("cache move to front: fc=%p %s", fc, fd->path);
+    fc->list = g_list_remove_link(fc->list, work);
+    fc->list = g_list_concat(work, fc->list);
+
+    if (file_data_check_changed_files(fd))
+    {
+        /* file has been changed, cache entry is no longer valid */
+        file_cache_remove_fd(fc, fd);
+        return FALSE;
+    }
+
+    if (debug_file_cache) file_cache_dump(fc);
+    return TRUE;
 }
 
 void file_cache_set_size(FileCacheData *fc, gulong size)
 {
     GList *work;
-    FileCacheEntry *last_fe;
 
     if (debug_file_cache) file_cache_dump(fc);
 
     work = g_list_last(fc->list);
     while (fc->size > size && work)
     {
-        GList *prev;
-        last_fe = work->data;
-        prev = work->prev;
-        fc->list = g_list_delete_link(fc->list, work);
+        GList *prev = work->prev;
+        file_cache_remove_entry(fc, work);
         work = prev;
-
-        DEBUG_2("file changed - cache remove: fc=%p %s", fc, last_fe->fd->path);
-        fc->size -= last_fe->size;
-        fc->release(last_fe->fd);
-        file_data_unref(last_fe->fd);
-        g_free(last_fe);
     }
 }
 
@@ -148,29 +156,12 @@ void file_cache_set_max_size(FileCacheData *fc, gulong size)
 
 static void file_cache_remove_fd(FileCacheData *fc, FileData *fd)
 {
-    GList *work;
-    FileCacheEntry *fe;
-
     if (debug_file_cache) file_cache_dump(fc);
 
-    work = fc->list;
-    while (work)
-    {
-        GList *current = work;
-        fe = work->data;
-        work = work->next;
+    GList *list = g_list_find_custom(fc->list, fd, file_cache_entry_compare_fd);
+    if (!list) return;
 
-        if (fe->fd == fd)
-        {
-            fc->list = g_list_delete_link(fc->list, current);
-
-            DEBUG_1("cache remove: fc=%p %s", fc, fe->fd->path);
-            fc->size -= fe->size;
-            fc->release(fe->fd);
-            file_data_unref(fe->fd);
-            g_free(fe);
-        }
-    }
+    file_cache_remove_entry(fc, list);
 }
 
 void file_cache_dump(FileCacheData *fc)

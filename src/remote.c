@@ -311,7 +311,7 @@ static gboolean remote_client_send(RemoteConnection *rc, const gchar *text)
     {
         log_printf("error reading socket: %s\n", error->message);
         g_error_free(error);
-        ret = FALSE;;
+        ret = FALSE;
     }
     else
     {

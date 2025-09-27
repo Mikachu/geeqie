@@ -467,8 +467,7 @@ static GdkPixbuf *thumb_loader_std_finish(ThumbLoaderStd *tl, GdkPixbuf *pixbuf,
 
     if (sw <= tl->requested_width && sh <= tl->requested_height)
     {
-        result = pixbuf;
-        g_object_ref(result);
+        result = g_object_ref(pixbuf);
     }
     else
     {
@@ -489,8 +488,7 @@ static GdkPixbuf *thumb_loader_std_finish(ThumbLoaderStd *tl, GdkPixbuf *pixbuf,
         }
         else
         {
-            result = pixbuf;
-            g_object_ref(result);
+            result = g_object_ref(pixbuf);
         }
     }
 
@@ -736,8 +734,7 @@ GdkPixbuf *thumb_loader_std_get_pixbuf(ThumbLoaderStd *tl)
 
     if (tl && tl->fd && tl->fd->thumb_pixbuf)
     {
-        pixbuf = tl->fd->thumb_pixbuf;
-        g_object_ref(pixbuf);
+        pixbuf = g_object_ref(tl->fd->thumb_pixbuf);
     }
     else
     {
