@@ -401,7 +401,7 @@ static void image_update_title(ImageWindow *imd)
  */
 static gboolean image_get_x11_screen_profile(ImageWindow *imd, guchar **screen_profile, gint *screen_profile_len)
 {
-    GdkScreen *screen = gtk_widget_get_screen(imd->widget);;
+    GdkScreen *screen = gtk_widget_get_screen(imd->widget);
     GdkAtom    type   = GDK_NONE;
     gint       format = 0;
 

@@ -34,7 +34,6 @@
 #include "pixbuf_util.h"
 #include "print.h"
 #include "ui_fileops.h"
-#include "ui_tree_edit.h"
 #include "utilops.h"
 #include "window.h"
 
@@ -214,7 +213,7 @@ GList *collection_list_insert(GList *list, CollectInfo *ci, CollectInfo *insert_
         GList *point;
 
         point = g_list_find(list, insert_ci);
-        list = uig_list_insert_link(list, point, ci);
+        list = g_list_insert_before(list, point, ci);
     }
 
     return list;

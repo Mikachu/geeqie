@@ -364,7 +364,7 @@ public:
 		else
 			{
 #if EXIV2_TEST_VERSION(0,17,0)
-			gchar *pathl = path_from_utf8(path);;
+			gchar *pathl = path_from_utf8(path);
 
 			auto sidecar = Exiv2::ImageFactory::create(Exiv2::ImageType::xmp, pathl);
 
