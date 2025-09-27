@@ -948,7 +948,7 @@ static void dest_filter_add(Dest_Data *dd, const gchar *filter, const gchar *des
         c++;
     }
 
-    dd->filter_list = uig_list_insert_link(dd->filter_list, g_list_last(dd->filter_list), g_strdup(filter));
+    dd->filter_list = g_list_insert_before(dd->filter_list, g_list_last(dd->filter_list), g_strdup(filter));
 
     if (description)
     {
@@ -958,7 +958,7 @@ static void dest_filter_add(Dest_Data *dd, const gchar *filter, const gchar *des
     {
         buf = g_strdup_printf("( %s )", filter);
     }
-    dd->filter_text_list = uig_list_insert_link(dd->filter_text_list, g_list_last(dd->filter_text_list), buf);
+    dd->filter_text_list = g_list_insert_before(dd->filter_text_list, g_list_last(dd->filter_text_list), buf);
 
     if (set) gtk_entry_set_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(dd->filter_combo))), filter);
     dest_filter_list_sync(dd);

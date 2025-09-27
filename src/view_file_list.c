@@ -177,8 +177,7 @@ static void vflist_store_clear(ViewFile *vf, gboolean unlock_files)
         gtk_tree_view_get_visible_range(GTK_TREE_VIEW(vf->listview), &scroll_path, NULL);
     g_object_set_data(G_OBJECT(vf->listview), "scroll_path", scroll_path);
 
-    store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
-    g_object_ref(store);
+    store = g_object_ref(gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview)));
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(vf->listview), NULL);
     g_object_set_data(G_OBJECT(vf->listview), "detached_store", store);
