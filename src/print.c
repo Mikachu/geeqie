@@ -1819,8 +1819,7 @@ static gboolean print_job_preview_page_text(PrintWindow *pw, const gchar *text, 
 static gboolean print_job_preview_init(PrintWindow *pw)
 {
     if (pw->job_pixbuf) g_object_unref(pw->job_pixbuf);
-    pw->job_pixbuf = image_get_pixbuf(pw->layout_image);
-    g_object_ref(pw->job_pixbuf);
+    pw->job_pixbuf = g_object_ref(image_get_pixbuf(pw->layout_image));
 
     return print_job_preview_page_new(pw, pw->job_page);
 }

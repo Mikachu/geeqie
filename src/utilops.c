@@ -1835,7 +1835,7 @@ static gchar *file_util_details_get_message(UtilityData *ud, FileData *fd, const
         if (stock_id) *stock_id = GTK_STOCK_DIALOG_INFO;
     }
 
-    return g_string_free(message, FALSE);;
+    return g_string_free(message, FALSE);
 }
 
 static void file_util_details_dialog(UtilityData *ud, FileData *fd)

@@ -48,8 +48,6 @@ SlideShowData *slideshow_start(LayoutWindow *lw, gint start_point,
                    void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
 
 gboolean slideshow_paused(SlideShowData *ss);
-void slideshow_pause_set(SlideShowData *ss, gboolean paused);
-gboolean slideshow_pause_toggle(SlideShowData *ss);
-
+void slideshow_pause_toggle(SlideShowData *ss);
 
 #endif

@@ -2320,8 +2320,7 @@ GtkWidget *layout_actions_menu_bar(LayoutWindow *lw)
 {
     if (lw->menu_bar) return lw->menu_bar;
     lw->menu_bar = gtk_ui_manager_get_widget(lw->ui_manager, "/MainMenu");
-    g_object_ref(lw->menu_bar);
-    return lw->menu_bar;
+    return g_object_ref(lw->menu_bar);
 }
 
 GtkWidget *layout_actions_toolbar(LayoutWindow *lw, ToolbarType type)
@@ -2343,8 +2342,7 @@ GtkWidget *layout_actions_toolbar(LayoutWindow *lw, ToolbarType type)
         default:
             break;
     }
-    g_object_ref(lw->toolbar[type]);
-    return lw->toolbar[type];
+    return g_object_ref(lw->toolbar[type]);
 }
 
 /*
@@ -2754,8 +2752,7 @@ GtkWidget *layout_bars_prepare(LayoutWindow *lw, GtkWidget *image)
 
     gtk_widget_show(image);
 
-    g_object_ref(lw->utility_box);
-    return lw->utility_box;
+    return g_object_ref(lw->utility_box);
 }
 
 void layout_bars_close(LayoutWindow *lw)
