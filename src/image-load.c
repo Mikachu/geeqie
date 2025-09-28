@@ -488,32 +488,6 @@ static void image_loader_area_updated_cb(gpointer loader,
 
 static void image_loader_area_prepared_cb(gpointer loader, gpointer data)
 {
-    ImageLoader *il = data;
-    GdkPixbuf *pb;
-    guchar *pix;
-    size_t h, rs;
-
-    /* a workaround for
-       http://bugzilla.gnome.org/show_bug.cgi?id=547669
-       http://bugzilla.gnome.org/show_bug.cgi?id=589334
-    */
-    gchar *format = il->backend.get_format_name(loader);
-    if (strcmp(format, "svg") == 0 ||
-        strcmp(format, "xpm") == 0)
-    {
-        g_free(format);
-        return;
-    }
-
-    g_free(format);
-
-    pb = il->backend.get_pixbuf(loader);
-
-    h = gdk_pixbuf_get_height(pb);
-    rs = gdk_pixbuf_get_rowstride(pb);
-    pix = gdk_pixbuf_get_pixels(pb);
-
-    memset(pix, 0, rs * h); /*this should be faster than pixbuf_fill */
 
 }
 
