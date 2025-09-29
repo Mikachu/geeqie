@@ -24,11 +24,10 @@
 
 #define TYPE_IMAGE_LOADER       (image_loader_get_type())
 
-typedef void (*ImageLoaderBackendCbAreaPrepared)(gpointer loader, gpointer data);
 typedef void (*ImageLoaderBackendCbSize)(gpointer loader, gint width, gint height, gpointer data);
 typedef void (*ImageLoaderBackendCbAreaUpdated)(gpointer loader, guint x, guint y, guint w, guint h, gpointer data);
 
-typedef gpointer (*ImageLoaderBackendFuncLoaderNew)(ImageLoaderBackendCbAreaUpdated, ImageLoaderBackendCbSize, ImageLoaderBackendCbAreaPrepared, gpointer data);
+typedef gpointer (*ImageLoaderBackendFuncLoaderNew)(ImageLoaderBackendCbAreaUpdated, ImageLoaderBackendCbSize, gpointer data);
 typedef void (*ImageLoaderBackendFuncSetSize)(gpointer loader, int width, int height);
 typedef gboolean (*ImageLoaderBackendFuncLoad)(gpointer loader, const guchar *buf, gsize count, GError **error); /* optional, load whole image at once */
 typedef gboolean (*ImageLoaderBackendFuncWrite)(gpointer loader, const guchar *buf, gsize count, GError **error);
