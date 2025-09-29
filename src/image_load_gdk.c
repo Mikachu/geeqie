@@ -43,7 +43,7 @@ static gchar** image_loader_gdk_get_format_mime_types(gpointer loader)
     return gdk_pixbuf_format_get_mime_types(gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader)));
 }
 
-static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, ImageLoaderBackendCbAreaPrepared area_prepared_cb, gpointer data)
+static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, gpointer data)
 {
     ImageLoader *il = (ImageLoader *)data;
     GdkPixbufLoader *loader;
@@ -56,7 +56,6 @@ static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_update
 
     g_signal_connect(G_OBJECT(loader), "area_updated", G_CALLBACK(area_updated_cb), data);
     g_signal_connect(G_OBJECT(loader), "size_prepared", G_CALLBACK(size_cb), data);
-    g_signal_connect(G_OBJECT(loader), "area_prepared", G_CALLBACK(area_prepared_cb), data);
     return (gpointer) loader;
 }
 

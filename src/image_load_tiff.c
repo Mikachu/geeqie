@@ -38,7 +38,6 @@ typedef struct _ImageLoaderTiff ImageLoaderTiff;
 struct _ImageLoaderTiff {
     ImageLoaderBackendCbAreaUpdated area_updated_cb;
     ImageLoaderBackendCbSize size_cb;
-    ImageLoaderBackendCbAreaPrepared area_prepared_cb;
 
     gpointer data;
 
@@ -224,8 +223,6 @@ static gboolean image_loader_tiff_load (gpointer loader, const guchar *buf, gsiz
         return FALSE;
     }
 
-    lt->area_prepared_cb(loader, lt->data);
-
     if (TIFFGetField(tiff, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
     {
         /* read by strip */
@@ -311,13 +308,12 @@ static gboolean image_loader_tiff_load (gpointer loader, const guchar *buf, gsiz
 }
 
 
-static gpointer image_loader_tiff_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, ImageLoaderBackendCbAreaPrepared area_prepared_cb, gpointer data)
+static gpointer image_loader_tiff_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, gpointer data)
 {
     ImageLoaderTiff *loader = g_new0(ImageLoaderTiff, 1);
 
     loader->area_updated_cb = area_updated_cb;
     loader->size_cb = size_cb;
-    loader->area_prepared_cb = area_prepared_cb;
     loader->data = data;
     return (gpointer) loader;
 }

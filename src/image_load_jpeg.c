@@ -40,7 +40,6 @@ typedef struct _ImageLoaderJpeg ImageLoaderJpeg;
 struct _ImageLoaderJpeg {
     ImageLoaderBackendCbAreaUpdated area_updated_cb;
     ImageLoaderBackendCbSize size_cb;
-    ImageLoaderBackendCbAreaPrepared area_prepared_cb;
 
     gpointer data;
 
@@ -129,13 +128,12 @@ convert_cmyk_to_rgb (struct jpeg_decompress_struct *cinfo,
 }
 
 
-static gpointer image_loader_jpeg_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, ImageLoaderBackendCbAreaPrepared area_prepared_cb, gpointer data)
+static gpointer image_loader_jpeg_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, gpointer data)
 {
         ImageLoaderJpeg *loader = g_new0(ImageLoaderJpeg, 1);
 
     loader->area_updated_cb = area_updated_cb;
     loader->size_cb = size_cb;
-    loader->area_prepared_cb = area_prepared_cb;
     loader->data = data;
     return (gpointer) loader;
 }
@@ -393,7 +391,6 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
         return 0;
     }
     if (lj->stereo) g_object_set_data(G_OBJECT(lj->pixbuf), "stereo_data", GINT_TO_POINTER(STEREO_PIXBUF_CROSS));
-    lj->area_prepared_cb(loader, lj->data);
 
     rowstride = gdk_pixbuf_get_rowstride(lj->pixbuf);
     dptr = gdk_pixbuf_get_pixels(lj->pixbuf);
