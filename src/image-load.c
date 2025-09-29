@@ -486,11 +486,6 @@ static void image_loader_area_updated_cb(gpointer loader,
     g_mutex_unlock(il->data_mutex);
 }
 
-static void image_loader_area_prepared_cb(gpointer loader, gpointer data)
-{
-
-}
-
 static void image_loader_size_cb(gpointer loader,
                  gint width, gint height, gpointer data)
 {
@@ -580,7 +575,7 @@ static void image_loader_setup_loader(ImageLoader *il)
 #endif
         image_loader_backend_set_default(&il->backend);
 
-    il->loader = il->backend.loader_new(image_loader_area_updated_cb, image_loader_size_cb, image_loader_area_prepared_cb, il);
+    il->loader = il->backend.loader_new(image_loader_area_updated_cb, image_loader_size_cb, il);
     g_mutex_unlock(il->data_mutex);
 }
 
