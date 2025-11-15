@@ -349,35 +349,41 @@ static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GLis
     if (*list)
     {
         ImageLoaderAreaParam *prev_par = (*list)->data;
-        if (prev_par->x == x && prev_par->w == w &&
-            prev_par->y + prev_par->h == y)
+
+        if (prev_par->x == x && prev_par->w == w)
         {
-            /* we can merge the notifications */
-            prev_par->h += h;
-            return NULL;
+            if (prev_par->y + prev_par->h == y)
+            {
+                /* we can merge the notifications */
+                prev_par->h += h;
+                return NULL;
+            }
+
+            if (prev_par->y == y + h)
+            {
+                /* we can merge the notifications */
+                prev_par->y = y;
+                prev_par->h += h;
+                return NULL;
+            }
         }
-        if (prev_par->x == x && prev_par->w == w &&
-            y + h == prev_par->y)
+
+        if (prev_par->y == y && prev_par->h == h)
         {
-            /* we can merge the notifications */
-            prev_par->h += h;
-            prev_par->y = y;
-            return NULL;
-        }
-        if (prev_par->y == y && prev_par->h == h &&
-            prev_par->x + prev_par->w == x)
-        {
-            /* we can merge the notifications */
-            prev_par->w += w;
-            return NULL;
-        }
-        if (prev_par->y == y && prev_par->h == h &&
-            x + w == prev_par->x)
-        {
-            /* we can merge the notifications */
-            prev_par->w += w;
-            prev_par->x = x;
-            return NULL;
+            if (prev_par->x + prev_par->w == x)
+            {
+                /* we can merge the notifications */
+                prev_par->w += w;
+                return NULL;
+            }
+
+            if (prev_par->x == x + w)
+            {
+                /* we can merge the notifications */
+                prev_par->x = x;
+                prev_par->w += w;
+                return NULL;
+            }
         }
     }
 
