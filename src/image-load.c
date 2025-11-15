@@ -176,7 +176,7 @@ static void image_loader_class_init(ImageLoaderClass *class)
         g_signal_new("size_prepared",
                  G_OBJECT_CLASS_TYPE(gobject_class),
                  G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, area_ready),
+                 G_STRUCT_OFFSET(ImageLoaderClass, size_prepared),
                  NULL, NULL,
                  gq_marshal_VOID__INT_INT,
                  G_TYPE_NONE, 2,
