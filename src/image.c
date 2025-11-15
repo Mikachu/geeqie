@@ -862,7 +862,7 @@ static void image_load_done_cb(ImageLoader *il, gpointer data)
     image_read_ahead_start(imd);
 }
 
-static void image_load_size_cb(ImageLoader *il, guint width, guint height, gpointer data)
+static void image_load_size_cb(ImageLoader *il, gint width, gint height, gpointer data)
 {
     ImageWindow *imd = data;
 

@@ -2903,7 +2903,7 @@ gboolean pixbuf_renderer_get_virtual_rect(PixbufRenderer *pr, GdkRectangle *rect
     return TRUE;
 }
 
-void pixbuf_renderer_set_size_early(PixbufRenderer *pr, guint width, guint height)
+void pixbuf_renderer_set_size_early(PixbufRenderer *pr, gint width, gint height)
 {
 #if 0
     /* FIXME: this function does not consider the image orientation,
