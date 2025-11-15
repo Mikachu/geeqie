@@ -804,7 +804,7 @@ static void image_load_pixbuf_ready(ImageWindow *imd)
     image_change_pixbuf(imd, image_loader_get_pixbuf(imd->il), image_zoom_get(imd), FALSE);
 }
 
-static void image_load_area_cb(ImageLoader *il, guint x, guint y, guint w, guint h, gpointer data)
+static void image_load_area_cb(ImageLoader *il, gint x, gint y, gint w, gint h, gpointer data)
 {
     ImageWindow *imd = data;
     PixbufRenderer *pr;

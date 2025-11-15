@@ -260,10 +260,10 @@ ImageLoader *image_loader_new(FileData *fd)
 typedef struct _ImageLoaderAreaParam ImageLoaderAreaParam;
 struct _ImageLoaderAreaParam {
     ImageLoader *il;
-    guint x;
-    guint y;
-    guint w;
-    guint h;
+    gint x;
+    gint y;
+    gint w;
+    gint h;
 };
 
 
@@ -271,7 +271,7 @@ static gboolean image_loader_emit_area_ready_cb(gpointer data)
 {
     ImageLoaderAreaParam *par = data;
     ImageLoader *il = par->il;
-    guint x, y, w, h;
+    gint x, y, w, h;
     g_mutex_lock(il->data_mutex);
     il->area_param_list = g_list_remove(il->area_param_list, par);
     x = par->x;
@@ -344,7 +344,7 @@ static void image_loader_emit_size(ImageLoader *il)
     g_idle_add_full(G_PRIORITY_HIGH, image_loader_emit_size_cb, il, NULL);
 }
 
-static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GList **list, guint x, guint y, guint w, guint h)
+static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GList **list, gint x, gint y, gint w, gint h)
 {
     if (*list)
     {
@@ -399,7 +399,7 @@ static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GLis
 }
 
 /* this function expects that il->data_mutex is locked by caller */
-static void image_loader_emit_area_ready(ImageLoader *il, guint x, guint y, guint w, guint h)
+static void image_loader_emit_area_ready(ImageLoader *il, gint x, gint y, gint w, gint h)
 {
     ImageLoaderAreaParam *par = image_loader_queue_area_ready(il, &il->area_param_list, x, y, w, h);
 
@@ -413,7 +413,7 @@ static void image_loader_emit_area_ready(ImageLoader *il, guint x, guint y, guin
 /* the following functions may be executed in separate thread */
 
 /* this function expects that il->data_mutex is locked by caller */
-static void image_loader_queue_delayed_area_ready(ImageLoader *il, guint x, guint y, guint w, guint h)
+static void image_loader_queue_delayed_area_ready(ImageLoader *il, gint x, gint y, gint w, gint h)
 {
     image_loader_queue_area_ready(il, &il->area_param_delayed_list, x, y, w, h);
 }
@@ -467,7 +467,7 @@ static void image_loader_sync_pixbuf(ImageLoader *il)
 }
 
 static void image_loader_area_updated_cb(gpointer loader,
-                 guint x, guint y, guint w, guint h,
+                 gint x, gint y, gint w, gint h,
                  gpointer data)
 {
     ImageLoader *il = data;

@@ -25,7 +25,7 @@
 #define TYPE_IMAGE_LOADER       (image_loader_get_type())
 
 typedef void (*ImageLoaderBackendCbSize)(gpointer loader, gint width, gint height, gpointer data);
-typedef void (*ImageLoaderBackendCbAreaUpdated)(gpointer loader, guint x, guint y, guint w, guint h, gpointer data);
+typedef void (*ImageLoaderBackendCbAreaUpdated)(gpointer loader, gint x, gint y, gint w, gint h, gpointer data);
 
 typedef gpointer (*ImageLoaderBackendFuncLoaderNew)(ImageLoaderBackendCbAreaUpdated, ImageLoaderBackendCbSize, gpointer data);
 typedef void (*ImageLoaderBackendFuncSetSize)(gpointer loader, int width, int height);
@@ -108,7 +108,7 @@ struct _ImageLoaderClass {
     GObjectClass parent;
 
     /* class members */
-    void (*area_ready)(ImageLoader *, guint x, guint y, guint w, guint h, gpointer);
+    void (*area_ready)(ImageLoader *, gint x, gint y, gint w, gint h, gpointer);
     void (*error)(ImageLoader *, gpointer);
     void (*done)(ImageLoader *, gpointer);
     void (*percent)(ImageLoader *, gdouble, gpointer);
