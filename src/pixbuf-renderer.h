@@ -237,7 +237,6 @@ GType pixbuf_renderer_get_type(void);
 PixbufRenderer *pixbuf_renderer_new(void);
 
 void pixbuf_renderer_set_parent(PixbufRenderer *pr, GtkWindow *window);
-GtkWindow *pixbuf_renderer_get_parent(PixbufRenderer *pr);
 
 /* display a pixbuf */
 
@@ -317,7 +316,6 @@ void pixbuf_renderer_set_color(PixbufRenderer *pr, GdkColor *color);
 gint pixbuf_renderer_overlay_add(PixbufRenderer *pr, GdkPixbuf *pixbuf, gint x, gint y,
                  OverlayRendererFlags flags);
 void pixbuf_renderer_overlay_set(PixbufRenderer *pr, gint id, GdkPixbuf *pixbuf, gint x, gint y);
-gboolean pixbuf_renderer_overlay_get(PixbufRenderer *pr, gint id, GdkPixbuf **pixbuf, gint *x, gint *y);
 void pixbuf_renderer_overlay_remove(PixbufRenderer *pr, gint id);
 
 gboolean pixbuf_renderer_get_mouse_position(PixbufRenderer *pr, gint *x_pixel, gint *y_pixel);
