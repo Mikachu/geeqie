@@ -1903,7 +1903,7 @@ void image_grab_focus(ImageWindow *imd)
  *-------------------------------------------------------------------
  */
 
-static void image_options_set(ImageWindow *imd)
+static void image_options_set(ImageWindow *imd, ConfOptions *options)
 {
     g_object_set(G_OBJECT(imd->pr), "zoom_quality", options->image.zoom_quality,
                     "zoom_2pass", options->image.zoom_2pass,
@@ -1929,18 +1929,7 @@ static void image_options_set(ImageWindow *imd)
 
 void image_options_sync(void)
 {
-    GList *work;
-
-    work = image_list;
-    while (work)
-    {
-        ImageWindow *imd;
-
-        imd = work->data;
-        work = work->next;
-
-        image_options_set(imd);
-    }
+    g_list_foreach(image_list, (GFunc)image_options_set, options);
 }
 
 /*
@@ -2101,7 +2090,7 @@ ImageWindow *image_new(gboolean frame)
 
     imd->pr = GTK_WIDGET(pixbuf_renderer_new());
 
-    image_options_set(imd);
+    image_options_set(imd, options);
 
     imd->widget = gtk_vbox_new(0, 0);
 
