@@ -1200,12 +1200,9 @@ gint pixbuf_renderer_get_tiles(PixbufRenderer *pr)
     return pr->source_tiles_enabled;
 }
 
-static void pr_zoom_adjust_real(PixbufRenderer *pr, gdouble increment,
-                PrZoomFlags flags, gint x, gint y)
+static gdouble pr_zoom_adjust(const PixbufRenderer *pr, gdouble increment)
 {
     gdouble zoom = pr->zoom;
-
-    if (increment == 0.0) return;
 
     if (zoom == 0.0)
     {
@@ -1256,7 +1253,7 @@ static void pr_zoom_adjust_real(PixbufRenderer *pr, gdouble increment,
         }
     }
 
-    pr_zoom_sync(pr, zoom, flags, x, y);
+    return zoom;
 }
 
 
@@ -2618,16 +2615,16 @@ void pixbuf_renderer_area_changed(PixbufRenderer *pr, gint x, gint y, gint w, gi
 
 void pixbuf_renderer_zoom_adjust(PixbufRenderer *pr, gdouble increment)
 {
-    g_return_if_fail(IS_PIXBUF_RENDERER(pr));
+    g_return_if_fail(IS_PIXBUF_RENDERER(pr) && increment != 0.0);
 
-    pr_zoom_adjust_real(pr, increment, PR_ZOOM_NONE, 0, 0);
+    pr_zoom_sync(pr, pr_zoom_adjust(pr, increment), PR_ZOOM_NONE, 0, 0);
 }
 
 void pixbuf_renderer_zoom_adjust_at_point(PixbufRenderer *pr, gdouble increment, gint x, gint y)
 {
-    g_return_if_fail(IS_PIXBUF_RENDERER(pr));
+    g_return_if_fail(IS_PIXBUF_RENDERER(pr) && increment != 0.0);
 
-    pr_zoom_adjust_real(pr, increment, PR_ZOOM_CENTER, x, y);
+    pr_zoom_sync(pr, pr_zoom_adjust(pr, increment), PR_ZOOM_CENTER, x, y);
 }
 
 void pixbuf_renderer_zoom_set(PixbufRenderer *pr, gdouble zoom)
