@@ -297,225 +297,10 @@ gboolean util_clip_region(gint x, gint y, gint w, gint h,
  *-----------------------------------------------------------------------------
  */
 
-static void pixbuf_copy_block_rotate(guchar *src, gint src_row_stride, gint x, gint y,
-                     guchar *dest, gint dest_row_stride, gint w, gint h,
-                     gint bytes_per_pixel, gboolean counter_clockwise)
-{
-    gint i, j;
-    guchar *sp;
-    guchar *dp;
-
-    for (i = 0; i < h; i++)
-    {
-        sp = src + ((i + y) * src_row_stride) + (x * bytes_per_pixel);
-        for (j = 0; j < w; j++)
-        {
-            if (counter_clockwise)
-            {
-                dp = dest + ((w - j - 1) * dest_row_stride) + (i * bytes_per_pixel);
-            }
-            else
-            {
-                dp = dest + (j * dest_row_stride) + ((h - i - 1) * bytes_per_pixel);
-            }
-            *(dp++) = *(sp++);  /* r */
-            *(dp++) = *(sp++);  /* g */
-            *(dp++) = *(sp++);  /* b */
-            if (bytes_per_pixel == 4) *(dp) = *(sp++);  /* a */
-        }
-    }
-
-}
-
-static void pixbuf_copy_block(guchar *src, gint src_row_stride, gint w, gint h,
-                  guchar *dest, gint dest_row_stride, gint x, gint y, gint bytes_per_pixel)
-{
-    gint i;
-    guchar *sp;
-    guchar *dp;
-
-    for (i = 0; i < h; i++)
-    {
-        sp = src + (i * src_row_stride);
-        dp = dest + ((y + i) * dest_row_stride) + (x * bytes_per_pixel);
-        memcpy(dp, sp, w * bytes_per_pixel);
-    }
-}
-
-#define ROTATE_BUFFER_WIDTH 48
-#define ROTATE_BUFFER_HEIGHT 48
-
-/*
- * Returns a copy of pixbuf src rotated 90 degrees clockwise or 90 counterclockwise
- *
- */
-GdkPixbuf *pixbuf_copy_rotate_90(GdkPixbuf *src, gboolean counter_clockwise)
-{
-    GdkPixbuf *dest;
-    gboolean has_alpha;
-    gint sw, sh, srs;
-    gint dw, dh, drs;
-    guchar *s_pix;
-    guchar *d_pix;
-    gint i, j;
-    gint a;
-    GdkPixbuf *buffer;
-    guchar *b_pix;
-    gint brs;
-    gint w, h;
-
-    if (!src) return NULL;
-
-    sw = gdk_pixbuf_get_width(src);
-    sh = gdk_pixbuf_get_height(src);
-    has_alpha = gdk_pixbuf_get_has_alpha(src);
-    srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
-
-    dw = sh;
-    dh = sw;
-    dest = gdk_pixbuf_new(GDK_COLORSPACE_RGB, has_alpha, 8, dw, dh);
-    drs = gdk_pixbuf_get_rowstride(dest);
-    d_pix = gdk_pixbuf_get_pixels(dest);
-
-    a = (has_alpha ? 4 : 3);
-
-    buffer = gdk_pixbuf_new(GDK_COLORSPACE_RGB, has_alpha, 8,
-                ROTATE_BUFFER_WIDTH, ROTATE_BUFFER_HEIGHT);
-    b_pix = gdk_pixbuf_get_pixels(buffer);
-    brs = gdk_pixbuf_get_rowstride(buffer);
-
-    for (i = 0; i < sh; i+= ROTATE_BUFFER_WIDTH)
-    {
-        w = MIN(ROTATE_BUFFER_WIDTH, (sh - i));
-        for (j = 0; j < sw; j += ROTATE_BUFFER_HEIGHT)
-        {
-            gint x, y;
-
-            h = MIN(ROTATE_BUFFER_HEIGHT, (sw - j));
-            pixbuf_copy_block_rotate(s_pix, srs, j, i,
-                         b_pix, brs, h, w,
-                         a, counter_clockwise);
-
-            if (counter_clockwise)
-            {
-                x = i;
-                y = sw - h - j;
-            }
-            else
-            {
-                x = sh - w - i;
-                y = j;
-            }
-            pixbuf_copy_block(b_pix, brs, w, h,
-                      d_pix, drs, x, y, a);
-        }
-    }
-
-    g_object_unref(buffer);
-
-#if 0
-    /* this is the simple version of rotation (roughly 2-4x slower) */
-
-    for (i = 0; i < sh; i++)
-    {
-        sp = s_pix + (i * srs);
-        for (j = 0; j < sw; j++)
-        {
-            if (counter_clockwise)
-            {
-                dp = d_pix + ((dh - j - 1) * drs) + (i * a);
-            }
-            else
-            {
-                dp = d_pix + (j * drs) + ((dw - i - 1) * a);
-            }
-
-            *(dp++) = *(sp++);  /* r */
-            *(dp++) = *(sp++);  /* g */
-            *(dp++) = *(sp++);  /* b */
-            if (has_alpha) *(dp) = *(sp++); /* a */
-        }
-    }
-#endif
-
-    return dest;
-}
-
-/*
- * Returns a copy of pixbuf mirrored and or flipped.
- * TO do a 180 degree rotations set both mirror and flipped TRUE
- * if mirror and flip are FALSE, result is a simple copy.
- */
-GdkPixbuf *pixbuf_copy_mirror(GdkPixbuf *src, gboolean mirror, gboolean flip)
-{
-    GdkPixbuf *dest;
-    gboolean has_alpha;
-    gint w, h, srs;
-    gint drs;
-    guchar *s_pix;
-    guchar *d_pix;
-    guchar *sp;
-    guchar *dp;
-    gint i, j;
-    gint a;
-
-    if (!src) return NULL;
-
-    w = gdk_pixbuf_get_width(src);
-    h = gdk_pixbuf_get_height(src);
-    has_alpha = gdk_pixbuf_get_has_alpha(src);
-    srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
-
-    dest = gdk_pixbuf_new(GDK_COLORSPACE_RGB, has_alpha, 8, w, h);
-    drs = gdk_pixbuf_get_rowstride(dest);
-    d_pix = gdk_pixbuf_get_pixels(dest);
-
-    a = has_alpha ? 4 : 3;
-
-    for (i = 0; i < h; i++)
-    {
-        sp = s_pix + (i * srs);
-        if (flip)
-        {
-            dp = d_pix + ((h - i - 1) * drs);
-        }
-        else
-        {
-            dp = d_pix + (i * drs);
-        }
-        if (mirror)
-        {
-            dp += (w - 1) * a;
-            for (j = 0; j < w; j++)
-            {
-                *(dp++) = *(sp++);  /* r */
-                *(dp++) = *(sp++);  /* g */
-                *(dp++) = *(sp++);  /* b */
-                if (has_alpha) *(dp) = *(sp++); /* a */
-                dp -= (a + 3);
-            }
-        }
-        else
-        {
-            for (j = 0; j < w; j++)
-            {
-                *(dp++) = *(sp++);  /* r */
-                *(dp++) = *(sp++);  /* g */
-                *(dp++) = *(sp++);  /* b */
-                if (has_alpha) *(dp++) = *(sp++);   /* a */
-            }
-        }
-    }
-
-    return dest;
-}
-
 GdkPixbuf *pixbuf_apply_orientation(GdkPixbuf *pixbuf, gint orientation)
 {
-    GdkPixbuf *dest;
-    GdkPixbuf *tmp = NULL;
+    GdkPixbuf *dest = NULL;
+    GdkPixbuf *flipped = NULL;
 
     switch (orientation)
     {
@@ -524,37 +309,37 @@ GdkPixbuf *pixbuf_apply_orientation(GdkPixbuf *pixbuf, gint orientation)
             break;
         case EXIF_ORIENTATION_TOP_RIGHT:
             /* mirrored */
-            dest = pixbuf_copy_mirror(pixbuf, TRUE, FALSE);
+            dest = gdk_pixbuf_flip(pixbuf, TRUE);
             break;
         case EXIF_ORIENTATION_BOTTOM_RIGHT:
             /* upside down */
-            dest = pixbuf_copy_mirror(pixbuf, TRUE, TRUE);
+            dest = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_UPSIDEDOWN);
             break;
         case EXIF_ORIENTATION_BOTTOM_LEFT:
             /* flipped */
-            dest = pixbuf_copy_mirror(pixbuf, FALSE, TRUE);
+            dest = gdk_pixbuf_flip(pixbuf, FALSE);
             break;
         case EXIF_ORIENTATION_LEFT_TOP:
-            tmp = pixbuf_copy_mirror(pixbuf, FALSE, TRUE);
-            dest = pixbuf_copy_rotate_90(tmp, FALSE);
+            flipped = gdk_pixbuf_flip(pixbuf, FALSE);
+            dest = gdk_pixbuf_rotate_simple(flipped, GDK_PIXBUF_ROTATE_CLOCKWISE);
             break;
         case EXIF_ORIENTATION_RIGHT_TOP:
             /* rotated -90 (270) */
-            dest = pixbuf_copy_rotate_90(pixbuf, FALSE);
+            dest = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
             break;
         case EXIF_ORIENTATION_RIGHT_BOTTOM:
-            tmp = pixbuf_copy_mirror(pixbuf, FALSE, TRUE);
-            dest = pixbuf_copy_rotate_90(tmp, TRUE);
+            flipped = gdk_pixbuf_flip(pixbuf, FALSE);
+            dest = gdk_pixbuf_rotate_simple(flipped, GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE);
             break;
         case EXIF_ORIENTATION_LEFT_BOTTOM:
             /* rotated 90 */
-            dest = pixbuf_copy_rotate_90(pixbuf, TRUE);
+            dest = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE);
             break;
         default:
             dest = gdk_pixbuf_copy(pixbuf);
             break;
     }
-    if (tmp) g_object_unref(tmp);
+    if (flipped) g_object_unref(flipped);
     return dest;
 
 }
