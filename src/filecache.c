@@ -89,12 +89,13 @@ gboolean file_cache_get(FileCacheData *fc, FileData *fd)
     /* entry exists */
     DEBUG_2("cache hit: fc=%p %s", fc, fd->path);
 
-    if (work == fc->list) return TRUE; /* already at the beginning */
-
-    /* move it to the beginning */
-    DEBUG_2("cache move to front: fc=%p %s", fc, fd->path);
-    fc->list = g_list_remove_link(fc->list, work);
-    fc->list = g_list_concat(work, fc->list);
+    if (work != fc->list)
+    {
+        /* move it to the beginning */
+        DEBUG_2("cache move to front: fc=%p %s", fc, fd->path);
+        fc->list = g_list_remove_link(fc->list, work);
+        fc->list = g_list_concat(work, fc->list);
+    }
 
     if (file_data_check_changed_files(fd))
     {
