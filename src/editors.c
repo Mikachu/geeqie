@@ -665,7 +665,13 @@ static gchar *editor_command_path_parse(const FileData *fd, gboolean consider_si
             p = fd->path;
         else
         {
-            while (work)
+            GList *work_primary = g_list_find_custom(editor->ext_list, fd->extension,
+                                                     (GCompareFunc)g_ascii_strcasecmp);
+            if (work_primary)
+            {
+                p = fd->path;
+            }
+            else while (work)
             {
                 GList *work2;
                 gchar *ext = work->data;
