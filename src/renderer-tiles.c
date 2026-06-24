@@ -1900,66 +1900,14 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
 		box = GTK_WIDGET(pr);
 		window = gtk_widget_get_window(box);
 
-		/* Blit each tile's off-screen surface to the window at the new scroll
-		 * position. This avoids copying from the screen framebuffer, which
-		 * produces garbage for areas previously obscured by other windows. */
-		{
-		GList *work = rt->tiles;
-		GList *to_queue = NULL;		
-		cairo_t *cr = gdk_cairo_create(window);
-		while (work)
-			{
-			ImageTile *it = work->data;
-			work = work->next;
-
-			if (!rt_tile_is_visible(rt, it)) continue;
-
-			if (it->render_todo == TILE_RENDER_NONE || it->blank || !it->surface)
-				{
-				/* defer queuing until after iteration to avoid modifying rt->tiles mid-loop */
-				to_queue = g_list_prepend(to_queue, it);
-				continue;
-				}
-
-			cairo_set_source_surface(cr, it->surface,
-				pr->x_offset + (it->x - rt->x_scroll) + rt->stereo_off_x,
-				pr->y_offset + (it->y - rt->y_scroll) + rt->stereo_off_y);
-			cairo_rectangle(cr,
-				pr->x_offset + (it->x - rt->x_scroll) + rt->stereo_off_x,
-				pr->y_offset + (it->y - rt->y_scroll) + rt->stereo_off_y,
-				it->w, it->h);
-			cairo_fill(cr);
-			}
-
-		cairo_destroy(cr);
-		work = to_queue;
-		while (work)
-			{
-			ImageTile *it = work->data;
-			work = work->next;
-			rt_queue(rt, it->x, it->y, it->w, it->h, TRUE, TILE_RENDER_ALL, FALSE, FALSE);
-			}
-		g_list_free(to_queue);
-		}
+		rt_queue(rt, rt->x_scroll, rt->y_scroll,  
+				 pr->vis_width, pr->vis_height,  
+				 TRUE, TILE_RENDER_ALL, FALSE, FALSE);
 
 		rt_overlay_queue_all(rt, x2, y2, x1, y1);
 
 		w = pr->vis_width - w;
 		h = pr->vis_height - h;
-
-		if (w > 0)
-			{
-			rt_queue(rt,
-				    x_off > 0 ? rt->x_scroll + (pr->vis_width - w) : rt->x_scroll, rt->y_scroll,
-				    w, pr->vis_height, TRUE, TILE_RENDER_ALL, FALSE, FALSE);
-			}
-		if (h > 0)
-			{
-			/* FIXME, to optimize this, remove overlap */
-			rt_queue(rt,
-				    rt->x_scroll, y_off > 0 ? rt->y_scroll + (pr->vis_height - h) : rt->y_scroll,
-				    pr->vis_width, h, TRUE, TILE_RENDER_ALL, FALSE, FALSE);
-			}
 		}
 }
 
