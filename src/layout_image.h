@@ -82,7 +82,7 @@ void layout_image_menu_popup(LayoutWindow *lw);
 
 void layout_image_to_root(LayoutWindow *lw);
 
-void layout_image_full_screen_start(LayoutWindow *lw);
+void layout_image_full_screen_start(LayoutWindow *lw, gboolean force_same_region);
 void layout_image_full_screen_stop(LayoutWindow *lw);
 void layout_image_full_screen_toggle(LayoutWindow *lw);
 gboolean layout_image_full_screen_active(LayoutWindow *lw);
