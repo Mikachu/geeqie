@@ -676,7 +676,7 @@ static void view_fullscreen_toggle(ViewWindow *vw, gboolean force_off)
 		}
 	else
 		{
-		vw->fs = fullscreen_start(vw->window, vw->imd, vw->window, view_fullscreen_stop_func, vw);
+		vw->fs = fullscreen_start(vw->window, vw->imd, vw->window, FALSE, view_fullscreen_stop_func, vw);
 		}
 }
 

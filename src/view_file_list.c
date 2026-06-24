@@ -593,7 +593,7 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
 
 	if (bevent->button == MOUSE_BUTTON_LEFT && bevent->type == GDK_2BUTTON_PRESS)
 		{
-		if (vf->layout) layout_image_full_screen_start(vf->layout);
+		if (vf->layout) layout_image_full_screen_start(vf->layout, FALSE);
 		}
 
 	return FALSE;

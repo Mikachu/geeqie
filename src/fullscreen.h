@@ -27,7 +27,7 @@
 
 
 FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
-				 GtkWidget *fs_container,
+				 GtkWidget *fs_container, gboolean force_same_region,
 				 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data);
 void fullscreen_stop(FullScreenData *fs);
 

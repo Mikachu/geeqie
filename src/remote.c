@@ -408,7 +408,7 @@ static void gr_fullscreen_toggle(const gchar *text, GIOChannel *channel, gpointe
 
 static void gr_fullscreen_start(const gchar *text, GIOChannel *channel, gpointer data)
 {
-	layout_image_full_screen_start(NULL);
+	layout_image_full_screen_start(NULL, FALSE);
 }
 
 static void gr_fullscreen_stop(const gchar *text, GIOChannel *channel, gpointer data)

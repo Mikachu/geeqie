@@ -2096,6 +2096,20 @@ static gboolean layout_delete_cb(GtkWidget *widget, GdkEventAny *event, gpointer
 	return TRUE;
 }
 
+static gboolean layout_window_state_cb(GtkWidget *widget, GdkEventWindowState *event, gpointer data)
+{
+	LayoutWindow *lw = data;
+
+	if (!(event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN)) return FALSE;
+
+	if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
+		layout_image_full_screen_start(lw, TRUE);
+	else
+		layout_image_full_screen_stop(lw);
+
+	return FALSE;
+}
+
 LayoutWindow *layout_new(FileData *dir_fd, LayoutOptions *lop)
 {
 	return layout_new_with_geometry(dir_fd, lop, NULL);
@@ -2183,6 +2197,9 @@ LayoutWindow *layout_new_with_geometry(FileData *dir_fd, LayoutOptions *lop,
 
 	g_signal_connect(G_OBJECT(lw->window), "focus-in-event",
 			 G_CALLBACK(layout_set_current_cb), lw);
+
+	g_signal_connect(G_OBJECT(lw->window), "window-state-event",
+			 G_CALLBACK(layout_window_state_cb), lw);
 
 	layout_keyboard_init(lw, lw->window);
 
@@ -2438,7 +2455,7 @@ LayoutWindow *layout_new_from_config(const gchar **attribute_names, const gchar 
 	layout_sort_set(lw, options->file_sort.method, options->file_sort.ascending);
 	layout_set_path(lw, path);
 
-	if (use_commandline && command_line->startup_full_screen) layout_image_full_screen_start(lw);
+	if (use_commandline && command_line->startup_full_screen) layout_image_full_screen_start(lw, FALSE);
 	if (use_commandline && command_line->startup_in_slideshow) layout_image_slideshow_start(lw);
 
 

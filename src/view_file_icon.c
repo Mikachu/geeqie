@@ -1422,7 +1422,7 @@ gboolean vficon_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
 			    vf->layout)
 				{
 				vficon_selection_remove(vf, VFICON(vf)->click_id, SELECTION_PRELIGHT, &iter);
-				layout_image_full_screen_start(vf->layout);
+				layout_image_full_screen_start(vf->layout, FALSE);
 				}
 			break;
 		case MOUSE_BUTTON_RIGHT:

@@ -216,7 +216,7 @@ static gboolean fullscreen_delete_cb(GtkWidget *widget, GdkEventAny *event, gpoi
 }
 
 FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
-				 GtkWidget *fs_container,
+				 GtkWidget *fs_container, gboolean force_same_region,
 				 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data)
 {
 	FullScreenData *fs;
@@ -241,6 +241,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 	fullscreen_prefs_get_geometry(options->fullscreen.screen, window, &x, &y, &w, &h,
 				      &screen, &fs->same_region);
 
+	fs->same_region = fs->same_region || force_same_region;
 	if (fs_container && fs->same_region)
 		{
 		if (fs_container == window)

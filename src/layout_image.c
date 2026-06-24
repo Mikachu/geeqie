@@ -83,14 +83,23 @@ static void layout_image_full_screen_stop_func(FullScreenData *fs, gpointer data
 		}
 }
 
-void layout_image_full_screen_start(LayoutWindow *lw)
+void layout_image_full_screen_start(LayoutWindow *lw, gboolean force_same_region)
 {
 	if (!layout_valid(&lw)) return;
 
-	if (lw->full_screen) return;
+	if (!force_same_region && lw->full_screen)
+		return;
+
+	if (force_same_region && lw->full_screen) {
+		if (lw->full_screen->window != lw->full_screen->normal_window)
+			/* this can happen if wm fullscreens us during presentation mode */
+			layout_image_full_screen_stop(lw);
+		else
+			return;
+	}
 
 	lw->full_screen = fullscreen_start(lw->window, lw->image,
-					   lw->fs_page,
+					   lw->fs_page, force_same_region,
 					   layout_image_full_screen_stop_func, lw);
 
 	if (lw->full_screen->same_region)
@@ -135,7 +144,7 @@ void layout_image_full_screen_toggle(LayoutWindow *lw)
 		}
 	else
 		{
-		layout_image_full_screen_start(lw);
+		layout_image_full_screen_start(lw, FALSE);
 		}
 }
 
