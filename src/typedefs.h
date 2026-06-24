@@ -707,6 +707,10 @@ struct _LayoutWindow
 
 	FullScreenData *full_screen;
 
+	/* notebook used to switch between normal layout (page 0) and fullscreen image (page 1) */
+	GtkWidget *fs_notebook;
+	GtkWidget *fs_page;
+
 	/* dividers */
 
 //	gint div_h;

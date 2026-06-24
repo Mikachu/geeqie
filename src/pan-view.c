@@ -1963,7 +1963,7 @@ static void pan_fullscreen_toggle(PanWindow *pw, gboolean force_off)
 		}
 	else
 		{
-		pw->fs = fullscreen_start(pw->window, pw->imd, pan_fullscreen_stop_func, pw);
+		pw->fs = fullscreen_start(pw->window, pw->imd, NULL, pan_fullscreen_stop_func, pw);
 		pan_image_set_buttons(pw, pw->fs->imd);
 		g_signal_connect(G_OBJECT(pw->fs->window), "key_press_event",
 				 G_CALLBACK(pan_window_key_press_cb), pw);

@@ -1432,7 +1432,27 @@ static void layout_grid_setup(LayoutWindow *lw)
 	layout_actions_setup(lw);
 
 	lw->group_box = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(lw->main_box), lw->group_box, TRUE, TRUE, 0);
+
+	if (!lw->fs_notebook)
+		{
+		/* first time: create the notebook that holds the normal UI (page 0)
+		 * and the fullscreen image page (page 1) */
+		lw->fs_notebook = gtk_notebook_new();
+		gtk_notebook_set_show_tabs(GTK_NOTEBOOK(lw->fs_notebook), FALSE);
+		gtk_notebook_set_show_border(GTK_NOTEBOOK(lw->fs_notebook), FALSE);
+		gtk_box_pack_start(GTK_BOX(lw->main_box), lw->fs_notebook, TRUE, TRUE, 0);
+		gtk_widget_show(lw->fs_notebook);
+
+		lw->fs_page = gtk_vbox_new(FALSE, 0);
+		/* fs_page lives at page 1 for the lifetime of the window */
+		gtk_notebook_append_page(GTK_NOTEBOOK(lw->fs_notebook), lw->fs_page, NULL);
+		gtk_widget_show(lw->fs_page);
+		}
+
+	/* group_box is always page 0; re-inserted here after layout_style_set tears it down */
+	gtk_notebook_insert_page(GTK_NOTEBOOK(lw->fs_notebook), lw->group_box, NULL, 0);
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(lw->fs_notebook), 0);
+
 	gtk_widget_show(lw->group_box);
 
 	priority_location = layout_grid_compass(lw);
@@ -1596,7 +1616,7 @@ void layout_style_set(LayoutWindow *lw, gint style, const gchar *order)
 	lw->action_group_editors = NULL;
 */
 
-	gtk_container_remove(GTK_CONTAINER(lw->main_box), lw->group_box);
+	gtk_notebook_remove_page(GTK_NOTEBOOK(lw->fs_notebook), 0);
 	lw->group_box = NULL;
 
 	/* re-fill */
@@ -2070,6 +2090,7 @@ static gboolean layout_delete_cb(GtkWidget *widget, GdkEventAny *event, gpointer
 {
 	LayoutWindow *lw = data;
 
+	layout_image_full_screen_stop(lw);
 	layout_close(lw);
 	return TRUE;
 }

@@ -672,26 +672,11 @@ static void view_fullscreen_toggle(ViewWindow *vw, gboolean force_off)
 
 	if (vw->fs)
 		{
-		if (image_osd_get(vw->imd) & OSD_SHOW_INFO)
-			image_osd_set(vw->imd, image_osd_get(vw->fs->imd));
-
 		fullscreen_stop(vw->fs);
 		}
 	else
 		{
-		vw->fs = fullscreen_start(vw->window, vw->imd, view_fullscreen_stop_func, vw);
-
-		view_image_set_buttons(vw, vw->fs->imd);
-		g_signal_connect(G_OBJECT(vw->fs->window), "key_press_event",
-				 G_CALLBACK(view_window_key_press_cb), vw);
-
-		if (vw->ss) vw->ss->imd = vw->fs->imd;
-
-		if (image_osd_get(vw->imd) & OSD_SHOW_INFO)
-			{
-			image_osd_set(vw->fs->imd, image_osd_get(vw->imd));
-			image_osd_set(vw->imd, OSD_SHOW_NOTHING);
-			}
+		vw->fs = fullscreen_start(vw->window, vw->imd, vw->window, view_fullscreen_stop_func, vw);
 		}
 }
 

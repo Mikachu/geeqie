@@ -216,6 +216,7 @@ static gboolean fullscreen_delete_cb(GtkWidget *widget, GdkEventAny *event, gpoi
 }
 
 FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
+				 GtkWidget *fs_container,
 				 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data)
 {
 	FullScreenData *fs;
@@ -239,6 +240,68 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 	DEBUG_1("full screen requests screen %d", options->fullscreen.screen);
 	fullscreen_prefs_get_geometry(options->fullscreen.screen, window, &x, &y, &w, &h,
 				      &screen, &fs->same_region);
+
+	if (fs_container && fs->same_region)
+		{
+		if (fs_container == window)
+			{
+			/* simple window case (e.g. img-view): the window contains only the
+			 * imd widget, so just fullscreen the window itself and reuse imd */
+			fs->window = window;
+			fs->imd = imd;
+
+			if (options->fullscreen.above)
+				gtk_window_set_keep_above(GTK_WINDOW(fs->window), TRUE);
+
+			gtk_window_fullscreen(GTK_WINDOW(fs->window));
+
+			g_signal_connect(G_OBJECT(fs->imd->pr), "motion_notify_event",
+					   G_CALLBACK(fullscreen_mouse_moved), fs);
+			clear_mouse_cursor(fs->window, fs->cursor_state);
+
+			fs->saver_block_id = g_timeout_add(60 * 1000, fullscreen_saver_block_cb, fs);
+
+			return fs;
+			}
+
+		/* reuse the existing window: add the fullscreen imd into the provided
+		 * container widget (e.g. a notebook page) rather than creating a new window.
+		 * The caller is responsible for making the window fullscreen. */
+		fs->window = window;
+
+		fs->imd = image_new(FALSE);
+		gtk_container_add(GTK_CONTAINER(fs_container), fs->imd->widget);
+
+		image_background_set_color_from_options(fs->imd, TRUE);
+		image_set_delay_flip(fs->imd, options->fullscreen.clean_flip);
+		image_auto_refresh_enable(fs->imd, fs->normal_imd->auto_refresh);
+
+		if (options->fullscreen.clean_flip)
+			{
+			image_set_update_func(fs->imd, fullscreen_image_update_cb, fs);
+			image_set_complete_func(fs->imd, fullscreen_image_complete_cb, fs);
+			}
+
+		image_move_from_image(fs->imd, fs->normal_imd);
+
+		if (options->stereo.enable_fsmode)
+			image_stereo_set(fs->imd, options->stereo.fsmode);
+
+		gtk_widget_show(fs->imd->widget);
+
+		/* for hiding the mouse */
+		g_signal_connect(G_OBJECT(fs->imd->pr), "motion_notify_event",
+				   G_CALLBACK(fullscreen_mouse_moved), fs);
+		clear_mouse_cursor(fs->window, fs->cursor_state);
+
+		/* set timer to block screen saver */
+		fs->saver_block_id = g_timeout_add(60 * 1000, fullscreen_saver_block_cb, fs);
+
+		return fs;
+		}
+
+	/* fall through: create a new toplevel window (used for multi-monitor
+	 * presentation mode, or callers that don't provide fs_container) */
 
 	fs->window = window_new(GTK_WINDOW_TOPLEVEL, "fullscreen", NULL, NULL, _("Full screen"));
 
@@ -329,9 +392,6 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 	 */
 	if (fs->same_region)
 		{
-#ifdef HIDE_WINDOW_IN_FULLSCREEN
-		gtk_widget_hide(fs->normal_window);
-#endif
 		image_change_fd(fs->normal_imd, NULL, image_zoom_get(fs->normal_imd));
 		}
 
@@ -348,12 +408,9 @@ void fullscreen_stop(FullScreenData *fs)
 	fullscreen_busy_mouse_disable(fs);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 
-	if (fs->same_region)
+	if (fs->same_region && fs->imd != fs->normal_imd)
 		{
 		image_move_from_image(fs->normal_imd, fs->imd);
-#ifdef HIDE_WINDOW_IN_FULLSCREEN
-		gtk_widget_show(fs->normal_window);
-#endif
 		if (options->stereo.enable_fsmode)
 			{
 			image_stereo_set(fs->normal_imd, options->stereo.mode);
@@ -363,7 +420,23 @@ void fullscreen_stop(FullScreenData *fs)
 
 	if (fs->stop_func) fs->stop_func(fs, fs->stop_data);
 
-	gtk_widget_destroy(fs->window);
+	if (fs->window == fs->normal_window)
+		{
+		/* don't destroy the main window; just destroy the fullscreen imd widget
+		 * (the stop_func has already switched the notebook back and unfullscreened) */
+		if (fs->imd != fs->normal_imd)
+			gtk_widget_destroy(fs->imd->widget);
+		else
+			{
+			gtk_window_unfullscreen(GTK_WINDOW(fs->window));
+			g_signal_handlers_disconnect_by_func(fs->imd->pr, fullscreen_mouse_moved, fs);
+			}
+		clear_mouse_cursor(fs->window, FULLSCREEN_CURSOR_NORMAL);
+		}
+	else
+		{
+		gtk_widget_destroy(fs->window);
+		}
 
 	g_free(fs);
 }

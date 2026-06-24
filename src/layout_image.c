@@ -73,10 +73,14 @@ static void layout_image_full_screen_stop_func(FullScreenData *fs, gpointer data
 	LayoutWindow *lw = data;
 
 	/* restore image window */
-	if (lw->image == fs->imd)
-		lw->image = fs->normal_imd;
-
+	lw->image = fs->normal_imd;
 	lw->full_screen = NULL;
+
+	if (fs->window == fs->normal_window)
+		{
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(lw->fs_notebook), 0);
+		gtk_window_unfullscreen(GTK_WINDOW(lw->window));
+		}
 }
 
 void layout_image_full_screen_start(LayoutWindow *lw)
@@ -86,20 +90,29 @@ void layout_image_full_screen_start(LayoutWindow *lw)
 	if (lw->full_screen) return;
 
 	lw->full_screen = fullscreen_start(lw->window, lw->image,
+					   lw->fs_page,
 					   layout_image_full_screen_stop_func, lw);
 
-	/* set to new image window */
 	if (lw->full_screen->same_region)
 		lw->image = lw->full_screen->imd;
 
 	layout_image_set_buttons(lw);
 
-	g_signal_connect(G_OBJECT(lw->full_screen->window), "key_press_event",
-			 G_CALLBACK(layout_key_press_cb), lw);
-
-	layout_actions_add_window(lw, lw->full_screen->window);
-
 	image_osd_copy_status(lw->full_screen->normal_imd, lw->image);
+
+	if (lw->full_screen->window == lw->full_screen->normal_window)
+		{
+		/* switch to the fullscreen notebook page and fullscreen the main window */
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(lw->fs_notebook), 1);
+		gtk_window_fullscreen(GTK_WINDOW(lw->window));
+		}
+	else
+		{
+		/* multi-monitor: new window was created, wire up key handling as before */
+		g_signal_connect(G_OBJECT(lw->full_screen->window), "key_press_event",
+				 G_CALLBACK(layout_key_press_cb), lw);
+		layout_actions_add_window(lw, lw->full_screen->window);
+		}
 }
 
 void layout_image_full_screen_stop(LayoutWindow *lw)
