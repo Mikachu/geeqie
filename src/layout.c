@@ -1998,7 +1998,8 @@ void layout_sync_options_with_current_state(LayoutWindow *lw)
 	if (!layout_valid(&lw)) return;
 
 	lw->options.main_window.maximized =  window_maximized(lw->window);
-	if (!lw->options.main_window.maximized)
+	if (!lw->options.main_window.maximized &&
+		!(gdk_window_get_state(gtk_widget_get_window(lw->window)) & GDK_WINDOW_STATE_FULLSCREEN))
 		{
 		layout_geometry_get(lw, &lw->options.main_window.x, &lw->options.main_window.y,
 				    &lw->options.main_window.w, &lw->options.main_window.h);
