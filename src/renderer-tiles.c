@@ -1874,8 +1874,6 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
 		gint x2, y2;
 		GtkWidget *box;
 		GdkWindow *window;
-		cairo_t *cr;
-		cairo_surface_t *surface;
 
 		if (x_off < 0)
 			{
@@ -1902,20 +1900,47 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
 		box = GTK_WIDGET(pr);
 		window = gtk_widget_get_window(box);
 
-		cr = gdk_cairo_create(window);
-		surface = cairo_get_target(cr);
-		/* clipping restricts the intermediate surface's size, so it's a good idea
-		 * to use it. */
-		cairo_rectangle(cr, x1 + pr->x_offset + rt->stereo_off_x, y1 + pr->y_offset + rt->stereo_off_y, w, h);
-		cairo_clip (cr);
-		/* Now push a group to change the target */
-		cairo_push_group (cr);
-		cairo_set_source_surface(cr, surface, x1 - x2, y1 - y2);
-		cairo_paint(cr);
-		/* Now copy the intermediate target back */
-		cairo_pop_group_to_source(cr);
-		cairo_paint(cr);
+		/* Blit each tile's off-screen surface to the window at the new scroll
+		 * position. This avoids copying from the screen framebuffer, which
+		 * produces garbage for areas previously obscured by other windows. */
+		{
+		GList *work = rt->tiles;
+		GList *to_queue = NULL;		
+		cairo_t *cr = gdk_cairo_create(window);
+		while (work)
+			{
+			ImageTile *it = work->data;
+			work = work->next;
+
+			if (!rt_tile_is_visible(rt, it)) continue;
+
+			if (it->render_todo == TILE_RENDER_NONE || it->blank || !it->surface)
+				{
+				/* defer queuing until after iteration to avoid modifying rt->tiles mid-loop */
+				to_queue = g_list_prepend(to_queue, it);
+				continue;
+				}
+
+			cairo_set_source_surface(cr, it->surface,
+				pr->x_offset + (it->x - rt->x_scroll) + rt->stereo_off_x,
+				pr->y_offset + (it->y - rt->y_scroll) + rt->stereo_off_y);
+			cairo_rectangle(cr,
+				pr->x_offset + (it->x - rt->x_scroll) + rt->stereo_off_x,
+				pr->y_offset + (it->y - rt->y_scroll) + rt->stereo_off_y,
+				it->w, it->h);
+			cairo_fill(cr);
+			}
+
 		cairo_destroy(cr);
+		work = to_queue;
+		while (work)
+			{
+			ImageTile *it = work->data;
+			work = work->next;
+			rt_queue(rt, it->x, it->y, it->w, it->h, TRUE, TILE_RENDER_ALL, FALSE, FALSE);
+			}
+		g_list_free(to_queue);
+		}
 
 		rt_overlay_queue_all(rt, x2, y2, x1, y1);
 
