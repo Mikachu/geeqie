@@ -24,6 +24,8 @@
 
 #include <exiv2/image.hpp>
 #include <exiv2/exif.hpp>
+#include <exiv2/version.hpp>
+#include <exiv2/error.hpp>
 #include <iostream>
 #include <string>
 
@@ -359,7 +361,7 @@ public:
 #endif
 			Exiv2::Image *image = imageData_->image();
 
-			if (!image) Exiv2::Error(21);
+			if (!image) throw Exiv2::Error(static_cast<Exiv2::ErrorCode>(21));
 			image->setExifData(exifData_);
 			image->setIptcData(iptcData_);
 #if EXIV2_TEST_VERSION(0,16,0)
