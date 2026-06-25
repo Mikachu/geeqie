@@ -1237,7 +1237,12 @@ static void accel_store_populate(void)
 
 static void accel_store_cleared_cb(GtkCellRendererAccel *accel, gchar *path_string, gpointer user_data)
 {
+	GtkTreeIter iter;
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(accel_store), &iter, path);
+	gtk_tree_store_set(accel_store, &iter, AE_KEY, "", -1);
+	gtk_tree_path_free(path);  	
 }
 
 static gboolean accel_remove_key_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)

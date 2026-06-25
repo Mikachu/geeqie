@@ -51,6 +51,7 @@
 #include "ui_tabcomp.h"
 #include "utilops.h"
 #include "view_dir.h"
+#include "view_dir_tree.h"
 #include "window.h"
 #include "metadata.h"
 #include "desktop_file.h"
@@ -1256,6 +1257,21 @@ static void layout_menu_up_cb(GtkAction *action, gpointer data)
 	g_free(path);
 }
 
+static void layout_menu_dir_prev_cb(GtkAction *action, gpointer data)
+{
+	LayoutWindow *lw = data;
+
+	if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE)
+		vdtree_select_prev(lw->vd);
+}
+
+static void layout_menu_dir_next_cb(GtkAction *action, gpointer data)
+{
+	LayoutWindow *lw = data;
+
+	if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE)
+		vdtree_select_next(lw->vd);
+}
 
 /*
  *-----------------------------------------------------------------------------
@@ -1466,6 +1482,8 @@ static GtkActionEntry menu_entries[] = {
   { "Back",		GTK_STOCK_GO_BACK,	N_("_Back"),				NULL,			N_("Back"),				CB(layout_menu_back_cb) },
   { "Home",		GTK_STOCK_HOME,		N_("_Home"),				NULL,			N_("Home"),				CB(layout_menu_home_cb) },
   { "Up",		GTK_STOCK_GO_UP,	N_("_Up"),				NULL,			N_("Up"),				CB(layout_menu_up_cb) },
+  { "PrevFolder",	GTK_STOCK_GO_UP,	N_("_Previous Folder"),	"<control><shift>space",	N_("Previous Folder"),	CB(layout_menu_dir_prev_cb) },
+  { "NextFolder",	GTK_STOCK_GO_DOWN,	N_("_Next Folder"),	"<control>space",	N_("Next Folder"),	CB(layout_menu_dir_next_cb) },
 
   { "NewWindow",	GTK_STOCK_NEW,		N_("New _window"),			"<control>N",		N_("New window"),			CB(layout_menu_new_window_cb) },
   { "NewCollection",	GTK_STOCK_INDEX,	N_("_New collection"),			"C",			N_("New collection"),			CB(layout_menu_new_cb) },
@@ -1659,6 +1677,8 @@ static const gchar *menu_ui_description =
 "      <separator/>"
 "      <menuitem action='Back'/>"
 "      <menuitem action='Up'/>"
+"      <menuitem action='PrevFolder'/>"
+"      <menuitem action='NextFolder'/>"
 "      <menuitem action='Home'/>"
 "      <separator/>"
 "    </menu>"

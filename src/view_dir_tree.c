@@ -784,6 +784,100 @@ gboolean vdtree_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
 	return FALSE;
 }
 
+void vdtree_select_prev(ViewDir *vd)
+{
+	GtkTreeView *treeview = GTK_TREE_VIEW(vd->view);
+	GtkTreeModel *store = gtk_tree_view_get_model(treeview);
+	GtkTreePath *tpath;
+	GtkTreeIter iter;
+	NodeData *nd;
+
+	gtk_tree_view_get_cursor(treeview, &tpath, NULL);
+	if (!tpath) return;
+
+	if (gtk_tree_path_prev(tpath))
+		{
+		/* Has a previous sibling: descend to its last visible descendant */
+		while (gtk_tree_view_row_expanded(treeview, tpath) &&
+		       gtk_tree_model_get_iter(store, &iter, tpath))
+			{
+			gint n = gtk_tree_model_iter_n_children(store, &iter);
+			if (n == 0) break;
+			gtk_tree_path_append_index(tpath, n - 1);
+			}
+		}
+	else if (!gtk_tree_path_up(tpath))
+		{
+		/* Already the first child at root level, nowhere to go */
+		gtk_tree_path_free(tpath);
+		return;
+		}
+
+	if (!gtk_tree_model_get_iter(store, &iter, tpath))
+		{
+		gtk_tree_path_free(tpath);
+		return;
+		}
+
+	gtk_tree_model_get(store, &iter, DIR_COLUMN_POINTER, &nd, -1);
+	gtk_tree_path_free(tpath);
+
+	if (nd && nd->fd && vd->select_func)
+		vd->select_func(vd, nd->fd, vd->select_data);
+}
+
+void vdtree_select_next(ViewDir *vd)
+{
+	GtkTreeView *treeview = GTK_TREE_VIEW(vd->view);
+	GtkTreeModel *store = gtk_tree_view_get_model(treeview);
+	GtkTreePath *tpath;
+	GtkTreeIter iter;
+	NodeData *nd;
+	gboolean found = FALSE;
+
+	gtk_tree_view_get_cursor(treeview, &tpath, NULL);
+	if (!tpath) return;
+
+	/* If the row is expanded, descend into its first child */
+	if (gtk_tree_view_row_expanded(treeview, tpath))
+		{
+		GtkTreePath *child = gtk_tree_path_copy(tpath);
+		gtk_tree_path_down(child);
+		if (gtk_tree_model_get_iter(store, &iter, child))
+			{
+			gtk_tree_path_free(tpath);
+			tpath = child;
+			found = TRUE;
+			}
+		else
+			{
+			gtk_tree_path_free(child);
+			}
+		}
+
+	/* Otherwise advance to next sibling, walking up until one exists */
+	if (!found)
+		{
+		gtk_tree_path_next(tpath);
+		while (!gtk_tree_model_get_iter(store, &iter, tpath))
+			{
+			if (!gtk_tree_path_up(tpath))
+				{
+				gtk_tree_path_free(tpath);
+				return;
+				}
+			gtk_tree_path_next(tpath);
+			}
+		}
+
+	gtk_tree_model_get(store, &iter, DIR_COLUMN_POINTER, &nd, -1);
+	gtk_tree_path_free(tpath);
+
+	if (nd && nd->fd && vd->select_func)
+		vd->select_func(vd, nd->fd, vd->select_data);
+}
+
+
 static gboolean vdtree_clicked_on_expander(GtkTreeView *treeview, GtkTreePath *tpath,
 				           GtkTreeViewColumn *column, gint x, gint y, gint *left_of_expander)
 {
