@@ -1456,7 +1456,7 @@ static void rt_tile_expose(RendererTiles *rt, ImageTile *it,
 		}
 	if (h < 1) return;
 
-	rt_tile_render(rt, it, x, y, w, h, new_data, fast);
+	rt_tile_render(rt, it, 0, 0, it->w, it->h, new_data, fast);
 
 	box = GTK_WIDGET(pr);
 	window = gtk_widget_get_window(box);
