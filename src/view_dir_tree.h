@@ -46,6 +46,9 @@ void vdtree_rename_by_data(ViewDir *vd, FileData *fd);
 gboolean vdtree_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);
 gboolean vdtree_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 
+void vdtree_select_prev(ViewDir *vd);
+void vdtree_select_next(ViewDir *vd);
+
 void vdtree_destroy_cb(GtkWidget *widget, gpointer data);
 
 #endif
