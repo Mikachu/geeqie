@@ -1932,6 +1932,7 @@ void vflist_destroy_cb(GtkWidget *widget, gpointer data)
     vf_refresh_idle_cancel(vf);
     vf_thumb_stop(vf);
 
+    vflist_store_clear(vf, FALSE);
     filelist_free(vf->list);
 }
 

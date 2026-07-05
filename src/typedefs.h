@@ -841,6 +841,8 @@ struct _ViewFileInfoIcon
     guint tip_delay_id; /* event source id */
     struct _IconData *tip_id;
 
+    gint x, y, x_root, y_root;
+
     struct _IconData *click_id;
 
     struct _IconData *focus_id;
