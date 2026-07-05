@@ -389,26 +389,10 @@ static void vficon_mark_toggled_cb(GtkCellRendererToggle *cell, gchar *path_str,
 static void tip_show(ViewFile *vf)
 {
     GtkWidget *label;
-    gint x, y;
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDisplay *display;
-    GdkDeviceManager *device_manager;
-    GdkDevice *device;
-#endif
 
     if (VFICON(vf)->tip_window) return;
 
-#if GTK_CHECK_VERSION(3,0,0)
-    device_manager = gdk_display_get_device_manager(gdk_window_get_display(
-                        gtk_tree_view_get_bin_window(GTK_TREE_VIEW(vf->listview))));
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_window_get_device_position(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(vf->listview)),
-                        device, &x, &y, NULL);
-#else
-    gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(vf->listview)), &x, &y, NULL);
-#endif
-
-    VFICON(vf)->tip_id = vficon_find_data_by_coord(vf, x, y, NULL);
+    VFICON(vf)->tip_id = vficon_find_data_by_coord(vf, VFICON(vf)->x, VFICON(vf)->y, NULL);
     if (!VFICON(vf)->tip_id) return;
 
     VFICON(vf)->tip_window = gtk_window_new(GTK_WINDOW_POPUP);
@@ -421,17 +405,8 @@ static void tip_show(ViewFile *vf)
     gtk_container_add(GTK_CONTAINER(VFICON(vf)->tip_window), label);
     gtk_widget_show(label);
 
-#if GTK_CHECK_VERSION(3,0,0)
-    display = gdk_display_get_default();
-    device_manager = gdk_display_get_device_manager(display);
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_device_get_position(device, NULL, &x, &y);
-#else
-    gdk_window_get_pointer(NULL, &x, &y, NULL);
-#endif
-
     if (!gtk_widget_get_realized(VFICON(vf)->tip_window)) gtk_widget_realize(VFICON(vf)->tip_window);
-    gtk_window_move(GTK_WINDOW(VFICON(vf)->tip_window), x + 16, y + 16);
+    gtk_window_move(GTK_WINDOW(VFICON(vf)->tip_window), VFICON(vf)->x_root + 16, VFICON(vf)->y_root + 16);
     gtk_widget_show(VFICON(vf)->tip_window);
 }
 
@@ -460,15 +435,27 @@ static gboolean tip_schedule_cb(gpointer data)
     return FALSE;
 }
 
-static void tip_schedule(ViewFile *vf)
+static void tip_schedule(ViewFile *vf, gint x, gint y, gint x_root, gint y_root)
 {
     tip_hide(vf);
 
     if (VFICON(vf)->tip_delay_id)
     {
-        g_source_remove(VFICON(vf)->tip_delay_id);
-        VFICON(vf)->tip_delay_id = 0;
+        if (abs(x - VFICON(vf)->x) + abs(y - VFICON(vf)->y) > 4)
+        {
+            g_source_remove(VFICON(vf)->tip_delay_id);
+            VFICON(vf)->tip_delay_id = 0;
+        }
+        else
+        {
+            return;
+        }
     }
+
+    VFICON(vf)->x = x;
+    VFICON(vf)->y = y;
+    VFICON(vf)->x_root = x_root;
+    VFICON(vf)->y_root = y_root;
 
     if (!VFICON(vf)->show_text)
     {
@@ -487,35 +474,22 @@ static void tip_unschedule(ViewFile *vf)
     }
 }
 
-static void tip_update(ViewFile *vf, IconData *id)
+static void tip_update(ViewFile *vf, gint x, gint y, gint x_root, gint y_root)
 {
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDisplay *display = gdk_display_get_default();
-    GdkDeviceManager *device_manager = gdk_display_get_device_manager(display);
-    GdkDevice *device = gdk_device_manager_get_client_pointer(device_manager);
-#endif
-
     if (VFICON(vf)->tip_window)
     {
-        gint x, y;
-
-#if GTK_CHECK_VERSION(3,0,0)
-        gdk_device_get_position(device, NULL, &x, &y);
-#else
-        gdk_window_get_pointer(NULL, &x, &y, NULL);
-#endif
-        gtk_window_move(GTK_WINDOW(VFICON(vf)->tip_window), x + 16, y + 16);
-
+        IconData *id = vficon_find_data_by_coord(vf, x, y, NULL);
         if (id != VFICON(vf)->tip_id)
         {
             GtkWidget *label;
 
             VFICON(vf)->tip_id = id;
+            gtk_window_move(GTK_WINDOW(VFICON(vf)->tip_window), x_root + 16, y_root + 16);
 
             if (!VFICON(vf)->tip_id)
             {
                 tip_hide(vf);
-                tip_schedule(vf);
+                tip_schedule(vf, x, y, x_root, y_root);
                 return;
             }
 
@@ -525,7 +499,7 @@ static void tip_update(ViewFile *vf, IconData *id)
     }
     else
     {
-        tip_schedule(vf);
+        tip_schedule(vf, x, y, x_root, y_root);
     }
 }
 
@@ -1386,13 +1360,15 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
  *-------------------------------------------------------------------
  */
 
-static gboolean vficon_motion_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
+static gboolean vficon_motion_cb(GtkWidget *widget, GdkEventMotion *mevent, gpointer data)
 {
     ViewFile *vf = data;
-    IconData *id;
+    gint x = mevent->x,
+         y = mevent->y,
+         x_root = mevent->x_root,
+         y_root = mevent->y_root;
 
-    id = vficon_find_data_by_coord(vf, (gint)bevent->x, (gint)bevent->y, NULL);
-    tip_update(vf, id);
+    tip_update(vf, x, y, x_root, y_root);
 
     return FALSE;
 }
@@ -1442,12 +1418,16 @@ gboolean vficon_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer d
     GtkTreeIter iter;
     IconData *id = NULL;
     gboolean was_selected;
+    gint x = bevent->x,
+         y = bevent->y,
+         x_root = bevent->x_root,
+         y_root = bevent->y_root;
 
-    tip_schedule(vf);
+    tip_schedule(vf, x, y, x_root, y_root);
 
     if ((gint)bevent->x != 0 || (gint)bevent->y != 0)
     {
-        id = vficon_find_data_by_coord(vf, (gint)bevent->x, (gint)bevent->y, &iter);
+        id = vficon_find_data_by_coord(vf, x, y, &iter);
     }
 
     if (VFICON(vf)->click_id)
