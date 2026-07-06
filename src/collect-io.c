@@ -166,12 +166,17 @@ static gboolean collection_load_private(CollectionData *cd, const gchar *path, C
         if (*buf)
         {
             gboolean valid;
+            gchar *tmp = NULL;
 
             if (!flush)
-                changed |= collect_manager_process_action(entry, &buf);
-
-            valid = (buf[0] == G_DIR_SEPARATOR && collection_add_check(cd, file_data_new_simple(buf), FALSE, TRUE));
-            if (!valid) DEBUG_1("collection invalid file: %s", buf);
+            {
+                tmp = g_strdup(buf);
+                changed |= collect_manager_process_action(entry, &tmp);
+            }
+            const gchar *tmporbuf = tmp ? tmp : buf;
+            valid = (tmporbuf[0] == G_DIR_SEPARATOR && collection_add_check(cd, file_data_new_simple(tmporbuf), FALSE, TRUE));
+            if (!valid) DEBUG_1("collection invalid file: %s", tmporbuf);
+            g_free(tmp);
 
             total++;
             if (!valid)
