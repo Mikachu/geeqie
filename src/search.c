@@ -2764,6 +2764,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
                         (sd->search_similarity_path) ? sd->search_similarity_path : "",
                         "search_similarity_path", -1, NULL, NULL);
     tab_completion_add_select_button(sd->entry_similarity, NULL, FALSE);
+    tab_completion_set_initial_dir(sd->entry_similarity, sd->search_dir_fd->path);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
     pref_checkbox_new_int(hbox, _("Ignore rotation"),

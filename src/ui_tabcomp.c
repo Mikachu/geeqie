@@ -77,6 +77,7 @@ struct _TabCompData
     gpointer enter_data;
     gpointer tab_data;
     gpointer tab_append_data;
+    gchar *initial_dir;
 
     GtkWidget *combo;
     gboolean has_history;
@@ -167,6 +168,7 @@ static void tab_completion_destroy(GtkWidget *widget, gpointer data)
 
     if (td->fd) file_dialog_close(td->fd);
     g_free(td->fd_title);
+    g_free(td->initial_dir);
 
     g_free(td);
 }
@@ -888,6 +890,14 @@ void tab_completion_add_append_func(GtkWidget *entry, void (*tab_append_func)(co
     td->tab_append_data = data;
 }
 
+void tab_completion_set_initial_dir(GtkWidget *entry, const gchar *dir)
+{
+    TabCompData *td = g_object_get_data(G_OBJECT(entry), "tab_completion_data");
+    if (!td) return;
+    g_free(td->initial_dir);
+    td->initial_dir = g_strdup(dir);
+}
+
 gchar *remove_trailing_slash(const gchar *path)
 {
     gint l;
@@ -939,7 +949,7 @@ static void tab_completion_select_show(TabCompData *td)
     generic_dialog_add_message(GENERIC_DIALOG(td->fd), NULL, title, NULL);
 
     path = gtk_entry_get_text(GTK_ENTRY(td->entry));
-    if (strlen(path) == 0) path = NULL;
+    if (strlen(path) == 0) path = td->initial_dir;
     if (td->fd_folders_only)
     {
         file_dialog_add_path_widgets(td->fd, NULL, path, td->history_key, NULL, NULL);
