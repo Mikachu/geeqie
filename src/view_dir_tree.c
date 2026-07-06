@@ -975,6 +975,10 @@ static gint vdtree_sort_cb(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, 
 {
     NodeData *nda;
     NodeData *ndb;
+    ViewDir *vd = data;
+    SortType sort_method = SORT_NAME;
+    gboolean sort_ascend = TRUE;
+    gint ret;
 
     gtk_tree_model_get(store, a, DIR_COLUMN_POINTER, &nda, -1);
     gtk_tree_model_get(store, b, DIR_COLUMN_POINTER, &ndb, -1);
@@ -983,10 +987,42 @@ static gint vdtree_sort_cb(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, 
     if (!nda->fd) return 1;
     if (!ndb->fd) return -1;
 
-    if (options->file_sort.case_sensitive)
-        return strcmp(nda->fd->collate_key_name, ndb->fd->collate_key_name);
-    else
-        return strcmp(nda->fd->collate_key_name_nocase, ndb->fd->collate_key_name_nocase);
+    if (vd->layout)
+    {
+        sort_method = vd->layout->options.dir_view_list_sort.method;
+        sort_ascend = vd->layout->options.dir_view_list_sort.ascend;
+    }
+
+    switch (sort_method)
+    {
+        case SORT_TIME:
+            ret = (nda->fd->dat.tv_sec < ndb->fd->dat.tv_sec) ? -1 :
+                  (nda->fd->dat.tv_sec > ndb->fd->dat.tv_sec) ?  1 : (
+                  (nda->fd->dat.tv_nsec < ndb->fd->dat.tv_nsec) ? -1 :
+                  (nda->fd->dat.tv_nsec > ndb->fd->dat.tv_nsec) ?  1 : 0);
+            break;
+        case SORT_NAME:
+        default:
+            if (options->file_sort.case_sensitive)
+                ret = strcmp(nda->fd->collate_key_name, ndb->fd->collate_key_name);
+            else
+                ret = strcmp(nda->fd->collate_key_name_nocase, ndb->fd->collate_key_name_nocase);
+            break;
+    }
+
+    return sort_ascend ? ret : -ret;
+}
+
+void vdtree_sort(ViewDir *vd)
+{
+    GtkTreeModel *store;
+    GtkTreeIter iter;
+
+    store = gtk_tree_view_get_model(GTK_TREE_VIEW(vd->view));
+    gtk_tree_sortable_set_default_sort_func(GTK_TREE_SORTABLE(store), vdtree_sort_cb, vd, NULL);
+
+    if (vd->dir_fd && vd_find_row(vd, vd->dir_fd, &iter))
+        tree_view_row_make_visible(GTK_TREE_VIEW(vd->view), &iter, TRUE);
 }
 
 /*
