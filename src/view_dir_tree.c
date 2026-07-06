@@ -937,7 +937,7 @@ gboolean vdtree_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
             }
 
             gtk_tree_path_free(tpath);
-            return FALSE;
+            return (bevent->button != MOUSE_BUTTON_LEFT);
         }
 
         gtk_tree_path_free(tpath);
