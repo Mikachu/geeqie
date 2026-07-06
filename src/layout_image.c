@@ -181,6 +181,11 @@ static void layout_image_slideshow_stop_func(SlideShowData *ss, gpointer data)
 
     lw->slideshow = NULL;
     layout_status_update_info(lw, NULL);
+    if (lw->action_group)
+    {
+        GtkAction *action = gtk_action_group_get_action(lw->action_group, "SlideShow");
+        gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), FALSE);
+    }
 }
 
 void layout_image_slideshow_start(LayoutWindow *lw)
