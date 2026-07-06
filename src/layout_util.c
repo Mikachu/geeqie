@@ -1203,6 +1203,16 @@ static void layout_menu_image_last_cb(GtkAction *action, gpointer data)
     layout_image_last(lw);
 }
 
+static void layout_menu_image_random_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+    guint count = layout_list_count(lw, NULL);
+    guint index;
+
+    if (count < 1) return;
+    layout_image_set_index(lw, rand() % count);
+}
+
 static void layout_menu_back_cb(GtkAction *action, gpointer data)
 {
     LayoutWindow *lw = data;
@@ -1488,6 +1498,7 @@ static GtkActionEntry menu_entries[] = {
   { "NextImageAlt1",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "Page_Down",        N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "NextImageAlt2",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "KP_Page_Down",     N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "LastImage",    GTK_STOCK_GOTO_BOTTOM,  N_("_Last Image"),          "End",          N_("Last Image"),           CB(layout_menu_image_last_cb) },
+  { "RandomImage",  NULL,           N_("_Random Image"),        "S",        N_("Random Image"),     CB(layout_menu_image_random_cb) },  
   { "Back",     GTK_STOCK_GO_BACK,  N_("_Back"),                NULL,           N_("Back"),             CB(layout_menu_back_cb) },
   { "Forward",  GTK_STOCK_GO_FORWARD,   N_("_Forward"),         NULL,           N_("Forward"),              CB(layout_menu_forward_cb) },
   { "Home",     GTK_STOCK_HOME,     N_("_Home"),                NULL,           N_("Home"),             CB(layout_menu_home_cb) },
@@ -1592,8 +1603,8 @@ static GtkToggleActionEntry menu_toggle_entries[] = {
   { "FloatTools",   PIXBUF_INLINE_ICON_FLOAT,N_("_Float file list"),        "L",            N_("Float file list"),          CB(layout_menu_float_cb),    FALSE  },
   { "HideToolbar",  NULL,           N_("Hide tool_bar"),            NULL,           N_("Hide toolbar"),         CB(layout_menu_toolbar_cb),  FALSE  },
   { "SBar",     NULL,           N_("_Info sidebar"),            "<control>K",       N_("Info sidebar"),         CB(layout_menu_bar_cb),      FALSE  },
-  { "SBarSort",     NULL,           N_("Sort _manager"),            "<shift>S",     N_("Sort manager"),         CB(layout_menu_bar_sort_cb),     FALSE  },
-  { "SlideShow",    GTK_STOCK_MEDIA_PLAY,   N_("Toggle _slideshow"),        "S",            N_("Toggle slideshow"),         CB(layout_menu_slideshow_cb),    FALSE  },
+  { "SBarSort",     NULL,           N_("Sort _manager"),            NULL,       N_("Sort manager"),         CB(layout_menu_bar_sort_cb),     FALSE  },
+  { "SlideShow",    GTK_STOCK_MEDIA_PLAY,   N_("Toggle _slideshow"),        "<shift>S",         N_("Toggle slideshow"),         CB(layout_menu_slideshow_cb),    FALSE  },
   { "UseColorProfiles", GTK_STOCK_SELECT_COLOR, N_("Use _color profiles"),      NULL,           N_("Use color profiles"),       CB(layout_color_menu_enable_cb), FALSE},
   { "UseImageProfile",  NULL,           N_("Use profile from _image"),      NULL,           N_("Use profile from image"),       CB(layout_color_menu_use_image_cb), FALSE},
   { "Grayscale",    NULL,           N_("Toggle _grayscale"),        "<shift>G",     N_("Toggle grayscale"),         CB(layout_menu_alter_desaturate_cb), FALSE},
@@ -1684,6 +1695,7 @@ static const gchar *menu_ui_description =
 "      <menuitem action='PrevImage'/>"
 "      <menuitem action='NextImage'/>"
 "      <menuitem action='LastImage'/>"
+"      <menuitem action='RandomImage'/>"
 "      <separator/>"
 "      <menuitem action='Back'/>"
 "      <menuitem action='Forward'/>"
