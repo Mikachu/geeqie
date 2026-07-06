@@ -583,7 +583,7 @@ gboolean move_file(const gchar *s, const gchar *t)
     {
         /* this may have failed because moving a file across filesystems
         was attempted, so try copy and delete instead */
-        if (copy_file(s, t))
+        if (errno == EXDEV && copy_file(s, t))
         {
             if (unlink(sl) < 0)
             {
