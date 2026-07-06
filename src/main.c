@@ -744,7 +744,6 @@ static void setup_sigbus_handler(void)
 gint main(gint argc, gchar *argv[])
 {
     CollectionData *first_collection = NULL;
-    gchar *buf;
     CollectionData *cd = NULL;
 
 #ifdef HAVE_GTHREAD
@@ -926,9 +925,9 @@ gint main(gint argc, gchar *argv[])
                         collection_get_first(first_collection));
     }
 
-    buf = g_build_filename(get_rc_dir(), ".command", NULL);
-    remote_connection = remote_server_init(buf, cd);
-    g_free(buf);
+    //gchar *buf = g_build_filename(get_rc_dir(), ".command", NULL);
+    //remote_connection = remote_server_init(buf, cd);
+    //g_free(buf);
 
     DEBUG_1("%s main: gtk_main", get_exec_time());
     gtk_main();
