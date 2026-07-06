@@ -33,6 +33,7 @@ GtkWidget *tab_completion_new(GtkWidget **entry, const gchar *text,
                   void (*enter_func)(const gchar *, gpointer), gpointer data);
 void tab_completion_add_to_entry(GtkWidget *entry, void (*enter_func)(const gchar *, gpointer), gpointer data);
 void tab_completion_add_tab_func(GtkWidget *entry, void (*tab_func)(const gchar *, gpointer), gpointer data);
+void tab_completion_set_initial_dir(GtkWidget *entry, const gchar *dir);
 gchar *remove_trailing_slash(const gchar *path);
 
 void tab_completion_add_select_button(GtkWidget *entry, const gchar *title, gboolean folders_only);
