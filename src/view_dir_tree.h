@@ -35,6 +35,7 @@ ViewDir *vdtree_new(ViewDir *vd, FileData *dir_fd);
 
 gboolean vdtree_set_fd(ViewDir *vd, FileData *dir_fd);
 void vdtree_refresh(ViewDir *vd);
+void vdtree_sort(ViewDir *vd);
 
 const gchar *vdtree_row_get_path(ViewDir *vd, gint row);
 gboolean vdtree_find_row(ViewDir *vd, FileData *fd, GtkTreeIter *iter, GtkTreeIter *parent);

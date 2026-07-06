@@ -36,6 +36,7 @@
 #include "pixbuf_util.h"
 #include "utilops.h"
 #include "view_dir.h"
+#include "view_dir_tree.h"
 #include "view_file.h"
 #include "ui_fileops.h"
 #include "ui_menu.h"
@@ -1230,7 +1231,10 @@ void layout_views_set_sort(LayoutWindow *lw, SortType method, gboolean ascend)
     lw->options.dir_view_list_sort.method = method;
     lw->options.dir_view_list_sort.ascend = ascend;
 
-    layout_style_set(lw, -1, NULL);
+    if (lw->options.dir_view_type == DIRVIEW_TREE && lw->vd)
+        vdtree_sort(lw->vd);
+    else
+        layout_style_set(lw, -1, NULL);
 }
 
 gboolean layout_views_get(LayoutWindow *lw, DirViewType *dir_view_type, FileViewType *file_view_type)
