@@ -1326,15 +1326,10 @@ void filelist_free(GList *list)
 GList *filelist_copy(GList *list)
 {
     GList *new_list = NULL;
-    GList *work;
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
-        FileData *fd;
-
-        fd = work->data;
-        work = work->next;
+        FileData *fd = work->data;
 
         new_list = g_list_prepend(new_list, file_data_ref(fd));
     }
