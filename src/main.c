@@ -57,11 +57,6 @@
 #include "pixbuf_util.h"
 #include "glua.h"
 
-#ifdef HAVE_CLUTTER
-#include <clutter-gtk/clutter-gtk.h>
-#endif
-
-
 gboolean thumb_format_changed = FALSE;
 static RemoteConnection *remote_connection = NULL;
 
@@ -791,15 +786,7 @@ gint main(gint argc, gchar *argv[])
 
     parse_command_line_for_debug_option(argc, argv);
     DEBUG_1("%s main: gtk_init", get_exec_time());
-#ifdef HAVE_CLUTTER
-    if (gtk_clutter_init(&argc, &argv) != CLUTTER_INIT_SUCCESS)
-    {
-        log_printf("Can't initialize clutter-gtk.\n");
-        exit(1);
-    }
-#else
     gtk_init(&argc, &argv);
-#endif
 
     if (gtk_major_version < GTK_MAJOR_VERSION ||
         (gtk_major_version == GTK_MAJOR_VERSION && gtk_minor_version < GTK_MINOR_VERSION) )
