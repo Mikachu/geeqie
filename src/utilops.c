@@ -2472,6 +2472,7 @@ static void file_util_delete_dir_full(FileData *fd, GtkWidget *parent, UtilityPh
                         "The folder this link points to will not be deleted.");
         ud->messages.fail = _("Link deletion failed");
 
+        file_data_sc_add_ci_delete(ud->dir_fd);
         file_util_dialog_run(ud);
         return;
     }
