@@ -1826,6 +1826,7 @@ static gchar *file_util_details_get_message(UtilityData *ud, FileData *fd, const
     {
         gchar *err_msg = file_data_get_error_string(error);
         g_string_append(message, err_msg);
+        g_free(err_msg);
         if (stock_id) *stock_id = (error & CHANGE_ERROR_MASK) ? GTK_STOCK_DIALOG_ERROR : GTK_STOCK_DIALOG_WARNING;
     }
     else

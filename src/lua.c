@@ -268,7 +268,7 @@ gchar *lua_callvalue(FileData *fd, const gchar *file, const gchar *function)
     else
     {
         g_free(data);
-        data = g_strdup(tmp);
+        data = tmp;
     } // if (error) { ... } else
     return data;
 }
