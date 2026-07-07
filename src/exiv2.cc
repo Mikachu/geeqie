@@ -265,7 +265,7 @@ public:
 		if (cp_data_)
 		{
 			if (data_len) *data_len = cp_length_;
-			return (unsigned char *) g_memdup(cp_data_, cp_length_);
+			return (unsigned char *) g_memdup2(cp_data_, cp_length_);
 		}
 		return NULL;
 	}
