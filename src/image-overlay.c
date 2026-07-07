@@ -330,11 +330,11 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
 
         if (strcmp(name, "keywords") == 0)
         {
-            data = keywords_to_string(imd->image_fd);
+            data = keywords_to_string(image_get_fd(imd));
         }
         else if (strcmp(name, "comment") == 0)
         {
-            data = metadata_read_string(imd->image_fd, COMMENT_KEY, METADATA_PLAIN);
+            data = metadata_read_string(image_get_fd(imd), COMMENT_KEY, METADATA_PLAIN);
         }
 #ifdef HAVE_LUA
         else if (strncmp(name, "lua/", 4) == 0)
@@ -344,14 +344,14 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
             if (!tmp)
                 break;
             *tmp = '\0';
-            data = lua_callvalue(imd->image_fd, name+4, tmp+1);
+            data = lua_callvalue(image_get_fd(imd), name+4, tmp+1);
         }
 #endif
         else
         {
             data = g_strdup(g_hash_table_lookup(vars, name));
             if (!data)
-                data = metadata_read_string(imd->image_fd, name, METADATA_FORMATTED);
+                data = metadata_read_string(image_get_fd(imd), name, METADATA_FORMATTED);
         }
 
         if (data && *data && limit > 0 && strlen(data) > limit + 3)
@@ -577,8 +577,8 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
         osd_template_insert(vars, "number", g_strdup_printf("%d", n), OSDT_NO_DUP);
         osd_template_insert(vars, "total", g_strdup_printf("%d", t), OSDT_NO_DUP);
         osd_template_insert(vars, "name", (gchar *) name, OSDT_NONE);
-        osd_template_insert(vars, "date", imd->image_fd ? ((gchar *) text_from_time(imd->image_fd->dat.tv_sec)) : "", OSDT_NONE);
-        osd_template_insert(vars, "size", imd->image_fd ? (text_from_size_abrev(imd->image_fd->size)) : g_strdup(""), OSDT_FREE);
+        osd_template_insert(vars, "date", (gchar *) text_from_time(fd->dat.tv_sec), OSDT_NONE);
+        osd_template_insert(vars, "size", text_from_size_abrev(fd->size), OSDT_FREE);
         osd_template_insert(vars, "zoom", image_zoom_get_as_text(imd), OSDT_FREE);
 
         if (!imd->unknown)
@@ -621,10 +621,10 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
     with_hist = ((osd->show & OSD_SHOW_HISTOGRAM) && osd->histogram);
     if (with_hist)
     {
-        histmap = histmap_get(imd->image_fd);
+        histmap = histmap_get(fd);
         if (!histmap)
         {
-            histmap_start_idle(imd->image_fd);
+            histmap_start_idle(fd);
             with_hist = FALSE;
         }
     }
@@ -1027,7 +1027,7 @@ static void image_osd_notify_cb(FileData *fd, NotifyType type, gpointer data)
 {
     OverlayStateData *osd = data;
 
-    if ((type & (NOTIFY_HISTMAP)) && osd->imd && fd == osd->imd->image_fd)
+    if ((type & (NOTIFY_HISTMAP)) && osd->imd && fd == image_get_fd(osd->imd))
     {
         DEBUG_1("Notify osd: %s %04x", fd->path, type);
         osd->notify |= type;
