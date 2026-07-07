@@ -425,14 +425,11 @@ void pan_search_toggle_cb(GtkWidget *button, gpointer data)
     visible = gtk_widget_get_visible(ui->search_box);
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)) == visible) return;
 
+    gtk_widget_set_visible(ui->search_box, !visible);
     if (visible)
-    {
-        gtk_widget_hide(ui->search_box);
         gtk_arrow_set(GTK_ARROW(ui->search_button_arrow), GTK_ARROW_UP, GTK_SHADOW_NONE);
-    }
     else
     {
-        gtk_widget_show(ui->search_box);
         gtk_arrow_set(GTK_ARROW(ui->search_button_arrow), GTK_ARROW_DOWN, GTK_SHADOW_NONE);
         gtk_widget_grab_focus(ui->search_entry);
     }

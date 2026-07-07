@@ -32,16 +32,6 @@
 #include <sys/mman.h>
 #include <math.h>
 
-#ifdef HAVE_LCMS
-/*** color support enabled ***/
-
-#ifdef HAVE_LCMS2
-#include <lcms2.h>
-#else
-#include <lcms.h>
-#endif
-#endif
-
 #include <glib.h>
 
 #include "intl.h"
@@ -56,6 +46,7 @@
 #include "ui_fileops.h"
 #include "cache.h"
 #include "jpeg_parser.h"
+#include "color-man.h"
 
 
 static gdouble exif_rational_to_double(ExifRational *r, gint sign)
@@ -231,11 +222,12 @@ static gchar *exif_build_formatted_DateTime(ExifData *exif)
             {
                 log_printf("Error converting locale strftime to UTF-8: %s\n", error->message);
                 g_error_free(error);
+                g_free(tmp);
             }
             else
             {
                 g_free(text);
-                text = g_strdup(tmp);
+                text = tmp;
             }
         }
     }
@@ -425,13 +417,11 @@ static gchar *exif_build_formatted_Resolution(ExifData *exif)
 
 static gchar *exif_build_formatted_ColorProfile(ExifData *exif)
 {
-#ifdef HAVE_LCMS2
-    cmsUInt8Number profileID[17];
-#endif
     const gchar *name = "";
     const gchar *source = "";
     guchar *profile_data;
     guint profile_len;
+    gchar *profile_name = NULL;
 
     profile_data = exif_get_color_profile(exif, &profile_len);
     if (!profile_data)
@@ -459,29 +449,18 @@ static gchar *exif_build_formatted_ColorProfile(ExifData *exif)
     else
     {
         source = _("embedded");
-#ifdef HAVE_LCMS
-
-        {
-            cmsHPROFILE profile;
-
-            profile = cmsOpenProfileFromMem(profile_data, profile_len);
-            if (profile)
-            {
-#ifdef HAVE_LCMS2
-                profileID[16] = '\0';
-                cmsGetHeaderProfileID(profile, profileID);
-                name = (gchar *) profileID;
-#else
-                name = (gchar *) cmsTakeProductName(profile);
-#endif
-                cmsCloseProfile(profile);
-            }
-            g_free(profile_data);
-        }
-#endif
+        profile_name = color_man_get_profile_name_from_data(profile_data, profile_len);
+        if (profile_name) name = profile_name;
+        g_free(profile_data);
     }
-    if (name[0] == 0 && source[0] == 0) return NULL;
-    return g_strdup_printf("%s (%s)", name, source);
+    if (name[0] == 0 && source[0] == 0)
+    {
+        g_free(profile_name);
+        return NULL;
+    }
+    gchar *result = g_strdup_printf("%s (%s)", name, source);
+    g_free(profile_name);
+    return result;
 }
 
 static gchar *exif_build_formatted_GPSPosition(ExifData *exif)

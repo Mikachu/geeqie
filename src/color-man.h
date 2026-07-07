@@ -73,4 +73,6 @@ void color_man_start_bg(ColorMan *cm, ColorManDoneFunc don_func, gpointer done_d
 
 gboolean color_man_get_status(ColorMan *cm, gchar **image_profile, gchar **screen_profile);
 
+gchar *color_man_get_profile_name_from_data(const guchar *profile_data, guint profile_len);
+
 #endif

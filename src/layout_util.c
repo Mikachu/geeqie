@@ -82,7 +82,7 @@ static gboolean layout_key_match(guint keyval)
 {
     guint i;
 
-    for (i = 0; i < sizeof(tree_key_overrides) / sizeof(guint); i++)
+    for (i = 0; i < G_N_ELEMENTS(tree_key_overrides); i++)
     {
         if (keyval == tree_key_overrides[i]) return TRUE;
     }
@@ -971,12 +971,12 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
     fd = g_file_open_tmp("geeqie_keymap_XXXXXX.svg", &tmp_file, &error);
     if (error)
     {
-        DEBUG_0("Keyboard Map - cannot create file:%s\n",error->message);
+        DEBUG_0("Keyboard Map - cannot create file:%s\n", error->message);
         g_error_free(error);
     }
     else
     {
-        array = g_ptr_array_new();
+        array = g_ptr_array_new_with_free_func(g_free);
 
         gtk_accel_map_foreach(array, layout_menu_foreach_func);
 
@@ -987,16 +987,15 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
         {
             if (g_strrstr(keymap_template[keymap_index], ">key:"))
             {
-                pre_key = g_strsplit(keymap_template[keymap_index],">key:",2);
-                post_key = g_strsplit(pre_key[1],"<",2);
+                pre_key = g_strsplit(keymap_template[keymap_index], ">key:",2);
+                post_key = g_strsplit(pre_key[1], "<", 2);
 
-                index=0;
                 key_name = " ";
-                for (index=0; index < array->len-2; index=index+2)
+                for (index = 0; index < array->len - 1; index += 2)
                 {
                     if (!(g_ascii_strcasecmp(g_ptr_array_index(array,index+1), post_key[0])))
                     {
-                        key_name = g_ptr_array_index(array,index+0);
+                        key_name = g_ptr_array_index(array, index + 0);
                         break;
                     }
                 }
@@ -1034,12 +1033,6 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
         if (error) {DEBUG_0("Keyboard Map:%s\n",error->message); g_error_free(error);}
         g_io_channel_unref(channel);
 
-        index=0;
-        for (index=0; index < array->len-2; index=index+2)
-        {
-            g_free(g_ptr_array_index(array,index));
-            g_free(g_ptr_array_index(array,index+1));
-        }
         g_ptr_array_unref(array);
 
         view_window_new(file_data_new_simple(tmp_file));
