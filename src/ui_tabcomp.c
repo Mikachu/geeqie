@@ -139,7 +139,7 @@ static void tab_completion_read_dir(TabCompData *td, const gchar *path)
         {
             gchar *abspath = g_build_filename(pathl, name, NULL);
 
-            if (g_file_test(abspath, G_FILE_TEST_IS_DIR))
+            if (isdir(abspath))
             {
                 gchar *dname = g_strconcat(name, G_DIR_SEPARATOR_S, NULL);
                 list = g_list_prepend(list, path_to_utf8(dname));
