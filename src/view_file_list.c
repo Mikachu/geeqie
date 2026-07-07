@@ -735,6 +735,28 @@ static gboolean vflist_select_cb(GtkTreeSelection *selection, GtkTreeModel *stor
     ViewFile *vf = data;
     GtkTreeIter iter;
     GtkTreePath *cursor_path;
+    GdkEvent *event = gtk_get_current_event();
+
+    if (event && event->type == GDK_KEY_PRESS)
+    {
+        GdkEventKey *kevent = (GdkEventKey *)event;
+        if ((kevent->state & GDK_CONTROL_MASK) &&
+            (kevent->keyval == GDK_KEY_Up     ||
+             kevent->keyval == GDK_KEY_Down   ||
+             kevent->keyval == GDK_KEY_Page_Up   ||
+             kevent->keyval == GDK_KEY_Page_Down ||
+             kevent->keyval == GDK_KEY_Home   ||
+             kevent->keyval == GDK_KEY_End))
+        {
+            gdk_event_free(event);
+            return FALSE;
+        }
+        gdk_event_free(event);
+    }
+    else if (event)
+    {
+        gdk_event_free(event);
+    }
 
     VFLIST(vf)->select_fd = NULL;
 
