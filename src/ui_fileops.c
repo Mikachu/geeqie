@@ -630,11 +630,7 @@ gchar *get_current_dir(void)
     return path8;
 }
 
-void string_list_free(GList *list)
-{
-    g_list_foreach(list, (GFunc)g_free, NULL);
-    g_list_free(list);
-}
+extern inline void string_list_free(GList *list);
 
 GList *string_list_copy(const GList *list)
 {

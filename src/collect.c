@@ -112,17 +112,7 @@ gboolean collection_info_load_thumb(CollectInfo *ci)
     return FALSE;
 }
 
-void collection_list_free(GList *list)
-{
-    GList *work;
-    work = list;
-    while (work)
-    {
-        collection_info_free((CollectInfo *)work->data);
-        work = work->next;
-    }
-    g_list_free(list);
-}
+extern inline void collection_list_free(GList *list);
 
 /* an ugly static var, well what ya gonna do ? */
 static SortType collection_list_sort_method = SORT_NAME;

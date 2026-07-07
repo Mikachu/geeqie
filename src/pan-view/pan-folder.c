@@ -328,18 +328,7 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
 
     if (!f && !group->children)
     {
-        work = group->items;
-        while (work)
-        {
-            PanItem *pi;
-
-            pi = work->data;
-            work = work->next;
-
-            pan_item_free(pi);
-        }
-
-        g_list_free(group->items);
+        g_list_free_full(group->items, (GDestroyNotify)pan_item_free);
         g_free(group);
         group = NULL;
     }
