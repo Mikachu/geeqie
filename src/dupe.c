@@ -316,16 +316,9 @@ static void dupe_item_free(DupeItem *di)
     g_free(di);
 }
 
-static void dupe_list_free(GList *list)
+static inline void dupe_list_free(GList *list)
 {
-    GList *work = list;
-    while (work)
-    {
-        DupeItem *di = work->data;
-        work = work->next;
-        dupe_item_free(di);
-    }
-    g_list_free(list);
+    g_list_free_full(list, (GDestroyNotify)dupe_item_free);
 }
 
 /*

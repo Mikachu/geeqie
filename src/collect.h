@@ -31,7 +31,10 @@ void collection_info_free(CollectInfo *ci);
 void collection_info_set_thumb(CollectInfo *ci, GdkPixbuf *pixbuf);
 gboolean collection_info_load_thumb(CollectInfo *ci);
 
-void collection_list_free(GList *list);
+inline void collection_list_free(GList *list)
+{
+    g_list_free_full(list, (GDestroyNotify)collection_info_free);
+}
 
 GList *collection_list_sort(GList *list, SortType method);
 GList *collection_list_add(GList *list, CollectInfo *ci, SortType method);
