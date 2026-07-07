@@ -58,10 +58,6 @@ typedef enum {
 } ExifOrientationType;
 #endif
 
-
-/* size to use when breaking up image pane for rendering */
-#define PR_TILE_SIZE 128
-
 typedef struct _ImageTile ImageTile;
 typedef struct _QueueData QueueData;
 
@@ -490,13 +486,13 @@ static ImageTile *rt_tile_get(RendererTiles *rt, gint x, gint y, gboolean only_e
     return rt_tile_add(rt, x, y);
 }
 
-static gint pixmap_calc_size(cairo_surface_t *surface)
+static gint pixmap_calc_size(RendererTiles *rt)
 {
 //  gint w, h, d;
 
 //  d = gdk_drawable_get_depth(pixmap);
 //  gdk_drawable_get_size(pixmap, &w, &h);
-    return PR_TILE_SIZE * PR_TILE_SIZE * 4 / 8;
+    return rt->tile_width * rt->tile_height * 32 / 8;
 }
 
 static void rt_tile_prepare(RendererTiles *rt, ImageTile *it)
@@ -511,7 +507,7 @@ static void rt_tile_prepare(RendererTiles *rt, ImageTile *it)
                                                     CAIRO_CONTENT_COLOR,
                                                     rt->tile_width, rt->tile_height);
 
-        size = pixmap_calc_size(surface);
+        size = pixmap_calc_size(rt);
         rt_tile_free_space(rt, size, it);
 
         it->surface = surface;
@@ -2123,8 +2119,8 @@ RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
 
     rt->f.stereo_set = renderer_stereo_set;
 
-    rt->tile_width = PR_TILE_SIZE;
-    rt->tile_height = PR_TILE_SIZE;
+    rt->tile_width = options->image.tile_size;
+    rt->tile_height = options->image.tile_size;
 
     rt->tiles = NULL;
     rt->tile_cache_size = 0;
