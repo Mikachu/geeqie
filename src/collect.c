@@ -114,15 +114,13 @@ gboolean collection_info_load_thumb(CollectInfo *ci)
 
 extern inline void collection_list_free(GList *list);
 
-/* an ugly static var, well what ya gonna do ? */
-static SortType collection_list_sort_method = SORT_NAME;
-
-static gint collection_list_sort_cb(gconstpointer a, gconstpointer b)
+static gint collection_list_sort_cb(gconstpointer a, gconstpointer b, gpointer data)
 {
     const CollectInfo *cia = a;
     const CollectInfo *cib = b;
+    SortType method = *(SortType*)data;
 
-    switch (collection_list_sort_method)
+    switch (method)
     {
         case SORT_NAME:
             break;
@@ -170,9 +168,7 @@ GList *collection_list_sort(GList *list, SortType method)
 {
     if (method == SORT_NONE) return list;
 
-    collection_list_sort_method = method;
-
-    return g_list_sort(list, collection_list_sort_cb);
+    return g_list_sort_with_data(list, collection_list_sort_cb, &method);
 }
 
 GList *collection_list_randomize(GList *list)
@@ -203,8 +199,7 @@ GList *collection_list_add(GList *list, CollectInfo *ci, SortType method)
 {
     if (method != SORT_NONE)
     {
-        collection_list_sort_method = method;
-        list = g_list_insert_sorted(list, ci, collection_list_sort_cb);
+        list = g_list_insert_sorted_with_data(list, ci, collection_list_sort_cb, &method);
     }
     else
     {
@@ -218,8 +213,7 @@ GList *collection_list_insert(GList *list, CollectInfo *ci, CollectInfo *insert_
 {
     if (method != SORT_NONE)
     {
-        collection_list_sort_method = method;
-        list = g_list_insert_sorted(list, ci, collection_list_sort_cb);
+        list = g_list_insert_sorted_with_data(list, ci, collection_list_sort_cb, &method);
     }
     else
     {
