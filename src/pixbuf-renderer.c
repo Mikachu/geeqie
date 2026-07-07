@@ -27,7 +27,6 @@
 #include "main.h"
 #include "pixbuf-renderer.h"
 #include "renderer-tiles.h"
-#include "renderer-clutter.h"
 
 #include "intl.h"
 #include "layout.h"
@@ -390,14 +389,6 @@ static void pixbuf_renderer_class_init(PixbufRendererClass *class)
 
 static RendererFuncs *pr_backend_renderer_new(PixbufRenderer *pr)
 {
-    if (options->image.use_clutter_renderer)
-    {
-#ifdef HAVE_CLUTTER
-        return renderer_clutter_new(pr);
-#else
-        DEBUG_0("Geeqie is built without clutter renderer support");
-#endif
-    }
     return renderer_tiles_new(pr);
 }
 
