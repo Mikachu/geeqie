@@ -11,7 +11,8 @@ AM_CFLAGS =				\
 	$(CLUTTER_CFLAGS)		\
 	$(CLUTTER_GTK_CFLAGS)	\
 	-I$(top_srcdir)			\
-	-I$(top_builddir)
+	-I$(top_builddir)		\
+	-fcommon
 
 
 AM_CXXFLAGS =				\
