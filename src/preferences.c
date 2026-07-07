@@ -229,7 +229,6 @@ static void config_window_apply(void)
     options->image.max_window_size = c_options->image.max_window_size;
     options->image.limit_autofit_size = c_options->image.limit_autofit_size;
     options->image.max_autofit_size = c_options->image.max_autofit_size;
-    options->image.use_clutter_renderer = c_options->image.use_clutter_renderer;
     options->image.tile_size = c_options->image.tile_size;
     options->progressive_key_scrolling = c_options->progressive_key_scrolling;
     options->keyboard_scroll_step = c_options->keyboard_scroll_step;
@@ -1465,11 +1464,6 @@ static void config_tab_image(GtkWidget *notebook)
     table = pref_table_new(group, 2, 1, FALSE, FALSE);
     add_quality_menu(table, 0, 0, _("Quality:"), options->image.zoom_quality, &c_options->image.zoom_quality);
 
-#ifdef HAVE_CLUTTER
-    pref_checkbox_new_int(group, _("Use GPU acceleration via Clutter library"),
-                  options->image.use_clutter_renderer, &c_options->image.use_clutter_renderer);
-#endif
-
     pref_checkbox_new_int(group, _("Two pass rendering (apply HQ zoom and color correction in second pass)"),
                   options->image.zoom_2pass, &c_options->image.zoom_2pass);
 
@@ -1491,7 +1485,7 @@ static void config_tab_image(GtkWidget *notebook)
     gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(spin), GTK_UPDATE_ALWAYS);
 
     group = pref_group_new(vbox, FALSE, _("Tile size"), GTK_ORIENTATION_VERTICAL);
-    gtk_widget_set_sensitive(group, !options->image.use_clutter_renderer);
+    gtk_widget_set_sensitive(group, TRUE);
 
     hbox = pref_box_new(group, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
     spin = pref_spin_new_int(hbox, _("Pixels"), _("(Requires restart)"),

@@ -5,11 +5,7 @@ AM_CFLAGS =				\
 	$(GLIB_CFLAGS) $(GTK_CFLAGS)	\
 	$(LCMS_CFLAGS)			\
 	$(EXIV2_CFLAGS)			\
-	$(LIBCHAMPLAIN_CFLAGS)		\
-	$(LIBCHAMPLAIN_GTK_CFLAGS)	\
 	$(LUA_CFLAGS)			\
-	$(CLUTTER_CFLAGS)		\
-	$(CLUTTER_GTK_CFLAGS)	\
 	-I$(top_srcdir)			\
 	-I$(top_builddir)		\
 	-fcommon
@@ -19,11 +15,7 @@ AM_CXXFLAGS =				\
 	$(GLIB_CFLAGS) $(GTK_CFLAGS)	\
 	$(LCMS_CFLAGS)			\
 	$(EXIV2_CFLAGS)			\
-	$(LIBCHAMPLAIN_CFLAGS)		\
-	$(LIBCHAMPLAIN_GTK_CFLAGS)	\
 	$(LUA_CFLAGS)			\
-	$(CLUTTER_CFLAGS)		\
-	$(CLUTTER_GTK_CFLAGS)	\
 	-I$(top_srcdir)			\
 	-I$(top_builddir)
 
@@ -96,8 +88,6 @@ geeqie_SOURCES = \
 	bar.h		\
 	bar_comment.c	\
 	bar_comment.h	\
-	bar_gps.c	\
-	bar_gps.h	\
 	bar_histogram.c	\
 	bar_histogram.h	\
 	bar_keywords.c	\
@@ -211,8 +201,6 @@ geeqie_SOURCES = \
 	pixbuf-renderer.h	\
 	renderer-tiles.c	\
 	renderer-tiles.h	\
-	renderer-clutter.c	\
-	renderer-clutter.h	\
 	pixbuf_util.c	\
 	pixbuf_util.h	\
 	preferences.c	\
@@ -259,7 +247,7 @@ geeqie_SOURCES = \
 	lua.c		\
 	glua.h
 
-geeqie_LDADD = $(GTK_LIBS) $(GLIB_LIBS) $(INTLLIBS) $(JPEG_LIBS) $(TIFF_LIBS) $(LCMS_LIBS) $(EXIV2_LIBS) $(LIBCHAMPLAIN_LIBS) $(LIBCHAMPLAIN_GTK_LIBS) $(LUA_LIBS) $(CLUTTER_LIBS) $(CLUTTER_GTK_LIBS)
+geeqie_LDADD = $(GTK_LIBS) $(GLIB_LIBS) $(INTLLIBS) $(JPEG_LIBS) $(TIFF_LIBS) $(LCMS_LIBS) $(EXIV2_LIBS) $(LUA_LIBS)
 
 EXTRA_DIST = \
 	keymap_template.c \

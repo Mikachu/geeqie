@@ -82,7 +82,6 @@ struct _ConfOptions
         gboolean zoom_to_fit_allow_expand;
         guint zoom_quality;
         gint zoom_increment;    /* 100 is 1.0, 5 is 0.05, 200 is 2.0, etc. */
-        gboolean use_clutter_renderer;
 
         gboolean use_custom_border_color_in_fullscreen;
         gboolean use_custom_border_color;

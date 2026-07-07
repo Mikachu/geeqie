@@ -28,7 +28,6 @@ typedef enum {
     PANE_EXIF,
     PANE_HISTOGRAM,
     PANE_KEYWORDS,
-    PANE_GPS
 } PaneType;
 
 typedef struct _PaneData PaneData;
