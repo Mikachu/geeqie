@@ -686,11 +686,7 @@ gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer d
 
         selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
         if (gtk_tree_selection_count_selected_rows(selection) == 1)
-        {
-            gtk_tree_selection_unselect_all(selection);
-            gtk_tree_selection_select_iter(selection, &iter);
             vflist_move_cursor(vf, &iter);
-        }
         else
             vflist_select_image(vf, fd);
     }
@@ -1509,21 +1505,7 @@ void vflist_select_by_fd(ViewFile *vf, FileData *fd)
     tree_view_row_make_visible(GTK_TREE_VIEW(vf->listview), &iter, TRUE);
 
     if (!vflist_row_is_selected(vf, fd))
-    {
-        GtkTreeSelection *selection;
-        GtkTreeModel *store;
-        GtkTreePath *tpath;
-
-        selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(vf->listview));
-        gtk_tree_selection_unselect_all(selection);
-        gtk_tree_selection_select_iter(selection, &iter);
         vflist_move_cursor(vf, &iter);
-
-        store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
-        tpath = gtk_tree_model_get_path(store, &iter);
-        gtk_tree_view_set_cursor(GTK_TREE_VIEW(vf->listview), tpath, NULL, FALSE);
-        gtk_tree_path_free(tpath);
-    }
 }
 
 static void vflist_select_closest(ViewFile *vf, FileData *sel_fd)
