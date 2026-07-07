@@ -1199,13 +1199,13 @@ static void view_set_layout_path_cb(GtkWidget *widget, gpointer data)
 
     imd = view_window_active_image(vw);
 
-    if (!imd || !imd->image_fd) return;
+    if (!imd || !image_get_fd(imd)) return;
 
     lw = layout_find_by_image_fd(imd);
     if (lw)
-        layout_set_fd(lw, imd->image_fd);
+        layout_set_fd(lw, image_get_fd(imd));
     else
-        view_new_layout_with_fd(imd->image_fd);
+        view_new_layout_with_fd(image_get_fd(imd));
     view_window_close(vw);
 }
 
