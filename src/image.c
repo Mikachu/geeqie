@@ -1434,6 +1434,7 @@ gdouble image_zoom_get_default(ImageWindow *imd)
         break;
     case ZOOM_RESET_NONE:
         if (imd) zoom = image_zoom_get(imd);
+        else zoom = 0.0;
         break;
     }
 
