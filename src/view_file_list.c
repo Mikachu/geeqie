@@ -599,6 +599,36 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
     return FALSE;
 }
 
+static void vflist_select_image(ViewFile *vf, FileData *sel_fd)
+{
+    FileData *read_ahead_fd = NULL;
+    gint row;
+    FileData *cur_fd;
+
+    if (!sel_fd) return;
+
+    cur_fd = layout_image_get_fd(vf->layout);
+    if (sel_fd == cur_fd) return; /* no change */
+
+    row = g_list_index(vf->list, sel_fd);
+    // FIXME sidecar data
+
+    if (sel_fd && options->image.enable_read_ahead && row >= 0)
+    {
+        if (row > g_list_index(vf->list, cur_fd) &&
+            (guint) (row + 1) < vf_count(vf, NULL))
+        {
+            read_ahead_fd = vf_index_get_data(vf, row + 1);
+        }
+        else if (row > 0)
+        {
+            read_ahead_fd = vf_index_get_data(vf, row - 1);
+        }
+    }
+
+    layout_image_set_with_ahead(vf->layout, sel_fd, read_ahead_fd);
+}
+
 gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
 {
     ViewFile *vf = data;
@@ -655,42 +685,17 @@ gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer d
         GtkTreeSelection *selection;
 
         selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-        gtk_tree_selection_unselect_all(selection);
-        gtk_tree_selection_select_iter(selection, &iter);
-        vflist_move_cursor(vf, &iter);
+        if (gtk_tree_selection_count_selected_rows(selection) == 1)
+        {
+            gtk_tree_selection_unselect_all(selection);
+            gtk_tree_selection_select_iter(selection, &iter);
+            vflist_move_cursor(vf, &iter);
+        }
+        else
+            vflist_select_image(vf, fd);
     }
 
     return FALSE;
-}
-
-static void vflist_select_image(ViewFile *vf, FileData *sel_fd)
-{
-    FileData *read_ahead_fd = NULL;
-    gint row;
-    FileData *cur_fd;
-
-    if (!sel_fd) return;
-
-    cur_fd = layout_image_get_fd(vf->layout);
-    if (sel_fd == cur_fd) return; /* no change */
-
-    row = g_list_index(vf->list, sel_fd);
-    // FIXME sidecar data
-
-    if (sel_fd && options->image.enable_read_ahead && row >= 0)
-    {
-        if (row > g_list_index(vf->list, cur_fd) &&
-            (guint) (row + 1) < vf_count(vf, NULL))
-        {
-            read_ahead_fd = vf_index_get_data(vf, row + 1);
-        }
-        else if (row > 0)
-        {
-            read_ahead_fd = vf_index_get_data(vf, row - 1);
-        }
-    }
-
-    layout_image_set_with_ahead(vf->layout, sel_fd, read_ahead_fd);
 }
 
 static gboolean vflist_select_idle_cb(gpointer data)
