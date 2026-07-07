@@ -158,25 +158,9 @@ static void metadata_cache_remove(FileData *fd, const gchar *key)
 
 void metadata_cache_free(FileData *fd)
 {
-    GList *work;
-    if (fd->cached_metadata) DEBUG_1("freed %s\n", fd->path);
-
-    work = fd->cached_metadata;
-    while (work)
-    {
-        GList *entry = work->data;
-        string_list_free(entry);
-
-        work = work->next;
-    }
-    g_list_free(fd->cached_metadata);
+    g_list_free_full(fd->cached_metadata, (GDestroyNotify)string_list_free);
     fd->cached_metadata = NULL;
 }
-
-
-
-
-
 
 /*
  *-------------------------------------------------------------------

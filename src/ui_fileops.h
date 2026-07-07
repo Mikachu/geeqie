@@ -82,7 +82,10 @@ gchar *get_current_dir(void);
 /* return True on success, it is up to you to free
  * the lists with string_list_free()
  */
-void string_list_free(GList *list);
+inline void string_list_free(GList *list)
+{
+    g_list_free_full(list, g_free);
+}
 GList *string_list_copy(const GList *list);
 
 gchar *unique_filename(const gchar *path, const gchar *ext, const gchar *divider, gboolean pad);

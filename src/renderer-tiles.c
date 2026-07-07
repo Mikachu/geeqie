@@ -318,20 +318,7 @@ static void rt_tile_free(ImageTile *it)
 
 static void rt_tile_free_all(RendererTiles *rt)
 {
-    GList *work;
-
-    work = rt->tiles;
-    while (work)
-    {
-        ImageTile *it;
-
-        it = work->data;
-        work = work->next;
-
-        rt_tile_free(it);
-    }
-
-    g_list_free(rt->tiles);
+    g_list_free_full(rt->tiles, (GDestroyNotify)rt_tile_free);
     rt->tiles = NULL;
     rt->tile_cache_size = 0;
 }
@@ -1645,32 +1632,21 @@ static gboolean rt_queue_draw_idle_cb(gpointer data)
         return rt_queue_schedule_next_draw(rt, FALSE);
 }
 
-static void rt_queue_list_free(GList *list)
+static void rt_queue_data_free(gpointer data)
 {
-    GList *work;
+    QueueData *qd = data;
 
-    work = list;
-    while (work)
-    {
-        QueueData *qd;
-
-        qd = work->data;
-        work = work->next;
-
-        qd->it->qd = NULL;
-        qd->it->qd2 = NULL;
-        g_free(qd);
-    }
-
-    g_list_free(list);
+    qd->it->qd = NULL;
+    qd->it->qd2 = NULL;
+    g_free(qd);
 }
 
 static void rt_queue_clear(RendererTiles *rt)
 {
-    rt_queue_list_free(rt->draw_queue);
+    g_list_free_full(rt->draw_queue, rt_queue_data_free);
     rt->draw_queue = NULL;
 
-    rt_queue_list_free(rt->draw_queue_2pass);
+    g_list_free_full(rt->draw_queue_2pass, rt_queue_data_free);
     rt->draw_queue_2pass = NULL;
 
     if (rt->draw_idle_id)
