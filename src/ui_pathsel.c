@@ -132,9 +132,10 @@ static gboolean dest_check_filter(const gchar *filter, const gchar *file)
     gint l;
 
     l = strlen(file);
+    const gchar *filter_end = filter + strlen(filter);
 
     if (filter[0] == '*') return TRUE;
-    while (f_ptr < filter + strlen(filter))
+    while (f_ptr < filter_end)
     {
         strt_ptr = f_ptr;
         i=0;
@@ -986,7 +987,7 @@ static void dest_filter_changed_cb(GtkEditable *editable, gpointer data)
 
     g_free(dd->filter);
     dd->filter = NULL;
-    if (strlen(buf) > 0) dd->filter = g_strdup(buf);
+    if (*buf) dd->filter = g_strdup(buf);
 
     path = g_strdup(dd->path);
     dest_populate(dd, path);

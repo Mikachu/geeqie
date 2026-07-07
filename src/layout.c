@@ -1915,14 +1915,7 @@ void layout_info_pixel_set(LayoutWindow *lw, gboolean show)
     lw->options.show_info_pixel = show;
 
     frame = gtk_widget_get_parent(lw->info_pixel);
-    if (!lw->options.show_info_pixel)
-    {
-        gtk_widget_hide(frame);
-    }
-    else
-    {
-        gtk_widget_show(frame);
-    }
+    gtk_widget_set_visible(frame, lw->options.show_info_pixel);
 
     g_signal_emit_by_name (lw->image->pr, "update-pixel");
 }

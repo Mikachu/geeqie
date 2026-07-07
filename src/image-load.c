@@ -27,6 +27,7 @@
 
 #include "exif.h"
 #include "filedata.h"
+#include "pixbuf_util.h"
 #include "ui_fileops.h"
 #include "gq-marshal.h"
 
@@ -556,26 +557,12 @@ static void image_loader_size_cb(gpointer loader,
 
     g_mutex_lock(il->data_mutex);
 
-    gint nw, nh;
     if (width > il->requested_width || height > il->requested_height)
     {
-
-        if (((gdouble)il->requested_width / width) < ((gdouble)il->requested_height / height))
-        {
-            nw = il->requested_width;
-            nh = (gdouble)nw / width * height;
-            if (nh < 1) nh = 1;
-        }
-        else
-        {
-            nh = il->requested_height;
-            nw = (gdouble)nh / height * width;
-            if (nw < 1) nw = 1;
-        }
-
-        il->actual_width = nw;
-        il->actual_height = nh;
-        il->backend.set_size(loader, nw, nh);
+        pixbuf_scale_aspect(il->requested_width, il->requested_height,
+                            width, height,
+                            &il->actual_width, &il->actual_height);
+        il->backend.set_size(loader, il->actual_width, il->actual_height);
         il->shrunk = TRUE;
     }
 

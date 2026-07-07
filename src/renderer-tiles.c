@@ -123,7 +123,6 @@ struct _RendererTiles
 
     gint tile_width;
     gint tile_height;
-    gint tile_cols;     /* count of tile columns */
     GList *tiles;       /* list of buffer tiles */
     gint tile_cache_size;   /* allocated size of pixmaps/pixbufs */
     GList *draw_queue;  /* list of areas to redraw */
@@ -163,14 +162,14 @@ static void rt_hierarchy_changed_cb(GtkWidget *widget, GtkWidget *previous_tople
 static gint rt_queue_draw_idle_cb(gpointer data);
 
 #define GET_RIGHT_PIXBUF_OFFSET(rt) \
-        (( (rt->stereo_mode & PR_STEREO_RIGHT) && !(rt->stereo_mode & PR_STEREO_SWAP)) || \
-         (!(rt->stereo_mode & PR_STEREO_RIGHT) &&  (rt->stereo_mode & PR_STEREO_SWAP)) ?  \
-          rt->pr->stereo_pixbuf_offset_right : rt->pr->stereo_pixbuf_offset_left )
+        (( ((rt)->stereo_mode & PR_STEREO_RIGHT) && !((rt)->stereo_mode & PR_STEREO_SWAP)) || \
+         (!((rt)->stereo_mode & PR_STEREO_RIGHT) &&  ((rt)->stereo_mode & PR_STEREO_SWAP)) ?  \
+          (rt)->pr->stereo_pixbuf_offset_right : (rt)->pr->stereo_pixbuf_offset_left )
 
 #define GET_LEFT_PIXBUF_OFFSET(rt) \
-        ((!(rt->stereo_mode & PR_STEREO_RIGHT) && !(rt->stereo_mode & PR_STEREO_SWAP)) || \
-         ( (rt->stereo_mode & PR_STEREO_RIGHT) &&  (rt->stereo_mode & PR_STEREO_SWAP)) ?  \
-          rt->pr->stereo_pixbuf_offset_right : rt->pr->stereo_pixbuf_offset_left )
+        ((!((rt)->stereo_mode & PR_STEREO_RIGHT) && !((rt)->stereo_mode & PR_STEREO_SWAP)) || \
+         ( ((rt)->stereo_mode & PR_STEREO_RIGHT) &&  ((rt)->stereo_mode & PR_STEREO_SWAP)) ?  \
+          (rt)->pr->stereo_pixbuf_offset_right : (rt)->pr->stereo_pixbuf_offset_left )
 
 
 static void rt_sync_scroll(RendererTiles *rt)
@@ -192,6 +191,17 @@ static void rt_sync_scroll(RendererTiles *rt)
  *-------------------------------------------------------------------
  */
 
+static void draw_one_bit(RendererTiles *rt, cairo_t *cr,
+                         gint x, gint y, gint w, gint h)
+{
+    cairo_set_source_rgb(cr, (double)rt->pr->color.red   / 65535.0,
+                             (double)rt->pr->color.green / 65535.0,
+                             (double)rt->pr->color.blue  / 65535.0);
+    cairo_rectangle(cr, x + rt->stereo_off_x, y + rt->stereo_off_y, w, h);
+    cairo_fill(cr);
+    rt_overlay_draw(rt, x, y, w, h, NULL);
+}
+
 static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
 {
     PixbufRenderer *pr = rt->pr;
@@ -207,19 +217,13 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
 
     cr = gdk_cairo_create(window);
 
-
     if (!pr->pixbuf && !pr->source_tiles_enabled)
     {
         if (pr_clip_region(x, y, w, h,
                    0, 0,
                    pr->viewport_width, pr->viewport_height,
                    &rx, &ry, &rw, &rh))
-        {
-            cairo_set_source_rgb(cr, (double)pr->color.red/65535, (double)pr->color.green/65535, (double)pr->color.blue/65535);
-            cairo_rectangle(cr, rx + rt->stereo_off_x, ry + rt->stereo_off_y, rw, rh);
-            cairo_fill(cr);
-            rt_overlay_draw(rt, rx, ry, rw, rh, NULL);
-        }
+            draw_one_bit(rt, cr, rx, ry, rw, rh);
         cairo_destroy(cr);
         return;
     }
@@ -231,23 +235,13 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
                    0, 0,
                    pr->x_offset, pr->viewport_height,
                    &rx, &ry, &rw, &rh))
-        {
-            cairo_set_source_rgb(cr, (double)pr->color.red/65535, (double)pr->color.green/65535, (double)pr->color.blue/65535);
-            cairo_rectangle(cr, rx + rt->stereo_off_x, ry + rt->stereo_off_y, rw, rh);
-            cairo_fill(cr);
-            rt_overlay_draw(rt, rx, ry, rw, rh, NULL);
-        }
+            draw_one_bit(rt, cr, rx, ry, rw, rh);
         if (pr->viewport_width - pr->vis_width - pr->x_offset > 0 &&
             pr_clip_region(x, y, w, h,
                    pr->x_offset + pr->vis_width, 0,
                    pr->viewport_width - pr->vis_width - pr->x_offset, pr->viewport_height,
                    &rx, &ry, &rw, &rh))
-        {
-            cairo_set_source_rgb(cr, (double)pr->color.red/65535, (double)pr->color.green/65535, (double)pr->color.blue/65535);
-            cairo_rectangle(cr, rx + rt->stereo_off_x, ry + rt->stereo_off_y, rw, rh);
-            cairo_fill(cr);
-            rt_overlay_draw(rt, rx, ry, rw, rh, NULL);
-        }
+            draw_one_bit(rt, cr, rx, ry, rw, rh);
     }
     if (pr->vis_height < pr->viewport_height)
     {
@@ -256,23 +250,13 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
                    pr->x_offset, 0,
                    pr->vis_width, pr->y_offset,
                    &rx, &ry, &rw, &rh))
-        {
-            cairo_set_source_rgb(cr, (double)pr->color.red/65535, (double)pr->color.green/65535, (double)pr->color.blue/65535);
-            cairo_rectangle(cr, rx + rt->stereo_off_x, ry + rt->stereo_off_y, rw, rh);
-            cairo_fill(cr);
-            rt_overlay_draw(rt, rx, ry, rw, rh, NULL);
-        }
+            draw_one_bit(rt, cr, rx, ry, rw, rh);
         if (pr->viewport_height - pr->vis_height - pr->y_offset > 0 &&
             pr_clip_region(x, y, w, h,
                    pr->x_offset, pr->y_offset + pr->vis_height,
                    pr->vis_width, pr->viewport_height - pr->vis_height - pr->y_offset,
                    &rx, &ry, &rw, &rh))
-        {
-            cairo_set_source_rgb(cr, (double)pr->color.red/65535, (double)pr->color.green/65535, (double)pr->color.blue/65535);
-            cairo_rectangle(cr, rx + rt->stereo_off_x, ry + rt->stereo_off_y, rw, rh);
-            cairo_fill(cr);
-            rt_overlay_draw(rt, rx, ry, rw, rh, NULL);
-        }
+            draw_one_bit(rt, cr, rx, ry, rw, rh);
     }
     cairo_destroy(cr);
 }
@@ -527,23 +511,17 @@ static void rt_overlay_get_position(RendererTiles *rt, OverlayData *od,
                     gint *x, gint *y, gint *w, gint *h)
 {
     PixbufRenderer *pr = rt->pr;
-    gint px, py, pw, ph;
 
-    pw = gdk_pixbuf_get_width(od->pixbuf);
-    ph = gdk_pixbuf_get_height(od->pixbuf);
-    px = od->x;
-    py = od->y;
+    *w = gdk_pixbuf_get_width(od->pixbuf);
+    *h = gdk_pixbuf_get_height(od->pixbuf);
+    *x = od->x;
+    *y = od->y;
 
     if (od->flags & OVL_RELATIVE)
     {
-        if (px < 0) px = pr->viewport_width - pw + px;
-        if (py < 0) py = pr->viewport_height - ph + py;
+        if (*x < 0) *x = pr->viewport_width - *w + *x;
+        if (*y < 0) *y = pr->viewport_height - *h + *y;
     }
-
-    if (x) *x = px;
-    if (y) *y = py;
-    if (w) *w = pw;
-    if (h) *h = ph;
 }
 
 static void rt_overlay_init_window(RendererTiles *rt, OverlayData *od)

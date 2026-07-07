@@ -256,8 +256,8 @@ static void bookmark_edit_ok_cb(GenericDialog *gd, gpointer data)
         history_list_add_to_key(p->bb->parent, new, 0);
     }
 
-    if (path && strlen(path) > 0) tab_completion_append_to_history(p->path_entry, path);
-    if (icon && strlen(icon) > 0) tab_completion_append_to_history(p->icon_entry, icon);
+    if (path && *path) tab_completion_append_to_history(p->path_entry, path);
+    if (icon && *icon) tab_completion_append_to_history(p->icon_entry, icon);
 
     g_free(path);
     g_free(new);
@@ -974,7 +974,7 @@ void history_combo_append_history(GtkWidget *widget, const gchar *text)
         new_text = g_strdup(gtk_entry_get_text(GTK_ENTRY(hc->entry)));
     }
 
-    if (new_text && strlen(new_text) > 0)
+    if (new_text && *new_text)
     {
         GtkTreeModel *store;
         GList *work;
