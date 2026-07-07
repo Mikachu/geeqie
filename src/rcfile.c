@@ -341,6 +341,7 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_COLOR(*options, image.alpha_color_1);
     WRITE_NL(); WRITE_COLOR(*options, image.alpha_color_2);
     WRITE_NL(); WRITE_BOOL(*options, image.use_clutter_renderer);
+    WRITE_NL(); WRITE_INT(*options, image.tile_size);
 
     /* Thumbnails Options */
     WRITE_NL(); WRITE_INT(*options, thumbnails.max_width);
@@ -615,6 +616,7 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_COLOR(*options, image.alpha_color_1)) continue;
         if (READ_COLOR(*options, image.alpha_color_2)) continue;
         if (READ_BOOL(*options, image.use_clutter_renderer)) continue;
+        if (READ_INT(*options, image.tile_size)) continue;
 
         /* Thumbnails options */
         if (READ_INT_CLAMP(*options, thumbnails.max_width, 16, 512)) continue;
