@@ -166,16 +166,17 @@ static void vflist_store_clear(ViewFile *vf, gboolean unlock_files)
     {
         // unlock locked files in this directory
         filelist_read(vf->dir_fd, &files, NULL);
-        while (files)
+        GList *work = files;
+        while (work)
         {
-            FileData *fd = files->data;
-            files = files->next;
+            FileData *fd = work->data;
+            work = work->next;
             file_data_unlock(fd);
             file_data_unref(fd);  // undo the ref that got added in filelist_read
         }
+        g_list_free(files);
     }
 
-    g_list_free(files);
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
     gtk_tree_model_foreach(store, vflist_store_clear_cb, NULL);
     gtk_tree_store_clear(GTK_TREE_STORE(store));
