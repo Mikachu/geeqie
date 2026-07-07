@@ -223,7 +223,7 @@ static void bar_pane_exif_entry_update_title(ExifEntry *ee)
     g_free(markup);
 }
 
-static void bar_pane_exif_update_entry(PaneExifData *ped, GtkWidget *entry, gboolean update_title)
+static void bar_pane_exif_update_entry(GtkWidget *entry, PaneExifData *ped)
 {
     gchar *text;
     ExifEntry *ee = g_object_get_data(G_OBJECT(entry), "entry_data");
@@ -255,8 +255,6 @@ static void bar_pane_exif_update_entry(PaneExifData *ped, GtkWidget *entry, gboo
     }
 
     g_free(text);
-
-    if (update_title) bar_pane_exif_entry_update_title(ee);
 }
 
 static void bar_pane_exif_update(PaneExifData *ped)
@@ -265,16 +263,7 @@ static void bar_pane_exif_update(PaneExifData *ped)
 
     ped->all_hidden = TRUE;
 
-    list = gtk_container_get_children(GTK_CONTAINER(ped->vbox));
-    work = list;
-    while (work)
-    {
-        GtkWidget *entry = work->data;
-        work = work->next;
-
-        bar_pane_exif_update_entry(ped, entry, FALSE);
-    }
-    g_list_free(list);
+    gtk_container_foreach(GTK_CONTAINER(ped->vbox), (GtkCallback)bar_pane_exif_update_entry, ped);
 
     gtk_widget_set_sensitive(ped->pane.title, !ped->all_hidden);
 }
@@ -294,22 +283,23 @@ void bar_pane_exif_set_fd(GtkWidget *widget, FileData *fd)
 
 gint bar_pane_exif_event(GtkWidget *bar, GdkEvent *event)
 {
-    PaneExifData *ped;
-    gboolean ret = FALSE;
+    PaneExifData *ped = g_object_get_data(G_OBJECT(bar), "pane_data");
     GList *list, *work;
+    gboolean ret = FALSE;
 
-    ped = g_object_get_data(G_OBJECT(bar), "pane_data");
     if (!ped) return FALSE;
 
     list = gtk_container_get_children(GTK_CONTAINER(ped->vbox));
     work = list;
-    while (!ret && work)
+    for (work = list; work; work = work->next)
     {
-        GtkWidget *entry = work->data;
-        ExifEntry *ee = g_object_get_data(G_OBJECT(entry), "entry_data");
-        work = work->next;
+        ExifEntry *ee = g_object_get_data(G_OBJECT(work->data), "entry_data");
 
-        if (ee->editable && gtk_widget_has_focus(ee->value_widget)) ret = gtk_widget_event(ee->value_widget, event);
+        if (ee->editable && gtk_widget_has_focus(ee->value_widget))
+        {
+            ret = gtk_widget_event(ee->value_widget, event);
+            break;
+        }
     }
     g_list_free(list);
     return ret;
@@ -505,7 +495,7 @@ static void bar_pane_exif_edit_ok_cb(GenericDialog *gd, gpointer data)
         g_free(ee->key);
         ee->key = g_strdup(gtk_entry_get_text(GTK_ENTRY(cdd->key_entry)));
         title = gtk_entry_get_text(GTK_ENTRY(cdd->title_entry));
-        if (!title || strlen(title) == 0)
+        if (!title || !*title)
         {
             g_free(ee->title);
             ee->title = exif_get_description_by_key(ee->key);

@@ -1507,7 +1507,7 @@ static gboolean pref_list_get(const gchar *group, const gchar *key, const gchar 
     if (work)
     {
         *result = (const gchar *)work->data + strlen(token);
-        if (strlen(*result) == 0) *result = NULL;
+        if (!**result) *result = NULL;
         ret = TRUE;
     }
     else

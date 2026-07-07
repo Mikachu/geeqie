@@ -57,7 +57,6 @@
 #define COLLECT_TABLE_TIP_DELAY 500
 #define COLLECT_TABLE_TIP_DELAY_PATH (COLLECT_TABLE_TIP_DELAY * 1.7)
 
-
 enum {
     CTABLE_COLUMN_POINTER = 0,
     CTABLE_COLUMN_COUNT
@@ -70,12 +69,9 @@ typedef enum {
     SELECTION_FOCUS     = 1 << 2
 } SelectionType;
 
-
-#define INFO_SELECTED(x) (x->flag_mask & SELECTION_SELECTED)
-
+#define INFO_SELECTED(x) ((x)->flag_mask & SELECTION_SELECTED)
 
 static void collection_table_populate_at_new_size(CollectTable *ct, gint w, gint h, gboolean force);
-
 
 /*
  *-------------------------------------------------------------------

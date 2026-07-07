@@ -169,7 +169,7 @@ void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(con
     g_free(*option);
     *option = NULL;
     buf = gtk_entry_get_text(GTK_ENTRY(entry));
-    if (buf && strlen(buf) > 0)
+    if (buf && *buf)
     {
         if (func)
             *option = func(buf);
@@ -495,7 +495,7 @@ static void thumb_size_menu_cb(GtkWidget *combo, gpointer data)
     n = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
     if (n < 0) return;
 
-    if ((guint) n < sizeof(thumb_size_list) / sizeof(ThumbSize))
+    if ((guint) n < G_N_ELEMENTS(thumb_size_list))
     {
         c_options->thumbnails.max_width = thumb_size_list[n].w;
         c_options->thumbnails.max_height = thumb_size_list[n].h;
@@ -521,7 +521,7 @@ static void add_thumb_size_menu(GtkWidget *table, gint column, gint row, gchar *
     combo = gtk_combo_box_text_new();
 
     current = -1;
-    for (i = 0; (guint) i < sizeof(thumb_size_list) / sizeof(ThumbSize); i++)
+    for (i = 0; (guint) i < G_N_ELEMENTS(thumb_size_list); i++)
     {
         gint w, h;
         gchar *buf;
@@ -1004,6 +1004,7 @@ static void image_overlay_template_view_changed_cb(GtkWidget *widget, gpointer d
     GtkTextBuffer *pTextBuffer;
     GtkTextIter iStart;
     GtkTextIter iEnd;
+    gchar *text;
 
     pTextView = GTK_WIDGET(data);
 
@@ -1011,8 +1012,9 @@ static void image_overlay_template_view_changed_cb(GtkWidget *widget, gpointer d
     gtk_text_buffer_get_start_iter(pTextBuffer, &iStart);
     gtk_text_buffer_get_end_iter(pTextBuffer, &iEnd);
 
-    set_image_overlay_template_string(&c_options->image_overlay.template_string,
-                      gtk_text_buffer_get_text(pTextBuffer, &iStart, &iEnd, TRUE));
+    text = gtk_text_buffer_get_text(pTextBuffer, &iStart, &iEnd, TRUE);
+    set_image_overlay_template_string(&c_options->image_overlay.template_string, text);
+    g_free(text);
 }
 
 static void image_overlay_default_template_ok_cb(GenericDialog *gd, gpointer data)
@@ -2524,7 +2526,7 @@ void show_about_window(void)
     gtk_widget_show(about);
 }
 
-static void image_overlay_set_text_colours()
+static void image_overlay_set_text_colours(void)
 {
     c_options->image_overlay.text_red = options->image_overlay.text_red;
     c_options->image_overlay.text_green = options->image_overlay.text_green;

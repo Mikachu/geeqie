@@ -730,7 +730,7 @@ guint exif_item_get_format_id(ExifItem *item)
 	try {
 		if (!item) return EXIF_FORMAT_UNKNOWN;
 		guint id = ((Exiv2::Metadatum *)item)->typeId();
-		if (id >= (sizeof(format_id_trans_tbl) / sizeof(format_id_trans_tbl[0])) ) return EXIF_FORMAT_UNKNOWN;
+		if (id >= G_N_ELEMENTS(format_id_trans_tbl) ) return EXIF_FORMAT_UNKNOWN;
 		return format_id_trans_tbl[id];
 	}
 	catch (Exiv2::AnyError& e) {
@@ -1040,7 +1040,11 @@ static GList *exif_add_value_to_glist(GList *list, Exiv2::Metadatum &item, Metad
 	else
 		{
 		/* read as a list */
-		gint i;
+#if EXIV2_TEST_VERSION(0,28,0)
+		size_t i;
+#else
+		long i;
+#endif
 		for (i = 0; i < item.count(); i++)
 			list = g_list_append(list, utf8_validate_or_convert(item.toString(i).c_str()));
 		}

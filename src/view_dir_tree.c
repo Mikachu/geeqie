@@ -38,7 +38,7 @@
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
 
 
-#define VDTREE(_vd_) ((ViewDirInfoTree *)(_vd_->info))
+#define VDTREE(_vd_) ((ViewDirInfoTree *)((_vd_)->info))
 
 
 typedef struct _PathData PathData;

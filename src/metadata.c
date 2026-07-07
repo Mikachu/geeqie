@@ -517,7 +517,7 @@ static gboolean metadata_file_read(gchar *path, GList **keywords, gchar **commen
             {
                 while (*ptr != '\n' && *ptr != '\0') ptr++;
                 *ptr = '\0';
-                if (strlen(s_buf) > 0)
+                if (*s_buf)
                 {
                     gchar *kw = utf8_validate_or_convert(s_buf);
 
@@ -837,77 +837,33 @@ gboolean metadata_append_list(FileData *fd, const gchar *key, const GList *value
     }
 }
 
-/**
- * \see find_string_in_list
- */
-gchar *find_string_in_list_utf8nocase(GList *list, const gchar *string)
+static gint compare_utf8nocase(gconstpointer data, gconstpointer user_data)
 {
-    gchar *string_casefold = g_utf8_casefold(string, -1);
-
-    while (list)
-    {
-        gchar *haystack = list->data;
-
-        if (haystack)
-        {
-            gboolean equal;
-            gchar *haystack_casefold = g_utf8_casefold(haystack, -1);
-
-            equal = (strcmp(haystack_casefold, string_casefold) == 0);
-            g_free(haystack_casefold);
-
-            if (equal)
-            {
-                g_free(string_casefold);
-                return haystack;
-            }
-        }
-
-        list = list->next;
-    }
-
-    g_free(string_casefold);
-    return NULL;
+    if (!data) return 1;
+    gchar *haystack = g_utf8_casefold((const gchar *)data, -1);
+    gint r = strcmp(haystack, (const gchar *)user_data);
+    g_free(haystack);
+    return r;
 }
-
-/**
- * \see find_string_in_list
- */
-gchar *find_string_in_list_utf8case(GList *list, const gchar *string)
-{
-    while (list)
-    {
-        gchar *haystack = list->data;
-
-        if (haystack && strcmp(haystack, string) == 0)
-            return haystack;
-
-        list = list->next;
-    } // while (list)
-
-    return NULL;
-} // gchar *find_string_in_list_utf...
 
 /**
  * \brief Find a existent string in a list.
  *
- * This is a switch between find_string_in_list_utf8case and
- * find_string_in_list_utf8nocase to search with or without case for the
- * existence of a string.
- *
  * \param list The list to search in
  * \param string The string to search for
- * \return The string or NULL
+ * \return The GList item or NULL
  *
- * \see find_string_in_list_utf8case
- * \see find_string_in_list_utf8nocase
  */
-gchar *find_string_in_list(GList *list, const gchar *string)
+static GList *find_string_in_list(GList *list, const gchar *string)
 {
+    if (!string) return NULL;
+
     if (options->metadata.keywords_case_sensitive)
-        return find_string_in_list_utf8case(list, string);
-    else
-        return find_string_in_list_utf8nocase(list, string);
+        return g_list_find_custom(list, string, (GCompareFunc)g_strcmp0);
+    gchar *string_casefold = g_utf8_casefold(string, -1);
+    GList *ret = g_list_find_custom(list, string_casefold, compare_utf8nocase);
+    g_free(string_casefold);
+    return ret;
 }
 
 #define KEYWORDS_SEPARATOR(c) ((c) == ',' || (c) == ';' || (c) == '\n' || (c) == '\r' || (c) == '\b')
@@ -1389,13 +1345,9 @@ void keyword_tree_set(GtkTreeModel *keyword_tree, GtkTreeIter *iter_ptr, GList *
         {
             gchar *name = keyword_get_name(keyword_tree, &iter);
             if (!find_string_in_list(*kw_list, name))
-            {
                 *kw_list = g_list_append(*kw_list, name);
-            }
             else
-            {
                 g_free(name);
-            }
         }
 
         if (!gtk_tree_model_iter_parent(keyword_tree, &parent, &iter)) return;
@@ -1425,8 +1377,8 @@ GList *keyword_tree_get(GtkTreeModel *keyword_tree, GtkTreeIter *iter_ptr)
 
 static void keyword_tree_reset1(GtkTreeModel *keyword_tree, GtkTreeIter *iter, GList **kw_list)
 {
-    gchar *found;
     gchar *name;
+    GList *found;
     if (!keyword_get_is_keyword(keyword_tree, iter)) return;
 
     name = keyword_get_name(keyword_tree, iter);
@@ -1434,8 +1386,8 @@ static void keyword_tree_reset1(GtkTreeModel *keyword_tree, GtkTreeIter *iter, G
 
     if (found)
     {
-        *kw_list = g_list_remove(*kw_list, found);
-        g_free(found);
+        g_free(found->data);
+        *kw_list = g_list_delete_link(*kw_list, found);
     }
     g_free(name);
 }

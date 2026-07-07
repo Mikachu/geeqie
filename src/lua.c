@@ -151,15 +151,18 @@ static int lua_exif_get_datum(lua_State *L)
         {
             datetime = mktime(&tm);
             lua_pushnumber(L, datetime);
+            g_free(value);
             return 1;
         }
         else
         {
             lua_pushnil(L);
+            g_free(value);
             return 1;
         }
     } // if (strcmp(key, "Exif.Photo.Da...
     lua_pushstring(L, value);
+    g_free(value);
     return 1;
 }
 

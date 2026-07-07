@@ -266,8 +266,8 @@ gboolean editor_read_desktop_file(const gchar *path)
         gchar *try_exec_res = g_find_program_in_path(try_exec);
         if (!try_exec_res) editor->hidden = TRUE;
         g_free(try_exec_res);
-        g_free(try_exec);
     }
+    g_free(try_exec);
 
     if (editor->ignored)
     {

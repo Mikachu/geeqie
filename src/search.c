@@ -215,7 +215,7 @@ typedef struct _MatchList MatchList;
 struct _MatchList
 {
     const gchar *text;
-    const MatchType type;
+    MatchType type;
 };
 
 static const MatchList text_search_menu_path[] = {
@@ -264,7 +264,6 @@ static void search_window_close(SearchData *sd);
 
 static void search_notify_cb(FileData *fd, NotifyType type, gpointer data);
 static void search_start_cb(GtkWidget *widget, gpointer data);
-void mfd_list_free(GList *list);
 
 /*
  *-------------------------------------------------------------------
@@ -1418,7 +1417,7 @@ static void search_dnd_init(SearchData *sd)
  *-------------------------------------------------------------------
  */
 
-#define MATCH_IS_BETWEEN(val, a, b)  (b > a ? (val >= a && val <= b) : (val >= b && val <= a))
+#define MATCH_IS_BETWEEN(val, a, b)  ((b) > (a) ? ((val) >= (a) && (val) <= (b)) : ((val) >= (b) && (val) <= (a)))
 
 static gboolean search_step_cb(gpointer data);
 
@@ -2325,18 +2324,6 @@ static void search_result_add_column(SearchData * sd, gint n, const gchar *title
     gtk_tree_view_append_column(GTK_TREE_VIEW(sd->result_view), column);
 }
 
-static void menu_choice_set_visible(GtkWidget *widget, gboolean visible)
-{
-    if (visible)
-    {
-        if (!gtk_widget_get_visible(widget)) gtk_widget_show(widget);
-    }
-    else
-    {
-        if (gtk_widget_get_visible(widget)) gtk_widget_hide(widget);
-    }
-}
-
 static gboolean menu_choice_get_match_type(GtkWidget *combo, MatchType *type)
 {
     GtkTreeModel *store;
@@ -2354,7 +2341,7 @@ static void menu_choice_path_cb(GtkWidget *combo, gpointer data)
 
     if (!menu_choice_get_match_type(combo, &sd->search_type)) return;
 
-    menu_choice_set_visible(gtk_widget_get_parent(sd->check_recurse),
+    gtk_widget_set_visible(gtk_widget_get_parent(sd->check_recurse),
                 (sd->search_type == SEARCH_MATCH_NONE));
 }
 
@@ -2371,7 +2358,7 @@ static void menu_choice_size_cb(GtkWidget *combo, gpointer data)
 
     if (!menu_choice_get_match_type(combo, &sd->match_size)) return;
 
-    menu_choice_set_visible(gtk_widget_get_parent(sd->spin_size_end),
+    gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_size_end),
                 (sd->match_size == SEARCH_MATCH_BETWEEN));
 }
 
@@ -2381,7 +2368,7 @@ static void menu_choice_date_cb(GtkWidget *combo, gpointer data)
 
     if (!menu_choice_get_match_type(combo, &sd->match_date)) return;
 
-    menu_choice_set_visible(gtk_widget_get_parent(sd->date_sel_end),
+    gtk_widget_set_visible(gtk_widget_get_parent(sd->date_sel_end),
                 (sd->match_date == SEARCH_MATCH_BETWEEN));
 }
 
@@ -2391,7 +2378,7 @@ static void menu_choice_dimensions_cb(GtkWidget *combo, gpointer data)
 
     if (!menu_choice_get_match_type(combo, &sd->match_dimensions)) return;
 
-    menu_choice_set_visible(gtk_widget_get_parent(sd->spin_width_end),
+    gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_width_end),
                 (sd->match_dimensions == SEARCH_MATCH_BETWEEN));
 }
 
@@ -2534,6 +2521,13 @@ static gboolean search_window_delete_cb(GtkWidget *widget, GdkEventAny *event, g
     return TRUE;
 }
 
+void mfd_free_fd(gpointer data)
+{
+    MatchFileData *mfd = data;
+
+    file_data_unref(mfd->fd);
+}
+
 static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
 {
     SearchData *sd = data;
@@ -2542,7 +2536,7 @@ static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
 
     search_result_update_idle_cancel(sd);
 
-    mfd_list_free(sd->search_buffer_list);
+    g_list_free_full(sd->search_buffer_list, mfd_free_fd);
     sd->search_buffer_list = NULL;
 
     search_stop(sd);
@@ -2643,7 +2637,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     pref_label_new(hbox, _("Search:"));
 
-    sd->menu_path = menu_choice_menu(text_search_menu_path, sizeof(text_search_menu_path) / sizeof(MatchList),
+    sd->menu_path = menu_choice_menu(text_search_menu_path, G_N_ELEMENTS(text_search_menu_path),
                      G_CALLBACK(menu_choice_path_cb), sd);
     gtk_box_pack_start(GTK_BOX(hbox), sd->menu_path, FALSE, FALSE, 0);
     gtk_widget_show(sd->menu_path);
@@ -2661,7 +2655,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file name */
     hbox = menu_choice(sd->box_search, &sd->check_name, &sd->menu_name,
                _("File name"), &sd->match_name_enable,
-               text_search_menu_name, sizeof(text_search_menu_name) / sizeof(MatchList),
+               text_search_menu_name, G_N_ELEMENTS(text_search_menu_name),
                G_CALLBACK(menu_choice_name_cb), sd);
     combo = history_combo_new(&sd->entry_name, "", "search_name", -1);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
@@ -2673,7 +2667,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file size */
     hbox = menu_choice(sd->box_search, &sd->check_size, &sd->menu_size,
                _("File size is"), &sd->match_size_enable,
-               text_search_menu_size, sizeof(text_search_menu_size) / sizeof(MatchList),
+               text_search_menu_size, G_N_ELEMENTS(text_search_menu_size),
                G_CALLBACK(menu_choice_size_cb), sd);
     sd->spin_size = menu_spin(hbox, 0, 1024*1024*1024, sd->search_size,
                   G_CALLBACK(menu_choice_spin_cb), &sd->search_size);
@@ -2686,7 +2680,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file date */
     hbox = menu_choice(sd->box_search, &sd->check_date, &sd->menu_date,
                _("File date is"), &sd->match_date_enable,
-               text_search_menu_date, sizeof(text_search_menu_date) / sizeof(MatchList),
+               text_search_menu_date, G_N_ELEMENTS(text_search_menu_date),
                G_CALLBACK(menu_choice_date_cb), sd);
     sd->date_sel = date_selection_new();
     date_selection_time_set(sd->date_sel, time(NULL));
@@ -2704,7 +2698,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image dimensions */
     hbox = menu_choice(sd->box_search, &sd->check_dimensions, &sd->menu_dimensions,
                _("Image dimensions are"), &sd->match_dimensions_enable,
-               text_search_menu_size, sizeof(text_search_menu_size) / sizeof(MatchList),
+               text_search_menu_size, G_N_ELEMENTS(text_search_menu_size),
                G_CALLBACK(menu_choice_dimensions_cb), sd);
     pad_box = pref_box_new(hbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 2);
     sd->spin_width = menu_spin(pad_box, 0, 1000000, sd->search_width,
@@ -2745,7 +2739,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image keywords */
     hbox = menu_choice(sd->box_search, &sd->check_keywords, &sd->menu_keywords,
                _("Keywords"), &sd->match_keywords_enable,
-               text_search_menu_keyword, sizeof(text_search_menu_keyword) / sizeof(MatchList),
+               text_search_menu_keyword, G_N_ELEMENTS(text_search_menu_keyword),
                G_CALLBACK(menu_choice_keyword_cb), sd);
     sd->entry_keywords = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_keywords, TRUE, TRUE, 0);
@@ -2757,7 +2751,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image comment */
     hbox = menu_choice(sd->box_search, &sd->check_comment, &sd->menu_comment,
             _("Comment"), &sd->match_comment_enable,
-            text_search_menu_comment, sizeof(text_search_menu_comment) / sizeof(MatchList),
+            text_search_menu_comment, G_N_ELEMENTS(text_search_menu_comment),
             G_CALLBACK(menu_choice_comment_cb), sd);
     sd->entry_comment = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_comment, TRUE, TRUE, 0);
@@ -2933,22 +2927,6 @@ static void search_notify_cb(FileData *fd, NotifyType type, gpointer data)
         case FILEDATA_CHANGE_WRITE_METADATA:
             break;
     }
-}
-
-void mfd_list_free(GList *list)
-{
-    GList *work;
-
-    work = list;
-    while (work)
-    {
-        MatchFileData *mfd = work->data;
-        file_data_unref(mfd->fd);
-        g_free(mfd);
-        work = work->next;
-    }
-
-    g_list_free(list);
 }
 
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
