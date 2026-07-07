@@ -1762,7 +1762,7 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
     fd = queue->data;
     if (fd)
     {
-        if (isfile(fd->path) && !g_file_test(fd->path, G_FILE_TEST_IS_SYMLINK))
+        if (isfile(fd->path) && !islink(fd->path))
         {
             di = dupe_item_new(fd);
         }
@@ -1841,7 +1841,7 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
     }
     else if (fd)
     {
-        if (isfile(fd->path) && !g_file_test(fd->path, G_FILE_TEST_IS_SYMLINK))
+        if (isfile(fd->path) && !islink(fd->path))
         {
             di = dupe_item_new(fd);
         }
