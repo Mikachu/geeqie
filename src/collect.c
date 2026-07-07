@@ -74,16 +74,10 @@ CollectInfo *collection_info_new(FileData *fd, struct stat *st, GdkPixbuf *pixbu
     ci = g_new0(CollectInfo, 1);
     ci->fd = file_data_ref(fd);
 
+    if (pixbuf) g_object_ref(pixbuf);
     ci->pixbuf = pixbuf;
-    if (ci->pixbuf) g_object_ref(ci->pixbuf);
 
     return ci;
-}
-
-void collection_info_free_thumb(CollectInfo *ci)
-{
-    if (ci->pixbuf) g_object_unref(ci->pixbuf);
-    ci->pixbuf = NULL;
 }
 
 void collection_info_free(CollectInfo *ci)
@@ -91,14 +85,14 @@ void collection_info_free(CollectInfo *ci)
     if (!ci) return;
 
     file_data_unref(ci->fd);
-    collection_info_free_thumb(ci);
+    if (ci->pixbuf) g_object_unref(ci->pixbuf);
     g_free(ci);
 }
 
 void collection_info_set_thumb(CollectInfo *ci, GdkPixbuf *pixbuf)
 {
     if (pixbuf) g_object_ref(pixbuf);
-    collection_info_free_thumb(ci);
+    if (ci->pixbuf) g_object_unref(ci->pixbuf);
     ci->pixbuf = pixbuf;
 }
 
@@ -106,7 +100,7 @@ gboolean collection_info_load_thumb(CollectInfo *ci)
 {
     if (!ci) return FALSE;
 
-    collection_info_free_thumb(ci);
+    if (ci->pixbuf) g_object_unref(g_steal_pointer(&ci->pixbuf));
 
     log_printf("collection_info_load_thumb not implemented!\n(because an instant thumb loader not implemented)");
     return FALSE;

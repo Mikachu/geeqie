@@ -63,13 +63,15 @@ static void pixbuf_draw_border(GdkPixbuf *pixbuf, gint w, gint h)
         *p = 0; p++; *p = 0; p++; *p = 0; p++;
         if (alpha) { *p= 255; p++; }
     }
+
+    const gint p_step = alpha ? 4 : 3;
     for (i = 1; i < h - 1; i++)
     {
         p = pix + rs * i;
         *p = 0; p++; *p = 0; p++; *p = 0; p++;
         if (alpha) *p= 255;
 
-        p = pix + rs * i + (w - 1) * ((alpha == TRUE) ? 4 : 3);
+        p = pix + rs * i + (w - 1) * p_step;
         *p = 0; p++; *p = 0; p++; *p = 0; p++;
         if (alpha) *p= 255;
     }
@@ -94,9 +96,11 @@ static void pixbuf_draw_rect(GdkPixbuf *pixbuf, gint x, gint y, gint w, gint h, 
     rs = gdk_pixbuf_get_rowstride(pixbuf);
     pix = gdk_pixbuf_get_pixels(pixbuf);
 
+    const gint p_step = alpha ? 4 : 3;
+
     for (j = 0; j < h; j++)
     {
-        p = pix + (rs * (y + j)) + (x * ((alpha) ? 4 : 3));
+        p = pix + (rs * (y + j)) + (x * p_step);
         for (i = 0; i < w; i++)
         {
             *p = (*p * (256-val)) >> 8; p++;

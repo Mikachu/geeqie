@@ -188,23 +188,10 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
 
     if (pw > tl->max_w || ph > tl->max_h)
     {
-        gint w, h;
-
-        if (((gdouble)tl->max_w / pw) < ((gdouble)tl->max_h / ph))
-        {
-            w = tl->max_w;
-            h = (gdouble)w / pw * ph;
-            if (h < 1) h = 1;
-        }
-        else
-        {
-            h = tl->max_h;
-            w = (gdouble)h / ph * pw;
-            if (w < 1) w = 1;
-        }
-
         if (tl->fd)
         {
+            gint w, h;
+            pixbuf_scale_aspect(tl->max_w, tl->max_h, pw, ph, &w, &h);
             if (tl->fd->thumb_pixbuf) g_object_unref(tl->fd->thumb_pixbuf);
             tl->fd->thumb_pixbuf = gdk_pixbuf_scale_simple(pixbuf, w, h, (GdkInterpType)options->thumbnails.quality);
         }

@@ -59,7 +59,7 @@ typedef enum {
 
 
 /* default min and max zoom */
-#define PR_ZOOM_MIN -32.0
+#define PR_ZOOM_MIN (-32.0)
 #define PR_ZOOM_MAX 32.0
 
 /* distance to drag mouse to disable image flip */
@@ -2017,7 +2017,7 @@ static gboolean pr_mouse_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpo
     return FALSE;
 }
 
-static gboolean pr_leave_notify_cb(GtkWidget *widget, GdkEventCrossing *cevent, gpointer data)
+static gboolean pr_mouse_leave_cb(GtkWidget *widget, GdkEventCrossing *cevent, gpointer data)
 {
     PixbufRenderer *pr;
 
@@ -2025,7 +2025,16 @@ static gboolean pr_leave_notify_cb(GtkWidget *widget, GdkEventCrossing *cevent, 
     pr->x_mouse = -1;
     pr->y_mouse = -1;
 
+    if (pr->scroller_id)
+    {
+        pr->scroller_xpos = pr->scroller_x;
+        pr->scroller_ypos = pr->scroller_y;
+        pr->scroller_xinc = 0;
+        pr->scroller_yinc = 0;
+    }
+
     pr_update_pixel_signal(pr);
+
     return FALSE;
 }
 
@@ -2105,23 +2114,6 @@ static gboolean pr_mouse_release_cb(GtkWidget *widget, GdkEventButton *bevent, g
     return FALSE;
 }
 
-static gboolean pr_mouse_leave_cb(GtkWidget *widget, GdkEventCrossing *event, gpointer data)
-{
-    PixbufRenderer *pr;
-
-    pr = PIXBUF_RENDERER(widget);
-
-    if (pr->scroller_id)
-    {
-        pr->scroller_xpos = pr->scroller_x;
-        pr->scroller_ypos = pr->scroller_y;
-        pr->scroller_xinc = 0;
-        pr->scroller_yinc = 0;
-    }
-
-    return FALSE;
-}
-
 static void pr_mouse_drag_cb(GtkWidget *widget, GdkDragContext *context, gpointer data)
 {
     PixbufRenderer *pr;
@@ -2141,8 +2133,6 @@ static void pr_signals_connect(PixbufRenderer *pr)
              G_CALLBACK(pr_mouse_release_cb), pr);
     g_signal_connect(G_OBJECT(pr), "leave_notify_event",
              G_CALLBACK(pr_mouse_leave_cb), pr);
-    g_signal_connect(G_OBJECT(pr), "leave_notify_event",
-             G_CALLBACK(pr_leave_notify_cb), pr);
 
     gtk_widget_set_events(GTK_WIDGET(pr), GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK |
                           GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK |

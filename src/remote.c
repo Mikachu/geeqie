@@ -85,7 +85,7 @@ static gboolean remote_server_client_cb(GIOChannel *source, GIOCondition conditi
             {
                 buffer[termpos] = '\0';
 
-                if (strlen(buffer) > 0)
+                if (*buffer)
                 {
                     if (rc->read_func) rc->read_func(rc, buffer, source, rc->read_data);
                     g_io_channel_write_chars(source, "\n", -1, NULL, NULL); /* empty line finishes the command */

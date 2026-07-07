@@ -672,7 +672,7 @@ static void tab_completion_button_size_allocate(GtkWidget *button, GtkAllocation
         gtk_widget_get_allocation(button, &button_allocation);
         button_allocation.height = parent_allocation.height;
         button_allocation.y = parent_allocation.y +
-            (parent_allocation.height - parent_allocation.height) / 2;
+            (parent_allocation.height - allocation->height) / 2;
         gtk_widget_size_allocate(button, &button_allocation);
     }
 }
@@ -939,7 +939,7 @@ static void tab_completion_select_show(TabCompData *td)
     generic_dialog_add_message(GENERIC_DIALOG(td->fd), NULL, title, NULL);
 
     path = gtk_entry_get_text(GTK_ENTRY(td->entry));
-    if (strlen(path) == 0) path = td->initial_dir;
+    if (!*path) path = td->initial_dir;
     if (td->fd_folders_only)
     {
         file_dialog_add_path_widgets(td->fd, NULL, path, td->history_key, NULL, NULL);

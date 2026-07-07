@@ -625,14 +625,7 @@ GtkWidget *bar_update_from_config(GtkWidget *bar, const gchar **attribute_names,
     }
 
     gtk_widget_set_size_request(bar, width, -1);
-    if (enabled)
-    {
-        gtk_widget_show(bar);
-    }
-    else
-    {
-        gtk_widget_hide(bar);
-    }
+    gtk_widget_set_visible(bar, enabled);
     return bar;
 }
 

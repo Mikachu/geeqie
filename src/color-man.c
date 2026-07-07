@@ -76,6 +76,28 @@ static cmsHPROFILE color_man_create_adobe_comp(void)
     return cmsOpenProfileFromMem(ClayRGB1998_icc, ClayRGB1998_icc_len);
 }
 
+gchar *color_man_get_profile_name_from_data(const guchar *profile_data, guint profile_len)
+{
+    cmsHPROFILE profile;
+    gchar *name = NULL;
+
+    profile = cmsOpenProfileFromMem((void *)profile_data, profile_len);
+    if (profile)
+    {
+#ifdef HAVE_LCMS2
+        char buffer[20];
+        buffer[0] = '\0';
+        cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", buffer, 20);
+        buffer[19] = '\0';
+        name = g_strdup(buffer);
+#else
+        name = g_strdup(cmsTakeProductName(profile));
+#endif
+        cmsCloseProfile(profile);
+    }
+    return name;
+}
+
 /*
  *-------------------------------------------------------------------
  * color transform cache
@@ -207,23 +229,10 @@ static ColorManCache *color_man_cache_new(ColorManProfileType in_type, const gch
     return cc;
 }
 
-static void color_man_cache_free(ColorManCache *cc)
-{
-    if (!cc) return;
-
-    cm_cache_list = g_list_remove(cm_cache_list, cc);
-    color_man_cache_unref(cc);
-}
-
 static void color_man_cache_reset(void)
 {
-    while (cm_cache_list)
-    {
-        ColorManCache *cc;
-
-        cc = cm_cache_list->data;
-        color_man_cache_free(cc);
-    }
+    g_list_free_full(cm_cache_list, (GDestroyNotify)color_man_cache_unref);
+    cm_cache_list = NULL;
 }
 
 static ColorManCache *color_man_cache_find(ColorManProfileType in_type, const gchar *in_file,
@@ -504,6 +513,12 @@ ColorMan *color_man_new_embedded(ImageWindow *imd, GdkPixbuf *pixbuf,
                  guchar *input_data, guint input_data_len,
                  ColorManProfileType screen_type, const gchar *screen_file,
                  guchar *screen_data, guint screen_data_len)
+{
+    /* no op */
+    return NULL;
+}
+
+gchar *color_man_get_profile_name_from_data(const guchar *profile_data, guint profile_len)
 {
     /* no op */
     return NULL;

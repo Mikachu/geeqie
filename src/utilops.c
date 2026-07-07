@@ -1086,6 +1086,7 @@ static void file_util_dest_folder_update_path(UtilityData *ud)
     {
         case UTILITY_TYPE_COPY:
             file_data_sc_update_ci_copy_list(ud->flist, ud->dest_path);
+            break;
         case UTILITY_TYPE_MOVE:
             file_data_sc_update_ci_move_list(ud->flist, ud->dest_path);
             break;
@@ -1714,7 +1715,6 @@ void file_util_dialog_run(UtilityData *ud)
             file_util_check_ci(ud);
             break;
 
-            ud->phase = UTILITY_PHASE_CHECKED;
         case UTILITY_PHASE_CHECKED:
             file_util_perform_ci(ud);
             break;
