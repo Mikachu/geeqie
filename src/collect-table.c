@@ -2088,6 +2088,9 @@ void collection_table_file_remove(CollectTable *ct, CollectInfo *ci)
         ct->selection = g_list_remove(ct->selection, ci);
     }
 
+    if (ct->click_info == ci) ct->click_info = NULL;
+    if (ct->focus_info == ci) ct->focus_info = NULL;
+
     collection_table_sync_idle(ct);
 }
 
