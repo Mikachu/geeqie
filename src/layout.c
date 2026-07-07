@@ -117,7 +117,7 @@ LayoutWindow *layout_find_by_image_fd(ImageWindow *imd)
         LayoutWindow *lw = work->data;
         work = work->next;
 
-        if (lw->image->image_fd == imd->image_fd)
+        if (image_get_fd(lw->image) == image_get_fd(imd))
             return lw;
     }
 
