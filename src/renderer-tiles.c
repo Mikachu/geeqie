@@ -1481,6 +1481,7 @@ static gboolean rt_queue_schedule_next_draw(RendererTiles *rt, gboolean force_se
     {
         /* 2pass prio */
         DEBUG_2("redraw priority: 2pass");
+        g_object_set(G_OBJECT(pr), "complete", FALSE, NULL);
         rt->draw_idle_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, rt_queue_draw_idle_cb, rt, NULL);
         return FALSE;
     }
@@ -1499,6 +1500,7 @@ static gboolean rt_queue_schedule_next_draw(RendererTiles *rt, gboolean force_se
     {
         /* we have enough data for starting intensive redrawing */
         DEBUG_2("redraw priority: high %.2f %%", percent);
+        g_object_set(G_OBJECT(pr), "complete", FALSE, NULL);
         rt->draw_idle_id = g_idle_add_full(GDK_PRIORITY_REDRAW, rt_queue_draw_idle_cb, rt, NULL);
         return FALSE;
     }
@@ -1507,6 +1509,7 @@ static gboolean rt_queue_schedule_next_draw(RendererTiles *rt, gboolean force_se
     {
         /* queue is (almost) empty, wait  50 ms*/
         DEBUG_2("redraw priority: wait %.2f %%", percent);
+        g_object_set(G_OBJECT(pr), "complete", FALSE, NULL);
         rt->draw_idle_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 50, rt_queue_draw_idle_cb, rt, NULL);
         return FALSE;
     }
