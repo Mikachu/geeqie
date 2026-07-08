@@ -99,6 +99,7 @@ gdouble image_zoom_get(ImageWindow *imd);
 gdouble image_zoom_get_real(ImageWindow *imd);
 gchar *image_zoom_get_as_text(ImageWindow *imd);
 gdouble image_zoom_get_default(ImageWindow *imd);
+void image_start_rectangle_zoom(ImageWindow *imd);
 
 /* stereo */
 gint image_stereo_get(ImageWindow *imd);

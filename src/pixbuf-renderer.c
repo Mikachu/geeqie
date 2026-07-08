@@ -1950,23 +1950,9 @@ static gboolean pr_mouse_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpo
 {
     PixbufRenderer *pr;
     gint accel;
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDeviceManager *device_manager;
-    GdkDevice *device;
-#endif
 
-    /* This is a hack, but work far the best, at least for single pointer systems.
-     * See http://bugzilla.gnome.org/show_bug.cgi?id=587714 for more. */
-    gint x, y;
-#if GTK_CHECK_VERSION(3,0,0)
-    device_manager = gdk_display_get_device_manager(gdk_window_get_display(event->window));
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_window_get_device_position(event->window, device, &x, &y, NULL);
-#else
-    gdk_window_get_pointer (event->window, &x, &y, NULL);
-#endif
-    event->x = x;
-    event->y = y;
+    if (g_object_get_data(G_OBJECT(widget), "zoom_rect_data"))
+        return FALSE;
 
     pr = PIXBUF_RENDERER(widget);
 
@@ -2043,6 +2029,9 @@ static gboolean pr_mouse_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpo
     PixbufRenderer *pr;
     GtkWidget *parent;
 
+    if (g_object_get_data(G_OBJECT(widget), "zoom_rect_data"))
+        return FALSE;
+
     pr = PIXBUF_RENDERER(widget);
 
     if (pr->scroller_id) return TRUE;
@@ -2055,7 +2044,7 @@ static gboolean pr_mouse_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpo
             pr->drag_last_y = bevent->y;
             pr->drag_moved = 0;
             gdk_pointer_grab(gtk_widget_get_window(widget), FALSE,
-                     GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_RELEASE_MASK,
+                     GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK,
                      NULL, NULL, bevent->time);
             gtk_grab_add(widget);
             break;
@@ -2097,6 +2086,12 @@ static gboolean pr_mouse_release_cb(GtkWidget *widget, GdkEventButton *bevent, g
         widget_set_cursor(widget, -1);
     }
 
+    if (g_object_get_data(G_OBJECT(widget), "zoom_rect_data"))
+    {
+        pr->in_drag = FALSE;
+        return FALSE;
+    }
+
     if (pr->drag_moved < PR_DRAG_SCROLL_THRESHHOLD)
     {
         if (bevent->button == MOUSE_BUTTON_LEFT && (bevent->state & GDK_CONTROL_MASK))
@@ -2118,6 +2113,9 @@ static void pr_mouse_drag_cb(GtkWidget *widget, GdkDragContext *context, gpointe
 {
     PixbufRenderer *pr;
 
+    if (g_object_get_data(G_OBJECT(widget), "zoom_rect_data"))
+        return;
+
     pr = PIXBUF_RENDERER(widget);
 
     pr->drag_moved = PR_DRAG_SCROLL_THRESHHOLD;
@@ -2134,7 +2132,7 @@ static void pr_signals_connect(PixbufRenderer *pr)
     g_signal_connect(G_OBJECT(pr), "leave_notify_event",
              G_CALLBACK(pr_mouse_leave_cb), pr);
 
-    gtk_widget_set_events(GTK_WIDGET(pr), GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK |
+    gtk_widget_set_events(GTK_WIDGET(pr), GDK_POINTER_MOTION_MASK |
                           GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK |
                           GDK_LEAVE_NOTIFY_MASK);
 

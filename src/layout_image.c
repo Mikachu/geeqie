@@ -327,6 +327,13 @@ static void li_pop_menu_zoom_fit_cb(GtkWidget *widget, gpointer data)
     layout_image_zoom_set(lw, 0.0, FALSE);
 }
 
+static void li_pop_menu_zoom_rect_cb(GtkWidget *widget, gpointer data)
+{
+    LayoutWindow *lw = data;
+
+    image_start_rectangle_zoom(lw->image);
+}
+
 static void li_pop_menu_edit_cb(GtkWidget *widget, gpointer data)
 {
     LayoutWindow *lw;
@@ -534,6 +541,7 @@ static GtkWidget *layout_image_pop_menu(LayoutWindow *lw)
     menu_item_add_stock(menu, _("Zoom _in"), GTK_STOCK_ZOOM_IN, G_CALLBACK(li_pop_menu_zoom_in_cb), lw);
     menu_item_add_stock(menu, _("Zoom _out"), GTK_STOCK_ZOOM_OUT, G_CALLBACK(li_pop_menu_zoom_out_cb), lw);
     menu_item_add_stock(menu, _("Zoom _1:1"), GTK_STOCK_ZOOM_100, G_CALLBACK(li_pop_menu_zoom_1_1_cb), lw);
+    menu_item_add_stock(menu, _("Zoom to Rectangle"), GTK_STOCK_ZOOM_IN, G_CALLBACK(li_pop_menu_zoom_rect_cb), lw);
     menu_item_add_stock(menu, _("Fit image to _window"), GTK_STOCK_ZOOM_FIT, G_CALLBACK(li_pop_menu_zoom_fit_cb), lw);
     menu_item_add_divider(menu);
 
