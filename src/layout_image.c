@@ -1155,7 +1155,13 @@ static void layout_image_set_collection_real(LayoutWindow *lw, CollectionData *c
 void layout_image_set_collection(LayoutWindow *lw, CollectionData *cd, CollectInfo *info)
 {
     layout_image_set_collection_real(lw, cd, info, TRUE);
-    layout_list_sync_fd(lw, layout_image_get_fd(lw));
+    FileData *fd = layout_image_get_fd(lw);
+    if (layout_selection_count(lw, NULL) > 1)
+        return;
+    if (layout_list_get_index(lw, fd) >= 0)
+        layout_list_sync_fd(lw, layout_image_get_fd(lw));
+    else
+        layout_select_none(lw);
 }
 
 void layout_image_refresh(LayoutWindow *lw)
