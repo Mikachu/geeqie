@@ -94,6 +94,212 @@ static void image_scroll_notify_cb(PixbufRenderer *pr, gpointer data)
     }
 }
 
+/*
+ *-------------------------------------------------------------------
+ * zoom to rectangle
+ *-------------------------------------------------------------------
+ */
+#define CLAMP_RECT
+
+typedef struct {
+    gint start_x;
+    gint start_y;
+    gint cur_x;
+    gint cur_y;
+    gint rect_id[4];
+    guint update_idle_id;
+} ZoomRectData;
+
+static gboolean image_zoom_rect_update_idle_cb(gpointer data)
+{
+    ImageWindow *imd = data;
+    ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
+    if (!rd) return FALSE;
+
+    rd->update_idle_id = 0;
+
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+
+#ifdef CLAMP_RECT
+    gint sx = CLAMP(rd->start_x, pr->x_offset, pr->x_offset + pr->vis_width - 1);
+    gint sy = CLAMP(rd->start_y, pr->y_offset, pr->y_offset + pr->vis_height - 1);
+    gint ex = CLAMP(rd->cur_x, pr->x_offset, pr->x_offset + pr->vis_width - 1);
+    gint ey = CLAMP(rd->cur_y, pr->y_offset, pr->y_offset + pr->vis_height - 1);
+#else
+    gint sx = rd->start_x;
+    gint sy = rd->start_y;
+    gint ex = rd->cur_x;
+    gint ey = rd->cur_y;
+#endif
+    gint x1 = MIN(sx, ex);
+    gint y1 = MIN(sy, ey);
+    gint x2 = MAX(sx, ex);
+    gint y2 = MAX(sy, ey);
+    gint w = MAX(x2 - x1 + 1, 1);
+    gint h = MAX(y2 - y1 + 1, 1);
+
+    GdkPixbuf *strips[4];
+    strips[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, w, 2); /* top */
+    strips[1] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, w, 2); /* bottom */
+    strips[2] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 2, h); /* left */
+    strips[3] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 2, h); /* right */
+    for (gint i = 0; i < 4; i++) gdk_pixbuf_fill(strips[i], 0xffffffff);
+    pixbuf_set_rect_fill(strips[0], 1, 1, w-2, 1, 0, 0, 0, 255); /* top: inner row = black */
+    pixbuf_set_rect_fill(strips[1], 1, 0, w-2, 1, 0, 0, 0, 255); /* bottom: inner row = black */
+    pixbuf_set_rect_fill(strips[2], 1, 1, 1, h-2, 0, 0, 0, 255); /* left: inner col = black */
+    pixbuf_set_rect_fill(strips[3], 0, 1, 1, h-2, 0, 0, 0, 255); /* right: inner col = black */
+
+    gint px[4] = { x1, x1, x1, x2 - 1 };
+    gint py[4] = { y1, y2 - 1, y1, y1 };
+
+    for (gint i = 0; i < 4; i++)
+    {
+        if (rd->rect_id[i])
+            pixbuf_renderer_overlay_remove(pr, rd->rect_id[i]);
+        rd->rect_id[i] = pixbuf_renderer_overlay_add(pr, strips[i], px[i], py[i], OVL_NORMAL);
+        g_object_unref(strips[i]);
+    }
+
+    return FALSE;
+}
+static gboolean image_zoom_rect_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpointer data)
+{
+    ImageWindow *imd = data;
+    ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
+    if (!rd) return FALSE;
+
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+
+    rd->cur_x = (gint)event->x;
+    rd->cur_y = (gint)event->y;
+
+    if (rd->update_idle_id)
+        g_source_remove(rd->update_idle_id);
+    rd->update_idle_id = g_idle_add(image_zoom_rect_update_idle_cb, imd);
+
+    return FALSE;
+}
+
+static gboolean image_zoom_rect_release_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    ImageWindow *imd = data;
+    ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
+    if (!rd) return FALSE;
+
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+
+    g_signal_handlers_disconnect_by_func(pr, image_zoom_rect_release_cb, imd);
+    g_signal_handlers_disconnect_by_func(pr, image_zoom_rect_motion_cb, imd);
+
+    if (rd->update_idle_id)
+    {
+        g_source_remove(rd->update_idle_id);
+        rd->update_idle_id = 0;
+    }
+
+    for (gint i = 0; i < 4; i++)
+        if (rd->rect_id[i])
+        {
+            pixbuf_renderer_overlay_remove(pr, rd->rect_id[i]);
+            rd->rect_id[i] = 0;
+        }
+
+    gint sx = CLAMP(rd->start_x, pr->x_offset, pr->x_offset + pr->vis_width - 1);
+    gint sy = CLAMP(rd->start_y, pr->y_offset, pr->y_offset + pr->vis_height - 1);
+    gint ex = CLAMP(rd->cur_x, pr->x_offset, pr->x_offset + pr->vis_width - 1);
+    gint ey = CLAMP(rd->cur_y, pr->y_offset, pr->y_offset + pr->vis_height - 1);
+    gint x1 = MIN(ex, sx);
+    gint y1 = MIN(ey, sy);
+    gint x2 = MAX(ex, sx);
+    gint y2 = MAX(ey, sy);
+
+    g_object_set_data(G_OBJECT(pr), "zoom_rect_data", NULL);
+    gdk_window_set_cursor(gtk_widget_get_window(imd->pr), NULL);
+
+    gint rw = x2 - x1 + 1;
+    gint rh = y2 - y1 + 1;
+    if (rw < 2 || rh < 2) return TRUE;
+
+    if (!pr->scale || pr->vis_width == 0 || pr->vis_height == 0) return TRUE;
+
+    /* Convert widget coords to image coords.
+     * x_scroll is in scaled pixels; dividing by scale gives image pixels. */
+    gdouble ix1 = ((gdouble)x1 - pr->x_offset + pr->x_scroll) / pr->scale;
+    gdouble iy1 = ((gdouble)y1 - pr->y_offset + pr->y_scroll) / pr->scale;
+    gdouble ix2 = ((gdouble)x2 + 1 - pr->x_offset + pr->x_scroll) / pr->scale;
+    gdouble iy2 = ((gdouble)y2 + 1 - pr->y_offset + pr->y_scroll) / pr->scale;
+    gint iix1 = (gint)floor(ix1);
+    gint iiy1 = (gint)floor(iy1);
+    gint iirw = (gint)ceil(ix2) - iix1;
+    gint iirh = (gint)ceil(iy2) - iiy1;
+
+    /* Map from displayed (possibly rotated) image coords to original image coords */
+    gint rx, ry, rw2, rh2;
+    pr_coords_map_orientation_reverse(pr->orientation,
+                      iix1, iiy1,
+                      pr->image_width, pr->image_height,
+                      iirw, iirh,
+                      &rx, &ry, &rw2, &rh2);
+
+    if (rw2 < 1 || rh2 < 1) return TRUE;
+
+    gdouble scale = MIN((gdouble)pr->viewport_width / iirw,
+                (gdouble)pr->viewport_height / iirh);
+    gdouble fit_scale = MIN((gdouble)pr->viewport_width / pr->image_width,
+                    (gdouble)pr->viewport_height / pr->image_height);
+    gdouble zoom;
+    if (fabs(scale - fit_scale) < fit_scale * 0.005)
+        zoom = 0.0;
+    else
+        zoom = (scale >= 1.0) ? scale : -1.0 / scale;
+
+    pixbuf_renderer_zoom_set(pr, zoom);
+    pixbuf_renderer_scroll_to_point(pr, iix1 + iirw / 2, iiy1 + iirh / 2, 0.5, 0.5);
+
+    return TRUE;
+}
+
+static gboolean image_zoom_rect_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    ImageWindow *imd = data;
+
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+
+    /* One-shot: disconnect ourselves so normal clicks work after one rectangle */
+    g_signal_handlers_disconnect_by_func(pr, image_zoom_rect_press_cb, imd);
+
+    if (event->button != MOUSE_BUTTON_LEFT)
+    {
+        gdk_window_set_cursor(gtk_widget_get_window(imd->pr), NULL);
+        return FALSE;
+    }
+
+    ZoomRectData *rd = g_new0(ZoomRectData, 1);
+    rd->start_x = (gint)event->x;
+    rd->start_y = (gint)event->y;
+
+    g_object_set_data_full(G_OBJECT(pr), "zoom_rect_data", rd, g_free);
+
+    g_signal_connect(G_OBJECT(pr), "button-release-event",
+             G_CALLBACK(image_zoom_rect_release_cb), imd);
+    g_signal_connect(G_OBJECT(pr), "motion-notify-event",  
+             G_CALLBACK(image_zoom_rect_motion_cb), imd);
+
+    return TRUE;  /* suppress panning for this press */
+}
+
+void image_start_rectangle_zoom(ImageWindow *imd)
+{
+    g_signal_connect(G_OBJECT(imd->pr), "button-press-event",
+             G_CALLBACK(image_zoom_rect_press_cb), imd);
+
+    GdkCursor *cursor = gdk_cursor_new(GDK_CROSSHAIR);
+    gdk_window_set_cursor(gtk_widget_get_window(imd->pr), cursor);
+    gdk_cursor_unref(cursor);
+}
+
+/* end of zoom to rect */
+
 static void image_update_util(ImageWindow *imd)
 {
     if (imd->func_update) imd->func_update(imd, imd->data_update);

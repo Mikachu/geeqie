@@ -36,6 +36,7 @@
 #include "history_list.h"
 #include "image-overlay.h"
 #include "histogram.h"
+#include "image.h"
 #include "img-view.h"
 #include "layout_image.h"
 #include "logwindow.h"
@@ -475,6 +476,13 @@ static void layout_menu_zoom_fit_vert_cb(GtkAction *action, gpointer data)
     LayoutWindow *lw = data;
 
     layout_image_zoom_set_fill_geometry(lw, TRUE, FALSE);
+}
+
+static void layout_menu_zoom_to_rectangle_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+
+    image_start_rectangle_zoom(lw->image);
 }
 
 static void layout_menu_zoom_2_1_cb(GtkAction *action, gpointer data)
@@ -1544,6 +1552,7 @@ static GtkActionEntry menu_entries[] = {
   { "ZoomFitAlt1",  GTK_STOCK_ZOOM_FIT, N_("_Zoom to fit"),         "KP_Multiply",      N_("Zoom to fit"),          CB(layout_menu_zoom_fit_cb) },
   { "ZoomFillHor",  NULL,           N_("Fit _Horizontally"),        "H",            N_("Fit Horizontally"),         CB(layout_menu_zoom_fit_hor_cb) },
   { "ZoomFillVert", NULL,           N_("Fit _Vertically"),          "W",            N_("Fit Vertically"),           CB(layout_menu_zoom_fit_vert_cb) },
+  { "ZoomToRectangle",  NULL,           N_("Zoom to _Rectangle"),   NULL,       N_("Zoom to Rectangle"),    CB(layout_menu_zoom_to_rectangle_cb) },
   { "Zoom200",          NULL,           N_("Zoom _2:1"),            NULL,           N_("Zoom 2:1"),             CB(layout_menu_zoom_2_1_cb) },
   { "Zoom300",          NULL,           N_("Zoom _3:1"),            NULL,           N_("Zoom 3:1"),             CB(layout_menu_zoom_3_1_cb) },
   { "Zoom400",      NULL,           N_("Zoom _4:1"),            NULL,           N_("Zoom 4:1"),             CB(layout_menu_zoom_4_1_cb) },
@@ -1780,6 +1789,7 @@ static const gchar *menu_ui_description =
 "        <menuitem action='ZoomFit'/>"
 "        <menuitem action='ZoomFillHor'/>"
 "        <menuitem action='ZoomFillVert'/>"
+"        <menuitem action='ZoomToRectangle'/>"
 "        <menuitem action='Zoom100'/>"
 "        <menuitem action='Zoom200'/>"
 "        <menuitem action='Zoom300'/>"
