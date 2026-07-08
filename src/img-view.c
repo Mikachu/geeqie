@@ -1219,7 +1219,6 @@ static GtkWidget *view_popup_menu(ViewWindow *vw)
     submenu_add_alter(menu, G_CALLBACK(view_alter_cb), vw);
 
     menu_item_add_stock(menu, _("View in _new window"), GTK_STOCK_NEW, G_CALLBACK(view_new_window_cb), vw);
-    item = menu_item_add(menu, _("_Go to directory view"), G_CALLBACK(view_set_layout_path_cb), vw);
 
     menu_item_add_divider(menu);
     menu_item_add_stock(menu, _("_Copy..."), GTK_STOCK_COPY, G_CALLBACK(view_copy_cb), vw);
