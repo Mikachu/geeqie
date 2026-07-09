@@ -110,6 +110,7 @@ struct _OverlayData
     gint y;
 
     OverlayRendererFlags flags;
+    cairo_surface_t *surface;
 };
 
 typedef struct _RendererTiles RendererTiles;
@@ -546,6 +547,18 @@ static void rt_overlay_init_window(RendererTiles *rt, OverlayData *od)
     gdk_window_show(od->window);
 }
 
+static cairo_surface_t *pixbuf_to_surface(GdkPixbuf *pixbuf)
+{
+    gint w = gdk_pixbuf_get_width(pixbuf);
+    gint h = gdk_pixbuf_get_height(pixbuf);
+    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
+    cairo_t *cr = cairo_create(surface);
+    gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+    return surface;
+}
+
 static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
                 ImageTile *it)
 {
@@ -574,6 +587,11 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
                                                     rt->tile_width, rt->tile_height);
             }
 
+            if (!od->surface)
+            {
+                od->surface = pixbuf_to_surface(od->pixbuf);
+            }
+
             if (it)
             {
                 cairo_t *cr;
@@ -583,7 +601,7 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
                 cairo_rectangle(cr, 0, 0, rw, rh);
                 cairo_fill_preserve(cr);
 
-                gdk_cairo_set_source_pixbuf(cr, od->pixbuf, px - rx, py - ry);
+                cairo_set_source_surface(cr, od->surface, px - rx, py - ry);
                 cairo_fill (cr);
                 cairo_destroy (cr);
 
@@ -595,33 +613,16 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
             }
             else
             {
-                /* no ImageTile means region may be larger than our scratch buffer */
-                gint sx, sy;
+                /* no ImageTile: draw directly to overlay window, no scratch buffer needed */
+                cairo_t *cr;
 
-                for (sx = rx; sx < rx + rw; sx += rt->tile_width)
-                    for (sy = ry; sy < ry + rh; sy += rt->tile_height)
-                {
-                    gint sw, sh;
-                    cairo_t *cr;
-
-                    sw = MIN(rx + rw - sx, rt->tile_width);
-                    sh = MIN(ry + rh - sy, rt->tile_height);
-
-                    cr = cairo_create(rt->overlay_buffer);
-                    cairo_set_source_rgb(cr, 0, 0, 0);
-                    cairo_rectangle(cr, 0, 0, sw, sh);
-                    cairo_fill_preserve(cr);
-
-                    gdk_cairo_set_source_pixbuf(cr, od->pixbuf, px - sx, py - sy);
-                    cairo_fill (cr);
-                    cairo_destroy (cr);
-
-                    cr = gdk_cairo_create(od->window);
-                    cairo_set_source_surface(cr, rt->overlay_buffer, sx - px, sy - py);
-                    cairo_rectangle (cr, sx - px, sy - py, sw, sh);
-                    cairo_fill(cr);
-                    cairo_destroy(cr);
-                }
+                cr = gdk_cairo_create(od->window);
+                cairo_set_source_rgb(cr, 0, 0, 0);
+                cairo_rectangle(cr, rx - px, ry - py, rw, rh);
+                cairo_fill_preserve(cr);
+                cairo_set_source_surface(cr, od->surface, 0, 0);
+                cairo_fill(cr);
+                cairo_destroy(cr);
             }
         }
     }
@@ -738,6 +739,7 @@ static void rt_overlay_free(RendererTiles *rt, OverlayData *od)
 
     if (od->pixbuf) g_object_unref(G_OBJECT(od->pixbuf));
     if (od->window) gdk_window_destroy(od->window);
+    if (od->surface) cairo_surface_destroy(od->surface);
     g_free(od);
 
     if (!rt->overlay_list && rt->overlay_buffer)
@@ -785,6 +787,12 @@ void renderer_tiles_overlay_set(void *renderer, gint id, GdkPixbuf *pixbuf, gint
 
     od = rt_overlay_find(rt, id);
     if (!od) return;
+
+    if (od->surface)
+    {
+        cairo_surface_destroy(od->surface);
+        od->surface = NULL;
+    }
 
     if (pixbuf)
     {
