@@ -59,8 +59,6 @@
 #define EDITOR_NAME_MAX_LENGTH 32
 #define EDITOR_COMMAND_MAX_LENGTH 1024
 
-static void image_overlay_set_text_colours();
-
 typedef struct _ThumbSize ThumbSize;
 struct _ThumbSize
 {
@@ -202,9 +200,9 @@ static gboolean accel_apply_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIt
 static void config_window_apply(void)
 {
     gint i;
-    gboolean refresh = FALSE;
-
-    config_entry_to_option(safe_delete_path_entry, &options->file_ops.safe_delete_path, remove_trailing_slash);
+    gboolean refresh = FALSE,
+             colors_changed = FALSE,
+             render_intent_changed = FALSE;
 
     if (options->file_filter.show_hidden_files != c_options->file_filter.show_hidden_files) refresh = TRUE;
     if (options->file_filter.show_parent_directory != c_options->file_filter.show_parent_directory) refresh = TRUE;
@@ -214,175 +212,74 @@ static void config_window_apply(void)
     if (options->file_filter.disable_file_extension_checks != c_options->file_filter.disable_file_extension_checks) refresh = TRUE;
     if (options->file_filter.disable != c_options->file_filter.disable) refresh = TRUE;
 
-    options->file_ops.confirm_delete = c_options->file_ops.confirm_delete;
-    options->file_ops.enable_delete_key = c_options->file_ops.enable_delete_key;
-    options->file_ops.safe_delete_enable = c_options->file_ops.safe_delete_enable;
-    options->file_ops.safe_delete_folder_maxsize = c_options->file_ops.safe_delete_folder_maxsize;
-    options->tools_restore_state = c_options->tools_restore_state;
-    options->save_window_positions = c_options->save_window_positions;
-    options->use_saved_window_positions_for_new_windows = c_options->use_saved_window_positions_for_new_windows;
-    options->image.scroll_reset_method = c_options->image.scroll_reset_method;
-    options->image.zoom_2pass = c_options->image.zoom_2pass;
-    options->image.fit_window_to_image = c_options->image.fit_window_to_image;
-    options->image.limit_window_size = c_options->image.limit_window_size;
-    options->image.zoom_to_fit_allow_expand = c_options->image.zoom_to_fit_allow_expand;
-    options->image.max_window_size = c_options->image.max_window_size;
-    options->image.limit_autofit_size = c_options->image.limit_autofit_size;
-    options->image.max_autofit_size = c_options->image.max_autofit_size;
-    options->image.tile_size = c_options->image.tile_size;
-    options->progressive_key_scrolling = c_options->progressive_key_scrolling;
-    options->keyboard_scroll_step = c_options->keyboard_scroll_step;
+    config_entry_to_option(safe_delete_path_entry, &c_options->file_ops.safe_delete_path, remove_trailing_slash);
 
     if (options->thumbnails.max_width != c_options->thumbnails.max_width
         || options->thumbnails.max_height != c_options->thumbnails.max_height
         || options->thumbnails.quality != c_options->thumbnails.quality)
-        {
-            thumb_format_changed = TRUE;
+    {
+        thumb_format_changed = TRUE;
         refresh = TRUE;
-        options->thumbnails.max_width = c_options->thumbnails.max_width;
-        options->thumbnails.max_height = c_options->thumbnails.max_height;
-        options->thumbnails.quality = c_options->thumbnails.quality;
     }
-    options->thumbnails.enable_caching = c_options->thumbnails.enable_caching;
-    options->thumbnails.enable_sim_caching = c_options->thumbnails.enable_sim_caching;
-    options->thumbnails.cache_into_dirs = c_options->thumbnails.cache_into_dirs;
-    options->thumbnails.use_exif = c_options->thumbnails.use_exif;
-    options->thumbnails.spec_standard = c_options->thumbnails.spec_standard;
-    options->metadata.enable_metadata_dirs = c_options->metadata.enable_metadata_dirs;
-    options->file_filter.show_hidden_files = c_options->file_filter.show_hidden_files;
-    options->file_filter.show_parent_directory = c_options->file_filter.show_parent_directory;
-    options->file_filter.show_dot_directory = c_options->file_filter.show_dot_directory;
-    options->file_filter.disable_file_extension_checks = c_options->file_filter.disable_file_extension_checks;
 
-    options->file_sort.case_sensitive = c_options->file_sort.case_sensitive;
-    options->file_sort.natural = c_options->file_sort.natural;
-    options->file_filter.disable = c_options->file_filter.disable;
-
-    config_entry_to_option(sidecar_ext_entry, &options->sidecar.ext, NULL);
-    sidecar_ext_parse(options->sidecar.ext);
-
-    options->slideshow.random = c_options->slideshow.random;
-    options->slideshow.repeat = c_options->slideshow.repeat;
-    options->slideshow.delay = c_options->slideshow.delay;
-
-    options->mousewheel_scrolls = c_options->mousewheel_scrolls;
-    options->image_lm_click_nav = c_options->image_lm_click_nav;
-
-    options->file_ops.enable_in_place_rename = c_options->file_ops.enable_in_place_rename;
-
-    options->collections.rectangular_selection = c_options->collections.rectangular_selection;
-
-    options->image.tile_cache_max = c_options->image.tile_cache_max;
-    options->image.image_cache_max = c_options->image.image_cache_max;
-
-    options->image.zoom_quality = c_options->image.zoom_quality;
-
-    options->image.zoom_increment = c_options->image.zoom_increment;
-
-    options->image.enable_read_ahead = c_options->image.enable_read_ahead;
-
+    config_entry_to_option(sidecar_ext_entry, &c_options->sidecar.ext, NULL);
+    sidecar_ext_parse(c_options->sidecar.ext);
 
     if (options->image.use_custom_border_color != c_options->image.use_custom_border_color
         || options->image.use_custom_border_color_in_fullscreen != c_options->image.use_custom_border_color_in_fullscreen
         || !gdk_color_equal(&options->image.border_color, &c_options->image.border_color))
     {
-        options->image.use_custom_border_color_in_fullscreen = c_options->image.use_custom_border_color_in_fullscreen;
-        options->image.use_custom_border_color = c_options->image.use_custom_border_color;
-        options->image.border_color = c_options->image.border_color;
-        layout_colors_update();
-        view_window_colors_update();
+        colors_changed = TRUE;
     }
-
-    options->image.alpha_color_1 = c_options->image.alpha_color_1;
-    options->image.alpha_color_2 = c_options->image.alpha_color_2;
-
-    options->fullscreen.screen = c_options->fullscreen.screen;
-    options->fullscreen.clean_flip = c_options->fullscreen.clean_flip;
-    options->fullscreen.disable_saver = c_options->fullscreen.disable_saver;
-    options->fullscreen.above = c_options->fullscreen.above;
-    if (c_options->image_overlay.template_string)
-        set_image_overlay_template_string(&options->image_overlay.template_string,
-                          c_options->image_overlay.template_string);
-    if (c_options->image_overlay.font)
-        set_image_overlay_font_string(&options->image_overlay.font,
-                          c_options->image_overlay.font);
-    options->image_overlay.text_red = c_options->image_overlay.text_red;
-    options->image_overlay.text_green = c_options->image_overlay.text_green;
-    options->image_overlay.text_blue = c_options->image_overlay.text_blue;
-    options->image_overlay.text_alpha = c_options->image_overlay.text_alpha;
-    options->image_overlay.background_red = c_options->image_overlay.background_red;
-    options->image_overlay.background_green = c_options->image_overlay.background_green;
-    options->image_overlay.background_blue = c_options->image_overlay.background_blue;
-    options->image_overlay.background_alpha = c_options->image_overlay.background_alpha;
-    options->update_on_time_change = c_options->update_on_time_change;
-    options->image.exif_rotate_enable = c_options->image.exif_rotate_enable;
-    options->image.exif_proof_rotate_enable = c_options->image.exif_proof_rotate_enable;
-
-    options->duplicates_similarity_threshold = c_options->duplicates_similarity_threshold;
-    options->duplicates_days_threshold = c_options->duplicates_days_threshold;
-    options->rot_invariant_sim = c_options->rot_invariant_sim;
-
-    options->tree_descend_subdirs = c_options->tree_descend_subdirs;
-
-    options->view_dir_list_single_click_enter = c_options->view_dir_list_single_click_enter;
-
-    options->open_recent_list_maxsize = c_options->open_recent_list_maxsize;
-    options->dnd_icon_size = c_options->dnd_icon_size;
-
-    options->metadata.save_in_image_file = c_options->metadata.save_in_image_file;
-    options->metadata.save_legacy_IPTC = c_options->metadata.save_legacy_IPTC;
-    options->metadata.warn_on_write_problems = c_options->metadata.warn_on_write_problems;
-    options->metadata.save_legacy_format = c_options->metadata.save_legacy_format;
-    options->metadata.sync_grouped_files = c_options->metadata.sync_grouped_files;
-    options->metadata.confirm_write = c_options->metadata.confirm_write;
-    options->metadata.confirm_timeout = c_options->metadata.confirm_timeout;
-    options->metadata.confirm_after_timeout = c_options->metadata.confirm_after_timeout;
-    options->metadata.confirm_on_image_change = c_options->metadata.confirm_on_image_change;
-    options->metadata.confirm_on_dir_change = c_options->metadata.confirm_on_dir_change;
-    options->metadata.keywords_case_sensitive = c_options->metadata.keywords_case_sensitive;
-    options->metadata.write_orientation = c_options->metadata.write_orientation;
-    options->stereo.mode = (c_options->stereo.mode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
-                           (c_options->stereo.tmp.mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
-                           (c_options->stereo.tmp.flip_right   ? PR_STEREO_FLIP_RIGHT : 0) |
-                           (c_options->stereo.tmp.mirror_left  ? PR_STEREO_MIRROR_LEFT : 0) |
-                           (c_options->stereo.tmp.flip_left    ? PR_STEREO_FLIP_LEFT : 0) |
-                           (c_options->stereo.tmp.swap         ? PR_STEREO_SWAP : 0) |
-                           (c_options->stereo.tmp.temp_disable ? PR_STEREO_TEMP_DISABLE : 0);
-    options->stereo.fsmode = (c_options->stereo.fsmode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
-                           (c_options->stereo.tmp.fs_mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
-                           (c_options->stereo.tmp.fs_flip_right   ? PR_STEREO_FLIP_RIGHT : 0) |
-                           (c_options->stereo.tmp.fs_mirror_left  ? PR_STEREO_MIRROR_LEFT : 0) |
-                           (c_options->stereo.tmp.fs_flip_left    ? PR_STEREO_FLIP_LEFT : 0) |
-                           (c_options->stereo.tmp.fs_swap         ? PR_STEREO_SWAP : 0) |
-                           (c_options->stereo.tmp.fs_temp_disable ? PR_STEREO_TEMP_DISABLE : 0);
-    options->stereo.enable_fsmode = c_options->stereo.enable_fsmode;
-    options->stereo.fixed_w = c_options->stereo.fixed_w;
-    options->stereo.fixed_h = c_options->stereo.fixed_h;
-    options->stereo.fixed_x1 = c_options->stereo.fixed_x1;
-    options->stereo.fixed_y1 = c_options->stereo.fixed_y1;
-    options->stereo.fixed_x2 = c_options->stereo.fixed_x2;
-    options->stereo.fixed_y2 = c_options->stereo.fixed_y2;
-
-#ifdef DEBUG
-    set_debug_level(debug_c);
-#endif
 
 #ifdef HAVE_LCMS
     for (i = 0; i < COLOR_PROFILE_INPUTS; i++)
     {
-        config_entry_to_option(color_profile_input_name_entry[i], &options->color_profile.input_name[i], NULL);
-        config_entry_to_option(color_profile_input_file_entry[i], &options->color_profile.input_file[i], NULL);
+        config_entry_to_option(color_profile_input_name_entry[i], &c_options->color_profile.input_name[i], NULL);
+        config_entry_to_option(color_profile_input_file_entry[i], &c_options->color_profile.input_file[i], NULL);
     }
-    config_entry_to_option(color_profile_screen_file_entry, &options->color_profile.screen_file, NULL);
-    options->color_profile.use_x11_screen_profile = c_options->color_profile.use_x11_screen_profile;
+    config_entry_to_option(color_profile_screen_file_entry, &c_options->color_profile.screen_file, NULL);
+
     if (options->color_profile.render_intent != c_options->color_profile.render_intent)
     {
-        options->color_profile.render_intent = c_options->color_profile.render_intent;
-        color_man_update();
+        render_intent_changed = TRUE;
     }
 #endif
 
+    g_free(options->image_overlay.template_string);
+    g_free(options->image_overlay.font);
+    *options = *c_options;
+    options->image_overlay.template_string = g_strdup(c_options->image_overlay.template_string);
+    options->image_overlay.font = g_strdup(c_options->image_overlay.font);
+
+    options->stereo.mode = (options->stereo.mode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
+                           (options->stereo.tmp.mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
+                           (options->stereo.tmp.flip_right   ? PR_STEREO_FLIP_RIGHT : 0) |
+                           (options->stereo.tmp.mirror_left  ? PR_STEREO_MIRROR_LEFT : 0) |
+                           (options->stereo.tmp.flip_left    ? PR_STEREO_FLIP_LEFT : 0) |
+                           (options->stereo.tmp.swap         ? PR_STEREO_SWAP : 0) |
+                           (options->stereo.tmp.temp_disable ? PR_STEREO_TEMP_DISABLE : 0);
+    options->stereo.fsmode = (options->stereo.fsmode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
+                           (options->stereo.tmp.fs_mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
+                           (options->stereo.tmp.fs_flip_right   ? PR_STEREO_FLIP_RIGHT : 0) |
+                           (options->stereo.tmp.fs_mirror_left  ? PR_STEREO_MIRROR_LEFT : 0) |
+                           (options->stereo.tmp.fs_flip_left    ? PR_STEREO_FLIP_LEFT : 0) |
+                           (options->stereo.tmp.fs_swap         ? PR_STEREO_SWAP : 0) |
+                           (options->stereo.tmp.fs_temp_disable ? PR_STEREO_TEMP_DISABLE : 0);
+
+    if (colors_changed)
+    {
+        layout_colors_update();
+        view_window_colors_update();
+    }
+    if (render_intent_changed)
+        color_man_update();
+
     image_options_sync();
+
+#ifdef DEBUG
+    set_debug_level(debug_c);
+#endif
 
     if (refresh)
     {
@@ -1242,7 +1139,7 @@ static void accel_store_cleared_cb(GtkCellRendererAccel *accel, gchar *path_stri
 
     gtk_tree_model_get_iter(GTK_TREE_MODEL(accel_store), &iter, path);
     gtk_tree_store_set(accel_store, &iter, AE_KEY, "", -1);
-    gtk_tree_path_free(path);   
+    gtk_tree_path_free(path);
 }
 
 static gboolean accel_remove_key_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
@@ -1633,7 +1530,6 @@ static void config_tab_windows(GtkWidget *notebook)
                  G_CALLBACK(image_overlay_set_background_colour_cb), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
-    image_overlay_set_text_colours();
 
     button = pref_button_new(NULL, NULL, _("Defaults"), FALSE,
                  G_CALLBACK(image_overlay_default_template_cb), image_overlay_template_view);
@@ -2341,7 +2237,16 @@ static void config_window_create(void)
     GtkWidget *button;
     GtkWidget *ct_button;
 
-    if (!c_options) c_options = init_options(NULL);
+    if (!c_options)
+        c_options = g_new(ConfOptions, 1);
+    else
+    {
+        g_free(c_options->image_overlay.template_string);
+        g_free(c_options->image_overlay.font);
+    }
+    *c_options = *options;
+    c_options->image_overlay.template_string = g_strdup(options->image_overlay.template_string);
+    c_options->image_overlay.font = g_strdup(options->image_overlay.font);
 
     configwindow = window_new(GTK_WINDOW_TOPLEVEL, "preferences", PIXBUF_INLINE_ICON_CONFIG, NULL, _("Preferences"));
     gtk_window_set_type_hint(GTK_WINDOW(configwindow), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -2524,17 +2429,5 @@ void show_about_window(void)
     gtk_widget_show(button);
 
     gtk_widget_show(about);
-}
-
-static void image_overlay_set_text_colours(void)
-{
-    c_options->image_overlay.text_red = options->image_overlay.text_red;
-    c_options->image_overlay.text_green = options->image_overlay.text_green;
-    c_options->image_overlay.text_blue = options->image_overlay.text_blue;
-    c_options->image_overlay.text_alpha = options->image_overlay.text_alpha;
-    c_options->image_overlay.background_red = options->image_overlay.background_red;
-    c_options->image_overlay.background_green = options->image_overlay.background_green;
-    c_options->image_overlay.background_blue = options->image_overlay.background_blue;
-    c_options->image_overlay.background_alpha = options->image_overlay.background_alpha;
 }
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
