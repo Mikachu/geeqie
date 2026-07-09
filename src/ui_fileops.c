@@ -530,7 +530,9 @@ gboolean copy_file(const gchar *s, const gchar *t)
 
     /* First we write to a temporary file, then we rename it on success,
        and attributes from original file are copied */
-    randname = g_strconcat(tl, ".tmp_XXXXXX", NULL);
+    gchar *tl_dir = g_path_get_dirname(tl);
+    randname = g_build_filename(tl_dir, ".tmp_XXXXXX", NULL);
+    g_free(tl_dir);
     if (!randname) goto end;
 
     fd = g_mkstemp(randname);
