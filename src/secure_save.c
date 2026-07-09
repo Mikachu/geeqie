@@ -151,7 +151,9 @@ secure_open_umask(const gchar *file_name)
          * then converted to FILE * using fdopen().
          */
         gint fd;
-        gchar *randname = g_strconcat(ssi->file_name, ".tmp_XXXXXX", NULL);
+        gchar *tl_dir = g_path_get_dirname(ssi->file_name);
+        gchar *randname = g_strconcat(tl_dir, ".tmp_XXXXXX", NULL);
+        g_free(tl_dir);
 
         if (!randname) {
             secsave_errno = SS_ERR_OUT_OF_MEM;
