@@ -85,11 +85,13 @@ gchar *color_man_get_profile_name_from_data(const guchar *profile_data, guint pr
     if (profile)
     {
 #ifdef HAVE_LCMS2
-        char buffer[20];
-        buffer[0] = '\0';
-        cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", buffer, 20);
-        buffer[19] = '\0';
-        name = g_strdup(buffer);
+        cmsUInt32Number len = cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", NULL, 0);
+        if (len > 0)
+        {
+            char *buffer = g_malloc(len);
+            cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", buffer, len);
+            name = buffer;
+        }
 #else
         name = g_strdup(cmsTakeProductName(profile));
 #endif
@@ -449,12 +451,13 @@ static gchar *color_man_get_profile_name(ColorManProfileType type, cmsHPROFILE p
             if (profile)
             {
 #ifdef HAVE_LCMS2
-                cmsUInt32Number r;
-                char buffer[20];
-                buffer[0] = '\0';
-                r = cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", buffer, 20);
-                buffer[19] = '\0'; /* Just to be sure */
-                return g_strdup(buffer);
+                cmsUInt32Number len = cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", NULL, 0);
+                if (len > 0)
+                {
+                    char *buffer = g_malloc(len);
+                    cmsGetProfileInfoASCII(profile, cmsInfoDescription, "en", "US", buffer, len);
+                    return buffer;
+                }
 #else
                 return g_strdup(cmsTakeProductName(profile));
 #endif
