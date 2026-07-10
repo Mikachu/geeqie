@@ -1214,6 +1214,18 @@ static void layout_menu_image_random_cb(GtkAction *action, gpointer data)
     layout_image_set_index(lw, rand() % count);
 }
 
+static void layout_menu_image_forward_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+    layout_set_path(lw, image_chain_forward());
+}
+
+static void layout_menu_image_back_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+    layout_set_path(lw, image_chain_back());
+}
+
 static void layout_menu_back_cb(GtkAction *action, gpointer data)
 {
     LayoutWindow *lw = data;
@@ -1500,6 +1512,8 @@ static GtkActionEntry menu_entries[] = {
   { "NextImageAlt2",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "KP_Page_Down",     N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "LastImage",    GTK_STOCK_GOTO_BOTTOM,  N_("_Last Image"),          "End",          N_("Last Image"),           CB(layout_menu_image_last_cb) },
   { "RandomImage",  NULL,           N_("_Random Image"),        "S",        N_("Random Image"),     CB(layout_menu_image_random_cb) },  
+  { "ImageForward", GTK_STOCK_GOTO_LAST, N_("Image Forward"), NULL, N_("Image Forward"), CB(layout_menu_image_forward_cb) },
+  { "ImageBack",    GTK_STOCK_GOTO_FIRST, N_("Image Back"),   NULL, N_("Image Back"),    CB(layout_menu_image_back_cb) },
   { "Back",     GTK_STOCK_GO_BACK,  N_("_Back"),                NULL,           N_("Back"),             CB(layout_menu_back_cb) },
   { "Forward",  GTK_STOCK_GO_FORWARD,   N_("_Forward"),         NULL,           N_("Forward"),              CB(layout_menu_forward_cb) },
   { "Home",     GTK_STOCK_HOME,     N_("_Home"),                NULL,           N_("Home"),             CB(layout_menu_home_cb) },
@@ -1697,6 +1711,8 @@ static const gchar *menu_ui_description =
 "      <menuitem action='PrevImage'/>"
 "      <menuitem action='NextImage'/>"
 "      <menuitem action='LastImage'/>"
+"      <menuitem action='ImageBack'/>"
+"      <menuitem action='ImageForward'/>"
 "      <menuitem action='RandomImage'/>"
 "      <separator/>"
 "      <menuitem action='Back'/>"

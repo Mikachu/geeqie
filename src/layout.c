@@ -1038,6 +1038,9 @@ gboolean layout_set_fd(LayoutWindow *lw, FileData *fd)
     }
 
     history_chain_append_end(lw->dir_fd->path);
+    if (dir_changed)
+        image_chain_clear();
+
     if (lw->path_entry)
     {
         tab_completion_append_to_history(lw->path_entry, lw->dir_fd->path);

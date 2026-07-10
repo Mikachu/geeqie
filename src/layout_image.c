@@ -28,6 +28,7 @@
 #include "editors.h"
 #include "filedata.h"
 #include "fullscreen.h"
+#include "history_list.h"
 #include "image.h"
 #include "image-overlay.h"
 #include "img-view.h"
@@ -1050,6 +1051,8 @@ void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
         image_change_fd(lw->full_screen->imd, fd, image_zoom_get_default(lw->full_screen->imd));
     }
 
+    if (fd)
+        image_chain_append_end(fd->path);
 
     layout_list_sync_fd(lw, fd);
     layout_image_slideshow_continue_check(lw);
