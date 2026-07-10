@@ -28,6 +28,7 @@
 #include "exif.h"
 #include "metadata.h"
 #include "histogram.h"
+#include "history_list.h"
 #include "image-load.h"
 #include "image-overlay.h"
 #include "layout.h"
@@ -1324,6 +1325,9 @@ void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboo
 void image_change_from_collection(ImageWindow *imd, CollectionData *cd, CollectInfo *info, gdouble zoom)
 {
     if (!cd || !info || !g_list_find(cd->list, info)) return;
+
+    if (info->fd)
+        image_chain_append_end(info->fd->path);
 
     image_change_real(imd, info->fd, cd, info, zoom);
 }
