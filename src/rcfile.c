@@ -535,6 +535,22 @@ gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options)
     WRITE_NL(); WRITE_STRING("</gq>\n");
     WRITE_SEPARATOR();
 
+    /* strip trailing spaces from each line */
+    gchar *q = outstr->str, *p;
+    for (p = q; *p; p++)
+    {
+        if (*p == '\n')
+        {
+            while (q > outstr->str && q[-1] == ' ')
+                q--;
+            *q++ = '\n';
+        }
+        else
+            *q++ = *p;
+    }
+    *q = '\0';
+    g_string_set_size(outstr, q - outstr->str);
+
     secure_fputs(ssi, outstr->str);
     g_string_free(outstr, TRUE);
 
