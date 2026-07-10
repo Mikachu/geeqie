@@ -40,6 +40,11 @@ const gchar *history_chain_back(void);
 const gchar *history_chain_forward(void);
 void history_chain_append_end(const gchar *path);
 
+const gchar *image_chain_back(void);
+const gchar *image_chain_forward(void);
+void image_chain_append_end(const gchar *path);
+void image_chain_clear(void);
+
 /* the returned GList is internal, don't free it */
 GList *history_list_get_by_key(const gchar *key);
 

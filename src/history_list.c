@@ -35,72 +35,84 @@
  *-----------------------------------------------------------------------------
  */
 
-static GList *history_chain = NULL;
-static guint chain_index = G_MAXUINT;
-static gboolean nav_button = FALSE; /** Used to prevent the nav buttons making entries to the chain **/
+typedef struct {
+    GList  *chain;
+    guint   index;
+    gboolean nav_button;
+} HistoryChain;
 
-const gchar *history_chain_back(void)
+static HistoryChain dir_chain  = { NULL, G_MAXUINT, FALSE };
+static HistoryChain img_chain  = { NULL, G_MAXUINT, FALSE };
+
+static const gchar *hchain_back(HistoryChain *hc)
 {
-    if (!history_chain) return NULL;
-    nav_button = TRUE;
-    chain_index = chain_index > 0 ? chain_index - 1 : 0;
-    return g_list_nth_data(history_chain, chain_index);
+    if (!hc->chain) return NULL;
+    hc->nav_button = TRUE;
+    hc->index = hc->index > 0 ? hc->index - 1 : 0;
+    return g_list_nth_data(hc->chain, hc->index);
 }
 
-const gchar *history_chain_forward(void)
+static const gchar *hchain_forward(HistoryChain *hc)
 {
-    if (!history_chain) return NULL;
-    nav_button = TRUE;
-    guint last = g_list_length(history_chain) - 1;
-    chain_index = chain_index < last ? chain_index + 1 : last;
-    return g_list_nth_data(history_chain, chain_index);
+    if (!hc->chain) return NULL;
+    hc->nav_button = TRUE;
+    guint last = g_list_length(hc->chain) - 1;
+    hc->index = hc->index < last ? hc->index + 1 : last;
+    return g_list_nth_data(hc->chain, hc->index);
 }
 
-/**
- * @brief Appends a path to the history chain
- * @param path Path selected
- * 
- * Each time the user selects a new path it is appended to the chain
- * except when it is identical to the current last entry
- * The pointer is always moved to the end of the chain
- */
-void history_chain_append_end(const gchar *path)
+static void hchain_append(HistoryChain *hc, const gchar *path)
 {
     GList *work, *tail;
 
-    if (!nav_button)
+    if (hc->nav_button)
     {
-        if (chain_index == G_MAXUINT)
-        {
-            history_chain = g_list_append (history_chain, g_strdup(path));
-            chain_index = 0;
-        }
-        else
-        {
-            tail = g_list_nth(history_chain, chain_index + 1);
-            if (tail)
-            {
-                if (tail->prev) tail->prev->next = NULL;
-                tail->prev = NULL;
-                g_list_free_full(tail, g_free);
-            }           
-            work = g_list_last(history_chain);
-            if (g_strcmp0(work->data , path) != 0)
-            {
-                history_chain = g_list_append (history_chain, g_strdup(path));
-                chain_index = g_list_length(history_chain) - 1;
-                DEBUG_3("%d %s", chain_index, path);
-            }
-            else
-            {
-                chain_index = g_list_length(history_chain) - 1;
-            }
-        }
+        hc->nav_button = FALSE;
+        return;
+    }
+
+    if (hc->index == G_MAXUINT)
+    {
+        hc->chain = g_list_append(hc->chain, g_strdup(path));
+        hc->index = 0;
+        return;
+    }
+
+    /* truncate forward history */
+    tail = g_list_nth(hc->chain, hc->index + 1);
+    if (tail)
+    {
+        if (tail->prev) tail->prev->next = NULL;
+        tail->prev = NULL;
+        g_list_free_full(tail, g_free);
+    }
+
+    work = g_list_last(hc->chain);
+    if (g_strcmp0(work->data, path) != 0)
+    {
+        hc->chain = g_list_append(hc->chain, g_strdup(path));
+        hc->index = g_list_length(hc->chain) - 1;
+        DEBUG_3("%d %s", hc->index, path);
     }
     else
     {
-        nav_button = FALSE;
+        hc->index = g_list_length(hc->chain) - 1;
     }
+}
+
+const gchar *history_chain_back(void)        { return hchain_back(&dir_chain); }
+const gchar *history_chain_forward(void)     { return hchain_forward(&dir_chain); }
+void history_chain_append_end(const gchar *path) { hchain_append(&dir_chain, path); }
+
+const gchar *image_chain_back(void)          { return hchain_back(&img_chain); }
+const gchar *image_chain_forward(void)       { return hchain_forward(&img_chain); }
+void image_chain_append_end(const gchar *path) { hchain_append(&img_chain, path); }
+void image_chain_clear(void)
+{
+    g_list_free_full(img_chain.chain, g_free);
+    img_chain.chain = NULL;
+    img_chain.index = G_MAXUINT;
+    img_chain.nav_button = FALSE;
 }
 
 /*
