@@ -579,11 +579,7 @@ static void print_window_layout_status(PrintWindow *pw)
 
 static void print_window_layout_render_stop(PrintWindow *pw)
 {
-    if (pw->layout_idle_id)
-    {
-        g_source_remove(pw->layout_idle_id);
-        pw->layout_idle_id = 0;
-    }
+    g_clear_handle_id(&pw->layout_idle_id, g_source_remove);
 }
 
 static gboolean print_window_layout_render_idle(gpointer data)

@@ -717,11 +717,7 @@ static gboolean vflist_select_idle_cb(gpointer data)
 
 static void vflist_select_idle_cancel(ViewFile *vf)
 {
-    if (VFLIST(vf)->select_idle_id)
-    {
-        g_source_remove(VFLIST(vf)->select_idle_id);
-        VFLIST(vf)->select_idle_id = 0;
-    }
+    g_clear_handle_id(&VFLIST(vf)->select_idle_id, g_source_remove);
 }
 
 static gboolean vflist_select_cb(GtkTreeSelection *selection, GtkTreeModel *store, GtkTreePath *tpath,

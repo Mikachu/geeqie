@@ -84,11 +84,7 @@ static void spinner_set_timeout(SpinnerData *sp, gint interval)
 {
     if (!sp) return;
 
-    if (sp->timer_id)
-    {
-        g_source_remove(sp->timer_id);
-        sp->timer_id = 0;
-    }
+    g_clear_handle_id(&sp->timer_id, g_source_remove);
 
     if (interval > 0)
     {
