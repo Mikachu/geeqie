@@ -1354,8 +1354,7 @@ static void dupe_check_stop(DupeWindow *dw)
 {
     if (dw->idle_id || dw->img_loader || dw->thumb_loader)
     {
-        g_source_remove(dw->idle_id);
-        dw->idle_id = 0;
+        g_clear_handle_id(&dw->idle_id, g_source_remove);
         dupe_window_update_progress(dw, NULL, 0.0, FALSE);
         widget_set_cursor(dw->listview, -1);
     }

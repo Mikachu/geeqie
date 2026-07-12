@@ -1638,11 +1638,7 @@ static void rt_queue_clear(RendererTiles *rt)
     g_list_free_full(rt->draw_queue_2pass, rt_queue_data_free);
     rt->draw_queue_2pass = NULL;
 
-    if (rt->draw_idle_id)
-    {
-        g_source_remove(rt->draw_idle_id);
-        rt->draw_idle_id = 0;
-    }
+    g_clear_handle_id(&rt->draw_idle_id, g_source_remove);
     rt_sync_scroll(rt);
 }
 
@@ -1808,11 +1804,7 @@ static void rt_queue(RendererTiles *rt, gint x, gint y, gint w, gint h,
     if (rt_queue_to_tiles(rt, nx, ny, w, h, clamp, render, new_data, only_existing) &&
         ((!rt->draw_queue && !rt->draw_queue_2pass) || !rt->draw_idle_id))
     {
-        if (rt->draw_idle_id)
-        {
-            g_source_remove(rt->draw_idle_id);
-            rt->draw_idle_id = 0;
-        }
+        g_clear_handle_id(&rt->draw_idle_id, g_source_remove);
         rt_queue_schedule_next_draw(rt, TRUE);
     }
 }
