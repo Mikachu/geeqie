@@ -2798,12 +2798,10 @@ static void dupe_second_set_toggle_cb(GtkWidget *widget, gpointer data)
     if (dw->second_set)
     {
         dupe_second_update_status(dw);
-        gtk_table_set_col_spacings(GTK_TABLE(dw->table), PREF_PAD_GAP);
         gtk_widget_show(dw->second_vbox);
     }
     else
     {
-        gtk_table_set_col_spacings(GTK_TABLE(dw->table), 0);
         gtk_widget_hide(dw->second_vbox);
         dupe_second_clear(dw);
     }
@@ -3369,14 +3367,14 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_container_add(GTK_CONTAINER(dw->window), vbox);
     gtk_widget_show(vbox);
 
-    dw->table = gtk_table_new(1, 3, FALSE);
-    gtk_box_pack_start(GTK_BOX(vbox), dw->table, TRUE, TRUE, 0);
-    gtk_widget_show(dw->table);
+    dw->paned = gtk_hpaned_new();
+    gtk_paned_set_position(GTK_PANED(dw->paned), DUPE_DEF_WIDTH*70/100);
+    gtk_box_pack_start(GTK_BOX(vbox), dw->paned, TRUE, TRUE, 0);
+    gtk_widget_show(dw->paned);
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_table_attach_defaults(GTK_TABLE(dw->table), scrolled, 0, 2, 0, 1);
     gtk_widget_show(scrolled);
 
     store = gtk_list_store_new(9, G_TYPE_POINTER, G_TYPE_STRING, GDK_TYPE_PIXBUF,
@@ -3402,15 +3400,12 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_widget_show(dw->listview);
 
     dw->second_vbox = gtk_vbox_new(FALSE, 0);
-    gtk_table_attach_defaults(GTK_TABLE(dw->table), dw->second_vbox, 2, 3, 0, 1);
+    gtk_paned_pack1(GTK_PANED(dw->paned), scrolled, TRUE, FALSE);
+    gtk_paned_pack2(GTK_PANED(dw->paned), dw->second_vbox, TRUE, FALSE);
+
     if (dw->second_set)
     {
-        gtk_table_set_col_spacings(GTK_TABLE(dw->table), PREF_PAD_GAP);
         gtk_widget_show(dw->second_vbox);
-    }
-    else
-    {
-        gtk_table_set_col_spacings(GTK_TABLE(dw->table), 0);
     }
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
