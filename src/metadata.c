@@ -181,11 +181,7 @@ static void metadata_write_queue_add(FileData *fd)
         layout_util_status_update_write_all();
     }
 
-    if (metadata_write_idle_id)
-    {
-        g_source_remove(metadata_write_idle_id);
-        metadata_write_idle_id = 0;
-    }
+    g_clear_handle_id(&metadata_write_idle_id, g_source_remove);
 
     if (options->metadata.confirm_after_timeout)
     {

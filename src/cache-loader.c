@@ -241,11 +241,7 @@ void cache_loader_free(CacheLoader *cl)
 {
     if (!cl) return;
 
-    if (cl->idle_id)
-    {
-        g_source_remove(cl->idle_id);
-        cl->idle_id = 0;
-    }
+    g_clear_handle_id(&cl->idle_id, g_source_remove);
 
     image_loader_free(cl->il);
     cache_sim_data_free(cl->cd);

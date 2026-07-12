@@ -695,11 +695,7 @@ static gboolean search_result_update_idle_cb(gpointer data)
 
 static void search_result_update_idle_cancel(SearchData *sd)
 {
-    if (sd->update_idle_id)
-    {
-        g_source_remove(sd->update_idle_id);
-        sd->update_idle_id = 0;
-    }
+    g_clear_handle_id(&sd->update_idle_id, g_source_remove);
 }
 
 static gboolean search_result_select_cb(GtkTreeSelection *selection, GtkTreeModel *store,
@@ -1442,11 +1438,7 @@ static void search_buffer_flush(SearchData *sd)
 
 static void search_stop(SearchData *sd)
 {
-    if (sd->search_idle_id)
-    {
-        g_source_remove(sd->search_idle_id);
-        sd->search_idle_id = 0;
-    }
+    g_clear_handle_id(&sd->search_idle_id, g_source_remove);
 
     image_loader_free(sd->img_loader);
     sd->img_loader = NULL;

@@ -849,15 +849,13 @@ static gboolean collect_manager_timer_cb(gpointer data)
 
 static void collect_manager_timer_push(gint stop)
 {
-    if (collection_manager_timer_id)
+    if (stop)
     {
-        if (!stop) return;
-
-        g_source_remove(collection_manager_timer_id);
-        collection_manager_timer_id = 0;
+        g_clear_handle_id(&collection_manager_timer_id, g_source_remove);
+        return;
     }
 
-    if (!stop)
+    if (!collection_manager_timer_id)
     {
         collection_manager_timer_id = g_timeout_add(COLLECT_MANAGER_FLUSH_DELAY,
                                 collect_manager_timer_cb, NULL);

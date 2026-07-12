@@ -996,11 +996,7 @@ static gboolean vf_refresh_idle_cb(gpointer data)
 
 void vf_refresh_idle_cancel(ViewFile *vf)
 {
-    if (vf->refresh_idle_id)
-    {
-        g_source_remove(vf->refresh_idle_id);
-        vf->refresh_idle_id = 0;
-    }
+    g_clear_handle_id(&vf->refresh_idle_id, g_source_remove);
 }
 
 

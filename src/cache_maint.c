@@ -110,11 +110,7 @@ static void cache_maintain_home_close(CMData *cm)
 
 static void cache_maintain_home_stop(CMData *cm)
 {
-    if (cm->idle_id)
-    {
-        g_source_remove(cm->idle_id);
-        cm->idle_id = 0;
-    }
+    g_clear_handle_id(&cm->idle_id, g_source_remove);
 
     gtk_entry_set_text(GTK_ENTRY(cm->entry), _("done"));
     spinner_set_interval(cm->spinner, -1);
@@ -773,11 +769,7 @@ static void cache_manager_standard_clean_done(CleanData *cd)
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(cd->progress), 1.0);
     gtk_progress_bar_set_text(GTK_PROGRESS_BAR(cd->progress), _("done"));
 
-    if (cd->idle_id)
-    {
-        g_source_remove(cd->idle_id);
-        cd->idle_id = 0;
-    }
+    g_clear_handle_id(&cd->idle_id, g_source_remove);
 
     thumb_loader_std_thumb_file_validate_cancel(cd->tl);
     cd->tl = NULL;

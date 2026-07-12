@@ -192,11 +192,7 @@ static gboolean image_zoom_rect_release_cb(GtkWidget *widget, GdkEventButton *ev
     g_signal_handlers_disconnect_by_func(pr, image_zoom_rect_release_cb, imd);
     g_signal_handlers_disconnect_by_func(pr, image_zoom_rect_motion_cb, imd);
 
-    if (rd->update_idle_id)
-    {
-        g_source_remove(rd->update_idle_id);
-        rd->update_idle_id = 0;
-    }
+    g_clear_handle_id(&rd->update_idle_id, g_source_remove);
 
     for (gint i = 0; i < 4; i++)
         if (rd->rect_id[i])
