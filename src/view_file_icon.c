@@ -443,8 +443,7 @@ static void tip_schedule(ViewFile *vf, gint x, gint y, gint x_root, gint y_root)
     {
         if (abs(x - VFICON(vf)->x) + abs(y - VFICON(vf)->y) > 4)
         {
-            g_source_remove(VFICON(vf)->tip_delay_id);
-            VFICON(vf)->tip_delay_id = 0;
+            g_clear_handle_id(&VFICON(vf)->tip_delay_id, g_source_remove);
         }
         else
         {
@@ -467,11 +466,7 @@ static void tip_unschedule(ViewFile *vf)
 {
     tip_hide(vf);
 
-    if (VFICON(vf)->tip_delay_id)
-    {
-        g_source_remove(VFICON(vf)->tip_delay_id);
-        VFICON(vf)->tip_delay_id = 0;
-    }
+    g_clear_handle_id(&VFICON(vf)->tip_delay_id, g_source_remove);
 }
 
 static void tip_update(ViewFile *vf, gint x, gint y, gint x_root, gint y_root)

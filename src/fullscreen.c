@@ -79,18 +79,13 @@ static gboolean fullscreen_hide_mouse_cb(gpointer data)
     fs->cursor_state &= ~FULLSCREEN_CURSOR_NORMAL;
     if (!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY)) clear_mouse_cursor(fs->window, fs->cursor_state);
 
-    g_source_remove(fs->hide_mouse_id);
-    fs->hide_mouse_id = 0;
+    g_clear_handle_id(&fs->hide_mouse_id, g_source_remove);
     return FALSE;
 }
 
 static void fullscreen_hide_mouse_disable(FullScreenData *fs)
 {
-    if (fs->hide_mouse_id)
-    {
-        g_source_remove(fs->hide_mouse_id);
-        fs->hide_mouse_id = 0;
-    }
+    g_clear_handle_id(&fs->hide_mouse_id, g_source_remove);
 }
 
 static void fullscreen_hide_mouse_reset(FullScreenData *fs)
@@ -115,11 +110,7 @@ static gboolean fullscreen_mouse_moved(GtkWidget *widget, GdkEventMotion *event,
 
 static void fullscreen_busy_mouse_disable(FullScreenData *fs)
 {
-    if (fs->busy_mouse_id)
-    {
-        g_source_remove(fs->busy_mouse_id);
-        fs->busy_mouse_id = 0;
-    }
+    g_clear_handle_id(&fs->busy_mouse_id, g_source_remove);
 }
 
 static void fullscreen_mouse_set_busy(FullScreenData *fs, gboolean busy)

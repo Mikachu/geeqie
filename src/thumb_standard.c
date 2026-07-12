@@ -776,11 +776,7 @@ void thumb_loader_std_thumb_file_validate_cancel(ThumbLoaderStd *tl)
 
     tv = tl->data;
 
-    if (tv->idle_id)
-    {
-        g_source_remove(tv->idle_id);
-        tv->idle_id = 0;
-    }
+    g_clear_handle_id(&tv->idle_id, g_source_remove);
 
     thumb_loader_std_thumb_file_validate_free(tv);
 }

@@ -32,10 +32,7 @@
 
 static void slideshow_timer_stop(SlideShowData *ss)
 {
-    if (!ss->timeout_id) return;
-
-    g_source_remove(ss->timeout_id);
-    ss->timeout_id = 0;
+    g_clear_handle_id(&ss->timeout_id, g_source_remove);
 }
 
 static FileData *slideshow_get_fd(SlideShowData *ss)
