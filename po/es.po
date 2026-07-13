@@ -5175,7 +5175,7 @@ msgid ""
 "Safe delete: %s%s\n"
 "Trash: %s"
 msgstr ""
-"Borrado seguro: %s\n"
+"Borrado seguro: %s%s\n"
 "Papelera %s"
 
 #: ../src/trash.c:210
