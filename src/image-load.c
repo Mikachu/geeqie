@@ -651,6 +651,8 @@ static gboolean image_loader_begin(ImageLoader *il)
     image_loader_setup_loader(il);
 
     g_assert(il->bytes_read == 0);
+    if (image_loader_get_stopping(il)) return FALSE;
+
     if (il->backend.load) {
         b = il->bytes_total;
         if (!il->backend.load(il->loader, il->mapped_file, b, &il->error))
@@ -782,6 +784,40 @@ static void image_loader_stop_source(ImageLoader *il)
     }
 }
 
+static gint image_loader_async_free_count = 0;
+
+static gboolean image_loader_free_idle_cb(gpointer data)
+{
+    g_atomic_int_add(&image_loader_async_free_count, -1);
+    image_loader_free(data);
+    return FALSE;
+}
+
+void image_loader_free_async(ImageLoader *il)
+{
+    if (!il) return;
+    if (!il->thread ||
+        g_atomic_int_get(&image_loader_async_free_count) >= 3)
+    {
+        image_loader_free(il);
+        return;
+    }
+    g_atomic_int_inc(&image_loader_async_free_count);
+    g_mutex_lock(il->data_mutex);
+    il->stopping = TRUE;
+    il->async_free = TRUE;
+    if (il->loader) il->backend.abort(il->loader);
+    gboolean already_done = il->can_destroy;
+    g_mutex_unlock(il->data_mutex);
+    if (already_done)
+    {
+        /* Thread already finished and read async_free as FALSE,
+         * so it didn't schedule the idle. We must. */
+        g_clear_object(&il->pixbuf);
+        g_idle_add(image_loader_free_idle_cb, il);
+    }
+}
+
 static void image_loader_stop(ImageLoader *il)
 {
     if (!il) return;
@@ -800,6 +836,17 @@ static void image_loader_stop(ImageLoader *il)
     image_loader_stop_loader(il);
     image_loader_stop_source(il);
 
+}
+
+void image_loader_abort(ImageLoader *il)
+{
+    if (!il) return;
+
+    g_clear_handle_id(&il->idle_id, g_source_remove);
+    g_mutex_lock(il->data_mutex);
+    il->stopping = TRUE;
+    if (il->loader) il->backend.abort(il->loader);
+    g_mutex_unlock(il->data_mutex);
 }
 
 void image_loader_delay_area_ready(ImageLoader *il, gboolean enable)
@@ -931,10 +978,10 @@ static void image_loader_thread_run(gpointer data, gpointer user_data)
     if (err)
     {
         /*
-        loader failed, we have to send signal
-        (idle mode returns the image_loader_begin return value directly)
-        (success is always reported indirectly from image_loader_begin)
-        */
+           loader failed, we have to send signal
+           (idle mode returns the image_loader_begin return value directly)
+           (success is always reported indirectly from image_loader_begin)
+           */
         image_loader_emit_error(il);
     }
 
@@ -960,8 +1007,17 @@ static void image_loader_thread_run(gpointer data, gpointer user_data)
     g_mutex_lock(il->data_mutex);
     il->can_destroy = TRUE;
     g_cond_signal(il->can_destroy_cond);
+    gboolean do_async_free = il->async_free;
     g_mutex_unlock(il->data_mutex);
 
+    if (do_async_free)
+    {
+        /* Free the pixbuf eagerly — after stop_loader the backend has already
+         * dropped its ref, so il->pixbuf is the last one. Don't wait for the
+         * idle to fire while multiple large loaders pile up. */
+        g_clear_object(&il->pixbuf);
+        g_idle_add(image_loader_free_idle_cb, il);
+    }
 }
 
 

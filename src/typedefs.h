@@ -618,6 +618,8 @@ struct _LayoutWindow
     LayoutOptions options;
 
     FileData *dir_fd;
+    FileData *image_pending_fd;
+    guint image_pending_idle_id;
 
     /* base */
 

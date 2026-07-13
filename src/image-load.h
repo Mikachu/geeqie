@@ -98,6 +98,7 @@ struct _ImageLoader
     gboolean can_destroy;
     GCond *can_destroy_cond;
     gboolean thread;
+    gboolean async_free;
 
     guchar *mapped_file;
     gsize read_buffer_size;
@@ -120,6 +121,8 @@ GType image_loader_get_type(void);
 ImageLoader *image_loader_new(FileData *fd);
 
 void image_loader_free(ImageLoader *il);
+void image_loader_free_async(ImageLoader *il);
+void image_loader_abort(ImageLoader *il);
 
 /* delay area_ready signals */
 void image_loader_delay_area_ready(ImageLoader *il, gboolean enable);

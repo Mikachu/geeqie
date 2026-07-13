@@ -318,6 +318,11 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
         return FALSE;
     }
 
+    if (g_atomic_int_get(&lj->abort))
+    {
+        return 0;
+    }
+
     jpeg_create_decompress(&cinfo);
 
     set_mem_src(&cinfo, (unsigned char *)buf, count);
@@ -380,9 +385,10 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
     }
 
 
-    lj->pixbuf = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
-                     cinfo.out_color_components == 4 ? TRUE : FALSE,
-                     8, lj->stereo ? cinfo.output_width * 2: cinfo.output_width, cinfo.output_height);
+    if (!g_atomic_int_get(&lj->abort))
+        lj->pixbuf = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
+                         cinfo.out_color_components == 4 ? TRUE : FALSE,
+                         8, lj->stereo ? cinfo.output_width * 2: cinfo.output_width, cinfo.output_height);
 
     if (!lj->pixbuf)
     {
@@ -397,7 +403,7 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
     dptr2 = gdk_pixbuf_get_pixels(lj->pixbuf) + ((cinfo.out_color_components == 4) ? 4 * cinfo.output_width : 3 * cinfo.output_width);
 
 
-    while (cinfo.output_scanline < cinfo.output_height && !lj->abort)
+    while (cinfo.output_scanline < cinfo.output_height && !g_atomic_int_get(&lj->abort))
     {
         guint scanline = cinfo.output_scanline;
         image_loader_jpeg_read_scanline(&cinfo, &dptr, rowstride);
@@ -452,7 +458,7 @@ static gboolean image_loader_jpeg_close(gpointer loader, GError **error)
 static void image_loader_jpeg_abort(gpointer loader)
 {
     ImageLoaderJpeg *lj = (ImageLoaderJpeg *) loader;
-    lj->abort = TRUE;
+    g_atomic_int_set(&lj->abort, TRUE);
 }
 
 static void image_loader_jpeg_free(gpointer loader)
