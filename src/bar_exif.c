@@ -702,7 +702,6 @@ static void bar_pane_exif_destroy(GtkWidget *widget, gpointer data)
     g_free(ped);
 }
 
-#if !GTK_CHECK_VERSION(3,0,0)
 static void bar_pane_exif_size_request(GtkWidget *pane, GtkRequisition *requisition, gpointer data)
 {
     PaneExifData *ped = data;
@@ -711,15 +710,11 @@ static void bar_pane_exif_size_request(GtkWidget *pane, GtkRequisition *requisit
         requisition->height = ped->min_height;
     }
 }
-#endif
 
 static void bar_pane_exif_size_allocate(GtkWidget *pane, GtkAllocation *alloc, gpointer data)
 {
     PaneExifData *ped = data;
     ped->min_height = alloc->height;
-#if GTK_CHECK_VERSION(3,0,0)
-    gtk_widget_set_size_request(ped->widget, -1, ped->min_height);
-#endif
 }
 
 static GtkWidget *bar_pane_exif_new(const gchar *id, const gchar *title, gboolean expanded)
@@ -746,12 +741,8 @@ static GtkWidget *bar_pane_exif_new(const gchar *id, const gchar *title, gboolea
     g_object_set_data(G_OBJECT(ped->widget), "pane_data", ped);
     g_signal_connect_after(G_OBJECT(ped->widget), "destroy",
                    G_CALLBACK(bar_pane_exif_destroy), ped);
-#if GTK_CHECK_VERSION(3,0,0)
-    gtk_widget_set_size_request(ped->widget, -1, ped->min_height);
-#else
     g_signal_connect(G_OBJECT(ped->widget), "size-request",
              G_CALLBACK(bar_pane_exif_size_request), ped);
-#endif
     g_signal_connect(G_OBJECT(ped->widget), "size-allocate",
              G_CALLBACK(bar_pane_exif_size_allocate), ped);
 

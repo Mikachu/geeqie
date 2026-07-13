@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=Apply the orientation to image content
+Name=Apply the orientation to image content
 
 # call the helper script
 Exec=geeqie-rotate -g %f

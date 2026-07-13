@@ -946,56 +946,15 @@ static void image_overlay_help_cb(GtkWidget *widget, gpointer data)
 
 static void image_overlay_set_font_cb(GtkWidget *widget, gpointer data)
 {
-#if GTK_CHECK_VERSION(3,4,0)
-    GtkWidget *dialog;
-    char *font;
-    PangoFontDescription *font_desc;
-
-    dialog = gtk_font_chooser_dialog_new("Image Overlay Font", GTK_WINDOW(gtk_widget_get_toplevel(widget)));
-    gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), options->image_overlay.font);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_CANCEL)
-    {
-        font_desc = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
-        font = pango_font_description_to_string(font_desc);
-        g_free(c_options->image_overlay.font);
-        c_options->image_overlay.font = g_strdup(font);
-        g_free(font);
-    }
-
-    gtk_widget_destroy(dialog);
-#else
     const char *font;
 
     font = gtk_font_button_get_font_name(GTK_FONT_BUTTON(widget));
     c_options->image_overlay.font = g_strdup(font);
-#endif
 }
 
 static void image_overlay_set_text_colour_cb(GtkWidget *widget, gpointer data)
 {
     GtkWidget *dialog;
-#if GTK_CHECK_VERSION(3,4,0)
-    GdkRGBA colour;
-
-    dialog = gtk_color_chooser_dialog_new("Image Overlay Text Colour", GTK_WINDOW(gtk_widget_get_toplevel(widget)));
-    colour.red = options->image_overlay.text_red;
-    colour.green = options->image_overlay.text_green;
-    colour.blue = options->image_overlay.text_blue;
-    colour.alpha = options->image_overlay.text_alpha;
-    gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(dialog), &colour);
-    gtk_color_chooser_set_use_alpha(GTK_COLOR_CHOOSER(dialog), TRUE);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_CANCEL)
-    {
-        gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), &colour);
-        c_options->image_overlay.text_red = colour.red*255;
-        c_options->image_overlay.text_green = colour.green*255;
-        c_options->image_overlay.text_blue = colour.blue*255;
-        c_options->image_overlay.text_alpha = colour.alpha*255;
-    }
-    gtk_widget_destroy(dialog);
-#else
     GdkColor colour;
     GtkColorSelection *colorsel;
 
@@ -1018,34 +977,12 @@ static void image_overlay_set_text_colour_cb(GtkWidget *widget, gpointer data)
         c_options->image_overlay.text_alpha = gtk_color_selection_get_current_alpha(colorsel)/257;
     }
     gtk_widget_destroy (dialog);
-#endif
 }
 
 
 static void image_overlay_set_background_colour_cb(GtkWidget *widget, gpointer data)
 {
     GtkWidget *dialog;
-#if GTK_CHECK_VERSION(3,4,0)
-    GdkRGBA colour;
-
-    dialog = gtk_color_chooser_dialog_new("Image Overlay Background Colour", GTK_WINDOW(gtk_widget_get_toplevel(widget)));
-    colour.red = options->image_overlay.background_red;
-    colour.green = options->image_overlay.background_green;
-    colour.blue = options->image_overlay.background_blue;
-    colour.alpha = options->image_overlay.background_alpha;
-    gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(dialog), &colour);
-    gtk_color_chooser_set_use_alpha(GTK_COLOR_CHOOSER(dialog), TRUE);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_CANCEL)
-    {
-        gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), &colour);
-        c_options->image_overlay.background_red = colour.red*255;
-        c_options->image_overlay.background_green = colour.green*255;
-        c_options->image_overlay.background_blue = colour.blue*255;
-        c_options->image_overlay.background_alpha = colour.alpha*255;
-    }
-    gtk_widget_destroy(dialog);
-#else
     GdkColor colour;
     GtkColorSelection *colorsel;
 
@@ -1068,7 +1005,6 @@ static void image_overlay_set_background_colour_cb(GtkWidget *widget, gpointer d
         c_options->image_overlay.background_alpha = gtk_color_selection_get_current_alpha(colorsel)/257;
     }
     gtk_widget_destroy(dialog);
-#endif
 }
 
 static void accel_store_populate(void)
@@ -1508,16 +1444,12 @@ static void config_tab_windows(GtkWidget *notebook)
 
     hbox = pref_box_new(group, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_BUTTON_GAP);
 
-#if GTK_CHECK_VERSION(3,4,0)
-    button = pref_button_new(NULL, GTK_STOCK_SELECT_FONT, _("Font"), FALSE,
-                 G_CALLBACK(image_overlay_set_font_cb), notebook);
-#else
     button = gtk_font_button_new();
     gtk_font_button_set_title(GTK_FONT_BUTTON(button), "Image Overlay Font");
     gtk_font_button_set_font_name(GTK_FONT_BUTTON(button), options->image_overlay.font);
     g_signal_connect(G_OBJECT(button), "font-set",
                  G_CALLBACK(image_overlay_set_font_cb),NULL);
-#endif
+
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
 
