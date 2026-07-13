@@ -42,6 +42,7 @@ void history_chain_append_end(const gchar *path);
 
 const gchar *image_chain_back(void);
 const gchar *image_chain_forward(void);
+void image_chain_nav_done(void);
 void image_chain_append_end(const gchar *path);
 void image_chain_clear(void);
 

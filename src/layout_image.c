@@ -1043,6 +1043,7 @@ static gboolean layout_image_load_idle_cb(LayoutWindow *lw)
     FileData *fd = g_steal_pointer(&lw->image_pending_fd);
 
     lw->image_pending_idle_id = 0;
+    image_chain_nav_done();
 
     image_change_fd(lw->image, fd, image_zoom_get_default(lw->image));
 
