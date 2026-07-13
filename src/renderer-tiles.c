@@ -1986,28 +1986,6 @@ static void renderer_free(void *renderer)
         g_free(rt);
 }
 
-#if GTK_CHECK_VERSION(3,0,0)
-
-static gboolean rt_draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
-{
-    RendererTiles *rt = (RendererTiles *)data;
-    if (gtk_widget_is_drawable(widget))
-    {
-        if (gtk_widget_get_has_window(widget))
-        {
-            GdkRectangle area;
-            if (gdk_cairo_get_clip_rectangle(cr, &area))
-            {
-                renderer_redraw(rt, area.x, area.y, area.width, area.height,
-                        FALSE, TILE_RENDER_ALL, FALSE, FALSE);
-            }
-        }
-    }
-
-    return FALSE;
-}
-
-#else
 static gboolean rt_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     RendererTiles *rt = (RendererTiles *)data;
@@ -2038,8 +2016,6 @@ static gboolean rt_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer 
 
     return FALSE;
 }
-#endif
-
 
 RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
 {
@@ -2079,13 +2055,8 @@ RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
     g_signal_connect(G_OBJECT(pr), "hierarchy-changed",
              G_CALLBACK(rt_hierarchy_changed_cb), rt);
 
-#if GTK_CHECK_VERSION(3,0,0)
-    g_signal_connect(G_OBJECT(pr), "draw",
-                     G_CALLBACK(rt_draw_cb), rt);
-#else
     g_signal_connect(G_OBJECT(pr), "expose_event",
                      G_CALLBACK(rt_expose_cb), rt);
-#endif
     return (RendererFuncs *) rt;
 }
 

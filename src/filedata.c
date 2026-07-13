@@ -282,7 +282,6 @@ static void file_data_set_collate_keys(FileData *fd)
     g_free(fd->collate_key_name);
     g_free(fd->collate_key_name_nocase);
 
-#if GTK_CHECK_VERSION(2, 8, 0)
     if (options->file_sort.natural)
     {
         fd->collate_key_name = g_utf8_collate_key_for_filename(fd->name, -1);
@@ -293,10 +292,6 @@ static void file_data_set_collate_keys(FileData *fd)
         fd->collate_key_name = g_utf8_collate_key(valid_name, -1);
         fd->collate_key_name_nocase = g_utf8_collate_key(caseless_name, -1);
     }
-#else
-    fd->collate_key_name = g_utf8_collate_key(valid_name, -1);
-    fd->collate_key_name_nocase = g_utf8_collate_key(caseless_name, -1);
-#endif
 
     g_free(valid_name);
     g_free(caseless_name);

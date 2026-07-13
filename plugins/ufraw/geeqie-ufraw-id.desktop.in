@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=Edit UFRaw ID file
+Name=Edit UFRaw ID file
 
 Exec=ufraw --create-id=only %U
 

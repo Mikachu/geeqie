@@ -21,17 +21,18 @@ AC_INIT([geeqie], m4_esyscmd_s(git rev-parse --quiet --verify --short HEAD), [ge
 AC_CONFIG_SRCDIR([src/main.c])
 
 AC_CONFIG_AUX_DIR(auxdir)
+AC_CONFIG_MACRO_DIR([m4])
 # Require Automake 1.14 for %reldir% support
 AM_INIT_AUTOMAKE([1.14.1 subdir-objects dist-xz no-dist-gzip])
 
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # Only for developers
 AM_MAINTAINER_MODE
 
 AC_ARG_ENABLE(developer, [
 Development options:
-AC_HELP_STRING([--enable-developer], [turn on developers mode [default=no]])],
+AS_HELP_STRING([--enable-developer], [turn on developers mode [default=no]])],
 [
   __IS_DEVELOPER=yes
 ],
@@ -64,7 +65,7 @@ dnl
 
 AC_ARG_ENABLE([debug-flags], [
 Development options:
-AC_HELP_STRING([--enable-debug-flags], [use compiler flags for debugging [default=no]])], [],
+AS_HELP_STRING([--enable-debug-flags], [use compiler flags for debugging [default=no]])], [],
 [
 if test "x${enable_developer}" != "xyes"
 then
@@ -76,7 +77,7 @@ fi
 
 AC_ARG_ENABLE([debug-log], [
 Development options:
-AC_HELP_STRING([--enable-debug-log], [enable debugging messages [default=yes]])], [], [enable_debug_log="yes"])
+AS_HELP_STRING([--enable-debug-log], [enable debugging messages [default=yes]])], [], [enable_debug_log="yes"])
 
 if test "x${enable_debug_flags}" != "xno"
 then
@@ -104,7 +105,7 @@ fi
 AM_CONDITIONAL(DEBUG, test x$enable_debug_flags = xyes)
 
 AC_ARG_ENABLE(deprecated, [
-AC_HELP_STRING([--enable-deprecated], [turn off checking of deprecated functions [default=yes]])], [],
+AS_HELP_STRING([--enable-deprecated], [turn off checking of deprecated functions [default=yes]])], [],
 [
 if test "x${enable_developer}" != "xyes"
 then
@@ -123,20 +124,13 @@ else
   __IS_DEPRECATED=no
 fi
 
-
-AC_ISC_POSIX
 AC_PROG_CC
-AC_PROG_CC_C99
 AC_PROG_CXX
-AC_STDC_HEADERS
 AC_ARG_PROGRAM
 AC_SYS_LARGEFILE
-IT_PROG_INTLTOOL([0.35.0])
-
 
 dnl checks for functions
 AC_CHECK_FUNCS(strverscmp access fsync fflush)
-
 
 # Check target architecture
 
@@ -191,27 +185,11 @@ else
   prefix=$prefix
 fi
 
-AM_PATH_GLIB_2_0(2.24.0,,AC_MSG_ERROR(GLIB >= 2.24.0 not installed.))
-AC_ARG_ENABLE([gtk3], AC_HELP_STRING([--disable-gtk3], [use gtk2 instead of gtk3]),[gtk3="${enableval}"], [gtk3=m4_ifdef([AM_PATH_GTK_3_0], [auto], [no])])
-
-if test x$gtk3 = xyes; then
-    AC_MSG_WARN("Gtk3 enabled")
-    m4_ifdef([AM_PATH_GTK_3_0], [AM_PATH_GTK_3_0(3.0.0,,AC_MSG_ERROR(GTK+ >= 3.0.0 not installed.))])
-else
-    if test x$gtk3 != xno; then
-       AC_MSG_WARN("Gtk3 is preferred...")
-       m4_ifdef([AM_PATH_GTK_3_0], [AM_PATH_GTK_3_0(3.0.0,,[gtk3=no])])
-    fi
-fi
-
-if test x$gtk3 = xno; then
-    m4_ifdef([AM_PATH_GTK_2_0], [AM_PATH_GTK_2_0(2.20.0,,AC_MSG_ERROR(GTK+ >= 2.20.0 not installed.))])
-    true
-fi
+PKG_CHECK_MODULES(GTK, [gtk+-2.0 >= 2.20.0], , AC_MSG_ERROR(GTK+ >= 2.20.0 not installed.))
 
 threads="auto"
 AC_ARG_ENABLE([threads],
-  AC_HELP_STRING([--disable-threads], [disable thread support]), [threads="${enableval}"])
+  AS_HELP_STRING([--disable-threads], [disable thread support]), [threads="${enableval}"])
 
 have_gthread="no"
 if test "x${threads}" != "xno" ; then
@@ -223,7 +201,6 @@ if test "x$have_gthread" != "xno"; then
         GLIB_CFLAGS="$GTHREAD_CFLAGS"
         GLIB_LIBS="$GTHREAD_LIBS"
 fi
-
 
 AC_PATH_PROGS(GDK_PIXBUF_CSOURCE, "gdk-pixbuf-csource")
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
@@ -256,7 +233,7 @@ dnl Check for LIRC client support
 AC_MSG_CHECKING(if LIRC support is enabled)
 lirc=no
 AC_ARG_ENABLE([lirc],
-  AC_HELP_STRING([--disable-lirc], [disable lirc support (auto)]),
+  AS_HELP_STRING([--disable-lirc], [disable lirc support (auto)]),
 [
 if test "x${enableval}" = "xyes" -a "x$GCC" = "xyes"; then
   AC_MSG_RESULT(yes)
@@ -288,7 +265,7 @@ AM_CONDITIONAL(HAVE_LIRC, [test "x$HAVE_LIRC" = xyes])
 # ----------------------------------------------------------------------
 
 AC_ARG_ENABLE([lcms],
-  AC_HELP_STRING([--disable-lcms], [disable lcms support]),
+  AS_HELP_STRING([--disable-lcms], [disable lcms support]),
     [liblcms=$enableval], [liblcms=auto])
 
 if test "x${liblcms}" != "xno"; then
@@ -321,7 +298,7 @@ AC_SUBST(LCMS_LIBS)
 # ----------------------------------------------------------------------
 
 AC_ARG_ENABLE([jpeg],
-  AC_HELP_STRING([--disable-jpeg], [disable direct jpeg support]),
+  AS_HELP_STRING([--disable-jpeg], [disable direct jpeg support]),
     [libjpeg=$enableval], [libjpeg=auto])
 
 if test "x${libjpeg}" != "xno"; then
@@ -343,7 +320,7 @@ AC_SUBST(JPEG_LIBS)
 # ----------------------------------------------------------------------
 
 AC_ARG_ENABLE([tiff],
-  AC_HELP_STRING([--disable-tiff], [disable direct tiff support]),
+  AS_HELP_STRING([--disable-tiff], [disable direct tiff support]),
     [libtiff=$enableval], [libtiff=auto])
 
 if test "x${libtiff}" != "xno"; then
@@ -365,7 +342,7 @@ AC_SUBST(TIFF_LIBS)
 # ----------------------------------------------------------------------
 
 AC_ARG_ENABLE([exiv2],
-  AC_HELP_STRING([--disable-exiv2], [disable exiv2 support]),
+  AS_HELP_STRING([--disable-exiv2], [disable exiv2 support]),
     [libexiv2=$enableval], [libexiv2=auto])
 
 if test "x${libexiv2}" != "xno"; then
@@ -397,8 +374,9 @@ AC_SUBST([CONFIG_STATUS_DEPENDENCIES],['$(top_srcdir)/po/LINGUAS'])
 GETTEXT_PACKAGE=$PACKAGE
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["${GETTEXT_PACKAGE}"],[Name of gettext file])
-AM_GLIB_GNU_GETTEXT
-AM_GLIB_DEFINE_LOCALEDIR(GQ_LOCALEDIR)
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.19.8])
+AC_DEFINE_UNQUOTED([GQ_LOCALEDIR], ["${localedir}"], [Locale directory])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
@@ -409,7 +387,7 @@ AC_SUBST(LDFLAGS)
 # ----------------------------------------------------------------------
 
 AC_ARG_ENABLE([lua],
-  AC_HELP_STRING([--disable-lua], [disable lua support]),
+  AS_HELP_STRING([--disable-lua], [disable lua support]),
     [liblua=$enableval], [liblua=auto])
 
 if test "x${liblua}" != "xno"; then
@@ -481,7 +459,7 @@ AC_OUTPUT
 dnl Print the results
 dnl
 
-cat > config.report << END
+cat << END
 
      Config results:
     -=-=-=-=-=-=-=-=-
@@ -497,13 +475,13 @@ Architecture:
 Flags:
   Geeqie:        $GQ_CFLAGS
   DEFS:          $DEFS
-  CPPFLAGS:      $__CPPFLAGS
+  CPPFLAGS:      $CPPFLAGS
   CFLAGS:        $CFLAGS
   CXXFLAGS:      $CXXFLAGS
   Gtk:           $GTK_CFLAGS
   Glib:          $GLIB_CFLAGS
   Thread:        $GTHREAD_LIBS
-  Others:	 $JPEG_LIBS $TIFF_LIBS $LCMS_LIBS $EXIV2_LIBS $LUA_LIBS
+  Others:        $JPEG_LIBS $TIFF_LIBS $LCMS_LIBS $EXIV2_LIBS $LUA_LIBS
 
 Localization:
   NLS support:   $USE_NLS
@@ -517,21 +495,12 @@ Settings:
 
 Support:
   LCMS:          $HAVE_LCMS
-  Exiv2:	 $HAVE_EXIV2
+  Exiv2:         $HAVE_EXIV2
   Lirc:          $HAVE_LIRC
-  Lua:	         $HAVE_LUA
+  Lua:           $HAVE_LUA
 
 Documentation:
   Doxygen:       $DX_DOXYGEN
   doc-tool:      $GNOME_DOC_TOOL
 
 END
-
-cat config.report
-cat <<EOF
-
-  Now you can type "make" to build Geeqie
-  (or you take blue pill and the story ends :)
-
-EOF
-

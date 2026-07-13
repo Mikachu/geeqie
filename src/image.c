@@ -1824,7 +1824,6 @@ void image_set_delay_flip(ImageWindow *imd, gboolean delay)
 
 void image_to_root_window(ImageWindow *imd, gboolean scaled)
 {
-#if !GTK_CHECK_VERSION(3,0,0)
     GdkScreen *screen;
     GdkWindow *rootwindow;
     GdkPixmap *pixmap;
@@ -1860,7 +1859,6 @@ void image_to_root_window(ImageWindow *imd, gboolean scaled)
     g_object_unref(pixmap);
 
     gdk_flush();
-#endif
 }
 
 void image_select(ImageWindow *imd, gboolean select)
@@ -1959,38 +1957,7 @@ static void image_destroy_cb(GtkWidget *widget, gpointer data)
     ImageWindow *imd = data;
     image_free(imd);
 }
-#if GTK_CHECK_VERSION(3,0,0)
-gboolean selectable_frame_draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
-{
-    GtkAllocation allocation;
-    gtk_widget_get_allocation(widget, &allocation);
-    gtk_paint_flat_box(gtk_widget_get_style(widget),
-               cr,
-               gtk_widget_get_state(widget),
-               gtk_frame_get_shadow_type(GTK_FRAME(widget)),
-               widget,
-               NULL,
-               allocation.x + 3, allocation.y + 3,
-               allocation.width - 6, allocation.height - 6);
 
-    if (gtk_widget_has_focus(widget))
-    {
-        gtk_paint_focus(gtk_widget_get_style(widget), cr, GTK_STATE_ACTIVE,
-                widget, "image_window",
-                allocation.x, allocation.y,
-                allocation.width - 1, allocation.height - 1);
-    }
-    else
-    {
-        gtk_paint_shadow(gtk_widget_get_style(widget), cr, GTK_STATE_NORMAL, GTK_SHADOW_IN,
-                 widget, "image_window",
-                 allocation.x, allocation.y,
-                 allocation.width - 1, allocation.height - 1);
-    }
-    return FALSE;
-}
-
-#else
 gboolean selectable_frame_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     GtkAllocation allocation;
@@ -2021,8 +1988,6 @@ gboolean selectable_frame_expose_cb(GtkWidget *widget, GdkEventExpose *event, gp
     }
     return FALSE;
 }
-#endif
-
 
 void image_set_frame(ImageWindow *imd, gboolean frame)
 {
@@ -2043,13 +2008,8 @@ void image_set_frame(ImageWindow *imd, gboolean frame)
         gtk_widget_set_can_focus(imd->frame, TRUE);
         gtk_widget_set_app_paintable(imd->frame, TRUE);
 
-#if GTK_CHECK_VERSION(3,0,0)
-        g_signal_connect(G_OBJECT(imd->frame), "draw",
-                 G_CALLBACK(selectable_frame_draw_cb), NULL);
-#else
         g_signal_connect(G_OBJECT(imd->frame), "expose_event",
                  G_CALLBACK(selectable_frame_expose_cb), NULL);
-#endif
         g_signal_connect(G_OBJECT(imd->frame), "focus_in_event",
                  G_CALLBACK(image_focus_in_cb), imd);
 

@@ -1305,17 +1305,6 @@ static gboolean sizer_leave_cb(GtkWidget *widget, GdkEventCrossing *event, gpoin
 
 static gboolean sizer_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-#if GTK_CHECK_VERSION(3,0,0)
-    GtkAllocation allocation;
-
-    gtk_widget_get_allocation(widget, &allocation);
-
-    cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
-
-    gtk_render_handle (gtk_widget_get_style_context (widget),
-                       cr, allocation.x, allocation.y, allocation.width, allocation.height);
-    cairo_destroy(cr);
-#else
     SizerData *sd = data;
     GdkRectangle clip;
     GtkOrientation orientation;
@@ -1349,7 +1338,6 @@ static gboolean sizer_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpoint
              0, 0,
              allocation.width, allocation.height,
              orientation);
-#endif
 
     return TRUE;
 }

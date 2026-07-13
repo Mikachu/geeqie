@@ -119,15 +119,12 @@ static LogWindow *log_window_create(void)
 static void log_window_init(LogWindow *logwin)
 {
     GtkTextBuffer *buffer;
-#if !GTK_CHECK_VERSION(3,0,0)
     GdkColormap *colormap;
     gboolean success[LOG_COUNT];
-#endif
     gint i;
 
     g_assert(logwin != NULL);
     g_assert(logwin->colors != NULL);
-#if !GTK_CHECK_VERSION(3,0,0)
     for (i = LOG_NORMAL; i < LOG_COUNT; i++)
     {
         gboolean ok = gdk_color_parse(logdefs[i].color, &logwin->colors[i]);
@@ -154,7 +151,6 @@ static void log_window_init(LogWindow *logwin)
             break;
         }
     }
-#endif
     buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(logwin->text));
     for (i = LOG_NORMAL; i < LOG_COUNT; i++)
         gtk_text_buffer_create_tag(buffer, logdefs[i].tag,

@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=Symlink
+Name=Symlink
 
 # call the helper script
 Exec=geeqie-symlink %f
