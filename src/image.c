@@ -42,6 +42,9 @@
 
 #include <math.h>
 
+/* easily switch between both impls, without forgetting to swap stale clear */
+#define ASYNC_FREE
+
 static GList *image_list = NULL;
 
 static void image_update_title(ImageWindow *imd);
@@ -826,18 +829,27 @@ static void image_load_done_cb(ImageLoader *il, gpointer data)
 {
     ImageWindow *imd = data;
 
+    if (imd->il != il)
+    {
+#ifndef ASYNC_FREE
+        image_loader_free(il);
+        imd->il = NULL;
+#endif
+        return;
+    }
+
     DEBUG_1("%s image done", get_exec_time());
 
-    if (options->image.enable_read_ahead && imd->image_fd && !imd->image_fd->pixbuf && image_loader_get_pixbuf(imd->il))
+    if (options->image.enable_read_ahead && imd->image_fd && !imd->image_fd->pixbuf && image_loader_get_pixbuf(il))
     {
-        imd->image_fd->pixbuf = g_object_ref(image_loader_get_pixbuf(imd->il));
+        imd->image_fd->pixbuf = g_object_ref(image_loader_get_pixbuf(il));
         image_cache_set(imd, imd->image_fd);
     }
     /* call the callback triggered by image_state after fd->pixbuf is set */
     g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);
     image_state_unset(imd, IMAGE_STATE_LOADING);
 
-    if (!image_loader_get_pixbuf(imd->il))
+    if (!image_loader_get_pixbuf(il))
     {
         GdkPixbuf *pixbuf;
 
@@ -848,13 +860,13 @@ static void image_load_done_cb(ImageLoader *il, gpointer data)
         imd->unknown = TRUE;
     }
     else if (imd->delay_flip &&
-        image_get_pixbuf(imd) != image_loader_get_pixbuf(imd->il))
+        image_get_pixbuf(imd) != image_loader_get_pixbuf(il))
     {
         g_object_set(G_OBJECT(imd->pr), "complete", FALSE, NULL);
-        image_change_pixbuf(imd, image_loader_get_pixbuf(imd->il), image_zoom_get(imd), FALSE);
+        image_change_pixbuf(imd, image_loader_get_pixbuf(il), image_zoom_get(imd), FALSE);
     }
 
-    image_loader_free(imd->il);
+    image_loader_free(il);
     imd->il = NULL;
 
 //  image_post_process(imd, TRUE);
@@ -1013,7 +1025,11 @@ static void image_reset(ImageWindow *imd)
 
     g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);
 
+#ifdef ASYNC_FREE
+    image_loader_free_async(imd->il);
+#else
     image_loader_free(imd->il);
+#endif
     imd->il = NULL;
 
     color_man_free((ColorMan *)imd->cm);
@@ -1380,7 +1396,11 @@ void image_move_from_image(ImageWindow *imd, ImageWindow *source)
     imd->collection = source->collection;
     imd->collection_info = source->collection_info;
 
+#ifdef ASYNC_FREE
+    image_loader_free_async(imd->il);
+#else
     image_loader_free(imd->il);
+#endif
     imd->il = NULL;
 
     image_set_fd(imd, image_get_fd(source));

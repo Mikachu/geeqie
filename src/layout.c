@@ -2222,6 +2222,8 @@ void layout_free(LayoutWindow *lw)
         file_data_unref(lw->dir_fd);
     }
 
+    g_clear_handle_id(&lw->image_pending_idle_id, g_source_remove);
+    
     free_layout_options_content(&lw->options);
     g_free(lw);
 }

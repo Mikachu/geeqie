@@ -31,6 +31,7 @@
 #include "history_list.h"
 #include "image.h"
 #include "image-overlay.h"
+#include "image-load.h"
 #include "img-view.h"
 #include "layout.h"
 #include "layout_util.h"
@@ -1027,7 +1028,8 @@ CollectionData *layout_image_get_collection(LayoutWindow *lw, CollectInfo **info
 
 gint layout_image_get_index(LayoutWindow *lw)
 {
-    return layout_list_get_index(lw, image_get_fd(lw->image));
+    FileData *fd = lw->image_pending_fd ? lw->image_pending_fd : image_get_fd(lw->image);
+    return layout_list_get_index(lw, fd);
 }
 
 /*
@@ -1036,21 +1038,34 @@ gint layout_image_get_index(LayoutWindow *lw)
  *----------------------------------------------------------------------------
  */
 
-void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
+static gboolean layout_image_load_idle_cb(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return;
+    FileData *fd = g_steal_pointer(&lw->image_pending_fd);
+
+    lw->image_pending_idle_id = 0;
 
     image_change_fd(lw->image, fd, image_zoom_get_default(lw->image));
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_change_fd(lw->full_screen->imd, fd, image_zoom_get_default(lw->full_screen->imd));
-    }
+
+    return FALSE;
+}
+
+void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
+{
+    if (!layout_valid(&lw)) return;
+
+    image_loader_abort(lw->image->il);
+    lw->image_pending_fd = fd;
+    layout_list_sync_fd(lw, fd);
+    g_clear_handle_id(&lw->image_pending_idle_id, g_source_remove);
+    //lw->image_pending_idle_id = g_idle_add((GSourceFunc)layout_image_load_idle_cb, lw);
+    lw->image_pending_idle_id = g_timeout_add_full(G_PRIORITY_HIGH, 50, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
 
     if (fd)
         image_chain_append_end(fd->path);
 
-    layout_list_sync_fd(lw, fd);
     layout_image_slideshow_continue_check(lw);
     layout_bars_new_image(lw);
 }
