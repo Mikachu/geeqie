@@ -13,7 +13,9 @@ readme_DATA = README COPYING ChangeLog TODO README.lirc
 desktopdir = $(datadir)/applications
 desktop_in_files = geeqie.desktop.in
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
-@INTLTOOL_DESKTOP_RULE@
+SUFFIXES = .desktop.in .desktop
+.desktop.in.desktop:
+	$(MSGFMT) --desktop --template=$< -d $(top_srcdir)/po -o $@
 
 icondir = $(datadir)/pixmaps
 icon_DATA = geeqie.png

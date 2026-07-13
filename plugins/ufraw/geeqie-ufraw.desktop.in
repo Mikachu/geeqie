@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=UFRaw Batch
+Name=UFRaw Batch
 
 # call the helper script on each file individually 
 # - this allows a better controll over processing

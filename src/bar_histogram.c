@@ -148,26 +148,6 @@ static void bar_pane_histogram_notify_cb(FileData *fd, NotifyType type, gpointer
     }
 }
 
-#if GTK_CHECK_VERSION(3,0,0)
-static gboolean bar_pane_histogram_draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
-{
-    PaneHistogramData *phd = data;
-    if (!phd) return TRUE;
-
-    if (phd->need_update)
-    {
-        bar_pane_histogram_update(phd);
-    }
-
-    if (!phd->pixbuf) return TRUE;
-
-    gdk_cairo_set_source_pixbuf(cr, phd->pixbuf, 0, 0);
-    cairo_paint (cr);
-
-    return TRUE;
-}
-
-#else
 static gboolean bar_pane_histogram_expose_event_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     PaneHistogramData *phd = data;
@@ -187,7 +167,6 @@ static gboolean bar_pane_histogram_expose_event_cb(GtkWidget *widget, GdkEventEx
 
     return TRUE;
 }
-#endif
 
 static void bar_pane_histogram_size_cb(GtkWidget *widget, GtkAllocation *allocation, gpointer data)
 {
@@ -317,13 +296,8 @@ static GtkWidget *bar_pane_histogram_new(const gchar *id, const gchar *title, gi
     g_signal_connect_after(G_OBJECT(phd->drawing_area), "size_allocate",
                                G_CALLBACK(bar_pane_histogram_size_cb), phd);
 
-#if GTK_CHECK_VERSION(3,0,0)
-    g_signal_connect(G_OBJECT(phd->drawing_area), "draw",
-             G_CALLBACK(bar_pane_histogram_draw_cb), phd);
-#else
     g_signal_connect(G_OBJECT(phd->drawing_area), "expose_event",
              G_CALLBACK(bar_pane_histogram_expose_event_cb), phd);
-#endif
 
     gtk_box_pack_start(GTK_BOX(phd->widget), phd->drawing_area, TRUE, TRUE, 0);
     gtk_widget_show(phd->drawing_area);
