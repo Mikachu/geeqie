@@ -61,13 +61,14 @@ static const gchar *hchain_forward(HistoryChain *hc)
     return g_list_nth_data(hc->chain, hc->index);
 }
 
-static void hchain_append(HistoryChain *hc, const gchar *path)
+static void hchain_append(HistoryChain *hc, const gchar *path, gboolean reset)
 {
     GList *work, *tail;
 
     if (hc->nav_button)
     {
-        hc->nav_button = FALSE;
+        if (reset)
+            hc->nav_button = FALSE;
         return;
     }
 
@@ -102,11 +103,12 @@ static void hchain_append(HistoryChain *hc, const gchar *path)
 
 const gchar *history_chain_back(void)        { return hchain_back(&dir_chain); }
 const gchar *history_chain_forward(void)     { return hchain_forward(&dir_chain); }
-void history_chain_append_end(const gchar *path) { hchain_append(&dir_chain, path); }
+void history_chain_append_end(const gchar *path) { hchain_append(&dir_chain, path, TRUE); }
 
 const gchar *image_chain_back(void)          { return hchain_back(&img_chain); }
 const gchar *image_chain_forward(void)       { return hchain_forward(&img_chain); }
-void image_chain_append_end(const gchar *path) { hchain_append(&img_chain, path); }
+void image_chain_nav_done(void)              { img_chain.nav_button = FALSE; }
+void image_chain_append_end(const gchar *path) { hchain_append(&img_chain, path, FALSE); }
 void image_chain_clear(void)
 {
     g_list_free_full(img_chain.chain, g_free);
