@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=UFRaw Batch recursive
+Name=UFRaw Batch recursive
 
 # call the helper script with current directory as an argument
 Exec=geeqie-ufraw --recursive .

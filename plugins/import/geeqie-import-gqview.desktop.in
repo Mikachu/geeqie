@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-_Name=Import GQView metadata
+Name=Import GQView metadata
 
 # call the helper script
 Exec=geeqie-import gqview

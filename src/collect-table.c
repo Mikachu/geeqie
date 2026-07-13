@@ -524,23 +524,10 @@ static void tip_show(CollectTable *ct)
 {
     GtkWidget *label;
     gint x, y;
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDisplay *display;
-    GdkDeviceManager *device_manager;
-    GdkDevice *device;
-#endif
 
     if (ct->tip_window) return;
 
-#if GTK_CHECK_VERSION(3,0,0)
-    device_manager = gdk_display_get_device_manager(gdk_window_get_display(
-                                gtk_widget_get_window(ct->listview)));
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_window_get_device_position(gtk_widget_get_window(ct->listview),
-                                device, &x, &y, NULL);
-#else
     gdk_window_get_pointer(gtk_widget_get_window(ct->listview), &x, &y, NULL);
-#endif
 
     ct->tip_info = collection_table_find_data_by_coord(ct, x, y, NULL);
     if (!ct->tip_info) return;
@@ -555,14 +542,7 @@ static void tip_show(CollectTable *ct)
     gtk_container_add(GTK_CONTAINER(ct->tip_window), label);
     gtk_widget_show(label);
 
-#if GTK_CHECK_VERSION(3,0,0)
-    display = gdk_display_get_default();
-    device_manager = gdk_display_get_device_manager(display);
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_device_get_position(device, NULL, &x, &y);
-#else
     gdk_window_get_pointer(NULL, &x, &y, NULL);
-#endif
 
     if (!gtk_widget_get_realized(ct->tip_window)) gtk_widget_realize(ct->tip_window);
     gtk_window_move(GTK_WINDOW(ct->tip_window), x + 16, y + 16);
@@ -603,22 +583,13 @@ static void tip_schedule(CollectTable *ct)
 
 static void tip_update(CollectTable *ct, CollectInfo *info)
 {
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDisplay *display = gdk_display_get_default();
-    GdkDeviceManager *device_manager = gdk_display_get_device_manager(display);
-    GdkDevice *device = gdk_device_manager_get_client_pointer(device_manager);
-#endif
 
     tip_schedule(ct);
 
     if (ct->tip_window)
     {
         gint x, y;
-#if GTK_CHECK_VERSION(3,0,0)
-        gdk_device_get_position(device, NULL, &x, &y);
-#else
         gdk_window_get_pointer(NULL, &x, &y, NULL);
-#endif
         gtk_window_move(GTK_WINDOW(ct->tip_window), x + 16, y + 16);
 
         if (info != ct->tip_info)
@@ -1302,25 +1273,10 @@ static CollectInfo *collection_table_insert_find(CollectTable *ct, CollectInfo *
     GtkTreeIter iter;
     GtkTreePath *tpath;
     GtkTreeViewColumn *column;
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDeviceManager *device_manager;
-    GdkDevice *device;
-#endif
 
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(ct->listview));
 
-#if GTK_CHECK_VERSION(3,0,0)
-    if (!use_coord)
-    {
-        device_manager = gdk_display_get_device_manager(gdk_window_get_display(
-                                    gtk_widget_get_window(ct->listview)));
-        device = gdk_device_manager_get_client_pointer(device_manager);
-        gdk_window_get_device_position(gtk_widget_get_window(ct->listview),
-                                    device, &x, &y, NULL);
-    }
-#else
     if (!use_coord) gdk_window_get_pointer(gtk_widget_get_window(ct->listview), &x, &y, NULL);
-#endif
     if (source)
     {
         gint col;
@@ -1445,22 +1401,6 @@ static void collection_table_insert_marker(CollectTable *ct, CollectInfo *info, 
 
         ct->marker_window = gdk_window_new(parent, &attributes, attributes_mask);
 
-#if GTK_CHECK_VERSION(3,0,0)
-        cairo_region_t *mask;
-        cairo_pattern_t *pattern;
-        cairo_surface_t *img = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
-        cairo_t *cr = cairo_create(img);
-        gdk_cairo_set_source_pixbuf(cr, pb, 0, 0);
-        cairo_paint(cr);
-        pattern = cairo_pattern_create_for_surface(img);
-        mask = gdk_cairo_region_create_from_surface(img);
-        gdk_window_shape_combine_region(ct->marker_window, mask, 0, 0);
-        gdk_window_set_background_pattern(ct->marker_window, pattern);
-        cairo_region_destroy(mask);
-        cairo_pattern_destroy(pattern);
-        cairo_destroy(cr);
-        cairo_surface_destroy(img);
-#else
         GdkPixmap *pixmap;
         GdkBitmap *mask;
         gdk_pixbuf_render_pixmap_and_mask(pb, &pixmap, &mask, 128);
@@ -1470,7 +1410,6 @@ static void collection_table_insert_marker(CollectTable *ct, CollectInfo *info, 
 
         g_object_unref(pixmap);
         if (mask) g_object_unref(mask);
-#endif
         g_object_unref(pb);
     }
 
@@ -1494,9 +1433,7 @@ static void collection_table_insert_marker(CollectTable *ct, CollectInfo *info, 
         y = cell.y + (cell.height / 2) - (h / 2);
 
         gdk_window_move(ct->marker_window, x, y);
-#if !GTK_CHECK_VERSION(3,0,0)
         gdk_window_clear(ct->marker_window);
-#endif
         if (!gdk_window_is_visible(ct->marker_window)) gdk_window_show(ct->marker_window);
     }
     else
@@ -1534,21 +1471,11 @@ static gboolean collection_table_auto_scroll_idle_cb(gpointer data)
     GdkWindow *window;
     gint x, y;
     gint w, h;
-#if GTK_CHECK_VERSION(3,0,0)
-    GdkDeviceManager *device_manager;
-    GdkDevice *device;
-#endif
 
     if (!ct->drop_idle_id) return FALSE;
 
     window = gtk_widget_get_window(ct->listview);
-#if GTK_CHECK_VERSION(3,0,0)
-    device_manager = gdk_display_get_device_manager(gdk_window_get_display(window));
-    device = gdk_device_manager_get_client_pointer(device_manager);
-    gdk_window_get_device_position(window, device, &x, &y, NULL);
-#else
     gdk_window_get_pointer(window, &x, &y, NULL);
-#endif
     w = gdk_window_get_width(window);
     h = gdk_window_get_height(window);
     if (x >= 0 && x < w && y >= 0 && y < h)
