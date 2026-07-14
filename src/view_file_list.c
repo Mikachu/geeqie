@@ -157,6 +157,8 @@ static void vflist_store_clear(ViewFile *vf)
 {
     GtkTreeModel *store;
 
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
+
     GtkTreePath *scroll_path = NULL;
     if (gtk_widget_get_realized(vf->listview))
         gtk_tree_view_get_visible_range(GTK_TREE_VIEW(vf->listview), &scroll_path, NULL);
@@ -423,7 +425,6 @@ void vflist_pop_menu_refresh_cb(GtkWidget *widget, gpointer data)
 
     vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
     vf_refresh(vf);
-    gtk_tree_view_columns_autosize(GTK_TREE_VIEW(vf->listview));
 }
 
 void vflist_popup_destroy_cb(GtkWidget *widget, gpointer data)
@@ -742,12 +743,68 @@ static gboolean vflist_select_cb(GtkTreeSelection *selection, GtkTreeModel *stor
     return ret;
 }
 
+static gboolean vflist_autosize_column_cb(gpointer data)
+{
+    ViewFile *vf = data;
+    GtkTreeViewColumn *col;
+    GtkTreeModel *model;
+    GtkTreePath *start_path, *end_path;
+
+    VFLIST(vf)->autosize_idle_id = 0;
+
+    col = gtk_tree_view_get_column(GTK_TREE_VIEW(vf->listview), FILE_VIEW_COLUMN_FORMATTED);
+    model = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
+    if (!model || !col) return G_SOURCE_REMOVE;
+
+    if (!gtk_tree_view_get_visible_range(GTK_TREE_VIEW(vf->listview), &start_path, &end_path))
+        return G_SOURCE_REMOVE;
+
+    /* get the text renderer from the column */
+    GList *renderers = gtk_tree_view_column_get_cell_renderers(col);
+    GtkCellRenderer *text_renderer = NULL;
+    GList *r = renderers;
+    while (r)
+    {
+        if (GTK_IS_CELL_RENDERER_TEXT(r->data)) { text_renderer = r->data; break; }
+        r = r->next;
+    }
+    g_list_free(renderers);
+    if (!text_renderer) return G_SOURCE_REMOVE;
+
+    gint max_width = 0;
+    GtkTreeIter iter;
+    gtk_tree_model_get_iter(model, &iter, start_path);
+    while (TRUE)
+    {
+        gint width;
+        gtk_tree_view_column_cell_set_cell_data(col, model, &iter, FALSE, FALSE);
+        gtk_cell_renderer_get_size(text_renderer, vf->listview, NULL, NULL, NULL, &width, NULL);
+        if (width > max_width) max_width = width;
+
+        GtkTreePath *path = gtk_tree_model_get_path(model, &iter);
+        gboolean done = (gtk_tree_path_compare(path, end_path) >= 0);
+        gtk_tree_path_free(path);
+        if (done || !gtk_tree_model_iter_next(model, &iter)) break;
+    }
+
+    gtk_tree_view_column_set_fixed_width(col, max_width);
+    gtk_tree_path_free(start_path);
+    gtk_tree_path_free(end_path);
+    return G_SOURCE_REMOVE;
+}
+
 static void vflist_selection_changed_cb(GtkTreeSelection *selection, gpointer data)
 {
     ViewFile *vf = data;
     GtkTreeIter iter;
     GtkTreePath *cursor_path;
     GtkTreeModel *store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview)); 
+
+    if (!store) return; /* detached store => loading directory in progress */
+
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
+    VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW,
+                                                    vflist_autosize_column_cb, vf, NULL);
 
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(vf->listview), &cursor_path, NULL);
     if (cursor_path)
@@ -1621,6 +1678,29 @@ static gboolean vflist_is_multiline(ViewFile *vf)
     return (VFLIST(vf)->thumbs_enabled && options->thumbnails.max_height >= 48);
 }
 
+static gboolean vflist_scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, gpointer data)
+{
+    ViewFile *vf = data;
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
+    VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_column_cb, vf, NULL);
+    return FALSE;
+}
+
+static void vflist_vadjustment_changed_cb(GtkAdjustment *adj, gpointer data)
+{
+    ViewFile *vf = data;
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
+    VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_column_cb, vf, NULL);
+}
+
+static void vflist_realize_cb(GtkWidget *widget, gpointer data)
+{
+    ViewFile *vf = data;
+    GtkAdjustment *adj = gtk_tree_view_get_vadjustment(GTK_TREE_VIEW(vf->listview));
+    if (adj)
+        g_signal_connect(adj, "value-changed",
+                         G_CALLBACK(vflist_vadjustment_changed_cb), vf);
+}
 
 static void vflist_populate_view(ViewFile *vf, gboolean force)
 {
@@ -1732,7 +1812,10 @@ static gboolean vflist_dir_load_done_cb(gpointer data)
     vflist_register_notify(vf);
     vf->list = filelist_sort(vf->list, vf->sort_method, vf->sort_ascend);
 
+    GtkTreeViewColumn *col = gtk_tree_view_get_column(GTK_TREE_VIEW(vf->listview), FILE_VIEW_COLUMN_FORMATTED);
     vflist_populate_view(vf, FALSE);
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
+VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_column_cb, vf, NULL);
     if (vf->list && vflist_selection_count(vf, NULL) == 0)
     {
         if (vf->layout)
@@ -1848,7 +1931,7 @@ static void vflist_listview_color_cb(GtkTreeViewColumn *tree_column, GtkCellRend
              "cell-background-set", set, NULL);
 }
 
-static void vflist_listview_add_column(ViewFile *vf, gint n, const gchar *title, gboolean image, gboolean right_justify, gboolean expand)
+static void vflist_listview_add_column(ViewFile *vf, gint n, const gchar *title, gboolean image, gboolean right_justify, gboolean expand, gint width)
 {
     GtkTreeViewColumn *column;
     GtkCellRenderer *renderer;
@@ -1859,7 +1942,9 @@ static void vflist_listview_add_column(ViewFile *vf, gint n, const gchar *title,
 
     if (!image)
     {
-        gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+        gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
+        gtk_tree_view_column_set_fixed_width(column, width);
+        //gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
         renderer = gtk_cell_renderer_text_new();
         if (right_justify)
         {
@@ -1967,7 +2052,6 @@ gboolean vflist_set_fd(ViewFile *vf, FileData *dir_fd)
     vf->list = NULL;
 
     ret = vf_refresh(vf);
-    gtk_tree_view_columns_autosize(GTK_TREE_VIEW(vf->listview));
     return ret;
 }
 
@@ -1981,6 +2065,8 @@ void vflist_destroy_cb(GtkWidget *widget, gpointer data)
     vflist_select_idle_cancel(vf);
     vf_refresh_idle_cancel(vf);
     vf_thumb_stop(vf);
+
+    g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
 
     filelist_free(vf->list);
 }
@@ -2019,6 +2105,7 @@ ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd)
 
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(vf->listview), FALSE);
     gtk_tree_view_set_enable_search(GTK_TREE_VIEW(vf->listview), FALSE);
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(vf->listview), TRUE);
 
     column = 0;
 
@@ -2029,21 +2116,24 @@ ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd)
         column++;
     }
 
-    vflist_listview_add_column(vf, FILE_COLUMN_THUMB, "", TRUE, FALSE, FALSE);
+    vflist_listview_add_column(vf, FILE_COLUMN_THUMB, "", TRUE, FALSE, FALSE, 0);
     g_assert(column == FILE_VIEW_COLUMN_THUMB);
     column++;
 
-    vflist_listview_add_column(vf, FILE_COLUMN_FORMATTED, _("Name"), FALSE, FALSE, TRUE);
+    vflist_listview_add_column(vf, FILE_COLUMN_FORMATTED, _("Name"), FALSE, FALSE, FALSE, 250);
     g_assert(column == FILE_VIEW_COLUMN_FORMATTED);
     column++;
 
-    vflist_listview_add_column(vf, FILE_COLUMN_SIZE, _("Size"), FALSE, TRUE, FALSE);
+    vflist_listview_add_column(vf, FILE_COLUMN_SIZE, _("Size"), FALSE, TRUE, FALSE, 100);
     g_assert(column == FILE_VIEW_COLUMN_SIZE);
     column++;
 
-    vflist_listview_add_column(vf, FILE_COLUMN_DATE, _("Date"), FALSE, TRUE, FALSE);
+    vflist_listview_add_column(vf, FILE_COLUMN_DATE, _("Date"), FALSE, TRUE, FALSE, 140);
     g_assert(column == FILE_VIEW_COLUMN_DATE);
     column++;
+
+    g_signal_connect(vf->listview, "scroll-event", G_CALLBACK(vflist_scroll_event_cb), vf);
+    g_signal_connect(vf->listview, "realize", G_CALLBACK(vflist_realize_cb), vf);
 
     vflist_register_notify(vf);
     return vf;
@@ -2062,7 +2152,6 @@ void vflist_thumb_set(ViewFile *vf, gboolean enable)
     if (vf->layout)
     {
         vflist_populate_view(vf, TRUE);
-        gtk_tree_view_columns_autosize(GTK_TREE_VIEW(vf->listview));
     }
 }
 
