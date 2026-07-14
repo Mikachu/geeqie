@@ -1061,8 +1061,8 @@ void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
     lw->image_pending_fd = fd;
     layout_list_sync_fd(lw, fd);
     g_clear_handle_id(&lw->image_pending_idle_id, g_source_remove);
-    //lw->image_pending_idle_id = g_idle_add((GSourceFunc)layout_image_load_idle_cb, lw);
-    lw->image_pending_idle_id = g_timeout_add_full(G_PRIORITY_HIGH, 50, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
+    lw->image_pending_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
+    //lw->image_pending_idle_id = g_timeout_add_full(G_PRIORITY_HIGH_IDLE, 50, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
 
     if (fd)
         image_chain_append_end(fd->path);

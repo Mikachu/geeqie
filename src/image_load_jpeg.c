@@ -250,6 +250,19 @@ static void set_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
     src->next_input_byte = (JOCTET*)buffer;
 }
 
+struct progress_mgr_data {
+    struct jpeg_progress_mgr pub;
+    ImageLoaderJpeg *lj;
+    struct error_handler_data *jerr;
+};
+
+static void
+progress_monitor(j_common_ptr cinfo)
+{
+    struct progress_mgr_data *pmgr = (struct progress_mgr_data *)cinfo->progress;
+    if (g_atomic_int_get(&pmgr->lj->abort))
+        siglongjmp(pmgr->jerr->setjmp_buffer, 1);
+}
 
 static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsize count, GError **error)
 {
@@ -359,11 +372,18 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
             break;
         }
     }
+    struct progress_mgr_data pmgr;
+    pmgr.pub.progress_monitor = progress_monitor;
+    pmgr.lj = lj;
+    pmgr.jerr = &jerr;
+    cinfo.progress = (struct jpeg_progress_mgr *)&pmgr;
+
     jpeg_calc_output_dimensions(&cinfo);
     if (lj->stereo)
     {
         cinfo2.scale_num = cinfo.scale_num;
         cinfo2.scale_denom = cinfo.scale_denom;
+        cinfo2.progress = (struct jpeg_progress_mgr *)&pmgr;
         jpeg_calc_output_dimensions(&cinfo2);
         jpeg_start_decompress(&cinfo2);
     }
