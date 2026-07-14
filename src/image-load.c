@@ -797,7 +797,7 @@ void image_loader_free_async(ImageLoader *il)
 {
     if (!il) return;
     if (!il->thread ||
-        g_atomic_int_get(&image_loader_async_free_count) >= 3)
+        g_atomic_int_get(&image_loader_async_free_count) >= 5)
     {
         image_loader_free(il);
         return;
