@@ -38,6 +38,11 @@
 gint global_file_data_count = 0;
 #endif
 
+typedef struct {
+    struct stat sbuf;
+    gchar *path;
+} DirEntry;
+
 static GHashTable *file_data_pool = NULL;
 static GHashTable *file_data_planned_change_hash = NULL;
 
@@ -1176,6 +1181,140 @@ static gboolean filelist_read_real(const gchar *dir_path, GList **files, GList *
     if (basename_hash) file_data_basename_hash_free(basename_hash);
 
     return TRUE;
+}
+
+static gboolean filelist_read_done_cb(gpointer data)
+{
+    DirLoadData *dld = data;
+
+    if (!g_atomic_int_get(&dld->cancel) && dld->entries)
+    {
+        GHashTable *basename_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+        GList *files = NULL;
+        GList *dirs = NULL;
+
+        for (guint i = 0; i < dld->entries->len; i++)
+        {
+            DirEntry *entry = &g_array_index(dld->entries, DirEntry, i);
+            gboolean is_dir = S_ISDIR(entry->sbuf.st_mode);
+            FileData *fd = file_data_new_local(entry->path, &entry->sbuf, is_dir);
+
+            if (is_dir)
+                dirs = g_list_prepend(dirs, fd);
+            else
+            {
+                files = g_list_prepend(files, fd);
+                if (fd->sidecar_priority && !fd->disable_grouping)
+                    file_data_basename_hash_insert(basename_hash, fd);
+            }
+        }
+
+        g_hash_table_foreach(basename_hash, file_data_basename_hash_to_sidecars, NULL);
+        file_data_basename_hash_free(basename_hash);
+        dld->files = filelist_filter_out_sidecars(files);
+        dld->dirs = dirs;
+        dld->success = TRUE;
+    }
+
+    if (dld->entries)
+    {
+        for (guint i = 0; i < dld->entries->len; i++)
+            g_free(g_array_index(dld->entries, DirEntry, i).path);
+        g_array_free(dld->entries, TRUE);
+        dld->entries = NULL;
+    }
+
+    if (dld->done_cb)
+        dld->done_cb(dld);
+
+    g_free(dld->dir_path);
+    g_free(dld);
+    return G_SOURCE_REMOVE;
+}
+
+static gpointer filelist_read_thread(gpointer data)
+{
+    DirLoadData *dld = data;
+    DIR *dp;
+    struct dirent *dir;
+    gchar *pathl;
+    gint (*stat_func)(const gchar *path, struct stat *buf);
+    GArray *entries = g_array_new(FALSE, FALSE, sizeof(DirEntry));
+
+    pathl = path_from_utf8(dld->dir_path);
+    if (!pathl) goto done;
+
+    dp = opendir(pathl);
+    if (!dp) { g_free(pathl); goto done; }
+
+    stat_func = dld->follow_symlinks ? stat : lstat;
+
+    while ((dir = readdir(dp)) != NULL)
+    {
+        struct stat ent_sbuf;
+        const gchar *name = dir->d_name;
+        gchar *filepath;
+
+        if (!options->file_filter.show_hidden_files && is_hidden_file(name))
+            continue;
+
+        if (g_atomic_int_get(&dld->cancel))
+        {
+            closedir(dp);
+            g_free(pathl);
+            return NULL;
+        }
+
+        errno = 0;
+        filepath = g_build_filename(pathl, name, NULL);
+
+        if (dir->d_type == DT_DIR ||
+            ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) &&
+             stat_func(filepath, &ent_sbuf) >= 0 &&
+             S_ISDIR(ent_sbuf.st_mode)))
+        {
+            /* directory — no filter_name_exists check */
+            if (!(name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) &&
+                strcmp(name, GQ_CACHE_LOCAL_THUMB) != 0 &&
+                strcmp(name, GQ_CACHE_LOCAL_METADATA) != 0 &&
+                strcmp(name, THUMB_FOLDER_LOCAL) != 0 &&
+                ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) ||
+                 stat_func(filepath, &ent_sbuf) >= 0))
+            {
+                DirEntry entry = { ent_sbuf, g_steal_pointer(&filepath) };
+                g_array_append_val(entries, entry);
+            }
+        }
+        else
+        {
+            /* file — filter first, then stat only if needed */
+            if (filter_name_exists(name) &&
+                ((dir->d_type == DT_UNKNOWN || dir->d_type == DT_LNK) ||
+                 stat_func(filepath, &ent_sbuf) >= 0))
+            {
+                DirEntry entry = { ent_sbuf, g_steal_pointer(&filepath) };
+                g_array_append_val(entries, entry);
+            }
+        }
+
+        if (errno == EOVERFLOW)
+            log_printf("stat(): EOVERFLOW, skip '%s'", filepath);
+
+        g_free(filepath);
+    }
+
+    closedir(dp);
+    g_free(pathl);
+
+done:
+    dld->entries = entries;
+    g_idle_add_full(G_PRIORITY_HIGH_IDLE, filelist_read_done_cb, dld, NULL);
+    return NULL;
+}
+
+GThread *filelist_read_async(gpointer data)
+{
+    return g_thread_new("filelist_read", filelist_read_thread, data);
 }
 
 gboolean filelist_read(FileData *dir_fd, GList **files, GList **dirs)
