@@ -70,6 +70,7 @@ GList *filelist_insert_sort(GList *list, FileData *fd, SortType method, gboolean
 GList *filelist_sort_full(GList *list, SortType method, gboolean ascend, GCompareFunc cb);
 GList *filelist_insert_sort_full(GList *list, gpointer data, SortType method, gboolean ascend, GCompareFunc cb);
 
+GThread *filelist_read_async(gpointer data);
 gboolean filelist_read(FileData *dir_fd, GList **files, GList **dirs);
 gboolean filelist_read_lstat(FileData *dir_fd, GList **files, GList **dirs);
 void filelist_free(GList *list);
