@@ -391,7 +391,7 @@ AC_ARG_ENABLE([lua],
     [liblua=$enableval], [liblua=auto])
 
 if test "x${liblua}" != "xno"; then
-  PKG_CHECK_MODULES(LUA, lua5.1 >= 5.1,
+  PKG_CHECK_MODULES(LUA, lua >= 5.1,
     [
       HAVE_LUA=yes
       AC_DEFINE(HAVE_LUA, 1, [define to enable lua support])
