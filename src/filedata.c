@@ -568,7 +568,6 @@ static void file_data_free(FileData *fd)
 {
     g_assert(fd->magick == FD_MAGICK);
     g_assert(fd->ref == 0);
-    g_assert(!fd->locked);
 
 #ifdef DEBUG_FILEDATA
     global_file_data_count--;
@@ -594,18 +593,18 @@ static void file_data_free(FileData *fd)
 /**
  * \brief Checks if the FileData is referenced
  *
- * Checks the refcount and whether the FileData is locked.
+ * Checks the refcount.
  */
 static gboolean file_data_check_has_ref(FileData *fd)
 {
-    return fd->ref > 0 || fd->locked;
+    return fd->ref > 0;
 }
 
 /**
  * \brief Consider freeing a FileData.
  *
  * This function will free a FileData and its children provided that neither its parent nor it has
- * a positive refcount, and provided that neither is locked.
+ * a positive refcount.
  */
 static void file_data_consider_free(FileData *fd)
 {
@@ -651,91 +650,14 @@ void file_data_unref(FileData *fd)
 
     fd->ref--;
 #ifdef DEBUG_FILEDATA
-    DEBUG_2("file_data_unref fd=%p (%d:%d): '%s' @ %s:%d", fd, fd->ref, fd->locked, fd->path,
+    DEBUG_2("file_data_unref fd=%p (%d): '%s' @ %s:%d", fd, fd->ref, fd->path,
         file, line);
 #else
-    DEBUG_2("file_data_unref fd=%p (%d:%d): '%s'", fd, fd->ref, fd->locked, fd->path);
+    DEBUG_2("file_data_unref fd=%p (%d): '%s'", fd, fd->ref, fd->path);
 #endif
 
     // Free FileData if it's no longer ref'd
     file_data_consider_free(fd);
-}
-
-/**
- * \brief Lock the FileData in memory.
- *
- * This allows the caller to prevent a FileData from being freed, even after its refcount is zero.
- * This is intended to be used in cases where a FileData _should_ stay in memory as an optimization,
- * even if the code would continue to function properly even if the FileData were freed.  Code that
- * _requires_ the FileData to remain in memory should continue to use file_data_(un)ref.
- * <p />
- * Note: This differs from file_data_ref in that the behavior is reentrant -- after N calls to
- * file_data_lock, a single call to file_data_unlock will unlock the FileData.
- */
-void file_data_lock(FileData *fd)
-{
-    if (fd == NULL) return;
-    if (fd->magick != FD_MAGICK) DEBUG_0("fd magick mismatch fd=%p", fd);
-
-    g_assert(fd->magick == FD_MAGICK);
-    fd->locked = TRUE;
-
-    DEBUG_2("file_data_ref fd=%p (%d): '%s'", fd, fd->ref, fd->path);
-}
-
-/**
- * \brief Reset the maintain-FileData-in-memory lock
- *
- * This again allows the FileData to be freed when its refcount drops to zero.  Automatically frees
- * the FileData if its refcount is already zero (which will happen if the lock is the only thing
- * keeping it from being freed.
- */
-void file_data_unlock(FileData *fd)
-{
-    if (fd == NULL) return;
-    if (fd->magick != FD_MAGICK) DEBUG_0("fd magick mismatch fd=%p", fd);
-
-    g_assert(fd->magick == FD_MAGICK);
-    fd->locked = FALSE;
-
-    // Free FileData if it's no longer ref'd
-    file_data_consider_free(fd);
-}
-
-/**
- * \brief Lock all of the FileDatas in the provided list
- *
- * \see file_data_lock(FileData)
- */
-void file_data_lock_list(GList *list)
-{
-    GList *work;
-
-    work = list;
-    while (work)
-    {
-        FileData *fd = work->data;
-        work = work->next;
-        file_data_lock(fd);
-    }
-}
-
-/**
- * \brief Unlock all of the FileDatas in the provided list
- *
- * \see file_data_unlock(FileData)
- */
-void file_data_unlock_list(GList *list)
-{
-    GList *work;
-
-    work = list;
-    while (work)
-    {
-        FileData *fd = work->data;
-        work = work->next;
-        file_data_unlock(fd);
-    }
 }
 
 /*
