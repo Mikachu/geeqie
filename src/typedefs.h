@@ -851,6 +851,7 @@ struct _ViewFileInfoList
     gboolean thumbs_enabled;
     gboolean notify_registered;
 
+    guint autosize_idle_id;
     guint select_idle_id; /* event source id */
 };
 
