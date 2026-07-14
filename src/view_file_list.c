@@ -152,25 +152,9 @@ static gboolean vflist_store_clear_cb(GtkTreeModel *model, GtkTreePath *path, Gt
     return FALSE;
 }
 
-static void vflist_store_clear(ViewFile *vf, gboolean unlock_files)
+static void vflist_store_clear(ViewFile *vf)
 {
     GtkTreeModel *store;
-    GList *files = NULL;
-
-    if (unlock_files && vf->marks_enabled)
-    {
-        // unlock locked files in this directory
-        filelist_read(vf->dir_fd, &files, NULL);
-        GList *work = files;
-        while (work)
-        {
-            FileData *fd = work->data;
-            work = work->next;
-            file_data_unlock(fd);
-            file_data_unref(fd);  // undo the ref that got added in filelist_read
-        }
-        g_list_free(files);
-    }
 
     GtkTreePath *scroll_path = NULL;
     if (gtk_widget_get_realized(vf->listview))
@@ -1709,19 +1693,6 @@ gboolean vflist_refresh(ViewFile *vf)
 
         ret = filelist_read(vf->dir_fd, &vf->list, NULL);
 
-        if (vf->marks_enabled)
-            {
-                // When marks are enabled, lock FileDatas so that we don't end up re-parsing XML
-                // each time a mark is changed.
-                file_data_lock_list(vf->list);
-            }
-            else
-        {
-            // FIXME: only do this when needed (aka when we just switched from
-            // FIXME: marks-enabled to marks-disabled)
-            file_data_unlock_list(vf->list);
-        }
-
         vf->list = file_data_filter_marks_list(vf->list, vf_marks_get_filter(vf));
         file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
 
@@ -1904,7 +1875,7 @@ gboolean vflist_set_fd(ViewFile *vf, FileData *dir_fd)
     vf->dir_fd = file_data_ref(dir_fd);
 
     /* force complete reload */
-    vflist_store_clear(vf, TRUE);
+    vflist_store_clear(vf);
 
     filelist_free(vf->list);
     vf->list = NULL;
@@ -1919,7 +1890,7 @@ void vflist_destroy_cb(GtkWidget *widget, gpointer data)
     ViewFile *vf = data;
 
     file_data_unregister_notify_func(vf_notify_cb, vf);
-    vflist_store_clear(vf, FALSE);
+    vflist_store_clear(vf);
 
     vflist_select_idle_cancel(vf);
     vf_refresh_idle_cancel(vf);
@@ -2024,16 +1995,6 @@ void vflist_marks_set(ViewFile *vf, gboolean enable)
 
         if (col_idx <= FILE_COLUMN_MARKS_LAST && col_idx >= FILE_COLUMN_MARKS)
             gtk_tree_view_column_set_visible(column, enable);
-    }
-
-    if (enable)
-    {
-        // Previously disabled, which means that vf->list is complete
-        file_data_lock_list(vf->list);
-    }
-    else
-    {
-        // Previously enabled, which means that vf->list is incomplete
     }
 
     g_list_free(columns);
