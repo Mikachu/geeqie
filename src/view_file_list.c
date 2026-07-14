@@ -110,6 +110,7 @@ static gint vflist_find_row(const ViewFile *vf, const FileData *fd, GtkTreeIter 
     ViewFileFindRowData data = {fd, iter, FALSE, 0};
 
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
+    if (!store) return -1;
     gtk_tree_model_foreach(store, vflist_find_row_cb, &data);
 
     if (data.found)
@@ -161,10 +162,22 @@ static void vflist_store_clear(ViewFile *vf)
         gtk_tree_view_get_visible_range(GTK_TREE_VIEW(vf->listview), &scroll_path, NULL);
     g_object_set_data(G_OBJECT(vf->listview), "scroll_path", scroll_path);
 
-    store = g_object_ref(gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview)));
-
-    gtk_tree_view_set_model(GTK_TREE_VIEW(vf->listview), NULL);
-    g_object_set_data(G_OBJECT(vf->listview), "detached_store", store);
+    store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
+    if (!store)
+    {
+        /* already detached — just clear the existing detached store */
+        store = g_object_get_data(G_OBJECT(vf->listview), "detached_store");
+        if (!store) return;
+        gtk_tree_model_foreach(store, vflist_store_clear_cb, NULL);
+        gtk_list_store_clear(GTK_LIST_STORE(store));
+        return;
+    }
+    else
+    {
+        g_object_ref(store);
+        gtk_tree_view_set_model(GTK_TREE_VIEW(vf->listview), NULL);
+        g_object_set_data(G_OBJECT(vf->listview), "detached_store", store);
+    }
 
     gtk_tree_model_foreach(store, vflist_store_clear_cb, NULL);
     gtk_list_store_clear(GTK_LIST_STORE(store));
@@ -956,6 +969,10 @@ void vflist_sort_set(ViewFile *vf, SortType type, gboolean ascend)
     GList *work;
 
     if (vf->sort_method == type && vf->sort_ascend == ascend) return;
+
+    vf->sort_method = type;
+    vf->sort_ascend = ascend;
+
     if (!vf->list) return;
 
     work = vf->list;
@@ -967,9 +984,6 @@ void vflist_sort_set(ViewFile *vf, SortType type, gboolean ascend)
         i++;
         work = work->next;
     }
-
-    vf->sort_method = type;
-    vf->sort_ascend = ascend;
 
     vf->list = filelist_sort(vf->list, vf->sort_method, vf->sort_ascend);
 
@@ -1491,6 +1505,24 @@ void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
     g_signal_emit_by_name(selection, "changed");
 }
 
+static void vflist_register_notify(ViewFile *vf)
+{
+    if (!VFLIST(vf)->notify_registered)
+    {
+        file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+        VFLIST(vf)->notify_registered = TRUE;
+    }
+}
+
+static void vflist_unregister_notify(ViewFile *vf)
+{
+    if (VFLIST(vf)->notify_registered)
+    {
+        file_data_unregister_notify_func(vf_notify_cb, vf);
+        VFLIST(vf)->notify_registered = FALSE;
+    }
+}
+
 void vflist_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
 {
     GtkTreeModel *store;
@@ -1515,7 +1547,7 @@ void vflist_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
 
         /* the change has a very limited range and the standard notification would trigger
            complete re-read of the directory - try to do only minimal update instead */
-        file_data_unregister_notify_func(vf_notify_cb, vf); /* we don't need the notification */
+        vflist_unregister_notify(vf); /* we don't need the notification */
 
         switch (mode)
         {
@@ -1538,7 +1570,7 @@ void vflist_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
         }
 
 
-        file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+        vflist_register_notify(vf);
 
         work = work->next;
     }
@@ -1678,6 +1710,45 @@ static void vflist_populate_view(ViewFile *vf, gboolean force)
     vf_thumb_update(vf);
 }
 
+static gboolean vflist_dir_load_done_cb(gpointer data)
+{
+    DirLoadData *dld = data;
+    ViewFile *vf = dld->done_data;
+
+    if (g_atomic_int_get(&dld->cancel) || dld->generation != vf->dir_load_generation)
+    {
+        /* stale load — discard results */
+        filelist_free(dld->files);
+        filelist_free(dld->dirs);
+        filelist_free(dld->old_list);
+        return G_SOURCE_REMOVE;
+    }
+
+    GList *old_list = dld->old_list;
+    vf->list = dld->files;
+    dld->files = NULL;
+
+    vf->list = file_data_filter_marks_list(vf->list, vf_marks_get_filter(vf));
+    vflist_register_notify(vf);
+    vf->list = filelist_sort(vf->list, vf->sort_method, vf->sort_ascend);
+
+    vflist_populate_view(vf, FALSE);
+    if (vf->list && vflist_selection_count(vf, NULL) == 0)
+    {
+        if (vf->layout)
+            /* keep currently displayed image */
+            layout_list_sync_fd(vf->layout, layout_image_get_fd(vf->layout));
+        if (vflist_selection_count(vf, NULL) == 0)
+            vflist_select_by_fd(vf, vf->list->data);
+    }
+
+    filelist_free(dld->dirs);
+    filelist_free(old_list);
+
+    return G_SOURCE_REMOVE;
+}
+
+#define ASYNC_STAT
 gboolean vflist_refresh(ViewFile *vf)
 {
     GList *old_list;
@@ -1689,15 +1760,30 @@ gboolean vflist_refresh(ViewFile *vf)
     DEBUG_1("%s vflist_refresh: read dir", get_exec_time());
     if (vf->dir_fd)
     {
-        file_data_unregister_notify_func(vf_notify_cb, vf); /* we don't need the notification of changes detected by filelist_read */
+        vflist_unregister_notify(vf); /* we don't need the notification of changes detected by filelist_read */
 
+#ifdef ASYNC_STAT
+        vf->dir_load_generation++;
+
+        DirLoadData *dld = g_new0(DirLoadData, 1);
+        dld->dir_path = g_strdup(vf->dir_fd->path);
+        dld->old_list = old_list;
+        dld->generation = vf->dir_load_generation;
+        dld->done_cb = vflist_dir_load_done_cb;
+        dld->done_data = vf;
+        dld->follow_symlinks = TRUE;
+
+        filelist_read_async(dld);
+        return TRUE;
+#else
         ret = filelist_read(vf->dir_fd, &vf->list, NULL);
 
         vf->list = file_data_filter_marks_list(vf->list, vf_marks_get_filter(vf));
-        file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+        vflist_register_notify(vf);
 
         DEBUG_1("%s vflist_refresh: sort", get_exec_time());
         vf->list = filelist_sort(vf->list, vf->sort_method, vf->sort_ascend);
+#endif
     }
 
     DEBUG_1("%s vflist_refresh: populate view", get_exec_time());
@@ -1823,7 +1909,7 @@ static void vflist_listview_mark_toggled_cb(GtkCellRendererToggle *cell, gchar *
 
     /* the change has a very limited range and the standard notification would trigger
        complete re-read of the directory - try to do only minimal update instead */
-    file_data_unregister_notify_func(vf_notify_cb, vf);
+    vflist_unregister_notify(vf);
     file_data_set_mark(fd, col_idx - FILE_COLUMN_MARKS, marked);
     if (!file_data_filter_marks(fd, vf_marks_get_filter(vf))) /* file no longer matches the filter -> remove it */
     {
@@ -1834,7 +1920,7 @@ static void vflist_listview_mark_toggled_cb(GtkCellRendererToggle *cell, gchar *
         /* mark functions can have various side effects - update all columns to be sure */
         vflist_setup_iter(vf, GTK_LIST_STORE(store), &iter, fd);
     }
-    file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+    vflist_register_notify(vf);
 
     gtk_tree_path_free(path);
 }
@@ -1889,7 +1975,7 @@ void vflist_destroy_cb(GtkWidget *widget, gpointer data)
 {
     ViewFile *vf = data;
 
-    file_data_unregister_notify_func(vf_notify_cb, vf);
+    vflist_unregister_notify(vf);
     vflist_store_clear(vf);
 
     vflist_select_idle_cancel(vf);
@@ -1959,7 +2045,7 @@ ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd)
     g_assert(column == FILE_VIEW_COLUMN_DATE);
     column++;
 
-    file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+    vflist_register_notify(vf);
     return vf;
 }
 

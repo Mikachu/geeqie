@@ -552,6 +552,20 @@ struct _FileData {
     GList *cached_metadata;
 };
 
+typedef struct {
+    gchar *dir_path;
+    gboolean follow_symlinks;
+    gint cancel;            /* atomic: set to 1 to cancel */
+    GArray *entries;        /* output: array of DirEntry, NULL until thread fills it */
+    gboolean success;
+    GList *files;           /* filled by filelist_read_done_cb */
+    GList *dirs;            /* filled by filelist_read_done_cb */
+    guint generation;       /* vf->dir_load_generation at launch time */
+    GList *old_list;        /* old vf->list to free after update */
+    GSourceFunc done_cb;
+    gpointer done_data;
+} DirLoadData;
+
 struct _LayoutOptions
 {
     gchar *id;
@@ -793,6 +807,10 @@ struct _ViewFile
     FileData *dir_fd;
     GList *list;
 
+    /* threaded stat data */
+    guint dir_load_generation;   /* incremented on each new load */
+    guint dir_load_idle_id;      /* idle source ID, for cancellation */
+
     SortType sort_method;
     gboolean sort_ascend;
 
@@ -831,6 +849,7 @@ struct _ViewFileInfoList
     FileData *select_fd;
 
     gboolean thumbs_enabled;
+    gboolean notify_registered;
 
     guint select_idle_id; /* event source id */
 };
