@@ -176,36 +176,6 @@ static void fullscreen_image_complete_cb(ImageWindow *imd, gboolean preload, gpo
     if (!preload) fullscreen_mouse_set_busy(fs, FALSE);
 }
 
-#define XSCREENSAVER_BINARY "xscreensaver-command"
-#define XSCREENSAVER_COMMAND    "xscreensaver-command -deactivate >&- 2>&- &"
-
-static void fullscreen_saver_deactivate(void)
-{
-    static gboolean checked = FALSE;
-    static gboolean found = FALSE;
-
-    if (!checked)
-    {
-        checked = TRUE;
-        found = file_in_path(XSCREENSAVER_BINARY);
-    }
-
-    if (found)
-    {
-        runcmd(XSCREENSAVER_COMMAND);
-    }
-}
-
-static gboolean fullscreen_saver_block_cb(gpointer data)
-{
-    if (options->fullscreen.disable_saver)
-    {
-        fullscreen_saver_deactivate();
-    }
-
-    return TRUE;
-}
-
 static gboolean fullscreen_delete_cb(GtkWidget *widget, GdkEventAny *event, gpointer data)
 {
     FullScreenData *fs = data;
@@ -320,12 +290,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
                G_CALLBACK(fullscreen_mouse_moved), fs);
     clear_mouse_cursor(fs->window, fs->cursor_state);
 
-    /* set timer to block screen saver */
-    fs->saver_block_id = g_timeout_add(60 * 1000, fullscreen_saver_block_cb, fs);
-
-    /* hide normal window
-     * FIXME: properly restore this window on show
-     */
+    /* hide normal window */
     if (fs->same_region)
     {
 #ifdef HIDE_WINDOW_IN_FULLSCREEN
@@ -340,8 +305,6 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 void fullscreen_stop(FullScreenData *fs)
 {
     if (!fs) return;
-
-    if (fs->saver_block_id) g_source_remove(fs->saver_block_id);
 
     fullscreen_hide_mouse_disable(fs);
     fullscreen_busy_mouse_disable(fs);
