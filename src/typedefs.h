@@ -889,8 +889,6 @@ struct _FullScreenData
 
     gint cursor_state;
 
-    guint saver_block_id; /* event source id */
-
     void (*stop_func)(FullScreenData *, gpointer);
     gpointer stop_data;
 
