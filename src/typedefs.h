@@ -562,6 +562,7 @@ typedef struct {
     GList *dirs;            /* filled by filelist_read_done_cb */
     guint generation;       /* vf->dir_load_generation at launch time */
     GList *old_list;        /* old vf->list to free after update */
+    GList *selected;
     GSourceFunc done_cb;
     gpointer done_data;
 } DirLoadData;
