@@ -76,4 +76,3 @@ void vf_thumb_cleanup(ViewFile *vf);
 void vf_thumb_stop(ViewFile *vf);
 
 #endif /* VIEW_FILE_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

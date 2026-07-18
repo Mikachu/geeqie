@@ -22,7 +22,7 @@
 #define WINDOW_H
 
 GtkWidget *window_new(GtkWindowType type, const gchar *role, const gchar *icon,
-		      const gchar *icon_file, const gchar *subtitle);
+              const gchar *icon_file, const gchar *subtitle);
 void window_set_icon(GtkWidget *window, const gchar *icon, const gchar *file);
 gboolean window_maximized(GtkWidget *window);
 
@@ -30,4 +30,3 @@ void help_window_show(const gchar *key);
 
 
 #endif /* WINDOW_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

@@ -28,4 +28,3 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
 
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

@@ -22,12 +22,12 @@
 #define VIEW_DIR_H
 
 enum {
-	DIR_COLUMN_POINTER = 0,
-	DIR_COLUMN_ICON,
-	DIR_COLUMN_NAME,
-	DIR_COLUMN_COLOR,
-	DIR_COLUMN_DATE,
-	DIR_COLUMN_COUNT
+    DIR_COLUMN_POINTER = 0,
+    DIR_COLUMN_ICON,
+    DIR_COLUMN_NAME,
+    DIR_COLUMN_COLOR,
+    DIR_COLUMN_DATE,
+    DIR_COLUMN_COUNT
 };
 
 #define VIEW_DIR_TYPES_COUNT 2
@@ -65,4 +65,3 @@ gboolean vd_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);
 gboolean vd_press_cb(GtkWidget *widget,  GdkEventButton *bevent, gpointer data);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

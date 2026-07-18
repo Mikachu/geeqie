@@ -26,8 +26,8 @@
 #include "similar.h"
 
 
-#define GQ_CACHE_THUMB		"thumbnails"
-#define GQ_CACHE_METADATA    	"metadata"
+#define GQ_CACHE_THUMB      "thumbnails"
+#define GQ_CACHE_METADATA       "metadata"
 
 #define GQ_CACHE_LOCAL_THUMB    ".thumbnails"
 #define GQ_CACHE_LOCAL_METADATA ".metadata"
@@ -39,26 +39,26 @@
 
 
 typedef enum {
-	CACHE_TYPE_THUMB,
-	CACHE_TYPE_SIM,
-	CACHE_TYPE_METADATA,
-	CACHE_TYPE_XMP_METADATA
+    CACHE_TYPE_THUMB,
+    CACHE_TYPE_SIM,
+    CACHE_TYPE_METADATA,
+    CACHE_TYPE_XMP_METADATA
 } CacheType;
 
 typedef struct _CacheData CacheData;
 struct _CacheData
 {
-	gchar *path;
-	gint width;
-	gint height;
-	time_t date;
-	guchar md5sum[16];
-	ImageSimilarityData *sim;
+    gchar *path;
+    gint width;
+    gint height;
+    time_t date;
+    guchar md5sum[16];
+    ImageSimilarityData *sim;
 
-	gboolean dimensions;
-	gboolean have_date;
-	gboolean have_md5sum;
-	gboolean similarity;
+    gboolean dimensions;
+    gboolean have_date;
+    gboolean have_md5sum;
+    gboolean similarity;
 };
 
 gboolean cache_time_valid(const gchar *cache, const gchar *path);
@@ -83,4 +83,3 @@ const gchar *get_thumbnails_cache_dir(void);
 const gchar *get_metadata_cache_dir(void);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

@@ -71,4 +71,3 @@ FileData *vficon_thumb_next_fd(ViewFile *vf);
 void vficon_thumb_reset_all(ViewFile *vf);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

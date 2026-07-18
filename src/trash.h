@@ -26,4 +26,3 @@ gboolean file_util_safe_unlink(const gchar *path);
 gchar *file_util_safe_delete_status(void);
 
 #endif /* TRASH_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

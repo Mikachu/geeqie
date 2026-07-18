@@ -43,4 +43,3 @@ CollectInfo *collection_table_get_focus_info(CollectTable *ct);
 GList *collection_table_selection_get_list(CollectTable *ct);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

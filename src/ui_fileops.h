@@ -33,11 +33,11 @@
 void print_term(const gchar *text_utf8);
 
 #define printf_term(...) \
-	do { \
-		gchar *msg = g_strdup_printf(__VA_ARGS__); \
-		print_term(msg); \
-		g_free(msg); \
-	} while (0)
+    do { \
+        gchar *msg = g_strdup_printf(__VA_ARGS__); \
+        print_term(msg); \
+        g_free(msg); \
+    } while (0)
 
 #if GQ_DEBUG_PATH_UTF8
 #define path_to_utf8(path) path_to_utf8_debug(path, __FILE__, __LINE__)
@@ -111,4 +111,3 @@ gchar *md5_text_from_file_utf8(const gchar *path, const gchar *error_text);
 gboolean md5_get_digest_from_file_utf8(const gchar *path, guchar digest[16]);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

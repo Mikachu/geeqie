@@ -30,4 +30,3 @@ void bar_sort_close(GtkWidget *bar);
 void bar_sort_write_config(GtkWidget *bar, GString *outstr, gint indent);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

@@ -36,8 +36,7 @@ gchar *layout_config_order_to_text(gint a, gint b, gint c);
 void layout_config_order_from_text(const gchar *text, gint *a, gint *b, gint *c);
 
 void layout_config_parse(gint style, const gchar *order,
-			 LayoutLocation *a, LayoutLocation *b, LayoutLocation *c);
+             LayoutLocation *a, LayoutLocation *b, LayoutLocation *c);
 
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

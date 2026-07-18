@@ -72,8 +72,8 @@ gboolean read_bool_option(const gchar *option, const gchar *label, const gchar *
 
 typedef struct _GQParserFuncData GQParserFuncData;
 typedef struct _GQParserData GQParserData;
-typedef	void (* GQParserStartFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error);
-typedef	void (* GQParserEndFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error);
+typedef void (* GQParserStartFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error);
+typedef void (* GQParserEndFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error);
 
 void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_func, GQParserEndFunc end_func, gpointer data);
 void options_parse_func_pop(GQParserData *parser_data);
@@ -87,4 +87,3 @@ gboolean load_config_from_file(const gchar *utf8_path, gboolean startup);
 
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

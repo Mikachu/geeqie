@@ -29,7 +29,7 @@ extern GList *layout_window_list;
 
 LayoutWindow *layout_new(FileData *dir_fd, LayoutOptions *lop);
 LayoutWindow *layout_new_with_geometry(FileData *dir_fd, LayoutOptions *lop,
-				       const gchar *geometry);
+                       const gchar *geometry);
 LayoutWindow *layout_new_from_config(const gchar **attribute_names, const gchar **attribute_values, gboolean use_commandline);
 void layout_update_from_config(LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values);
 
@@ -121,4 +121,3 @@ void layout_info_pixel_set(LayoutWindow *lw, gboolean show);
 void layout_split_change(LayoutWindow *lw, ImageSplitMode mode);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

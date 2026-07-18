@@ -23,30 +23,30 @@
 #define BAR_H
 
 typedef enum {
-	PANE_UNDEF = 0,
-	PANE_COMMENT,
-	PANE_EXIF,
-	PANE_HISTOGRAM,
-	PANE_KEYWORDS,
-	PANE_GPS
+    PANE_UNDEF = 0,
+    PANE_COMMENT,
+    PANE_EXIF,
+    PANE_HISTOGRAM,
+    PANE_KEYWORDS,
+    PANE_GPS
 } PaneType;
 
 typedef struct _PaneData PaneData;
 
 struct _PaneData {
-	/* filled in by pane */
-	void (*pane_set_fd)(GtkWidget *pane, FileData *fd);
-	void (*pane_notify_selection)(GtkWidget *pane, gint count);
-	gint (*pane_event)(GtkWidget *pane, GdkEvent *event);
-	void (*pane_write_config)(GtkWidget *pane, GString *outstr, gint indent);
-	GtkWidget *title;
-	gboolean expanded;
-	gchar *id;
-	PaneType type;
+    /* filled in by pane */
+    void (*pane_set_fd)(GtkWidget *pane, FileData *fd);
+    void (*pane_notify_selection)(GtkWidget *pane, gint count);
+    gint (*pane_event)(GtkWidget *pane, GdkEvent *event);
+    void (*pane_write_config)(GtkWidget *pane, GString *outstr, gint indent);
+    GtkWidget *title;
+    gboolean expanded;
+    gchar *id;
+    PaneType type;
 
-	/* filled in by bar */
-	GtkWidget *bar;
-	LayoutWindow *lw;
+    /* filled in by bar */
+    GtkWidget *bar;
+    LayoutWindow *lw;
 };
 
 
@@ -79,4 +79,3 @@ gboolean bar_pane_translate_title(PaneType type, const gchar *id, gchar **title)
 const gchar *bar_pane_get_default_config(const gchar *id);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

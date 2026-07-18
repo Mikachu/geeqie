@@ -26,4 +26,3 @@ GtkWidget *bar_pane_histogram_new_from_config(const gchar **attribute_names, con
 void bar_pane_histogram_update_from_config(GtkWidget *pane, const gchar **attribute_names, const gchar **attribute_values);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

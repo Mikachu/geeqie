@@ -29,4 +29,3 @@ void bar_pane_keywords_update_from_config(GtkWidget *pane, const gchar **attribu
 GList *keyword_list_pull(GtkWidget *text_widget);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

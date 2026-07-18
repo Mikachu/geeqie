@@ -57,12 +57,12 @@ gboolean meta_data_set_keyword_mark(FileData *fd, gint n, gboolean value, gpoint
 
 
 enum {
-	KEYWORD_COLUMN_MARK,
-	KEYWORD_COLUMN_NAME,
-	KEYWORD_COLUMN_CASEFOLD,
-	KEYWORD_COLUMN_IS_KEYWORD,
-	KEYWORD_COLUMN_HIDE_IN,
-	KEYWORD_COLUMN_COUNT
+    KEYWORD_COLUMN_MARK,
+    KEYWORD_COLUMN_NAME,
+    KEYWORD_COLUMN_CASEFOLD,
+    KEYWORD_COLUMN_IS_KEYWORD,
+    KEYWORD_COLUMN_HIDE_IN,
+    KEYWORD_COLUMN_COUNT
 };
 
 extern GtkTreeStore *keyword_tree;
@@ -108,4 +108,3 @@ void keyword_tree_write_config(GString *outstr, gint indent);
 GtkTreeIter *keyword_add_from_config(GtkTreeStore *keyword_tree, GtkTreeIter *parent, const gchar **attribute_names, const gchar **attribute_values);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

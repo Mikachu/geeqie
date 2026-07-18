@@ -54,4 +54,3 @@ unsigned char ClayRGB1998_icc[] = {
   0x02, 0x33, 0x00, 0x00
 };
 unsigned int ClayRGB1998_icc_len = 580;
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

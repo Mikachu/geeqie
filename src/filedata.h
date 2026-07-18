@@ -162,4 +162,3 @@ gboolean file_data_register_real_time_monitor(FileData *fd);
 gboolean file_data_unregister_real_time_monitor(FileData *fd);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

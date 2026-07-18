@@ -36,4 +36,3 @@ size_t secure_fwrite(gconstpointer ptr, size_t size, size_t nmemb, SecureSaveInf
 gchar *secsave_strerror(SecureSaveErrno);
 
 #endif /* SECURE_SAVE_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
