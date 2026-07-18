@@ -131,11 +131,7 @@ LayoutWindow *layout_find_by_layout_id(const gchar *id)
     if (!id || !id[0]) return NULL;
 
     if (strcmp(id, LAYOUT_ID_CURRENT) == 0)
-    {
-        if (current_lw) return current_lw;
-        if (layout_window_list) return layout_window_list->data;
-        return NULL;
-    }
+        return current_lw;
 
     work = layout_window_list;
     while (work)
@@ -182,6 +178,12 @@ static gboolean layout_set_current_cb(GtkWidget *widget, GdkEventFocus *event, g
 {
     LayoutWindow *lw = data;
     current_lw = lw;
+    return FALSE;
+}
+
+static gboolean layout_clear_current_cb(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+    current_lw = NULL;
     return FALSE;
 }
 
@@ -2339,14 +2341,13 @@ LayoutWindow *layout_new_with_geometry(FileData *dir_fd, LayoutOptions *lop,
     g_signal_connect(G_OBJECT(lw->window), "focus-in-event",
              G_CALLBACK(layout_set_current_cb), lw);
 
+    g_signal_connect(G_OBJECT(lw->window), "focus-out-event",
+             G_CALLBACK(layout_clear_current_cb), lw);
+
     g_signal_connect(G_OBJECT(lw->window), "window-state-event",
              G_CALLBACK(layout_window_state_cb), lw);
 
     layout_keyboard_init(lw, lw->window);
-
-#ifdef HAVE_LIRC
-    layout_image_lirc_init(lw);
-#endif
 
     lw->main_box = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(lw->window), lw->main_box);
