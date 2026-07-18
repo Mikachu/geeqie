@@ -24,22 +24,22 @@
 
 
 GtkWidget *menu_item_add(GtkWidget *menu, const gchar *label,
-			 GCallback func, gpointer data);
+             GCallback func, gpointer data);
 GtkWidget *menu_item_add_stock(GtkWidget *menu, const gchar *label, const gchar *stock_id,
-			       GCallback func, gpointer data);
+                   GCallback func, gpointer data);
 GtkWidget *menu_item_add_sensitive(GtkWidget *menu, const gchar *label, gboolean sensitive,
-				   GCallback func, gpointer data);
+                   GCallback func, gpointer data);
 GtkWidget *menu_item_add_stock_sensitive(GtkWidget *menu, const gchar *label, const gchar *stock_id, gboolean sensitive,
-					 GCallback func, gpointer data);
+                     GCallback func, gpointer data);
 GtkWidget *menu_item_add_check(GtkWidget *menu, const gchar *label, gboolean active,
-			       GCallback func, gpointer data);
+                   GCallback func, gpointer data);
 GtkWidget *menu_item_add_radio(GtkWidget *menu, const gchar *label, gpointer item_data, gboolean active,
-			       GCallback func, gpointer data);
+                   GCallback func, gpointer data);
 void menu_item_add_divider(GtkWidget *menu);
 
 /* use to avoid mnemonics, for example filenames */
 GtkWidget *menu_item_add_simple(GtkWidget *menu, const gchar *label,
-				GCallback func, gpointer data);
+                GCallback func, gpointer data);
 
 GtkWidget *popup_menu_short_lived(void);
 

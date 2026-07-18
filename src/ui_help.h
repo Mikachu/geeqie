@@ -24,8 +24,8 @@
 
 
 GtkWidget *help_window_new(const gchar *title,
-			   const gchar *subclass,
-			   const gchar *path, const gchar *key);
+               const gchar *subclass,
+               const gchar *path, const gchar *key);
 void help_window_set_file(GtkWidget *window, const gchar *path, const gchar *key);
 void help_window_set_key(GtkWidget *window, const gchar *key);
 

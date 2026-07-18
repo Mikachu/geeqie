@@ -26,11 +26,11 @@
 typedef struct _ImageSimilarityData ImageSimilarityData;
 struct _ImageSimilarityData
 {
-	guint8 avg_r[1024];
-	guint8 avg_g[1024];
-	guint8 avg_b[1024];
+    guint8 avg_r[1024];
+    guint8 avg_g[1024];
+    guint8 avg_b[1024];
 
-	gboolean filled;
+    gboolean filled;
 };
 
 

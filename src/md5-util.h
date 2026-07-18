@@ -42,10 +42,10 @@
 
 
 typedef struct _MD5Context {
-	guint32 buf[4];
-	guint32 bits[2];
-	guchar in[64];
-	gint doByteReverse;
+    guint32 buf[4];
+    guint32 bits[2];
+    guchar in[64];
+    gint doByteReverse;
 } MD5Context;
 
 
@@ -65,5 +65,5 @@ gchar *md5_digest_to_text(guchar digest[16]);
 gboolean md5_digest_from_text(const gchar *text, guchar digest[16]);
 
 
-#endif	/* MD5_UTILS_H */
+#endif  /* MD5_UTILS_H */
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

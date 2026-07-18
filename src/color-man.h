@@ -23,17 +23,17 @@
 #define COLOR_MAN_H
 
 typedef enum {
-	COLOR_PROFILE_NONE = -1,
-	COLOR_PROFILE_MEM = -2,
-	COLOR_PROFILE_SRGB = 0,
-	COLOR_PROFILE_ADOBERGB,
-	COLOR_PROFILE_FILE,
+    COLOR_PROFILE_NONE = -1,
+    COLOR_PROFILE_MEM = -2,
+    COLOR_PROFILE_SRGB = 0,
+    COLOR_PROFILE_ADOBERGB,
+    COLOR_PROFILE_FILE,
 } ColorManProfileType;
 
 typedef enum {
-	COLOR_RETURN_SUCCESS = 0,
-	COLOR_RETURN_ERROR,
-	COLOR_RETURN_IMAGE_CHANGED
+    COLOR_RETURN_SUCCESS = 0,
+    COLOR_RETURN_ERROR,
+    COLOR_RETURN_IMAGE_CHANGED
 } ColorManReturnType;
 
 typedef struct _ColorMan ColorMan;
@@ -41,28 +41,28 @@ typedef void (* ColorManDoneFunc)(ColorMan *cm, ColorManReturnType success, gpoi
 
 
 struct _ColorMan {
-	ImageWindow *imd;
-	GdkPixbuf *pixbuf;
-	gint incremental_sync;
-	gint row;
+    ImageWindow *imd;
+    GdkPixbuf *pixbuf;
+    gint incremental_sync;
+    gint row;
 
-	gpointer profile;
+    gpointer profile;
 
-	guint idle_id; /* event source id */
+    guint idle_id; /* event source id */
 
-	ColorManDoneFunc func_done;
-	gpointer func_done_data;
+    ColorManDoneFunc func_done;
+    gpointer func_done_data;
 };
 
 
 ColorMan *color_man_new(ImageWindow *imd, GdkPixbuf *pixbuf,
-			ColorManProfileType input_type, const gchar *input_file,
-			ColorManProfileType screen_type, const gchar *screen_file,
-			guchar *screen_data, guint screen_data_len);
+            ColorManProfileType input_type, const gchar *input_file,
+            ColorManProfileType screen_type, const gchar *screen_file,
+            guchar *screen_data, guint screen_data_len);
 ColorMan *color_man_new_embedded(ImageWindow *imd, GdkPixbuf *pixbuf,
-				 guchar *input_data, guint input_data_len,
-				 ColorManProfileType screen_type, const gchar *screen_file,
-				 guchar *screen_data, guint screen_data_len);
+                 guchar *input_data, guint input_data_len,
+                 ColorManProfileType screen_type, const gchar *screen_file,
+                 guchar *screen_data, guint screen_data_len);
 void color_man_free(ColorMan *cm);
 
 void color_man_update(void);

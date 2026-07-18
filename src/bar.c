@@ -42,10 +42,10 @@
 typedef struct _KnownPanes KnownPanes;
 struct _KnownPanes
 {
-	PaneType type;
-	gchar *id;
-	gchar *title;
-	const gchar *config;
+    PaneType type;
+    gchar *id;
+    gchar *title;
+    const gchar *config;
 };
 
 static const gchar default_config_histogram[] =
@@ -172,417 +172,417 @@ static const gchar default_config_gps[] =
 
 static const KnownPanes known_panes[] = {
 /* default sidebar */
-	{PANE_HISTOGRAM,	"histogram",	N_("Histogram"),	default_config_histogram},
-	{PANE_COMMENT,		"title",	N_("Title"),		default_config_title},
-	{PANE_KEYWORDS,		"keywords",	N_("Keywords"),		default_config_keywords},
-	{PANE_COMMENT,		"comment",	N_("Comment"),		default_config_comment},
-	{PANE_EXIF,		"exif",		N_("Exif"),		default_config_exif},
+    {PANE_HISTOGRAM,    "histogram",    N_("Histogram"),    default_config_histogram},
+    {PANE_COMMENT,      "title",    N_("Title"),        default_config_title},
+    {PANE_KEYWORDS,     "keywords", N_("Keywords"),     default_config_keywords},
+    {PANE_COMMENT,      "comment",  N_("Comment"),      default_config_comment},
+    {PANE_EXIF,     "exif",     N_("Exif"),     default_config_exif},
 /* other pre-configured panes */
-	{PANE_EXIF,		"file_info",	N_("File info"),	default_config_file_info},
-	{PANE_EXIF,		"location",	N_("Location and GPS"),	default_config_location},
-	{PANE_EXIF,		"copyright",	N_("Copyright"),	default_config_copyright},
+    {PANE_EXIF,     "file_info",    N_("File info"),    default_config_file_info},
+    {PANE_EXIF,     "location", N_("Location and GPS"), default_config_location},
+    {PANE_EXIF,     "copyright",    N_("Copyright"),    default_config_copyright},
 #ifdef HAVE_LIBCHAMPLAIN
 #ifdef HAVE_LIBCHAMPLAIN_GTK
-	{PANE_GPS,		"gps",	N_("GPS Map"),	default_config_gps},
+    {PANE_GPS,      "gps",  N_("GPS Map"),  default_config_gps},
 #endif
 #endif
-	{PANE_UNDEF,		NULL,		NULL,			NULL}
+    {PANE_UNDEF,        NULL,       NULL,           NULL}
 };
 
 typedef struct _BarData BarData;
 struct _BarData
 {
-	GtkWidget *widget;
-	GtkWidget *vbox;
-	FileData *fd;
-	GtkWidget *label_file_name;
+    GtkWidget *widget;
+    GtkWidget *vbox;
+    FileData *fd;
+    GtkWidget *label_file_name;
 
-	LayoutWindow *lw;
-	gint width;
+    LayoutWindow *lw;
+    gint width;
 };
 
 static void bar_expander_move(GtkWidget *widget, gpointer data, gboolean up, gboolean single_step)
 {
-	GtkWidget *expander = data;
-	GtkWidget *box;
-	gint pos;
+    GtkWidget *expander = data;
+    GtkWidget *box;
+    gint pos;
 
-	if (!expander) return;
-	box = gtk_widget_get_ancestor(expander, GTK_TYPE_BOX);
-	if (!box) return;
+    if (!expander) return;
+    box = gtk_widget_get_ancestor(expander, GTK_TYPE_BOX);
+    if (!box) return;
 
-	gtk_container_child_get(GTK_CONTAINER(box), expander, "position", &pos, NULL);
+    gtk_container_child_get(GTK_CONTAINER(box), expander, "position", &pos, NULL);
 
-	if (single_step)
-		{
-		pos = up ? (pos - 1) : (pos + 1);
-		if (pos < 0) pos = 0;
-		}
-	else
-		{
-		pos = up ? 0 : -1;
-		}
+    if (single_step)
+    {
+        pos = up ? (pos - 1) : (pos + 1);
+        if (pos < 0) pos = 0;
+    }
+    else
+    {
+        pos = up ? 0 : -1;
+    }
 
-	gtk_box_reorder_child(GTK_BOX(box), expander, pos);
+    gtk_box_reorder_child(GTK_BOX(box), expander, pos);
 }
 
 
 static void bar_expander_move_up_cb(GtkWidget *widget, gpointer data)
 {
-	bar_expander_move(widget, data, TRUE, TRUE);
+    bar_expander_move(widget, data, TRUE, TRUE);
 }
 
 static void bar_expander_move_down_cb(GtkWidget *widget, gpointer data)
 {
-	bar_expander_move(widget, data, FALSE, TRUE);
+    bar_expander_move(widget, data, FALSE, TRUE);
 }
 
 static void bar_expander_move_top_cb(GtkWidget *widget, gpointer data)
 {
-	bar_expander_move(widget, data, TRUE, FALSE);
+    bar_expander_move(widget, data, TRUE, FALSE);
 }
 
 static void bar_expander_move_bottom_cb(GtkWidget *widget, gpointer data)
 {
-	bar_expander_move(widget, data, FALSE, FALSE);
+    bar_expander_move(widget, data, FALSE, FALSE);
 }
 
 static void bar_expander_delete_cb(GtkWidget *widget, gpointer data)
 {
-	GtkWidget *expander = data;
-	gtk_widget_destroy(expander);
+    GtkWidget *expander = data;
+    gtk_widget_destroy(expander);
 }
 
 static void bar_expander_add_cb(GtkWidget *widget, gpointer data)
 {
-	//GtkWidget *bar = data;
-	const KnownPanes *pane = known_panes;
-	const gchar *id = g_object_get_data(G_OBJECT(widget), "pane_add_id");
-	const gchar *config;
+    //GtkWidget *bar = data;
+    const KnownPanes *pane = known_panes;
+    const gchar *id = g_object_get_data(G_OBJECT(widget), "pane_add_id");
+    const gchar *config;
 
-	if (!id) return;
+    if (!id) return;
 
-	while (pane->id)
-		{
-		if (strcmp(pane->id, id) == 0) break;
-		pane++;
-		}
-	if (!pane->id) return;
+    while (pane->id)
+    {
+        if (strcmp(pane->id, id) == 0) break;
+        pane++;
+    }
+    if (!pane->id) return;
 
-	config = bar_pane_get_default_config(id);
-	if (config) load_config_from_buf(config, strlen(config), FALSE);
+    config = bar_pane_get_default_config(id);
+    if (config) load_config_from_buf(config, strlen(config), FALSE);
 
 }
 
 
 static void bar_menu_popup(GtkWidget *widget)
 {
-	GtkWidget *menu;
-	GtkWidget *bar;
-	GtkWidget *expander;
-	const KnownPanes *pane = known_panes;
-	BarData *bd;
+    GtkWidget *menu;
+    GtkWidget *bar;
+    GtkWidget *expander;
+    const KnownPanes *pane = known_panes;
+    BarData *bd;
 
-	bd = g_object_get_data(G_OBJECT(widget), "bar_data");
-	if (bd)
-		{
-		expander = NULL;
-		bar = widget;
-		}
-	else
-		{
-		expander = widget;
-		bar = gtk_widget_get_parent(widget);
-		while (bar && !g_object_get_data(G_OBJECT(bar), "bar_data"))
-			bar = gtk_widget_get_parent(bar);
-		if (!bar) return;
-		}
+    bd = g_object_get_data(G_OBJECT(widget), "bar_data");
+    if (bd)
+    {
+        expander = NULL;
+        bar = widget;
+    }
+    else
+    {
+        expander = widget;
+        bar = gtk_widget_get_parent(widget);
+        while (bar && !g_object_get_data(G_OBJECT(bar), "bar_data"))
+            bar = gtk_widget_get_parent(bar);
+        if (!bar) return;
+    }
 
-	menu = popup_menu_short_lived();
+    menu = popup_menu_short_lived();
 
-	if (expander)
-		{
-		menu_item_add_stock(menu, _("Move to _top"), GTK_STOCK_GOTO_TOP, G_CALLBACK(bar_expander_move_top_cb), expander);
-		menu_item_add_stock(menu, _("Move _up"), GTK_STOCK_GO_UP, G_CALLBACK(bar_expander_move_up_cb), expander);
-		menu_item_add_stock(menu, _("Move _down"), GTK_STOCK_GO_DOWN, G_CALLBACK(bar_expander_move_down_cb), expander);
-		menu_item_add_stock(menu, _("Move to _bottom"), GTK_STOCK_GOTO_BOTTOM, G_CALLBACK(bar_expander_move_bottom_cb), expander);
-		menu_item_add_divider(menu);
-		menu_item_add_stock(menu, _("Remove"), GTK_STOCK_DELETE, G_CALLBACK(bar_expander_delete_cb), expander);
-		menu_item_add_divider(menu);
-		}
+    if (expander)
+    {
+        menu_item_add_stock(menu, _("Move to _top"), GTK_STOCK_GOTO_TOP, G_CALLBACK(bar_expander_move_top_cb), expander);
+        menu_item_add_stock(menu, _("Move _up"), GTK_STOCK_GO_UP, G_CALLBACK(bar_expander_move_up_cb), expander);
+        menu_item_add_stock(menu, _("Move _down"), GTK_STOCK_GO_DOWN, G_CALLBACK(bar_expander_move_down_cb), expander);
+        menu_item_add_stock(menu, _("Move to _bottom"), GTK_STOCK_GOTO_BOTTOM, G_CALLBACK(bar_expander_move_bottom_cb), expander);
+        menu_item_add_divider(menu);
+        menu_item_add_stock(menu, _("Remove"), GTK_STOCK_DELETE, G_CALLBACK(bar_expander_delete_cb), expander);
+        menu_item_add_divider(menu);
+    }
 
-	while (pane->id)
-		{
-		GtkWidget *item;
-		item = menu_item_add_stock(menu, _(pane->title), GTK_STOCK_ADD, G_CALLBACK(bar_expander_add_cb), bar);
-		g_object_set_data(G_OBJECT(item), "pane_add_id", pane->id);
-		pane++;
-		}
+    while (pane->id)
+    {
+        GtkWidget *item;
+        item = menu_item_add_stock(menu, _(pane->title), GTK_STOCK_ADD, G_CALLBACK(bar_expander_add_cb), bar);
+        g_object_set_data(G_OBJECT(item), "pane_add_id", pane->id);
+        pane++;
+    }
 
-	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, bar, 0, GDK_CURRENT_TIME);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, bar, 0, GDK_CURRENT_TIME);
 }
 
 
 static gboolean bar_menu_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
 {
-	if (bevent->button == MOUSE_BUTTON_RIGHT)
-		{
-		bar_menu_popup(widget);
-		return TRUE;
-		}
-	return FALSE;
+    if (bevent->button == MOUSE_BUTTON_RIGHT)
+    {
+        bar_menu_popup(widget);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 
 static void bar_pane_set_fd_cb(GtkWidget *expander, gpointer data)
 {
-	GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
-	PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
-	if (!pd) return;
-	if (pd->pane_set_fd) pd->pane_set_fd(widget, data);
+    GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
+    PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
+    if (!pd) return;
+    if (pd->pane_set_fd) pd->pane_set_fd(widget, data);
 }
 
 void bar_set_fd(GtkWidget *bar, FileData *fd)
 {
-	BarData *bd;
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return;
+    BarData *bd;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return;
 
-	file_data_unref(bd->fd);
-	bd->fd = file_data_ref(fd);
+    file_data_unref(bd->fd);
+    bd->fd = file_data_ref(fd);
 
-	gtk_container_foreach(GTK_CONTAINER(bd->vbox), bar_pane_set_fd_cb, fd);
+    gtk_container_foreach(GTK_CONTAINER(bd->vbox), bar_pane_set_fd_cb, fd);
 
-	gtk_label_set_text(GTK_LABEL(bd->label_file_name), (bd->fd) ? bd->fd->name : "");
+    gtk_label_set_text(GTK_LABEL(bd->label_file_name), (bd->fd) ? bd->fd->name : "");
 
 }
 
 static void bar_pane_notify_selection_cb(GtkWidget *expander, gpointer data)
 {
-	GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
-	PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
-	if (!pd) return;
-	if (pd->pane_notify_selection) pd->pane_notify_selection(widget, GPOINTER_TO_INT(data));
+    GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
+    PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
+    if (!pd) return;
+    if (pd->pane_notify_selection) pd->pane_notify_selection(widget, GPOINTER_TO_INT(data));
 }
 
 void bar_notify_selection(GtkWidget *bar, gint count)
 {
-	BarData *bd;
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return;
+    BarData *bd;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return;
 
-	gtk_container_foreach(GTK_CONTAINER(bd->vbox), bar_pane_notify_selection_cb, GINT_TO_POINTER(count));
+    gtk_container_foreach(GTK_CONTAINER(bd->vbox), bar_pane_notify_selection_cb, GINT_TO_POINTER(count));
 }
 
 gboolean bar_event(GtkWidget *bar, GdkEvent *event)
 {
-	BarData *bd;
-	GList *list, *work;
-	gboolean ret = FALSE;
+    BarData *bd;
+    GList *list, *work;
+    gboolean ret = FALSE;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return FALSE;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return FALSE;
 
-	list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
+    list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
 
-	work = list;
-	while (work)
-		{
-		GtkWidget *widget = gtk_bin_get_child(GTK_BIN(work->data));
-		PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
-		if (!pd) continue;
+    work = list;
+    while (work)
+    {
+        GtkWidget *widget = gtk_bin_get_child(GTK_BIN(work->data));
+        PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
+        if (!pd) continue;
 
-		if (pd->pane_event && pd->pane_event(widget, event))
-			{
-			ret = TRUE;
-			break;
-			}
-		work = work->next;
-		}
-	g_list_free(list);
-	return ret;
+        if (pd->pane_event && pd->pane_event(widget, event))
+        {
+            ret = TRUE;
+            break;
+        }
+        work = work->next;
+    }
+    g_list_free(list);
+    return ret;
 }
 
 GtkWidget *bar_find_pane_by_id(GtkWidget *bar, PaneType type, const gchar *id)
 {
-	BarData *bd;
-	GList *list, *work;
-	GtkWidget *ret = NULL;
+    BarData *bd;
+    GList *list, *work;
+    GtkWidget *ret = NULL;
 
-	if (!id || !id[0]) return NULL;
+    if (!id || !id[0]) return NULL;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return NULL;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return NULL;
 
-	list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
+    list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
 
-	work = list;
-	while (work)
-		{
-		GtkWidget *widget = gtk_bin_get_child(GTK_BIN(work->data));
-		PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
-		if (!pd) continue;
+    work = list;
+    while (work)
+    {
+        GtkWidget *widget = gtk_bin_get_child(GTK_BIN(work->data));
+        PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
+        if (!pd) continue;
 
-		if (type == pd->type && strcmp(id, pd->id) == 0)
-			{
-			ret = widget;
-			break;
-			}
-		work = work->next;
-		}
-	g_list_free(list);
-	return ret;
+        if (type == pd->type && strcmp(id, pd->id) == 0)
+        {
+            ret = widget;
+            break;
+        }
+        work = work->next;
+    }
+    g_list_free(list);
+    return ret;
 }
 
 void bar_clear(GtkWidget *bar)
 {
-	BarData *bd;
-	GList *list, *work;
+    BarData *bd;
+    GList *list, *work;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return;
 
-	list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
+    list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
 
-	work = list;
-	while (work)
-		{
-		GtkWidget *widget = work->data;
-		gtk_widget_destroy(widget);
-		work = work->next;
-		}
-	g_list_free(list);
+    work = list;
+    while (work)
+    {
+        GtkWidget *widget = work->data;
+        gtk_widget_destroy(widget);
+        work = work->next;
+    }
+    g_list_free(list);
 }
 
 void bar_write_config(GtkWidget *bar, GString *outstr, gint indent)
 {
-	BarData *bd;
-	GList *list, *work;
+    BarData *bd;
+    GList *list, *work;
 
-	if (!bar) return;
+    if (!bar) return;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return;
 
-	WRITE_NL(); WRITE_STRING("<bar ");
-	write_bool_option(outstr, indent, "enabled", gtk_widget_get_visible(bar));
-	write_uint_option(outstr, indent, "width", bd->width);
-	WRITE_STRING(">");
+    WRITE_NL(); WRITE_STRING("<bar ");
+    write_bool_option(outstr, indent, "enabled", gtk_widget_get_visible(bar));
+    write_uint_option(outstr, indent, "width", bd->width);
+    WRITE_STRING(">");
 
-	indent++;
-	WRITE_NL(); WRITE_STRING("<clear/>");
+    indent++;
+    WRITE_NL(); WRITE_STRING("<clear/>");
 
-	list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
-	work = list;
-	while (work)
-		{
-		GtkWidget *expander = work->data;
-		GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
-		PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
-		if (!pd) continue;
+    list = gtk_container_get_children(GTK_CONTAINER(bd->vbox));
+    work = list;
+    while (work)
+    {
+        GtkWidget *expander = work->data;
+        GtkWidget *widget = gtk_bin_get_child(GTK_BIN(expander));
+        PaneData *pd = g_object_get_data(G_OBJECT(widget), "pane_data");
+        if (!pd) continue;
 
-		pd->expanded = gtk_expander_get_expanded(GTK_EXPANDER(expander));
+        pd->expanded = gtk_expander_get_expanded(GTK_EXPANDER(expander));
 
-		if (pd->pane_write_config)
-			pd->pane_write_config(widget, outstr, indent);
+        if (pd->pane_write_config)
+            pd->pane_write_config(widget, outstr, indent);
 
-		work = work->next;
-		}
-	g_list_free(list);
-	indent--;
-	WRITE_NL(); WRITE_STRING("</bar>");
+        work = work->next;
+    }
+    g_list_free(list);
+    indent--;
+    WRITE_NL(); WRITE_STRING("</bar>");
 }
 
 void bar_update_expander(GtkWidget *pane)
 {
-	PaneData *pd = g_object_get_data(G_OBJECT(pane), "pane_data");
-	GtkWidget *expander;
+    PaneData *pd = g_object_get_data(G_OBJECT(pane), "pane_data");
+    GtkWidget *expander;
 
-	if (!pd) return;
+    if (!pd) return;
 
-	expander = gtk_widget_get_parent(pane);
+    expander = gtk_widget_get_parent(pane);
 
-	gtk_expander_set_expanded(GTK_EXPANDER(expander), pd->expanded);
+    gtk_expander_set_expanded(GTK_EXPANDER(expander), pd->expanded);
 }
 
 void bar_add(GtkWidget *bar, GtkWidget *pane)
 {
-	GtkWidget *expander;
-	BarData *bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	PaneData *pd = g_object_get_data(G_OBJECT(pane), "pane_data");
+    GtkWidget *expander;
+    BarData *bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    PaneData *pd = g_object_get_data(G_OBJECT(pane), "pane_data");
 
-	if (!bd) return;
+    if (!bd) return;
 
-	pd->lw = bd->lw;
-	pd->bar = bar;
+    pd->lw = bd->lw;
+    pd->bar = bar;
 
-	expander = gtk_expander_new(NULL);
-	if (pd && pd->title)
-		{
-		gtk_expander_set_label_widget(GTK_EXPANDER(expander), pd->title);
-		gtk_widget_show(pd->title);
-		}
+    expander = gtk_expander_new(NULL);
+    if (pd && pd->title)
+    {
+        gtk_expander_set_label_widget(GTK_EXPANDER(expander), pd->title);
+        gtk_widget_show(pd->title);
+    }
 
-	gtk_box_pack_start(GTK_BOX(bd->vbox), expander, FALSE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(bd->vbox), expander, FALSE, TRUE, 0);
 
-	g_signal_connect(expander, "button_release_event", G_CALLBACK(bar_menu_cb), bd);
+    g_signal_connect(expander, "button_release_event", G_CALLBACK(bar_menu_cb), bd);
 
-	gtk_container_add(GTK_CONTAINER(expander), pane);
+    gtk_container_add(GTK_CONTAINER(expander), pane);
 
-	gtk_expander_set_expanded(GTK_EXPANDER(expander), pd->expanded);
+    gtk_expander_set_expanded(GTK_EXPANDER(expander), pd->expanded);
 
-	gtk_widget_show(expander);
+    gtk_widget_show(expander);
 
-	if (bd->fd && pd && pd->pane_set_fd) pd->pane_set_fd(pane, bd->fd);
+    if (bd->fd && pd && pd->pane_set_fd) pd->pane_set_fd(pane, bd->fd);
 
 }
 
 void bar_populate_default(GtkWidget *bar)
 {
-	const gchar *populate_id[] = {"histogram", "title", "keywords", "comment", "exif", NULL};
-	const gchar **id = populate_id;
+    const gchar *populate_id[] = {"histogram", "title", "keywords", "comment", "exif", NULL};
+    const gchar **id = populate_id;
 
-	while (*id)
-		{
-		const gchar *config = bar_pane_get_default_config(*id);
-		if (config) load_config_from_buf(config, strlen(config), FALSE);
-		id++;
-		}
+    while (*id)
+    {
+        const gchar *config = bar_pane_get_default_config(*id);
+        if (config) load_config_from_buf(config, strlen(config), FALSE);
+        id++;
+    }
 }
 
 static void bar_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer data)
 {
-	BarData *bd = data;
+    BarData *bd = data;
 
-	bd->width = allocation->width;
+    bd->width = allocation->width;
 }
 
 gint bar_get_width(GtkWidget *bar)
 {
-	BarData *bd;
+    BarData *bd;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return 0;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return 0;
 
-	return bd->width;
+    return bd->width;
 }
 
 void bar_close(GtkWidget *bar)
 {
-	BarData *bd;
+    BarData *bd;
 
-	bd = g_object_get_data(G_OBJECT(bar), "bar_data");
-	if (!bd) return;
+    bd = g_object_get_data(G_OBJECT(bar), "bar_data");
+    if (!bd) return;
 
-	gtk_widget_destroy(bd->widget);
+    gtk_widget_destroy(bd->widget);
 }
 
 static void bar_destroy(GtkWidget *widget, gpointer data)
 {
-	BarData *bd = data;
+    BarData *bd = data;
 
-	file_data_unref(bd->fd);
-	g_free(bd);
+    file_data_unref(bd->fd);
+    g_free(bd);
 }
 
 #ifdef HAVE_LIBCHAMPLAIN_GTK
@@ -595,142 +595,142 @@ static void bar_destroy(GtkWidget *widget, gpointer data)
 
 static void bar_unrealize_clutter_fix_cb(GtkWidget *widget, gpointer data)
 {
-	GtkWidget *child = gtk_bin_get_child(GTK_BIN(widget));
-	if (child) gtk_widget_unrealize(child);
+    GtkWidget *child = gtk_bin_get_child(GTK_BIN(widget));
+    if (child) gtk_widget_unrealize(child);
 }
 #endif
 
 GtkWidget *bar_new(LayoutWindow *lw)
 {
-	BarData *bd;
-	GtkWidget *box;
-	GtkWidget *scrolled;
+    BarData *bd;
+    GtkWidget *box;
+    GtkWidget *scrolled;
 
-	bd = g_new0(BarData, 1);
+    bd = g_new0(BarData, 1);
 
-	bd->lw = lw;
+    bd->lw = lw;
 
-	bd->widget = gtk_vbox_new(FALSE, PREF_PAD_GAP);
-	g_object_set_data(G_OBJECT(bd->widget), "bar_data", bd);
-	g_signal_connect(G_OBJECT(bd->widget), "destroy",
-			 G_CALLBACK(bar_destroy), bd);
+    bd->widget = gtk_vbox_new(FALSE, PREF_PAD_GAP);
+    g_object_set_data(G_OBJECT(bd->widget), "bar_data", bd);
+    g_signal_connect(G_OBJECT(bd->widget), "destroy",
+             G_CALLBACK(bar_destroy), bd);
 
-	g_signal_connect(G_OBJECT(bd->widget), "size-allocate",
-			 G_CALLBACK(bar_size_allocate), bd);
+    g_signal_connect(G_OBJECT(bd->widget), "size-allocate",
+             G_CALLBACK(bar_size_allocate), bd);
 
-	g_signal_connect(G_OBJECT(bd->widget), "button_release_event", G_CALLBACK(bar_menu_cb), bd);
+    g_signal_connect(G_OBJECT(bd->widget), "button_release_event", G_CALLBACK(bar_menu_cb), bd);
 
-	bd->width = SIDEBAR_DEFAULT_WIDTH;
-	gtk_widget_set_size_request(bd->widget, bd->width, -1);
+    bd->width = SIDEBAR_DEFAULT_WIDTH;
+    gtk_widget_set_size_request(bd->widget, bd->width, -1);
 
-	box = gtk_hbox_new(FALSE, 0);
+    box = gtk_hbox_new(FALSE, 0);
 
-	bd->label_file_name = gtk_label_new("");
-	gtk_label_set_ellipsize(GTK_LABEL(bd->label_file_name), PANGO_ELLIPSIZE_END);
-	gtk_label_set_selectable(GTK_LABEL(bd->label_file_name), TRUE);
-	gtk_misc_set_alignment(GTK_MISC(bd->label_file_name), 0.5, 0.5);
-	gtk_box_pack_start(GTK_BOX(box), bd->label_file_name, TRUE, TRUE, 0);
-	gtk_widget_show(bd->label_file_name);
+    bd->label_file_name = gtk_label_new("");
+    gtk_label_set_ellipsize(GTK_LABEL(bd->label_file_name), PANGO_ELLIPSIZE_END);
+    gtk_label_set_selectable(GTK_LABEL(bd->label_file_name), TRUE);
+    gtk_misc_set_alignment(GTK_MISC(bd->label_file_name), 0.5, 0.5);
+    gtk_box_pack_start(GTK_BOX(box), bd->label_file_name, TRUE, TRUE, 0);
+    gtk_widget_show(bd->label_file_name);
 
-	gtk_box_pack_start(GTK_BOX(bd->widget), box, FALSE, FALSE, 0);
-	gtk_widget_show(box);
+    gtk_box_pack_start(GTK_BOX(bd->widget), box, FALSE, FALSE, 0);
+    gtk_widget_show(box);
 
-	scrolled = gtk_scrolled_window_new(NULL, NULL);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
-		GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_box_pack_start(GTK_BOX(bd->widget), scrolled, TRUE, TRUE, 0);
-	gtk_widget_show(scrolled);
+    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+        GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_box_pack_start(GTK_BOX(bd->widget), scrolled, TRUE, TRUE, 0);
+    gtk_widget_show(scrolled);
 
 
-	bd->vbox = gtk_vbox_new(FALSE, 0);
-	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), bd->vbox);
-	gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(scrolled))), GTK_SHADOW_NONE);
+    bd->vbox = gtk_vbox_new(FALSE, 0);
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), bd->vbox);
+    gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(scrolled))), GTK_SHADOW_NONE);
 
 #ifdef HAVE_LIBCHAMPLAIN_GTK
-	g_signal_connect(G_OBJECT(gtk_bin_get_child(GTK_BIN(scrolled))), "unrealize", G_CALLBACK(bar_unrealize_clutter_fix_cb), NULL);
+    g_signal_connect(G_OBJECT(gtk_bin_get_child(GTK_BIN(scrolled))), "unrealize", G_CALLBACK(bar_unrealize_clutter_fix_cb), NULL);
 #endif
 
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_NONE);
-	gtk_widget_show(bd->vbox);
-	return bd->widget;
+    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_NONE);
+    gtk_widget_show(bd->vbox);
+    return bd->widget;
 }
 
 
 GtkWidget *bar_update_from_config(GtkWidget *bar, const gchar **attribute_names, const gchar **attribute_values)
 {
-	gboolean enabled = TRUE;
-	gint width = SIDEBAR_DEFAULT_WIDTH;
+    gboolean enabled = TRUE;
+    gint width = SIDEBAR_DEFAULT_WIDTH;
 
-	while (*attribute_names)
-		{
-		const gchar *option = *attribute_names++;
-		const gchar *value = *attribute_values++;
+    while (*attribute_names)
+    {
+        const gchar *option = *attribute_names++;
+        const gchar *value = *attribute_values++;
 
-		if (READ_BOOL_FULL("enabled", enabled)) continue;
-		if (READ_INT_FULL("width", width)) continue;
+        if (READ_BOOL_FULL("enabled", enabled)) continue;
+        if (READ_INT_FULL("width", width)) continue;
 
 
-		log_printf("unknown attribute %s = %s\n", option, value);
-		}
+        log_printf("unknown attribute %s = %s\n", option, value);
+    }
 
-	gtk_widget_set_size_request(bar, width, -1);
-	if (enabled)
-		{
-		gtk_widget_show(bar);
-		}
-	else
-		{
-		gtk_widget_hide(bar);
-		}
-	return bar;
+    gtk_widget_set_size_request(bar, width, -1);
+    if (enabled)
+    {
+        gtk_widget_show(bar);
+    }
+    else
+    {
+        gtk_widget_hide(bar);
+    }
+    return bar;
 }
 
 GtkWidget *bar_new_from_config(LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values)
 {
-	GtkWidget *bar = bar_new(lw);
-	return bar_update_from_config(bar, attribute_names, attribute_values);
+    GtkWidget *bar = bar_new(lw);
+    return bar_update_from_config(bar, attribute_names, attribute_values);
 }
 
 GtkWidget *bar_pane_expander_title(const gchar *title)
 {
-	GtkWidget *widget = gtk_label_new(title);
+    GtkWidget *widget = gtk_label_new(title);
 
-	pref_label_bold(widget, TRUE, FALSE);
-	//gtk_label_set_ellipsize(GTK_LABEL(widget), PANGO_ELLIPSIZE_END); //FIXME: do not work
+    pref_label_bold(widget, TRUE, FALSE);
+    //gtk_label_set_ellipsize(GTK_LABEL(widget), PANGO_ELLIPSIZE_END); //FIXME: do not work
 
-	return widget;
+    return widget;
 }
 
 gboolean bar_pane_translate_title(PaneType type, const gchar *id, gchar **title)
 {
-	const KnownPanes *pane = known_panes;
+    const KnownPanes *pane = known_panes;
 
-	if (!title) return FALSE;
-	while (pane->id)
-		{
-		if (pane->type == type && strcmp(pane->id, id) == 0) break;
-		pane++;
-		}
-	if (!pane->id) return FALSE;
+    if (!title) return FALSE;
+    while (pane->id)
+    {
+        if (pane->type == type && strcmp(pane->id, id) == 0) break;
+        pane++;
+    }
+    if (!pane->id) return FALSE;
 
-	if (*title && **title && strcmp(pane->title, *title) != 0) return FALSE;
+    if (*title && **title && strcmp(pane->title, *title) != 0) return FALSE;
 
-	g_free(*title);
-	*title = g_strdup(_(pane->title));
-	return TRUE;
+    g_free(*title);
+    *title = g_strdup(_(pane->title));
+    return TRUE;
 }
 
 const gchar *bar_pane_get_default_config(const gchar *id)
 {
-	const KnownPanes *pane = known_panes;
+    const KnownPanes *pane = known_panes;
 
-	while (pane->id)
-		{
-		if (strcmp(pane->id, id) == 0) break;
-		pane++;
-		}
-	if (!pane->id) return NULL;
-	return pane->config;
+    while (pane->id)
+    {
+        if (strcmp(pane->id, id) == 0) break;
+        pane++;
+    }
+    if (!pane->id) return NULL;
+    return pane->config;
 }
 
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

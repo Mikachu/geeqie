@@ -33,32 +33,32 @@ typedef void (* CacheLoaderDoneFunc)(CacheLoader *cl, gint error, gpointer data)
 
 
 typedef enum {
-	CACHE_LOADER_NONE	= 0,
-	CACHE_LOADER_DIMENSIONS	= 1 << 0,
-	CACHE_LOADER_DATE	= 1 << 1,
-	CACHE_LOADER_MD5SUM	= 1 << 2,
-	CACHE_LOADER_SIMILARITY	= 1 << 3
+    CACHE_LOADER_NONE   = 0,
+    CACHE_LOADER_DIMENSIONS = 1 << 0,
+    CACHE_LOADER_DATE   = 1 << 1,
+    CACHE_LOADER_MD5SUM = 1 << 2,
+    CACHE_LOADER_SIMILARITY = 1 << 3
 } CacheDataType;
 
 struct _CacheLoader {
-	FileData *fd;
-	CacheData *cd;
+    FileData *fd;
+    CacheData *cd;
 
-	CacheDataType todo_mask;
-	CacheDataType done_mask;
+    CacheDataType todo_mask;
+    CacheDataType done_mask;
 
-	CacheLoaderDoneFunc done_func;
-	gpointer done_data;
+    CacheLoaderDoneFunc done_func;
+    gpointer done_data;
 
-	gboolean error;
+    gboolean error;
 
-	ImageLoader *il;
-	guint idle_id; /* event source id */
+    ImageLoader *il;
+    guint idle_id; /* event source id */
 };
 
 
 CacheLoader *cache_loader_new(FileData *fd, CacheDataType load_mask,
-			      CacheLoaderDoneFunc done_func, gpointer done_data);
+                  CacheLoaderDoneFunc done_func, gpointer done_data);
 
 void cache_loader_free(CacheLoader *cl);
 

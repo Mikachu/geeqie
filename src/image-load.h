@@ -22,7 +22,7 @@
 #ifndef IMAGE_LOAD_H
 #define IMAGE_LOAD_H
 
-#define TYPE_IMAGE_LOADER		(image_loader_get_type())
+#define TYPE_IMAGE_LOADER       (image_loader_get_type())
 
 typedef void (*ImageLoaderBackendCbAreaPrepared)(gpointer loader, gpointer data);
 typedef void (*ImageLoaderBackendCbSize)(gpointer loader, gint width, gint height, gpointer data);
@@ -42,16 +42,16 @@ typedef gchar** (*ImageLoaderBackendFuncGetFormatMimeTypes)(gpointer loader);
 typedef struct _ImageLoaderBackend ImageLoaderBackend;
 struct _ImageLoaderBackend
 {
-	ImageLoaderBackendFuncLoaderNew loader_new;
-	ImageLoaderBackendFuncSetSize set_size;
-	ImageLoaderBackendFuncLoad load;
-	ImageLoaderBackendFuncWrite write;
-	ImageLoaderBackendFuncGetPixbuf get_pixbuf;
-	ImageLoaderBackendFuncClose close;
-	ImageLoaderBackendFuncAbort abort;
-	ImageLoaderBackendFuncFree free;
-	ImageLoaderBackendFuncGetFormatName get_format_name;
-	ImageLoaderBackendFuncGetFormatMimeTypes get_format_mime_types;
+    ImageLoaderBackendFuncLoaderNew loader_new;
+    ImageLoaderBackendFuncSetSize set_size;
+    ImageLoaderBackendFuncLoad load;
+    ImageLoaderBackendFuncWrite write;
+    ImageLoaderBackendFuncGetPixbuf get_pixbuf;
+    ImageLoaderBackendFuncClose close;
+    ImageLoaderBackendFuncAbort abort;
+    ImageLoaderBackendFuncFree free;
+    ImageLoaderBackendFuncGetFormatName get_format_name;
+    ImageLoaderBackendFuncGetFormatMimeTypes get_format_mime_types;
 };
 
 
@@ -60,59 +60,59 @@ typedef struct _ImageLoaderClass ImageLoaderClass;
 
 struct _ImageLoader
 {
-	GObject parent;
+    GObject parent;
 
-	/*< private >*/
-	GdkPixbuf *pixbuf;
-	FileData *fd;
-	gchar *path;
+    /*< private >*/
+    GdkPixbuf *pixbuf;
+    FileData *fd;
+    gchar *path;
 
-	gsize bytes_read;
-	gsize bytes_total;
+    gsize bytes_read;
+    gsize bytes_total;
 
-	gboolean preview;
+    gboolean preview;
 
-	gint requested_width;
-	gint requested_height;
+    gint requested_width;
+    gint requested_height;
 
-	gint actual_width;
-	gint actual_height;
+    gint actual_width;
+    gint actual_height;
 
-	gboolean shrunk;
+    gboolean shrunk;
 
-	gboolean done;
-	guint idle_id; /* event source id */
-	gint idle_priority;
+    gboolean done;
+    guint idle_id; /* event source id */
+    gint idle_priority;
 
-	gpointer *loader;
-	GError *error;
-	ImageLoaderBackend backend;
+    gpointer *loader;
+    GError *error;
+    ImageLoaderBackend backend;
 
-	guint idle_done_id; /* event source id */
-	GList *area_param_list;
-	GList *area_param_delayed_list;
+    guint idle_done_id; /* event source id */
+    GList *area_param_list;
+    GList *area_param_delayed_list;
 
-	gboolean delay_area_ready;
+    gboolean delay_area_ready;
 
-	GMutex *data_mutex;
-	gboolean stopping;
-	gboolean can_destroy;
-	GCond *can_destroy_cond;
-	gboolean thread;
+    GMutex *data_mutex;
+    gboolean stopping;
+    gboolean can_destroy;
+    GCond *can_destroy_cond;
+    gboolean thread;
 
-	guchar *mapped_file;
-	gsize read_buffer_size;
-	guint idle_read_loop_count;
+    guchar *mapped_file;
+    gsize read_buffer_size;
+    guint idle_read_loop_count;
 };
 
 struct _ImageLoaderClass {
-	GObjectClass parent;
+    GObjectClass parent;
 
-	/* class members */
-	void (*area_ready)(ImageLoader *, guint x, guint y, guint w, guint h, gpointer);
-	void (*error)(ImageLoader *, gpointer);
-	void (*done)(ImageLoader *, gpointer);
-	void (*percent)(ImageLoader *, gdouble, gpointer);
+    /* class members */
+    void (*area_ready)(ImageLoader *, guint x, guint y, guint w, guint h, gpointer);
+    void (*error)(ImageLoader *, gpointer);
+    void (*done)(ImageLoader *, gpointer);
+    void (*percent)(ImageLoader *, gdouble, gpointer);
 };
 
 GType image_loader_get_type(void);

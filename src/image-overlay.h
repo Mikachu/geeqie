@@ -23,21 +23,21 @@
 #define IMAGE_OVERLAY_H
 
 typedef enum {
-	IMAGE_OSD_NONE = 0,
-	IMAGE_OSD_ROTATE_USER,
-	IMAGE_OSD_ROTATE_AUTO,
-	IMAGE_OSD_COLOR,
-	IMAGE_OSD_FIRST,
-	IMAGE_OSD_LAST,
-	IMAGE_OSD_ICON,
-	IMAGE_OSD_COUNT
+    IMAGE_OSD_NONE = 0,
+    IMAGE_OSD_ROTATE_USER,
+    IMAGE_OSD_ROTATE_AUTO,
+    IMAGE_OSD_COLOR,
+    IMAGE_OSD_FIRST,
+    IMAGE_OSD_LAST,
+    IMAGE_OSD_ICON,
+    IMAGE_OSD_COUNT
 } ImageOSDFlag;
 
 typedef enum {
-	OSD_SHOW_NOTHING	= 0,
-	OSD_SHOW_INFO		= 1 << 0,
-	OSD_SHOW_STATUS		= 1 << 1,
-	OSD_SHOW_HISTOGRAM	= 1 << 2
+    OSD_SHOW_NOTHING    = 0,
+    OSD_SHOW_INFO       = 1 << 0,
+    OSD_SHOW_STATUS     = 1 << 1,
+    OSD_SHOW_HISTOGRAM  = 1 << 2
 } OsdShowFlags;
 
 void set_image_overlay_template_string(gchar **template_string, const gchar *value);

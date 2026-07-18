@@ -27,23 +27,23 @@
 
 
 gboolean format_canon_raw_crw(guchar *data, const guint len,
-			      guint *image_offset, guint *exif_offset);
+                  guint *image_offset, guint *exif_offset);
 
 gboolean format_canon_raw_cr2(guchar *data, const guint len,
-			      guint *image_offset, guint *exif_offset);
+                  guint *image_offset, guint *exif_offset);
 
 #define FORMAT_RAW_CANON { "crw", \
-			   FORMAT_RAW_MATCH_MAGIC,     6, "HEAPCCDR", 8, \
-			   FORMAT_RAW_EXIF_NONE, NULL, \
-			   "Canon crw", format_canon_raw_crw }, \
-			 { "cr2", \
-			   FORMAT_RAW_MATCH_TIFF_MAKE, 0, "Canon", 5, \
-			   FORMAT_RAW_EXIF_TIFF, NULL, \
-			   "Canon cr2", format_canon_raw_cr2 }
+               FORMAT_RAW_MATCH_MAGIC,     6, "HEAPCCDR", 8, \
+               FORMAT_RAW_EXIF_NONE, NULL, \
+               "Canon crw", format_canon_raw_crw }, \
+             { "cr2", \
+               FORMAT_RAW_MATCH_TIFF_MAKE, 0, "Canon", 5, \
+               FORMAT_RAW_EXIF_TIFF, NULL, \
+               "Canon cr2", format_canon_raw_cr2 }
 
 
 gboolean format_canon_makernote(ExifData *exif, guchar *tiff, guint offset,
-			        guint size, ExifByteOrder bo);
+                    guint size, ExifByteOrder bo);
 
 #define FORMAT_EXIF_CANON { FORMAT_EXIF_MATCH_MAKE, "Canon", 5, "Canon", format_canon_makernote }
 

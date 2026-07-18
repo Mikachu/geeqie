@@ -30,15 +30,15 @@ void file_maint_moved(FileData *fd, GList *ignore_list);
 void file_maint_copied(FileData *fd);
 
 GenericDialog *file_util_gen_dlg(const gchar *title,
-				 const gchar *role,
-				 GtkWidget *parent, gint auto_close,
-				 void (*cancel_cb)(GenericDialog *, gpointer), gpointer data);
+                 const gchar *role,
+                 GtkWidget *parent, gint auto_close,
+                 void (*cancel_cb)(GenericDialog *, gpointer), gpointer data);
 FileDialog *file_util_file_dlg(const gchar *title,
-			       const gchar *role,
-			       GtkWidget *parent,
-			       void (*cancel_cb)(FileDialog *, gpointer), gpointer data);
+                   const gchar *role,
+                   GtkWidget *parent,
+                   void (*cancel_cb)(FileDialog *, gpointer), gpointer data);
 GenericDialog *file_util_warning_dialog(const gchar *heading, const gchar *message,
-					const gchar *icon_stock_id, GtkWidget *parent);
+                    const gchar *icon_stock_id, GtkWidget *parent);
 
 /* all functions takes over the filelist and frees it when done */
 

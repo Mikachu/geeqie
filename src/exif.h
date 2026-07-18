@@ -34,19 +34,19 @@
 #define EXIF_FORMAT_COUNT 13
 
 typedef enum {
-	EXIF_FORMAT_UNKNOWN		= 0,
-	EXIF_FORMAT_BYTE_UNSIGNED	= 1,
-	EXIF_FORMAT_STRING		= 2,
-	EXIF_FORMAT_SHORT_UNSIGNED	= 3,
-	EXIF_FORMAT_LONG_UNSIGNED	= 4,
-	EXIF_FORMAT_RATIONAL_UNSIGNED	= 5,
-	EXIF_FORMAT_BYTE		= 6,
-	EXIF_FORMAT_UNDEFINED		= 7,
-	EXIF_FORMAT_SHORT		= 8,
-	EXIF_FORMAT_LONG		= 9,
-	EXIF_FORMAT_RATIONAL		= 10,
-	EXIF_FORMAT_FLOAT		= 11,
-	EXIF_FORMAT_DOUBLE		= 12
+    EXIF_FORMAT_UNKNOWN     = 0,
+    EXIF_FORMAT_BYTE_UNSIGNED   = 1,
+    EXIF_FORMAT_STRING      = 2,
+    EXIF_FORMAT_SHORT_UNSIGNED  = 3,
+    EXIF_FORMAT_LONG_UNSIGNED   = 4,
+    EXIF_FORMAT_RATIONAL_UNSIGNED   = 5,
+    EXIF_FORMAT_BYTE        = 6,
+    EXIF_FORMAT_UNDEFINED       = 7,
+    EXIF_FORMAT_SHORT       = 8,
+    EXIF_FORMAT_LONG        = 9,
+    EXIF_FORMAT_RATIONAL        = 10,
+    EXIF_FORMAT_FLOAT       = 11,
+    EXIF_FORMAT_DOUBLE      = 12
 } ExifFormatType;
 
 
@@ -61,38 +61,38 @@ typedef struct _ExifItem ExifItem;
 typedef struct _ExifRational ExifRational;
 struct _ExifRational
 {
-	guint32 num;
-	guint32 den;
+    guint32 num;
+    guint32 den;
 };
 
 
 /* enums useful for image manipulation */
 
 typedef enum {
-	EXIF_ORIENTATION_UNKNOWN	= 0,
-	EXIF_ORIENTATION_TOP_LEFT	= 1,
-	EXIF_ORIENTATION_TOP_RIGHT	= 2,
-	EXIF_ORIENTATION_BOTTOM_RIGHT	= 3,
-	EXIF_ORIENTATION_BOTTOM_LEFT	= 4,
-	EXIF_ORIENTATION_LEFT_TOP	= 5,
-	EXIF_ORIENTATION_RIGHT_TOP	= 6,
-	EXIF_ORIENTATION_RIGHT_BOTTOM	= 7,
-	EXIF_ORIENTATION_LEFT_BOTTOM	= 8
+    EXIF_ORIENTATION_UNKNOWN    = 0,
+    EXIF_ORIENTATION_TOP_LEFT   = 1,
+    EXIF_ORIENTATION_TOP_RIGHT  = 2,
+    EXIF_ORIENTATION_BOTTOM_RIGHT   = 3,
+    EXIF_ORIENTATION_BOTTOM_LEFT    = 4,
+    EXIF_ORIENTATION_LEFT_TOP   = 5,
+    EXIF_ORIENTATION_RIGHT_TOP  = 6,
+    EXIF_ORIENTATION_RIGHT_BOTTOM   = 7,
+    EXIF_ORIENTATION_LEFT_BOTTOM    = 8
 } ExifOrientationType;
 
 typedef enum {
-	EXIF_UNIT_UNKNOWN	= 0,
-	EXIF_UNIT_NOUNIT	= 1,
-	EXIF_UNIT_INCH		= 2,
-	EXIF_UNIT_CENTIMETER	= 3
+    EXIF_UNIT_UNKNOWN   = 0,
+    EXIF_UNIT_NOUNIT    = 1,
+    EXIF_UNIT_INCH      = 2,
+    EXIF_UNIT_CENTIMETER    = 3
 } ExifUnitType;
 
 typedef struct _ExifFormattedText ExifFormattedText;
 struct _ExifFormattedText
 {
-	const gchar *key;
-	const gchar *description;
-	gchar *(*build_func)(ExifData *exif);
+    const gchar *key;
+    const gchar *description;
+    gchar *(*build_func)(ExifData *exif);
 };
 
 /*

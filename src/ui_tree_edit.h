@@ -26,19 +26,19 @@
 typedef struct _TreeEditData TreeEditData;
 struct _TreeEditData
 {
-	GtkWidget *window;
-	GtkWidget *entry;
+    GtkWidget *window;
+    GtkWidget *entry;
 
-	gchar *old_name;
-	gchar *new_name;
+    gchar *old_name;
+    gchar *new_name;
 
-	gint (*edit_func)(TreeEditData *ted, const gchar *oldname, const gchar *newname, gpointer data);
-	gpointer edit_data;
+    gint (*edit_func)(TreeEditData *ted, const gchar *oldname, const gchar *newname, gpointer data);
+    gpointer edit_data;
 
-	GtkTreeView *tree;
-	GtkTreePath *path;
-	GtkTreeViewColumn *column;
-	GtkCellRenderer *cell;
+    GtkTreeView *tree;
+    GtkTreePath *path;
+    GtkTreeViewColumn *column;
+    GtkCellRenderer *cell;
 };
 
 
@@ -46,15 +46,15 @@ struct _TreeEditData
  * edit_func: return TRUE if rename successful, FALSE on failure.
  */
 gboolean tree_edit_by_path(GtkTreeView *tree, GtkTreePath *tpath, gint column, const gchar *text,
-		           gboolean (*edit_func)(TreeEditData *, const gchar *, const gchar *, gpointer), gpointer data);
+                   gboolean (*edit_func)(TreeEditData *, const gchar *, const gchar *, gpointer), gpointer data);
 
 
 /* returns location of cell in screen coordinates */
 gboolean tree_view_get_cell_origin(GtkTreeView *widget, GtkTreePath *tpath, gint column, gboolean text_cell_only,
-			           gint *x, gint *y, gint *width, gint *height);
+                       gint *x, gint *y, gint *width, gint *height);
 /* similar to above, but limits the returned area to that of the tree window */
 void tree_view_get_cell_clamped(GtkTreeView *widget, GtkTreePath *tpath, gint column, gboolean text_cell_only,
-			       gint *x, gint *y, gint *width, gint *height);
+                   gint *x, gint *y, gint *width, gint *height);
 
 /* return 0 = row visible, -1 = row is above, 1 = row is below visible region
  * if fully_visible is TRUE, the bahavior changes to return -1/1 if _any_ part of the cell is out of view */
@@ -97,7 +97,7 @@ void style_shift_color(GtkStyle *style, GtkStateType type, gshort shift_value, g
  * notify_func will be called before a scroll, return FALSE to turn off autoscroll
  */
 gint widget_auto_scroll_start(GtkWidget *widget, GtkAdjustment *v_adj, gint scroll_speed, gint region_size,
-			      gint (*notify_func)(GtkWidget *widget, gint x, gint y, gpointer data), gpointer notify_data);
+                  gint (*notify_func)(GtkWidget *widget, gint x, gint y, gpointer data), gpointer notify_data);
 void widget_auto_scroll_stop(GtkWidget *widget);
 
 

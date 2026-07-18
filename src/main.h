@@ -80,9 +80,9 @@
 #define GQ_WEBSITE "www.geeqie.org"
 #define GQ_EMAIL_ADDRESS "geeqie-devel@lists.sourceforge.net"
 
-#define GQ_RC_DIR		"." GQ_APPNAME_LC
-#define GQ_COLLECTIONS_DIR	"collections"
-#define GQ_TRASH_DIR		"trash"
+#define GQ_RC_DIR       "." GQ_APPNAME_LC
+#define GQ_COLLECTIONS_DIR  "collections"
+#define GQ_TRASH_DIR        "trash"
 
 #define GQ_SYSTEM_WIDE_DIR    "/etc/" GQ_APPNAME_LC
 
@@ -102,8 +102,8 @@
 
 #define COLOR_PROFILE_INPUTS 4
 
-#define DEFAULT_THUMB_WIDTH	96
-#define DEFAULT_THUMB_HEIGHT	72
+#define DEFAULT_THUMB_WIDTH 96
+#define DEFAULT_THUMB_HEIGHT    72
 
 #define DEFAULT_MINIMAL_WINDOW_SIZE 100
 
@@ -111,11 +111,11 @@
 #define SIDEBAR_DEFAULT_WIDTH 250
 
 
-#define DEFAULT_OVERLAY_INFO	"%collection:<i>*</i>\\n%" \
-				"(%number%/%total%) [%zoom%] <b>%name%</b>\n" \
-				"%res%|%date%|%size%\n" \
-				"%formatted.Aperture%|%formatted.ShutterSpeed%|%formatted.ISOSpeedRating:ISO *%|%formatted.FocalLength%|%formatted.ExposureBias:* Ev%\n" \
-				"%formatted.Camera:40%|%formatted.Flash%"
+#define DEFAULT_OVERLAY_INFO    "%collection:<i>*</i>\\n%" \
+                "(%number%/%total%) [%zoom%] <b>%name%</b>\n" \
+                "%res%|%date%|%size%\n" \
+                "%formatted.Aperture%|%formatted.ShutterSpeed%|%formatted.ISOSpeedRating:ISO *%|%formatted.FocalLength%|%formatted.ExposureBias:* Ev%\n" \
+                "%formatted.Camera:40%|%formatted.Flash%"
 
 #define GQ_LINK_STR "↗"
 #include "typedefs.h"

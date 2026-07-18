@@ -26,7 +26,7 @@
 /* bookmarks */
 
 GtkWidget *bookmark_list_new(const gchar *key,
-			     void (*select_func)(const gchar *path, gpointer data), gpointer select_data);
+                 void (*select_func)(const gchar *path, gpointer data), gpointer select_data);
 void bookmark_list_set_key(GtkWidget *list, const gchar *key);
 void bookmark_list_set_no_defaults(GtkWidget *list, gint no_defaults);
 void bookmark_list_set_editable(GtkWidget *list, gint editable);
@@ -40,7 +40,7 @@ void bookmark_add_default(const gchar *name, const gchar *path);
 /* history combo entry */
 
 GtkWidget *history_combo_new(GtkWidget **entry, const gchar *text,
-			     const gchar *history_key, gint max_levels);
+                 const gchar *history_key, gint max_levels);
 void history_combo_append_history(GtkWidget *widget, const gchar *text);
 
 

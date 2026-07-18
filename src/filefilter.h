@@ -25,13 +25,13 @@
 
 typedef struct _FilterEntry FilterEntry;
 struct _FilterEntry {
-	gchar *key;
-	gchar *description;
-	gchar *extensions;
-	FileFormatClass file_class;
-	gboolean enabled;
-	gboolean writable;
-	gboolean allow_sidecar;
+    gchar *key;
+    gchar *description;
+    gchar *extensions;
+    FileFormatClass file_class;
+    gboolean enabled;
+    gboolean writable;
+    gboolean allow_sidecar;
 };
 
 /* you can change, but not add or remove entries from the returned list */

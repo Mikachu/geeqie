@@ -28,15 +28,15 @@ typedef struct _RemoteConnection RemoteConnection;
 typedef void RemoteReadFunc(RemoteConnection *rc, const gchar *text, GIOChannel *channel, gpointer data);
 
 struct _RemoteConnection {
-	gint server;
-	gint fd;
-	gchar *path;
+    gint server;
+    gint fd;
+    gchar *path;
 
-	gint channel_id;
-	RemoteReadFunc *read_func;
-	gpointer read_data;
+    gint channel_id;
+    RemoteReadFunc *read_func;
+    gpointer read_data;
 
-	GList *clients;
+    GList *clients;
 };
 
 
@@ -44,7 +44,7 @@ void remote_close(RemoteConnection *rc);
 GList *remote_build_list(GList *list, gint argc, gchar *argv[], GList **errors);
 void remote_help(void);
 void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path,
-		    GList *cmd_list, GList *collection_list);
+            GList *cmd_list, GList *collection_list);
 
 RemoteConnection *remote_server_init(gchar *path, CollectionData *command_collection);
 

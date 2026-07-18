@@ -28,17 +28,17 @@
 
 
 gboolean format_fuji_raw(guchar *data, const guint len,
-		         guint *image_offset, guint *exif_offset);
+                 guint *image_offset, guint *exif_offset);
 
 
 #define FORMAT_RAW_FUJI { "raf", \
-			  FORMAT_RAW_MATCH_MAGIC, 0, "FUJIFILM", 8, \
-			  FORMAT_RAW_EXIF_JPEG, NULL, \
-			  "Fuji raw", format_fuji_raw }
+              FORMAT_RAW_MATCH_MAGIC, 0, "FUJIFILM", 8, \
+              FORMAT_RAW_EXIF_JPEG, NULL, \
+              "Fuji raw", format_fuji_raw }
 
 
 gboolean format_fuji_makernote(ExifData *exif, guchar *tiff, guint offset,
-			       guint size, ExifByteOrder bo);
+                   guint size, ExifByteOrder bo);
 
 #define FORMAT_EXIF_FUJI { FORMAT_EXIF_MATCH_MAKERNOTE, "FUJIFILM", 8, "Fujifilm", format_fuji_makernote }
 

@@ -33,11 +33,11 @@
 void print_term(const gchar *text_utf8);
 
 #define printf_term(...) \
-	do { \
-		gchar *msg = g_strdup_printf(__VA_ARGS__); \
-		print_term(msg); \
-		g_free(msg); \
-	} while (0)
+    do { \
+        gchar *msg = g_strdup_printf(__VA_ARGS__); \
+        print_term(msg); \
+        g_free(msg); \
+    } while (0)
 
 #if GQ_DEBUG_PATH_UTF8
 #define path_to_utf8(path) path_to_utf8_debug(path, __FILE__, __LINE__)

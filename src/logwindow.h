@@ -23,11 +23,11 @@
 
 typedef enum
 {
-	LOG_NORMAL = 0,
-	LOG_MSG,
-	LOG_WARN,
-	LOG_ERROR,
-	LOG_COUNT
+    LOG_NORMAL = 0,
+    LOG_MSG,
+    LOG_WARN,
+    LOG_ERROR,
+    LOG_COUNT
 } LogType;
 
 void log_window_new(void);

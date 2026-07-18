@@ -25,10 +25,10 @@
 
 ThumbLoader *thumb_loader_new(gint width, gint height);
 void thumb_loader_set_callbacks(ThumbLoader *tl,
-				ThumbLoaderFunc func_done,
-				ThumbLoaderFunc func_error,
-				ThumbLoaderFunc func_progress,
-				gpointer data);
+                ThumbLoaderFunc func_done,
+                ThumbLoaderFunc func_error,
+                ThumbLoaderFunc func_progress,
+                gpointer data);
 void thumb_loader_set_cache(ThumbLoader *tl, gboolean enable_cache, gboolean local, gboolean retry_failed);
 
 gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd);

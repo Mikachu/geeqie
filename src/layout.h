@@ -29,7 +29,7 @@ extern GList *layout_window_list;
 
 LayoutWindow *layout_new(FileData *dir_fd, LayoutOptions *lop);
 LayoutWindow *layout_new_with_geometry(FileData *dir_fd, LayoutOptions *lop,
-				       const gchar *geometry);
+                       const gchar *geometry);
 LayoutWindow *layout_new_from_config(const gchar **attribute_names, const gchar **attribute_values, gboolean use_commandline);
 void layout_update_from_config(LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values);
 

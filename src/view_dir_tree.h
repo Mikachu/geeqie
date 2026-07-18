@@ -25,10 +25,10 @@
 typedef struct _NodeData NodeData;
 struct _NodeData
 {
-	FileData *fd;
-	gboolean expanded;
-	time_t last_update;
-	gint version;
+    FileData *fd;
+    gboolean expanded;
+    time_t last_update;
+    gint version;
 };
 
 ViewDir *vdtree_new(ViewDir *vd, FileData *dir_fd);

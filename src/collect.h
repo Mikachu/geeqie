@@ -69,7 +69,7 @@ CollectInfo *collection_get_last(CollectionData *cd);
 void collection_set_sort_method(CollectionData *cd, SortType method);
 void collection_randomize(CollectionData *cd);
 void collection_set_update_info_func(CollectionData *cd,
-				     void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data);
+                     void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data);
 
 gboolean collection_add(CollectionData *cd, FileData *fd, gboolean sorted);
 gboolean collection_add_check(CollectionData *cd, FileData *fd, gboolean sorted, gboolean must_exist);

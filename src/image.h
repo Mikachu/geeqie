@@ -28,31 +28,31 @@ ImageWindow *image_new(gboolean frame);
 
 /* additional setup */
 void image_attach_window(ImageWindow *imd, GtkWidget *window,
-			 const gchar *title, const gchar *title_right, gboolean show_zoom);
+             const gchar *title, const gchar *title_right, gboolean show_zoom);
 void image_set_update_func(ImageWindow *imd,
-			   void (*func)(ImageWindow *imd, gpointer data),
-			   gpointer data);
+               void (*func)(ImageWindow *imd, gpointer data),
+               gpointer data);
 void image_set_button_func(ImageWindow *imd,
-	void (*func)(ImageWindow *, GdkEventButton *event, gpointer),
-	gpointer data);
+    void (*func)(ImageWindow *, GdkEventButton *event, gpointer),
+    gpointer data);
 void image_set_drag_func(ImageWindow *imd,
-	void (*func)(ImageWindow *, GdkEventButton *event, gdouble dx, gdouble dy, gpointer),
-	gpointer data);
+    void (*func)(ImageWindow *, GdkEventButton *event, gdouble dx, gdouble dy, gpointer),
+    gpointer data);
 void image_set_scroll_func(ImageWindow *imd,
-	void (*func)(ImageWindow *, GdkEventScroll *event, gpointer),
-	gpointer data);
+    void (*func)(ImageWindow *, GdkEventScroll *event, gpointer),
+    gpointer data);
 void image_set_focus_in_func(ImageWindow *imd,
-	void (*func)(ImageWindow *, gpointer),
-	gpointer data);
+    void (*func)(ImageWindow *, gpointer),
+    gpointer data);
 void image_set_scroll_notify_func(ImageWindow *imd,
-				  void (*func)(ImageWindow *imd, gint x, gint y, gint width, gint height, gpointer data),
-				  gpointer data);
+                  void (*func)(ImageWindow *imd, gint x, gint y, gint width, gint height, gpointer data),
+                  gpointer data);
 void image_set_complete_func(ImageWindow *imd,
-			     void (*func)(ImageWindow *imd, gint preload, gpointer data),
-			     gpointer data);
+                 void (*func)(ImageWindow *imd, gint preload, gpointer data),
+                 gpointer data);
 void image_set_state_func(ImageWindow *imd,
-			  void (*func)(ImageWindow *imd, ImageState state, gpointer data),
-			  gpointer data);
+              void (*func)(ImageWindow *imd, ImageState state, gpointer data),
+              gpointer data);
 
 void image_select(ImageWindow *imd, gboolean select);
 void image_set_selectable(ImageWindow *imd, gboolean selectable);
@@ -82,7 +82,7 @@ void image_area_changed(ImageWindow *imd, gint x, gint y, gint width, gint heigh
 void image_reload(ImageWindow *imd);
 void image_scroll(ImageWindow *imd, gint x, gint y);
 void image_scroll_to_point(ImageWindow *imd, gint x, gint y,
-			   gdouble x_align, gdouble y_align);
+               gdouble x_align, gdouble y_align);
 void image_get_scroll_center(ImageWindow *imd, gdouble *x, gdouble *y);
 void image_set_scroll_center(ImageWindow *imd, gdouble x, gdouble y);
 void image_alter_orientation(ImageWindow *imd, AlterType type);
@@ -123,11 +123,11 @@ void image_background_set_color_from_options(ImageWindow *imd, gboolean fullscre
 
 /* color profiles */
 void image_color_profile_set(ImageWindow *imd,
-			     gint input_type,
-			     gboolean use_image);
+                 gint input_type,
+                 gboolean use_image);
 gboolean image_color_profile_get(ImageWindow *imd,
-			     gint *input_type,
-			     gboolean *use_image);
+                 gint *input_type,
+                 gboolean *use_image);
 void image_color_profile_set_use(ImageWindow *imd, gboolean enable);
 gboolean image_color_profile_get_use(ImageWindow *imd);
 gboolean image_color_profile_get_status(ImageWindow *imd, gchar **image_profile, gchar **screen_profile);
@@ -141,11 +141,11 @@ void image_to_root_window(ImageWindow *imd, gboolean scaled);
 
 
 void image_set_image_as_tiles(ImageWindow *imd, gint width, gint height,
-			      gint tile_width, gint tile_height, gint cache_size,
-			      ImageTileRequestFunc func_tile_request,
-			      ImageTileDisposeFunc func_tile_dispose,
-			      gpointer data,
-			      gdouble zoom);
+                  gint tile_width, gint tile_height, gint cache_size,
+                  ImageTileRequestFunc func_tile_request,
+                  ImageTileDisposeFunc func_tile_dispose,
+                  gpointer data,
+                  gdouble zoom);
 
 /* reset default options */
 void image_options_sync(void);

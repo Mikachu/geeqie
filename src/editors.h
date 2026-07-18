@@ -24,40 +24,40 @@
 
 
 typedef enum {
-	EDITOR_KEEP_FS            = 0x00000001,
-	EDITOR_VERBOSE            = 0x00000002,
-	EDITOR_VERBOSE_MULTI      = 0x00000004,
-	EDITOR_TERMINAL		  = 0x00000008,
+    EDITOR_KEEP_FS            = 0x00000001,
+    EDITOR_VERBOSE            = 0x00000002,
+    EDITOR_VERBOSE_MULTI      = 0x00000004,
+    EDITOR_TERMINAL       = 0x00000008,
 
-	EDITOR_DEST               = 0x00000100,
-	EDITOR_FOR_EACH           = 0x00000200,
-	EDITOR_SINGLE_COMMAND     = 0x00000400,
-	EDITOR_NO_PARAM           = 0x00000800,
-	/* below are errors */
-	EDITOR_ERROR_EMPTY        = 0x00020000,
-	EDITOR_ERROR_SYNTAX       = 0x00040000,
-	EDITOR_ERROR_INCOMPATIBLE = 0x00080000,
-	EDITOR_ERROR_NO_FILE      = 0x00100000,
-	EDITOR_ERROR_CANT_EXEC    = 0x00200000,
-	EDITOR_ERROR_STATUS       = 0x00400000,
-	EDITOR_ERROR_SKIPPED      = 0x00800000,
-	/* mask to match errors only */
-	EDITOR_ERROR_MASK         = 0xffff0000,
+    EDITOR_DEST               = 0x00000100,
+    EDITOR_FOR_EACH           = 0x00000200,
+    EDITOR_SINGLE_COMMAND     = 0x00000400,
+    EDITOR_NO_PARAM           = 0x00000800,
+    /* below are errors */
+    EDITOR_ERROR_EMPTY        = 0x00020000,
+    EDITOR_ERROR_SYNTAX       = 0x00040000,
+    EDITOR_ERROR_INCOMPATIBLE = 0x00080000,
+    EDITOR_ERROR_NO_FILE      = 0x00100000,
+    EDITOR_ERROR_CANT_EXEC    = 0x00200000,
+    EDITOR_ERROR_STATUS       = 0x00400000,
+    EDITOR_ERROR_SKIPPED      = 0x00800000,
+    /* mask to match errors only */
+    EDITOR_ERROR_MASK         = 0xffff0000,
 } EditorFlags;
 
 struct _EditorDescription {
-	gchar *key; 		/* desktop file name, not including path, including extension */
-	gchar *name; 		/* Name, localized name presented to user */
-	gchar *icon;		/* Icon */
-	gchar *exec;		/* Exec */
-	gchar *menu_path;
-	gchar *hotkey;
-	GList *ext_list;
-	gchar *file;
-	gchar *comment;		/* .desktop Comment key, used to show a tooltip */
-	EditorFlags flags;
-	gboolean hidden;	/* explicitly hidden, shown in configuration dialog */
-	gboolean ignored;	/* not interesting, do not show at all */
+    gchar *key;         /* desktop file name, not including path, including extension */
+    gchar *name;        /* Name, localized name presented to user */
+    gchar *icon;        /* Icon */
+    gchar *exec;        /* Exec */
+    gchar *menu_path;
+    gchar *hotkey;
+    GList *ext_list;
+    gchar *file;
+    gchar *comment;     /* .desktop Comment key, used to show a tooltip */
+    EditorFlags flags;
+    gboolean hidden;    /* explicitly hidden, shown in configuration dialog */
+    gboolean ignored;   /* not interesting, do not show at all */
 };
 
 #define EDITOR_ERRORS(flags) ((flags) & EDITOR_ERROR_MASK)
@@ -66,19 +66,19 @@ struct _EditorDescription {
 
 /* return values from callback function */
 enum {
-	EDITOR_CB_CONTINUE = 0, /* continue multiple editor execution on remaining files*/
-	EDITOR_CB_SKIP,         /* skip the remaining files */
-	EDITOR_CB_SUSPEND       /* suspend execution, one of editor_resume or editor_skip
-				   must be called later */
+    EDITOR_CB_CONTINUE = 0, /* continue multiple editor execution on remaining files*/
+    EDITOR_CB_SKIP,         /* skip the remaining files */
+    EDITOR_CB_SUSPEND       /* suspend execution, one of editor_resume or editor_skip
+                   must be called later */
 };
 
 enum {
-	DESKTOP_FILE_COLUMN_KEY,
-	DESKTOP_FILE_COLUMN_NAME,
-	DESKTOP_FILE_COLUMN_HIDDEN,
-	DESKTOP_FILE_COLUMN_WRITABLE,
-	DESKTOP_FILE_COLUMN_PATH,
-	DESKTOP_FILE_COLUMN_COUNT
+    DESKTOP_FILE_COLUMN_KEY,
+    DESKTOP_FILE_COLUMN_NAME,
+    DESKTOP_FILE_COLUMN_HIDDEN,
+    DESKTOP_FILE_COLUMN_WRITABLE,
+    DESKTOP_FILE_COLUMN_PATH,
+    DESKTOP_FILE_COLUMN_COUNT
 };
 
 extern GtkListStore *desktop_file_list;
