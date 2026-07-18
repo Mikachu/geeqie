@@ -135,34 +135,39 @@ AC_CHECK_FUNCS(strverscmp access fsync fflush)
 # Check target architecture
 
 # Check for Win32
-AC_MSG_CHECKING([for some Win32 platform])
-case "$target_os" in
+AC_CACHE_CHECK([for some Win32 platform], [gq_cv_platform_win32],
+[case "$target_os" in
   mingw* | cygwin*)
-    platform_win32=yes
-    AC_DEFINE(PLATFORM_WIN32, 1, [Build on win32 OS])
+    gq_cv_platform_win32=yes
     ;;
   *)
-    platform_win32=no
+    gq_cv_platform_win32=no
     ;;
-esac
-AC_MSG_RESULT([$platform_win32])
+esac])
+platform_win32=$gq_cv_platform_win32
+if test "$platform_win32" = "yes"; then
+  AC_DEFINE(PLATFORM_WIN32, 1, [Build on win32 OS])
+fi
 AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
 
-AC_MSG_CHECKING([for native Win32])
-case "$target_os" in
+AC_CACHE_CHECK([for native Win32], [gq_cv_os_win32],
+[case "$target_os" in
   mingw*)
-    os_win32=yes
-    AC_DEFINE(OS_WIN32, 1, [Build on native win32 OS])
-    os_unix=no
-    PATHSEP=';'
+    gq_cv_os_win32=yes
     ;;
   *)
-    os_win32=no
-    os_unix=yes
-    PATHSEP=':'
+    gq_cv_os_win32=no
     ;;
-esac
-AC_MSG_RESULT([$os_win32])
+esac])
+os_win32=$gq_cv_os_win32
+if test "$os_win32" = "yes"; then
+  AC_DEFINE(OS_WIN32, 1, [Build on native win32 OS])
+  os_unix=no
+  PATHSEP=';'
+else
+  os_unix=yes
+  PATHSEP=':'
+fi
 AC_SUBST(PATHSEP)
 AM_CONDITIONAL(OS_WIN32, test "$os_win32" = "yes")
 AM_CONDITIONAL(OS_UNIX, test "$os_unix" = "yes")
