@@ -373,7 +373,6 @@ AC_SUBST(EXIV2_LIBS)
 # ----------------------------------------------------------------------
 
 dnl Set of available languages
-ALL_LINGUAS="`grep -v '^#' "$srcdir/po/LINGUAS" | tr '\n' ' '`"
 AC_SUBST([CONFIG_STATUS_DEPENDENCIES],['$(top_srcdir)/po/LINGUAS'])
 
 GETTEXT_PACKAGE=$PACKAGE
