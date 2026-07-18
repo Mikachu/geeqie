@@ -25,4 +25,3 @@
 void show_editor_list_window(void);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

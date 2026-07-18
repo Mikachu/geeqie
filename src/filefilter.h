@@ -25,13 +25,13 @@
 
 typedef struct _FilterEntry FilterEntry;
 struct _FilterEntry {
-	gchar *key;
-	gchar *description;
-	gchar *extensions;
-	FileFormatClass file_class;
-	gboolean enabled;
-	gboolean writable;
-	gboolean allow_sidecar;
+    gchar *key;
+    gchar *description;
+    gchar *extensions;
+    FileFormatClass file_class;
+    gboolean enabled;
+    gboolean writable;
+    gboolean allow_sidecar;
 };
 
 /* you can change, but not add or remove entries from the returned list */
@@ -60,4 +60,3 @@ gchar *sidecar_ext_to_string(void);
 GList *sidecar_ext_get_list(void);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

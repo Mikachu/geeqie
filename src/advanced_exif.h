@@ -28,4 +28,3 @@ GtkWidget *advanced_exif_new(void);
 void advanced_exif_set_fd(GtkWidget *bar, FileData *fd);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

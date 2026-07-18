@@ -25,10 +25,10 @@
 typedef struct _NodeData NodeData;
 struct _NodeData
 {
-	FileData *fd;
-	gboolean expanded;
-	time_t last_update;
-	gint version;
+    FileData *fd;
+    gboolean expanded;
+    time_t last_update;
+    gint version;
 };
 
 ViewDir *vdtree_new(ViewDir *vd, FileData *dir_fd);
@@ -49,4 +49,3 @@ gboolean vdtree_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
 void vdtree_destroy_cb(GtkWidget *widget, gpointer data);
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

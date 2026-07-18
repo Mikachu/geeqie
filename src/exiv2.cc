@@ -195,41 +195,41 @@ public:
 
 		pathl_ = path_from_utf8(path);
 		try
-			{
+		{
 			image_ = Exiv2::ImageFactory::open(pathl_);
 //			g_assert (image.get() != 0);
 			image_->readMetadata();
 
 #if EXIV2_TEST_VERSION(0,16,0)
 			if (image_->mimeType() == "application/rdf+xml")
-				{
+			{
 				//Exiv2 sidecar converts xmp to exif and iptc, we don't want it.
 				image_->clearExifData();
 				image_->clearIptcData();
-				}
+			}
 #endif
 
 #if EXIV2_TEST_VERSION(0,14,0)
 			if (image_->mimeType() == "image/jpeg")
-				{
+			{
 				/* try to get jpeg color profile */
 				Exiv2::BasicIo &io = image_->io();
 				gint open = io.isopen();
 				if (!open) io.open();
 				if (io.isopen())
-					{
+				{
 					unsigned char *mapped = (unsigned char*)io.mmap();
 					if (mapped) exif_jpeg_parse_color(this, mapped, io.size());
 					io.munmap();
-					}
-				if (!open) io.close();
 				}
+				if (!open) io.close();
+			}
 #endif
-			}
+		}
 		catch (Exiv2::AnyError& e)
-			{
+		{
 			valid_ = FALSE;
-			}
+		}
 	}
 
 	virtual ~_ExifDataOriginal()
@@ -306,32 +306,32 @@ public:
 		sidecarData_ = NULL;
 #if EXIV2_TEST_VERSION(0,16,0)
 		if (sidecar_path)
-			{
+		{
 			sidecarData_ = new _ExifDataOriginal(sidecar_path);
 			xmpData_ = sidecarData_->xmpData();
-			}
+		}
 		else
-			{
+		{
 			xmpData_ = imageData_->xmpData();
-			}
+		}
 
 #endif
 		exifData_ = imageData_->exifData();
 		iptcData_ = imageData_->iptcData();
 #if EXIV2_TEST_VERSION(0,17,0)
 		try
-			{
+		{
 			syncExifWithXmp(exifData_, xmpData_);
-			}
+		}
 		catch (...)
-			{
+		{
 			DEBUG_1("Exiv2: Catching bug\n");
-			}
+		}
 #endif
 		if (modified_xmp)
-			{
+		{
 			g_hash_table_foreach(modified_xmp, _ExifDataProcessed_update_xmp, this);
-			}
+		}
 	}
 
 	virtual ~_ExifDataProcessed()
@@ -348,7 +348,7 @@ public:
 	virtual void writeMetadata(gchar *path = NULL)
 	{
 		if (!path)
-			{
+		{
 #if EXIV2_TEST_VERSION(0,17,0)
 			if (options->metadata.save_legacy_IPTC)
 				copyXmpToIptc(xmpData_, iptcData_);
@@ -366,9 +366,9 @@ public:
 			image->setXmpData(xmpData_);
 #endif
 			image->writeMetadata();
-			}
+		}
 		else
-			{
+		{
 #if EXIV2_TEST_VERSION(0,17,0)
 			gchar *pathl = path_from_utf8(path);;
 
@@ -381,7 +381,7 @@ public:
 #else
 			throw Exiv2::Error(3, "xmp");
 #endif
-			}
+		}
 	}
 
 	virtual Exiv2::Image *image()
@@ -570,24 +570,24 @@ ExifItem *exif_get_first_item(ExifData *exif)
 		exif->xmpIter = exif->xmpData().begin();
 #endif
 		if (exif->exifIter != exif->exifData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->exifIter;
 			exif->exifIter++;
 			return (ExifItem *)item;
-			}
+		}
 		if (exif->iptcIter != exif->iptcData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->iptcIter;
 			exif->iptcIter++;
 			return (ExifItem *)item;
-			}
+		}
 #if EXIV2_TEST_VERSION(0,16,0)
 		if (exif->xmpIter != exif->xmpData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->xmpIter;
 			exif->xmpIter++;
 			return (ExifItem *)item;
-			}
+		}
 #endif
 		return NULL;
 
@@ -602,20 +602,20 @@ ExifItem *exif_get_next_item(ExifData *exif)
 {
 	try {
 		if (exif->exifIter != exif->exifData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->exifIter;
 			exif->exifIter++;
 			return (ExifItem *)item;
 		}
 		if (exif->iptcIter != exif->iptcData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->iptcIter;
 			exif->iptcIter++;
 			return (ExifItem *)item;
 		}
 #if EXIV2_TEST_VERSION(0,16,0)
 		if (exif->xmpIter != exif->xmpData().end())
-			{
+		{
 			const Exiv2::Metadatum *item = &*exif->xmpIter;
 			exif->xmpIter++;
 			return (ExifItem *)item;
@@ -797,10 +797,10 @@ gchar *exif_item_get_string(ExifItem *item, int idx)
 #endif
 		if (idx == 0 && str == "") str = em->toString();
 		if (str.length() > 5 && str.substr(0, 5) == "lang=")
-			{
+		{
 			std::string::size_type pos = str.find_first_of(' ');
 			if (pos != std::string::npos) str = str.substr(pos+1);
-			}
+		}
 
 		return utf8_validate_or_convert(str.c_str());
 	}
@@ -873,10 +873,10 @@ static const AltKey *find_alt_key(const gchar *xmp_key)
 	gint i = 0;
 
 	while (alt_keys[i].xmp_key)
-		{
+	{
 		if (strcmp(xmp_key, alt_keys[i].xmp_key) == 0) return &alt_keys[i];
 		i++;
-		}
+	}
 	return NULL;
 }
 
@@ -890,16 +890,16 @@ static gint exif_update_metadata_simple(ExifData *exif, const gchar *key, const 
 
 			Exiv2::ExifData::iterator pos = exif->exifData().findKey(ekey);
 			while (pos != exif->exifData().end())
-				{
+			{
 				exif->exifData().erase(pos);
 				pos = exif->exifData().findKey(ekey);
-				}
+			}
 
 			while (work)
-				{
+			{
 				exif->exifData()[key] = (gchar *)work->data;
 				work = work->next;
-				}
+			}
 		}
 		catch (Exiv2::AnyError& e) {
 #if EXIV2_TEST_VERSION(0,16,0)
@@ -909,32 +909,32 @@ static gint exif_update_metadata_simple(ExifData *exif, const gchar *key, const 
 				Exiv2::IptcKey ekey(key);
 				Exiv2::IptcData::iterator pos = exif->iptcData().findKey(ekey);
 				while (pos != exif->iptcData().end())
-					{
+				{
 					exif->iptcData().erase(pos);
 					pos = exif->iptcData().findKey(ekey);
-					}
+				}
 
 				while (work)
-					{
+				{
 					exif->iptcData()[key] = (gchar *)work->data;
 					work = work->next;
-					}
+				}
 			}
 #if EXIV2_TEST_VERSION(0,16,0)
 			catch (Exiv2::AnyError& e) {
 				Exiv2::XmpKey ekey(key);
 				Exiv2::XmpData::iterator pos = exif->xmpData().findKey(ekey);
 				while (pos != exif->xmpData().end())
-					{
+				{
 					exif->xmpData().erase(pos);
 					pos = exif->xmpData().findKey(ekey);
-					}
+				}
 
 				while (work)
-					{
+				{
 					exif->xmpData()[key] = (gchar *)work->data;
 					work = work->next;
-					}
+				}
 			}
 #endif
 		}
@@ -957,7 +957,7 @@ gint exif_update_metadata(ExifData *exif, const gchar *key, const GList *values)
 	    !values || /* deleting item */
 	    !ret  /* writing to the explicitely given xmp tag failed */
 	    )
-		{
+	{
 		/* deleted xmp metadatum can't be converted, we have to delete also the corresponding legacy tag */
 		/* if we can't write xmp, update at least the legacy tag */
 		const AltKey *alt_key = find_alt_key(key);
@@ -966,7 +966,7 @@ gint exif_update_metadata(ExifData *exif, const gchar *key, const GList *values)
 
 		if (alt_key && alt_key->exif_key)
 			ret = exif_update_metadata_simple(exif, alt_key->exif_key, values);
-		}
+	}
 	return ret;
 }
 
@@ -985,13 +985,13 @@ static GList *exif_add_value_to_glist(GList *list, Exiv2::Metadatum &item, Metad
 	    id == Exiv2::langAlt ||
 	    id == Exiv2::comment
 	    )
-		{
+	{
 #endif
 		/* read as a single entry */
 		std::string str;
 
 		if (format == METADATA_FORMATTED)
-			{
+		{
 #if EXIV2_TEST_VERSION(0,17,0)
 			str = item.print(
 #if EXIV2_TEST_VERSION(0,18,0)
@@ -1016,31 +1016,31 @@ static GList *exif_add_value_to_glist(GList *list, Exiv2::Metadatum &item, Metad
 			str = stream.str();
 #endif
 			if (str.length() > 1024)
-				{
+			{
 				/* truncate very long strings, they cause problems in gui */
 				str.erase(1024);
 				str.append("...");
-				}
 			}
+		}
 		else
-			{
+		{
 			str = item.toString();
-			}
+		}
 		if (str.length() > 5 && str.substr(0, 5) == "lang=")
-			{
+		{
 			std::string::size_type pos = str.find_first_of(' ');
 			if (pos != std::string::npos) str = str.substr(pos+1);
-			}
+		}
 		list = g_list_append(list, utf8_validate_or_convert(str.c_str()));
 #if EXIV2_TEST_VERSION(0,16,0)
-		}
+	}
 	else
-		{
+	{
 		/* read as a list */
 		gint i;
 		for (i = 0; i < item.count(); i++)
 			list = g_list_append(list, utf8_validate_or_convert(item.toString(i).c_str()));
-		}
+	}
 #endif
 	return list;
 }
@@ -1061,11 +1061,11 @@ static GList *exif_get_metadata_simple(ExifData *exif, const gchar *key, Metadat
 				Exiv2::IptcKey ekey(key);
 				Exiv2::IptcData::iterator pos = exif->iptcData().begin();
 				while (pos != exif->iptcData().end())
-					{
+				{
 					if (pos->key() == key)
 						list = exif_add_value_to_glist(list, *pos, format, NULL);
 					++pos;
-					}
+				}
 
 			}
 			catch (Exiv2::AnyError& e) {
@@ -1091,18 +1091,18 @@ GList *exif_get_metadata(ExifData *exif, const gchar *key, MetadataFormat format
 	if (!key) return NULL;
 
 	if (format == METADATA_FORMATTED)
-		{
+	{
 		gchar *text;
 		gint key_valid;
 		text = exif_get_formatted_by_key(exif, key, &key_valid);
 		if (key_valid) return g_list_append(NULL, text);
-		}
+	}
 
 	list = exif_get_metadata_simple(exif, key, format);
 
 	/* the following code can be ifdefed out as soon as Exiv2 supports it */
 	if (!list)
-		{
+	{
 		const AltKey *alt_key = find_alt_key(key);
 		if (alt_key && alt_key->iptc_key)
 			list = exif_get_metadata_simple(exif, alt_key->iptc_key, format);
@@ -1112,7 +1112,7 @@ GList *exif_get_metadata(ExifData *exif, const gchar *key, MetadataFormat format
 		if (!list && alt_key && alt_key->exif_key)
 			list = exif_get_metadata_simple(exif, alt_key->exif_key, format);
 #endif
-		}
+	}
 	return list;
 }
 
@@ -1154,30 +1154,30 @@ guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, 
 		Exiv2::PreviewPropertiesList list = pm.getPreviewProperties();
 
 		if (!list.empty())
-			{
+		{
 			Exiv2::PreviewPropertiesList::iterator pos;
 			Exiv2::PreviewPropertiesList::iterator last = --list.end();
 
 			if (requested_width == 0)
-				{
+			{
 				pos = last; // the largest
-				}
+			}
 			else
-				{
+			{
 				pos = list.begin();
 				while (pos != last)
-					{
+				{
 					if (pos->width_ >= (uint32_t)requested_width &&
 					    pos->height_ >= (uint32_t)requested_height) break;
 					++pos;
-					}
+				}
 
 				// we are not interested in smaller thumbnails in normal image formats - we can use full image instead
 				if (!is_raw)
-					{
+				{
 					if (pos->width_ < (uint32_t)requested_width || pos->height_ < (uint32_t)requested_height) return NULL;
-					}
 				}
+			}
 
 			Exiv2::PreviewImage image = pm.getPreviewImage(*pos);
 
@@ -1186,7 +1186,7 @@ guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, 
 
 			*data_len = p.second;
 			return p.first;
-			}
+		}
 		return NULL;
 	}
 	catch (Exiv2::AnyError& e) {
@@ -1261,22 +1261,18 @@ extern "C" guchar *exif_get_preview(ExifData *exif, guint *data_len, gint reques
 
 		fd = open(path.c_str(), O_RDONLY);
 		if (fd == -1)
-			{
 			return NULL;
-			}
 
 		if (fstat(fd, &st) == -1)
-			{
+		{
 			close(fd);
 			return NULL;
-			}
+		}
 		map_len = st.st_size;
 		map_data = (guchar *) mmap(0, map_len, PROT_READ, MAP_PRIVATE, fd, 0);
 		close(fd);
 		if (map_data == MAP_FAILED)
-			{
 			return NULL;
-			}
 		*data_len = map_len - offset;
 		ud = g_new(UnmapData, 1);
 		ud->ptr = map_data + offset;
@@ -1299,17 +1295,17 @@ void exif_free_preview(guchar *buf)
 	GList *work = exif_unmap_list;
 
 	while (work)
-		{
+	{
 		UnmapData *ud = (UnmapData *)work->data;
 		if (ud->ptr == buf)
-			{
+		{
 			munmap(ud->map_data, ud->map_len);
 			exif_unmap_list = g_list_remove_link(exif_unmap_list, work);
 			g_free(ud);
 			return;
-			}
-		work = work->next;
 		}
+		work = work->next;
+	}
 	g_assert_not_reached();
 }
 
@@ -1320,23 +1316,22 @@ RawFile::RawFile(BasicIo &io) : io_(io), map_data(NULL), map_len(0), offset(0)
 /*
 	struct stat st;
 	if (fstat(fd, &st) == -1)
-		{
+	{
 		throw Error(14);
-		}
+	}
 	map_len = st.st_size;
 	map_data = (Exiv2::byte *) mmap(0, map_len, PROT_READ, MAP_PRIVATE, fd, 0);
 	if (map_data == MAP_FAILED)
-		{
+	{
 		throw Error(14);
-		}
+	}
 */
-        if (io.open() != 0) {
-            throw Error(9, io.path(), strError());
-        }
+	if (io.open() != 0) {
+		throw Error(9, io.path(), strError());
+	}
 
-        map_data = io.mmap();
-        map_len = io.size();
-
+	map_data = io.mmap();
+	map_len = io.size();
 
 	type = Exiv2::ImageFactory::getType(map_data, map_len);
 
@@ -1366,14 +1361,14 @@ RawFile::RawFile(BasicIo &io) : io_(io), map_data(NULL), map_len(0), offset(0)
 			return;
 #endif
 		case Exiv2::ImageType::crw:
-			{
+		{
 			// Parse the image, starting with a CIFF header component
 			Exiv2::CiffHeader::AutoPtr parseTree(new Exiv2::CiffHeader);
 			parseTree->read(map_data, map_len);
 			CiffComponent *entry = parseTree->findComponent(0x2007, 0);
 			if (entry) offset =  entry->pData() - map_data;
 			return;
-			}
+		}
 
 		default:
 			throw Error(3, "RAW");
@@ -1389,19 +1384,19 @@ RawFile::RawFile(BasicIo &io) : io_(io), map_data(NULL), map_len(0), offset(0)
 	}
 
 	if (tiffHeader)
-		{
+	{
 		if (!tiffHeader->read(map_data, map_len)) throw Error(3, "TIFF");
 #if EXIV2_TEST_VERSION(0,16,0)
 		rootDir->setStart(map_data + tiffHeader->offset());
 #else
 		rootDir->setStart(map_data + tiffHeader->ifdOffset());
 #endif
-		}
+	}
 
 	if (cr2Header)
-		{
+	{
 		rootDir->setStart(map_data + cr2Header->offset());
-		}
+	}
 
 	TiffRwState::AutoPtr state(new TiffRwState(tiffHeader ? tiffHeader->byteOrder() : littleEndian, 0, createFct));
 
@@ -1430,10 +1425,10 @@ const Value * RawFile::find(uint16_t tag, uint16_t group)
 	rootDir->accept(finder);
 	TiffEntryBase* te = dynamic_cast<TiffEntryBase*>(finder.result());
 	if (te)
-		{
+	{
 		DEBUG_1("(tag: %04x %04x) ", tag, group);
 		return te->pValue();
-		}
+	}
 	else
 		return NULL;
 }
@@ -1444,12 +1439,12 @@ unsigned long RawFile::preview_offset(void)
 	if (offset) return offset;
 
 	if (type == Exiv2::ImageType::cr2)
-		{
+	{
 		val = find(0x111, Group::ifd0);
 		if (val) return val->toLong();
 
 		return 0;
-		}
+	}
 
 	val = find(0x201, Group::sub0_0);
 	if (val) return val->toLong();
@@ -1472,4 +1467,3 @@ unsigned long RawFile::preview_offset(void)
 
 #endif
 /* HAVE_EXIV2 */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

@@ -28,4 +28,3 @@ gchar *expand_tilde(const gchar *filename);
 int runcmd(gchar *cmd);
 
 #endif /* MISC_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

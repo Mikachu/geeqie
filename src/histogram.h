@@ -51,4 +51,3 @@ gboolean histogram_draw(Histogram *histogram, const HistMap *histmap, GdkPixbuf 
 void histogram_notify_cb(FileData *fd, NotifyType type, gpointer data);
 
 #endif /* HISTOGRAM_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

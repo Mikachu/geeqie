@@ -30,4 +30,3 @@ gboolean uri_selection_data_set_uris_from_filelist(GtkSelectionData *selection_d
 GList *uri_filelist_from_gtk_selection_data(GtkSelectionData *selection_data);
 
 #endif /* URI_UTILS_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

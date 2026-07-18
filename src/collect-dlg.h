@@ -31,4 +31,3 @@ void collection_dialog_append(gchar *path, CollectionData *cd);
 
 
 #endif
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

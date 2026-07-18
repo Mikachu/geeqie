@@ -23,11 +23,11 @@
 
 typedef enum
 {
-	LOG_NORMAL = 0,
-	LOG_MSG,
-	LOG_WARN,
-	LOG_ERROR,
-	LOG_COUNT
+    LOG_NORMAL = 0,
+    LOG_MSG,
+    LOG_WARN,
+    LOG_ERROR,
+    LOG_COUNT
 } LogType;
 
 void log_window_new(void);
@@ -35,4 +35,3 @@ void log_window_new(void);
 void log_window_append(const gchar *str, LogType type);
 
 #endif /* LOGWINDOW_H */
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

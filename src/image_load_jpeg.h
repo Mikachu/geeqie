@@ -28,4 +28,3 @@ void image_loader_backend_set_jpeg(ImageLoaderBackend *funcs);
 
 #endif
 
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
