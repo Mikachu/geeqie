@@ -22,7 +22,7 @@
 #include "main.h"
 
 #ifdef HAVE_LIRC
-void layout_image_lirc_init(LayoutWindow *lw);
+void lirc_init_subsystem(void);
 #endif
 
 #endif
