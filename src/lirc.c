@@ -25,6 +25,7 @@
 #ifdef HAVE_LIRC
 #include <lirc/lirc_client.h>
 #include "layout_image.h"
+#include "layout.h"
 
 gint lirc_fd = -1;
 struct lirc_config *config = NULL;
@@ -60,7 +61,7 @@ static void lirc_cleanup(void)
 static gboolean lirc_input_callback(GIOChannel *source, GIOCondition condition,
                     gpointer data)
 {
-    LayoutWindow *lw = data;
+    LayoutWindow *lw = layout_find_by_layout_id(LAYOUT_ID_CURRENT);
     gchar *ptr;
     gint ret;
     gint x = 0;
@@ -73,6 +74,8 @@ static gboolean lirc_input_callback(GIOChannel *source, GIOCondition condition,
     /* parameters for geeqie command */
     gint i_parm;
     gfloat fl_parm;
+
+    if (!lw) return TRUE;
 
     while ((ret = lirc_nextcode(&code)) == 0 && code)
     {
@@ -213,10 +216,13 @@ static gboolean lirc_input_callback(GIOChannel *source, GIOCondition condition,
     return (gboolean)TRUE;
 }
 
-void layout_image_lirc_init(LayoutWindow *lw)
+void lirc_init_subsystem(void)
 {
     gint flags;
     gboolean lirc_verbose = (get_debug_level() >= 2);
+
+    /* already inited */
+    if (lirc_fd != -1) return;
 
     lirc_fd = lirc_init(GQ_APPNAME_LC, lirc_verbose);
     if (lirc_fd == -1)
@@ -243,7 +249,7 @@ void layout_image_lirc_init(LayoutWindow *lw)
 
     gio_chan = g_io_channel_unix_new(lirc_fd);
     input_tag = g_io_add_watch(gio_chan, G_IO_IN,
-                   lirc_input_callback, lw);
+                   lirc_input_callback, NULL);
     fcntl(lirc_fd, F_SETOWN, getpid());
     flags = fcntl(lirc_fd, F_GETFL, 0);
     if (flags != -1) fcntl(lirc_fd, F_SETFL, flags|O_NONBLOCK);

@@ -56,6 +56,9 @@
 #include "histogram.h"
 #include "pixbuf_util.h"
 #include "glua.h"
+#ifdef HAVE_LIRC
+#include "lirc.h"
+#endif
 
 gboolean thumb_format_changed = FALSE;
 static RemoteConnection *remote_connection = NULL;
@@ -767,6 +770,10 @@ gint main(gint argc, gchar *argv[])
 
 #ifdef HAVE_LUA
     lua_init();
+#endif
+
+#ifdef HAVE_LIRC
+    lirc_init_subsystem();
 #endif
 
     /* setup random seed for random slideshow */
