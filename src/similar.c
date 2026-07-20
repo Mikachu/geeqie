@@ -185,6 +185,25 @@ gint mround(gdouble x)
     return (fpart < 0.5 ? ipart : ipart+1);
 }
 
+void image_sim_calc_coarse(ImageSimilarityData *sd)
+{
+    for (int cy = 0; cy < 4; cy++) {
+        for (int cx = 0; cx < 4; cx++) {
+            gint r = 0, g = 0, b = 0;
+            for (int dy = 0; dy < 8; dy++) {
+                for (int dx = 0; dx < 8; dx++) {
+                    gint t = (cy*8+dy)*32 + (cx*8+dx);
+                    r += sd->avg_r[t]; g += sd->avg_g[t]; b += sd->avg_b[t];
+                }
+            }
+            sd->coarse_r[cy*4+cx] = r / 64;
+            sd->coarse_g[cy*4+cx] = g / 64;
+            sd->coarse_b[cy*4+cx] = b / 64;
+        }
+    }
+    sd->coarse_filled = TRUE;
+}
+
 void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
 {
     gint w, h;

@@ -43,6 +43,7 @@
 #include "ui_tree_edit.h"
 #include "uri_utils.h"
 #include "utilops.h"
+#include "vptree.h"
 #include "window.h"
 
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
@@ -293,6 +294,26 @@ static void dupe_listview_realign_colors(DupeWindow *dw)
  * Dupe item utils
  * ------------------------------------------------------------------
  */
+
+/* Coarse L1 distance between two DupeItems' similarity data.
+ * Max value = 16 * 255 * 3 = 12240. */
+static gint dupe_coarse_dist(gconstpointer a, gconstpointer b)
+{
+    const DupeItem *da = a;
+    const DupeItem *db = b;
+    const ImageSimilarityData *sa = da->simd;
+    const ImageSimilarityData *sb = db->simd;
+    gint d = 0;
+    for (gint i = 0; i < 16; i++)
+        {
+        d += abs(sa->coarse_r[i] - sb->coarse_r[i]);
+        d += abs(sa->coarse_g[i] - sb->coarse_g[i]);
+        d += abs(sa->coarse_b[i] - sb->coarse_b[i]);
+        }
+    return d;
+}
+
+#define DUPE_VPTREE_MIN_ITEMS 500  /* tune later; 0 to always use VP-tree */
 
 static DupeItem *dupe_item_new(FileData *fd)
 {
@@ -1238,6 +1259,52 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
 {
     GList *work;
 
+    gboolean use_sim = !!(dw->match_mask &
+        (DUPE_MATCH_SIM_HIGH | DUPE_MATCH_SIM_MED |
+         DUPE_MATCH_SIM_LOW  | DUPE_MATCH_SIM_CUSTOM));
+
+    /* Build VP-tree lazily on first call when list is large enough */
+    if (use_sim && !dw->second_set && !dw->vptree &&
+        g_list_length(dw->list) >= DUPE_VPTREE_MIN_ITEMS)
+    {
+        for (GList *w = dw->list; w; w = w->next)
+        {
+            DupeItem *di = w->data;
+            if (di->simd && di->simd->filled && !di->simd->coarse_filled)
+                image_sim_calc_coarse(di->simd);
+        }
+        dw->vptree = vptree_build(dw->list, dupe_coarse_dist);
+    }
+
+    if (dw->vptree && use_sim && !dw->second_set &&
+        needle->simd && needle->simd->coarse_filled)
+    {
+        /* compute coarse radius from the current similarity threshold */
+        gdouble m;
+        if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
+        else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
+        else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)options->duplicates_similarity_threshold / 100.0;
+        else                                              m = 0.85;
+
+        gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
+        GList *candidates = vptree_range_query(dw->vptree, needle, radius);
+
+        for (GList *work = candidates; work; work = work->next)
+        {
+            DupeItem *di = work->data;
+            if (di == needle) continue;
+            if (!dupe_match_link_exists(needle, di))
+            {
+                gdouble rank;
+                if (dupe_match(di, needle, dw->match_mask, &rank, TRUE))
+                    dupe_match_link(di, needle, rank);
+            }
+        }
+        g_list_free(candidates);
+        return;
+    }
+
+    /* fallback: original O(n) linear scan */
     if (dw->second_set)
     {
         work = dw->second_list;
@@ -3336,6 +3403,11 @@ void dupe_window_clear(DupeWindow *dw)
 
     dupe_list_free(dw->list);
     dw->list = NULL;
+
+    vptree_free(dw->vptree);
+    dw->vptree = NULL;
+    vptree_free(dw->second_vptree);
+    dw->second_vptree = NULL;
 
     dupe_match_reset_list(dw->second_list);
 

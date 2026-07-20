@@ -23,6 +23,7 @@
 #define DUPE_H
 
 #include "similar.h"
+#include "vptree.h"
 
 /* match methods */
 typedef enum
@@ -77,6 +78,8 @@ struct _DupeWindow
     GList *list;            /* dropped files (DupeItem) */
     GList *dupes;           /* list of dupes (DupeItem, grouping the DupeMatches) */
     DupeMatchType match_mask;   /* mask of things to check for match */
+    VPTree *vptree;         /* NULL when not in use */
+    VPTree *second_vptree;
 
     GtkWidget *window;
     GtkWidget *paned;
