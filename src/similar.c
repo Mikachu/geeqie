@@ -377,54 +377,88 @@ generate all possible isometric transformations
 = 8 tests
 = change dir of x, change dir of y, exchange x and y = 2^3 = 8
 */
-gdouble image_sim_compare_fast_transfo(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min, gchar transfo)
-{
-    gint sim;
-    gint i1, i2, *i;
-    gint j1, j2, *j;
 
-#ifdef ALTERNATE_INCLUDE_COMPARE_CHANGE
-    if (alternate_enabled) return alternate_image_sim_compare_fast(a, b, min);
-#endif
-
-    if (!a || !b || !a->filled || !b->filled) return 0.0;
-
-    min = 1.0 - min;
-    sim = 0.0;
-
-    if (transfo & 1) { i = &j2; j = &i2; } else { i = &i2; j = &j2; }
-    for (j1 = 0; j1 < 32; j1++)
-    {
-        if (transfo & 2) *j = 31-j1; else *j = j1;
-        for (i1 = 0; i1 < 32; i1++)
-        {
-            if (transfo & 4) *i = 31-i1; else *i = i1;
-            sim += abs(a->avg_r[i1*32+j1] - b->avg_r[i2*32+j2]);
-            sim += abs(a->avg_g[i1*32+j1] - b->avg_g[i2*32+j2]);
-            sim += abs(a->avg_b[i1*32+j1] - b->avg_b[i2*32+j2]);
-        }
-        /* check for abort, if so return 0.0 */
-        if ((gdouble)sim / (255.0 * 1024.0 * 3.0) > min) return 0.0;
-    }
-
-    return (1.0 - ((gdouble)sim / (255.0 * 1024.0 * 3.0)) );
+/* Non-transpose: i1 outer, j1 inner — both arrays sequential/reverse-sequential */
+#define DEFINE_TRANSFO_NT(N, BIDX)                                         \
+static gdouble image_sim_compare_fast_##N(                                 \
+    ImageSimilarityData *a, ImageSimilarityData *b, gint max_sim)          \
+{                                                                          \
+    gint sim = 0, i1, j1;                                                  \
+    for (i1 = 0; i1 < 32; i1++)                                            \
+        {                                                                  \
+        for (j1 = 0; j1 < 32; j1++)                                        \
+            {                                                              \
+            sim += abs(a->avg_r[i1*32+j1] - b->avg_r[BIDX]);               \
+            sim += abs(a->avg_g[i1*32+j1] - b->avg_g[BIDX]);               \
+            sim += abs(a->avg_b[i1*32+j1] - b->avg_b[BIDX]);               \
+            }                                                              \
+        if (sim > max_sim) return 0.0;                                     \
+        }                                                                  \
+    return 1.0 - ((gdouble)sim / (255.0 * 1024.0 * 3.0));                  \
 }
+
+/* Transpose: j1 outer, i1 inner — b sequential, a stride-32 */
+#define DEFINE_TRANSFO_T(N, BIDX)                                          \
+static gdouble image_sim_compare_fast_##N(                                 \
+    ImageSimilarityData *a, ImageSimilarityData *b, gint max_sim)          \
+{                                                                          \
+    gint sim = 0, i1, j1;                                                  \
+    for (j1 = 0; j1 < 32; j1++)                                            \
+        {                                                                  \
+        for (i1 = 0; i1 < 32; i1++)                                        \
+            {                                                              \
+            sim += abs(a->avg_r[i1*32+j1] - b->avg_r[BIDX]);               \
+            sim += abs(a->avg_g[i1*32+j1] - b->avg_g[BIDX]);               \
+            sim += abs(a->avg_b[i1*32+j1] - b->avg_b[BIDX]);               \
+            }                                                              \
+        if (sim > max_sim) return 0.0;                                     \
+        }                                                                  \
+    return 1.0 - ((gdouble)sim / (255.0 * 1024.0 * 3.0));                  \
+}
+
+DEFINE_TRANSFO_NT(0, i1*32+j1)
+DEFINE_TRANSFO_T( 1, j1*32+i1)
+DEFINE_TRANSFO_NT(2, i1*32+(31-j1))
+DEFINE_TRANSFO_T( 3, (31-j1)*32+i1)
+DEFINE_TRANSFO_NT(4, (31-i1)*32+j1)
+DEFINE_TRANSFO_T( 5, j1*32+(31-i1))
+DEFINE_TRANSFO_NT(6, (31-i1)*32+(31-j1))
+DEFINE_TRANSFO_T( 7, (31-j1)*32+(31-i1))
 
 /* this uses a cutoff point so that it can abort early when it gets to
  * a point that can simply no longer make the cut-off point.
  */
+
+typedef gdouble (*transfo_fn)(ImageSimilarityData *, ImageSimilarityData *, gint);
+static const transfo_fn transfo_funcs[8] = {
+    image_sim_compare_fast_0, image_sim_compare_fast_6,
+    image_sim_compare_fast_2, image_sim_compare_fast_4,
+    image_sim_compare_fast_1, image_sim_compare_fast_3,
+    image_sim_compare_fast_5, image_sim_compare_fast_7,
+};
+
+gdouble image_sim_compare_fast_transfo(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min, gchar transfo)
+{
+    if (!a || !b || !a->filled || !b->filled) return 0.0;
+    gint max_sim = (gint)((1.0 - min) * (255.0 * 1024.0 * 3.0));
+    return transfo_funcs[(guint)transfo & 7](a, b, max_sim);
+}
+
 gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min)
 {
+    if (!a || !b || !a->filled || !b->filled) return 0.0;
     gint max_t = (options->rot_invariant_sim ? 8 : 1);
-
-    gint t;
-    gdouble score, max_score = 0;
-
-    for(t = 0; t < max_t; t++)
-    {
-        score = image_sim_compare_fast_transfo(a, b, min, t);
-        if (score > max_score) max_score = score;
-    }
+    gint max_sim = (gint)((1.0 - min) * (255.0 * 1024.0 * 3.0));
+    gdouble score, max_score = 0.0;
+    for (gint t = 0; t < max_t; t++)
+        {
+        score = transfo_funcs[t](a, b, max_sim);
+        if (score > max_score)
+            {
+            max_score = score;
+            max_sim = (gint)((1.0 - max_score) * (255.0 * 1024.0 * 3.0));
+            }
+        }
     return max_score;
 }
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */

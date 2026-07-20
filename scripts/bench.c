@@ -1,0 +1,92 @@
+#/*
+    gcc -o bench bench.c src/similar.c $(pkg-config --cflags --libs gtk+-2.0) -fcommon $CFLAGS
+    exit $!
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include "src/main.h"
+#include "src/similar.h"
+
+ImageSimilarityData *load_sim(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        fprintf(stderr, "cannot open %s\n", path);
+        return NULL;
+    }
+    char b = 0;
+    while (b != '=' && fread(&b, 1, 1, f) == 1)
+      ;
+    if (b != '=') {
+        fprintf(stderr, "invalid file %s\n", path);
+        fclose(f);
+        return NULL;
+    }
+    ImageSimilarityData *sd = image_sim_new();
+    guint8 buf[3];
+    for (int y = 0; y < 32; y++) {
+        for (int x = 0; x < 32; x++) {
+            if (fread(buf, 3, 1, f) < 1) {
+                fprintf(stderr, "partial file %s\n", path);
+                fclose(f);
+                image_sim_free(sd);
+                return NULL;
+            }
+            sd->avg_r[y*32+x] = buf[0];
+            sd->avg_g[y*32+x] = buf[1];
+            sd->avg_b[y*32+x] = buf[2];
+        }
+    }
+    sd->filled = TRUE;
+    fclose(f);
+    return sd;
+}
+
+int main(int argc, char *argv[]) {
+    static ConfOptions bench_options = { .rot_invariant_sim = TRUE, };
+    options = &bench_options;
+
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <threshold 0.0-1.0> <file.sim> ...\n", argv[0]);
+        return 1;
+    }
+
+    gdouble threshold = atof(argv[1]);
+    int n = argc - 2;
+    ImageSimilarityData **sims = malloc(n * sizeof(*sims));
+    for (int i = 0, j = 2; i < n; i++, j++) {
+        sims[i] = load_sim(argv[j]);
+        if (sims[i] == NULL) {
+            i--; n--;
+        }
+    }
+
+    fprintf(stderr, "loaded %d files, running %ld pairs at threshold %.2f\n",
+            n, (long)n * (n - 1) / 2, threshold);
+
+    struct timespec t0, t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
+    long pairs = 0;
+    long matches = 0;
+    gdouble checksum = 0.0;
+    for (int i = 0; i < n; i++)
+        for (int j = i + 1; j < n; j++) {
+            gdouble s = image_sim_compare_fast(sims[i], sims[j], threshold);
+            checksum += s;
+            if (s > 0.0) matches++;
+            pairs++;
+        }
+
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;
+
+    printf("pairs: %ld  time: %.3fs  throughput: %.0f pairs/s  checksum: %.6f\n",
+           pairs, elapsed, (double)pairs / elapsed, checksum);
+    printf("matches: %ld (%.2f%%)\n", matches, 100.0 * matches / pairs);
+
+    free(sims);
+    return 0;
+}
