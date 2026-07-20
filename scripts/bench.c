@@ -1,5 +1,5 @@
 #/*
-    gcc -o bench bench.c src/similar.c $(pkg-config --cflags --libs gtk+-2.0) -fcommon $CFLAGS
+    gcc -o bench bench.c src/similar.c src/vptree.c $(pkg-config --cflags --libs gtk+-2.0) -fcommon $CFLAGS
     exit $!
 */
 
@@ -9,6 +9,7 @@
 
 #include "src/main.h"
 #include "src/similar.h"
+#include "src/vptree.h"
 
 ImageSimilarityData *load_sim(const char *path) {
     FILE *f = fopen(path, "rb");
@@ -44,6 +45,20 @@ ImageSimilarityData *load_sim(const char *path) {
     return sd;
 }
 
+static gint bench_coarse_dist(gconstpointer a, gconstpointer b)
+{
+    const ImageSimilarityData *sa = a;
+    const ImageSimilarityData *sb = b;
+    gint d = 0;
+    for (gint i = 0; i < 16; i++)
+    {
+        d += abs(sa->coarse_r[i] - sb->coarse_r[i]);
+        d += abs(sa->coarse_g[i] - sb->coarse_g[i]);
+        d += abs(sa->coarse_b[i] - sb->coarse_b[i]);
+    }
+    return d;
+}
+
 int main(int argc, char *argv[]) {
     static ConfOptions bench_options = { .rot_invariant_sim = TRUE, };
     options = &bench_options;
@@ -66,12 +81,60 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "loaded %d files, running %ld pairs at threshold %.2f\n",
             n, (long)n * (n - 1) / 2, threshold);
 
-    struct timespec t0, t1;
+    struct timespec t0, t1, t2;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    long pairs = 0;
+    for (int i = 0; i < n; i++)
+        image_sim_calc_coarse(sims[i]);
+
+    GList *simlist = NULL;
+    for (int i = 0; i < n; i++)
+        simlist = g_list_prepend(simlist, sims[i]);
+    VPTree *vptree = vptree_build(simlist, bench_coarse_dist);
+    g_list_free(simlist);
+
+    GHashTable *sim_idx = g_hash_table_new(NULL, NULL);
+    for (int i = 0; i < n; i++)
+        g_hash_table_insert(sim_idx, sims[i], GINT_TO_POINTER(i));
+
+    gint radius = (gint)((1.0 - threshold) * 255.0 * 16.0 * 3.0);
+    long total_pairs = (long)n * (n - 1) / 2;
+    long vp_candidates = 0;
     long matches = 0;
     gdouble checksum = 0.0;
+
+    for (int i = 0; i < n; i++)
+    {
+        GList *candidates = vptree_range_query(vptree, sims[i], radius);
+        for (GList *c = candidates; c; c = c->next)
+        {
+            ImageSimilarityData *other = c->data;
+            if (other == sims[i]) continue;
+            gint j = GPOINTER_TO_INT(g_hash_table_lookup(sim_idx, other));
+            if (j <= i) continue;
+            vp_candidates++;
+            gdouble s = image_sim_compare_fast(sims[i], other, threshold);
+            checksum += s;
+            if (s > 0.0) matches++;
+        }
+        g_list_free(candidates);
+    }
+
+    g_hash_table_destroy(sim_idx);
+    vptree_free(vptree);
+
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;
+    printf("pairs: %ld  vp_candidates: %ld (%.1f%%)  vp_skipped: %ld (%.1f%%)  "
+           "elapsed: %.3f  checksum: %.6f\n",
+           total_pairs, vp_candidates,
+           100.0 * vp_candidates / total_pairs,
+           total_pairs - vp_candidates,
+           100.0 * (total_pairs - vp_candidates) / total_pairs, elapsed, checksum);
+
+    long pairs = 0;
+    matches = 0;
+    checksum = 0.0;
     for (int i = 0; i < n; i++)
         for (int j = i + 1; j < n; j++) {
             gdouble s = image_sim_compare_fast(sims[i], sims[j], threshold);
@@ -80,8 +143,8 @@ int main(int argc, char *argv[]) {
             pairs++;
         }
 
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    elapsed = (t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) * 1e-9;
 
     printf("pairs: %ld  time: %.3fs  throughput: %.0f pairs/s  checksum: %.6f\n",
            pairs, elapsed, (double)pairs / elapsed, checksum);
