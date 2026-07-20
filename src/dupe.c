@@ -948,85 +948,127 @@ static void dupe_match_print_list(GList *list)
     }
 }
 
-/* level 3, unlinking and orphan handling */
-static GList *dupe_match_unlink_by_rank(DupeItem *child, DupeItem *parent, GList *list, DupeWindow *dw)
+/* Clear a DupeItem's group list without resetting group_rank.
+ * Unlike dupe_match_link_clear, does not unlink children. */
+static void dupe_match_group_clear_only(DupeItem *item)
 {
-    DupeItem *best;
-
-    best = dupe_match_highest_rank(parent);
-    if (best == child || dupe_match_highest_rank(child) == parent)
-    {
-        GList *work;
-        gdouble rank;
-
-        DEBUG_2("link found %s to %s [%d]", child->fd->name, parent->fd->name, g_list_length(parent->group));
-
-        work = parent->group;
-        while (work)
-        {
-            DupeMatch *dm = work->data;
-            DupeItem *orphan;
-
-            work = work->next;
-            orphan = dm->di;
-            if (orphan != child && g_list_length(orphan->group) < 2)
-            {
-                dupe_match_link_clear(orphan, TRUE);
-                if (!dw->second_set || orphan->second)
-                {
-                    dupe_match(orphan, child, dw->match_mask, &rank, FALSE);
-                    dupe_match_link(orphan, child, rank);
-                }
-                list = g_list_remove(list, orphan);
-            }
-        }
-
-        rank = dupe_match_link_rank(child, parent);
-        dupe_match_link_clear(parent, TRUE);
-        dupe_match_link(child, parent, rank);
-        list = g_list_remove(list, parent);
-    }
-    else
-    {
-        DEBUG_2("unlinking %s and %s", child->fd->name, parent->fd->name);
-
-        dupe_match_unlink(child, parent);
-    }
-
-    return list;
-}
-
-/* level 2 */
-static GList *dupe_match_group_filter(GList *list, DupeItem *di, DupeWindow *dw)
-{
-    GList *work;
-
-    work = g_list_last(di->group);
+    GList *work = item->group;
     while (work)
     {
-        DupeMatch *dm = work->data;
-        work = work->prev;
-        list = dupe_match_unlink_by_rank(di, dm->di, list, dw);
+        g_free(work->data);
+        work = work->next;
     }
-
-    return list;
+    g_list_free(item->group);
+    item->group = NULL;
 }
 
-/* level 1 (top) */
-static GList *dupe_match_group_trim(GList *list, DupeWindow *dw)
+/* Group items into connected components of the similarity graph.
+ * Any item within threshold of any group member is included in the group,
+ * rather than requiring a direct match to the group's parent.
+ * Returns a newly allocated list of parent items (one per component). */
+static GList *dupe_match_connected_components(GList *list, DupeWindow *dw)
 {
+    GHashTable *visited = g_hash_table_new(NULL, NULL);
+    GList *parents = NULL;
     GList *work;
 
     work = list;
     while (work)
     {
         DupeItem *di = work->data;
-        if (!di->second) list = dupe_match_group_filter(list, di, dw);
         work = work->next;
-        if (di->second) list = g_list_remove(list, di);
+
+        if (di->second || g_hash_table_contains(visited, di)) continue;
+
+        /* BFS to collect the full connected component */
+        GList *component = NULL;
+        GQueue *queue = g_queue_new();
+        g_hash_table_add(visited, di);
+        g_queue_push_tail(queue, di);
+
+        while (!g_queue_is_empty(queue))
+        {
+            DupeItem *cur = g_queue_pop_head(queue);
+            component = g_list_prepend(component, cur);
+
+            GList *m = cur->group;
+            while (m)
+            {
+                DupeMatch *dm = m->data;
+                m = m->next;
+                if (!g_hash_table_contains(visited, dm->di))
+                {
+                    g_hash_table_add(visited, dm->di);
+                    g_queue_push_tail(queue, dm->di);
+                }
+            }
+        }
+        g_queue_free(queue);
+
+        /* Pick the highest group_rank non-second item as parent */
+        DupeItem *parent = NULL;
+        GList *c = component;
+        while (c)
+        {
+            DupeItem *item = c->data;
+            c = c->next;
+            if (item->second) continue;
+            if (!parent || item->group_rank > parent->group_rank)
+                parent = item;
+        }
+
+        if (!parent)
+        {
+            g_list_free(component);
+            continue;
+        }
+
+        /* Record each non-parent item's best direct match rank in group_rank
+         * before we clear the group lists. */
+        c = component;
+        while (c)
+        {
+            DupeItem *item = c->data;
+            c = c->next;
+            if (item == parent) continue;
+
+            gdouble best = 0.0;
+            GList *m = item->group;
+            while (m)
+            {
+                DupeMatch *dm = m->data;
+                if (dm->rank > best) best = dm->rank;
+                m = m->next;
+            }
+            item->group_rank = best;
+        }
+
+        /* Clear all group links in the component, preserving group_rank */
+        c = component;
+        while (c)
+        {
+            dupe_match_group_clear_only(c->data);
+            c = c->next;
+        }
+
+        /* Rebuild as star topology: parent <-> each child */
+        c = component;
+        while (c)
+        {
+            DupeItem *item = c->data;
+            c = c->next;
+            if (item == parent) continue;
+            dupe_match_link_child(parent, item, item->group_rank);
+            dupe_match_link_child(item, parent, item->group_rank);
+        }
+
+        dupe_match_rank_update(parent);
+        parents = g_list_prepend(parents, parent);
+        g_list_free(component);
     }
 
-    return list;
+    g_hash_table_destroy(visited);
+    return parents;
 }
 
 static gint dupe_match_sort_groups_cb(gconstpointer a, gconstpointer b)
@@ -1088,23 +1130,26 @@ static GList *dupe_match_rank_sort(GList *source_list)
 static void dupe_match_rank(DupeWindow *dw)
 {
     GList *list;
+    GList *parents;
 
     list = dupe_match_rank_sort(dw->list);
 
     if (required_debug_level(2)) dupe_match_print_list(list);
 
     DEBUG_1("Similar items: %d", g_list_length(list));
-    list = dupe_match_group_trim(list, dw);
-    DEBUG_1("Unique groups: %d", g_list_length(list));
 
-    dupe_match_sort_groups(list);
+    parents = dupe_match_connected_components(list, dw);
+    g_list_free(list);
+    DEBUG_1("Unique groups: %d", g_list_length(parents));
 
-    if (required_debug_level(2)) dupe_match_print_list(list);
+    dupe_match_sort_groups(parents);
 
-    list = dupe_match_rank_sort(list);
+    if (required_debug_level(2)) dupe_match_print_list(parents);
+
+    parents = dupe_match_rank_sort(parents);
 
     g_list_free(dw->dupes);
-    dw->dupes = list;
+    dw->dupes = parents;
 }
 
 /*
