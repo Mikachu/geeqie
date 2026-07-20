@@ -297,19 +297,17 @@ static void dupe_listview_realign_colors(DupeWindow *dw)
 
 /* Coarse L1 distance between two DupeItems' similarity data.
  * Max value = 16 * 255 * 3 = 12240. */
-static gint dupe_coarse_dist(gconstpointer a, gconstpointer b)
+static gint dupe_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
-    const DupeItem *da = a;
-    const DupeItem *db = b;
-    const ImageSimilarityData *sa = da->simd;
-    const ImageSimilarityData *sb = db->simd;
+    const DupeVPEntry *ea = a;
+    const DupeVPEntry *eb = b;
     gint d = 0;
     for (gint i = 0; i < 16; i++)
-        {
-        d += abs(sa->coarse_r[i] - sb->coarse_r[i]);
-        d += abs(sa->coarse_g[i] - sb->coarse_g[i]);
-        d += abs(sa->coarse_b[i] - sb->coarse_b[i]);
-        }
+    {
+        d += abs(ea->coarse_r[i] - eb->coarse_r[i]);
+        d += abs(ea->coarse_g[i] - eb->coarse_g[i]);
+        d += abs(ea->coarse_b[i] - eb->coarse_b[i]);
+    }
     return d;
 }
 
@@ -1267,32 +1265,51 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
     if (use_sim && !dw->second_set && !dw->vptree &&
         g_list_length(dw->list) >= DUPE_VPTREE_MIN_ITEMS)
     {
+        gint max_t = options->rot_invariant_sim ? 8 : 1;
         for (GList *w = dw->list; w; w = w->next)
         {
             DupeItem *di = w->data;
-            if (di->simd && di->simd->filled && !di->simd->coarse_filled)
+            if (!di->simd || !di->simd->filled) continue;
+            if (!di->simd->coarse_filled)
                 image_sim_calc_coarse(di->simd);
+            for (gint t = 0; t < max_t; t++)
+            {
+                DupeVPEntry *e = g_new(DupeVPEntry, 1);
+                image_sim_coarse_rot(di->simd, t, e->coarse_r, e->coarse_g, e->coarse_b);
+                e->di = di;
+                dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
+            }
         }
-        dw->vptree = vptree_build(dw->list, dupe_coarse_dist);
+        dw->vptree = vptree_build(dw->vptree_entries, dupe_vp_entry_dist);
     }
 
     if (dw->vptree && use_sim && !dw->second_set &&
         needle->simd && needle->simd->coarse_filled)
     {
-        /* compute coarse radius from the current similarity threshold */
         gdouble m;
         if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
         else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
         else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)options->duplicates_similarity_threshold / 100.0;
         else                                              m = 0.85;
 
-        gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
-        GList *candidates = vptree_range_query(dw->vptree, needle, radius);
+        /* Query with needle's identity coarse grid; rotated entries in the
+         * tree ensure all 8 transformations of each candidate are covered. */
+        DupeVPEntry query;
+        image_sim_coarse_rot(needle->simd, 0, query.coarse_r, query.coarse_g, query.coarse_b);
+        query.di = needle;
 
+        gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
+        GList *candidates = vptree_range_query(dw->vptree, &query, radius);
+
+        /* Multiple rotations of the same DupeItem may appear; deduplicate. */
+        GHashTable *seen = g_hash_table_new(NULL, NULL);
         for (GList *work = candidates; work; work = work->next)
         {
-            DupeItem *di = work->data;
+            DupeVPEntry *e = work->data;
+            DupeItem *di = e->di;
             if (di == needle) continue;
+            if (g_hash_table_contains(seen, di)) continue;
+            g_hash_table_add(seen, di);
             if (!dupe_match_link_exists(needle, di))
             {
                 gdouble rank;
@@ -1300,6 +1317,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     dupe_match_link(di, needle, rank);
             }
         }
+        g_hash_table_destroy(seen);
         g_list_free(candidates);
         return;
     }
@@ -3408,6 +3426,8 @@ void dupe_window_clear(DupeWindow *dw)
     dw->vptree = NULL;
     vptree_free(dw->second_vptree);
     dw->second_vptree = NULL;
+    g_list_free_full(dw->vptree_entries, g_free);
+    dw->vptree_entries = NULL;
 
     dupe_match_reset_list(dw->second_list);
 
