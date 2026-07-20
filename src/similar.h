@@ -29,14 +29,19 @@ struct _ImageSimilarityData
     guint8 avg_r[1024];
     guint8 avg_g[1024];
     guint8 avg_b[1024];
-
     gboolean filled;
+
+    guint8 coarse_r[16];
+    guint8 coarse_g[16];
+    guint8 coarse_b[16];
+    gboolean coarse_filled;
 };
 
 
 ImageSimilarityData *image_sim_new(void);
 void image_sim_free(ImageSimilarityData *sd);
 
+void image_sim_calc_coarse(ImageSimilarityData *sd);
 void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf);
 ImageSimilarityData *image_sim_new_from_pixbuf(GdkPixbuf *pixbuf);
 
