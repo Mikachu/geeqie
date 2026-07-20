@@ -42,6 +42,8 @@ ImageSimilarityData *image_sim_new(void);
 void image_sim_free(ImageSimilarityData *sd);
 
 void image_sim_calc_coarse(ImageSimilarityData *sd);
+void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
+                          guint8 out_r[16], guint8 out_g[16], guint8 out_b[16]);
 void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf);
 ImageSimilarityData *image_sim_new_from_pixbuf(GdkPixbuf *pixbuf);
 
