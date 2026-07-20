@@ -45,16 +45,23 @@ ImageSimilarityData *load_sim(const char *path) {
     return sd;
 }
 
-static gint bench_coarse_dist(gconstpointer a, gconstpointer b)
+typedef struct {
+    guint8 coarse_r[16];
+    guint8 coarse_g[16];
+    guint8 coarse_b[16];
+    ImageSimilarityData *sd;
+} BenchVPEntry;
+
+static gint bench_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
-    const ImageSimilarityData *sa = a;
-    const ImageSimilarityData *sb = b;
+    const BenchVPEntry *ea = a;
+    const BenchVPEntry *eb = b;
     gint d = 0;
     for (gint i = 0; i < 16; i++)
     {
-        d += abs(sa->coarse_r[i] - sb->coarse_r[i]);
-        d += abs(sa->coarse_g[i] - sb->coarse_g[i]);
-        d += abs(sa->coarse_b[i] - sb->coarse_b[i]);
+        d += abs(ea->coarse_r[i] - eb->coarse_r[i]);
+        d += abs(ea->coarse_g[i] - eb->coarse_g[i]);
+        d += abs(ea->coarse_b[i] - eb->coarse_b[i]);
     }
     return d;
 }
@@ -87,11 +94,21 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < n; i++)
         image_sim_calc_coarse(sims[i]);
 
-    GList *simlist = NULL;
+    gint max_t = bench_options.rot_invariant_sim ? 8 : 1;
+    GList *entries = NULL;
+    BenchVPEntry *entry_buf = malloc(n * max_t * sizeof(BenchVPEntry));
     for (int i = 0; i < n; i++)
-        simlist = g_list_prepend(simlist, sims[i]);
-    VPTree *vptree = vptree_build(simlist, bench_coarse_dist);
-    g_list_free(simlist);
+    {
+        for (int t = 0; t < max_t; t++)
+        {
+            BenchVPEntry *e = &entry_buf[i * max_t + t];
+            image_sim_coarse_rot(sims[i], t, e->coarse_r, e->coarse_g, e->coarse_b);
+            e->sd = sims[i];
+            entries = g_list_prepend(entries, e);
+        }
+    }
+    VPTree *vptree = vptree_build(entries, bench_vp_entry_dist);
+    g_list_free(entries);
 
     GHashTable *sim_idx = g_hash_table_new(NULL, NULL);
     for (int i = 0; i < n; i++)
@@ -105,23 +122,32 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < n; i++)
     {
-        GList *candidates = vptree_range_query(vptree, sims[i], radius);
+        BenchVPEntry query;
+        image_sim_coarse_rot(sims[i], 0, query.coarse_r, query.coarse_g, query.coarse_b);
+        query.sd = sims[i];
+        GList *candidates = vptree_range_query(vptree, &query, radius);
+        GHashTable *seen = g_hash_table_new(NULL, NULL);
         for (GList *c = candidates; c; c = c->next)
         {
-            ImageSimilarityData *other = c->data;
+            BenchVPEntry *e = c->data;
+            ImageSimilarityData *other = e->sd;
             if (other == sims[i]) continue;
             gint j = GPOINTER_TO_INT(g_hash_table_lookup(sim_idx, other));
             if (j <= i) continue;
+            if (g_hash_table_contains(seen, other)) continue;
+            g_hash_table_add(seen, other);
             vp_candidates++;
             gdouble s = image_sim_compare_fast(sims[i], other, threshold);
             checksum += s;
             if (s > 0.0) matches++;
         }
+        g_hash_table_destroy(seen);
         g_list_free(candidates);
     }
 
     g_hash_table_destroy(sim_idx);
     vptree_free(vptree);
+    free(entry_buf);
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;

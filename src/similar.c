@@ -204,6 +204,27 @@ void image_sim_calc_coarse(ImageSimilarityData *sd)
     sd->coarse_filled = TRUE;
 }
 
+void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
+                          guint8 out_r[16], guint8 out_g[16], guint8 out_b[16])
+{
+    for (gint cy = 0; cy < 4; cy++)
+    {
+        for (gint cx = 0; cx < 4; cx++)
+        {
+            gint si, sj;
+            if (transfo & 1) { si = cx; sj = cy; }
+            else             { si = cy; sj = cx; }
+            if (transfo & 2) sj = 3 - sj;
+            if (transfo & 4) si = 3 - si;
+            gint src = si * 4 + sj;
+            gint dst = cy * 4 + cx;
+            out_r[dst] = sd->coarse_r[src];
+            out_g[dst] = sd->coarse_g[src];
+            out_b[dst] = sd->coarse_b[src];
+        }
+    }
+}
+
 void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
 {
     gint w, h;

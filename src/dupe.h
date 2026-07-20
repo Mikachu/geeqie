@@ -72,6 +72,15 @@ struct _DupeMatch
     gdouble rank;
 };
 
+typedef struct _DupeVPEntry DupeVPEntry;
+struct _DupeVPEntry
+{
+    guint8 coarse_r[16];
+    guint8 coarse_g[16];
+    guint8 coarse_b[16];
+    DupeItem *di;
+};
+
 typedef struct _DupeWindow DupeWindow;
 struct _DupeWindow
 {
@@ -80,6 +89,7 @@ struct _DupeWindow
     DupeMatchType match_mask;   /* mask of things to check for match */
     VPTree *vptree;         /* NULL when not in use */
     VPTree *second_vptree;
+    GList *vptree_entries;   /* GList of DupeVPEntry*, owned, freed on clear */
 
     GtkWidget *window;
     GtkWidget *paned;
