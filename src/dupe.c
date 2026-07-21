@@ -87,6 +87,7 @@ static void dupe_thumb_step(DupeWindow *dw);
 static gint dupe_check_cb(gpointer data);
 
 static void dupe_second_add(DupeWindow *dw, DupeItem *di);
+static void dupe_second_listview_populate(DupeWindow *dw);
 static void dupe_second_remove(DupeWindow *dw, DupeItem *di);
 static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di);
 
@@ -107,6 +108,8 @@ static void dupe_destroy_list_cache(DupeWindow *dw);
 static void dupe_window_update_count(DupeWindow *dw, gboolean count_only)
 {
     gchar *text;
+
+    if (dw->add_files_queue_id) return;
 
     if (!dw->list)
     {
@@ -1882,6 +1885,9 @@ static gboolean dupe_files_add_queue_done(DupeWindow *dw)
 {
     dw->add_files_queue_id = 0;
     dupe_destroy_list_cache(dw);
+    dupe_window_update_count(dw, FALSE);
+    if (dw->second_set)
+        dupe_second_listview_populate(dw);
     g_idle_add(dupe_check_start_cb, dw);
     gtk_widget_set_sensitive(dw->controls_box, TRUE);
     return FALSE;
@@ -2034,6 +2040,8 @@ void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection)
     }
     dupe_destroy_list_cache(dw);
 
+    if (dw->second_set)
+        dupe_second_listview_populate(dw);    
     dupe_check_start(dw);
 }
 
@@ -2734,38 +2742,43 @@ static void dupe_second_update_status(DupeWindow *dw)
     g_free(buf);
 }
 
-static void dupe_second_add(DupeWindow *dw, DupeItem *di)
+static void dupe_second_listview_populate(DupeWindow *dw)
 {
     GtkListStore *store;
     GtkTreeIter iter;
 
+    store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->second_listview)));
+    gtk_list_store_clear(store);
+
+    /* second_list is prepend-ordered; iterate tail-to-head to restore add order */
+    for (GList *work = g_list_last(dw->second_list); work; work = work->prev)
+    {
+        DupeItem *di = work->data;
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter, DUPE_COLUMN_POINTER, di, 1, di->fd->path, -1);
+    }
+
+    gtk_tree_view_columns_autosize(GTK_TREE_VIEW(dw->second_listview));
+    dupe_second_update_status(dw);
+}
+
+static void dupe_second_add(DupeWindow *dw, DupeItem *di)
+{
     if (!di) return;
 
     di->second = TRUE;
     dw->second_list = g_list_prepend(dw->second_list, di);
-
-    store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->second_listview)));
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter, DUPE_COLUMN_POINTER, di, 1, di->fd->path, -1);
-
-    dupe_second_update_status(dw);
+    if (!dw->add_files_queue_id)
+        dupe_second_listview_populate(dw);
 }
 
 static void dupe_second_remove(DupeWindow *dw, DupeItem *di)
 {
-    GtkListStore *store;
-    GtkTreeIter iter;
-
-    store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->second_listview)));
-    if (dupe_listview_find_item(store, di, &iter) >= 0)
-    {
-        tree_view_move_cursor_away(GTK_TREE_VIEW(dw->second_listview), &iter, TRUE);
-        gtk_list_store_remove(store, &iter);
-    }
-
     dw->second_list = g_list_remove(dw->second_list, di);
 
-    dupe_second_update_status(dw);
+    if (!dw->add_files_queue_id) {
+        dupe_second_listview_populate(dw);
+    }
 }
 
 static void dupe_second_clear(DupeWindow *dw)
