@@ -2253,6 +2253,7 @@ static void dupe_window_recompare(DupeWindow *dw)
 
     dupe_match_reset_list(dw->list);
     dupe_match_reset_list(dw->second_list);
+    dupe_window_clear_vp(dw);
 
     dupe_check_start(dw);
 }
