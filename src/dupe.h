@@ -61,6 +61,7 @@ struct _DupeItem
 
     GList *group;           /* List of match data */
     gdouble group_rank;
+    gint vptree_idx;        /* index into DupeWindow->vptree_seen_gen, -1 if unset */  
 
     gint second;
 };
@@ -81,6 +82,8 @@ struct _DupeWindow
     VPTree *vptree;         /* NULL when not in use */
     VPTree *second_vptree;
     GList *vptree_entries;   /* GList of SimVPEntry*, owned, freed on clear */
+    guint *vptree_seen_gen;  /* array[n_items], parallel to list order */
+    guint  vptree_current_gen;
 
     GtkWidget *window;
     GtkWidget *paned;
