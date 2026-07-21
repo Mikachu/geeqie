@@ -1222,7 +1222,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         image_sim_coarse_rot(needle->simd, 0, query.coarse_r, query.coarse_g, query.coarse_b);
         query.user_data = needle;
 
-        gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
+        gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0) + 48;
         GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
 
         for (GList *work = candidates; work; work = work->next)
