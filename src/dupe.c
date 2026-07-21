@@ -78,7 +78,6 @@ static GList *dupe_window_list = NULL;  /* list of open DupeWindow *s */
  * because we have to account for two 'modes' everywhere. (be careful).
  */
 
-static void dupe_match_unlink(DupeItem *a, DupeItem *b);
 static DupeItem *dupe_match_find_parent(DupeWindow *dw, DupeItem *child);
 
 static gint dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble *rank, gint fast);
@@ -324,58 +323,6 @@ static void dupe_item_free(DupeItem *di)
 static inline void dupe_list_free(GList *list)
 {
     g_list_free_full(list, (GDestroyNotify)dupe_item_free);
-}
-
-/*
-static DupeItem *dupe_item_find_fd_by_list(FileData *fd, GList *work)
-{
-    while (work)
-    {
-        DupeItem *di = work->data;
-
-        if (di->fd == fd) return di;
-
-        work = work->next;
-    }
-
-    return NULL;
-}
-*/
-
-/*
-static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
-{
-    DupeItem *di;
-
-    di = dupe_item_find_fd_by_list(fd, dw->list);
-    if (!di && dw->second_set) di = dupe_item_find_fd_by_list(fd, dw->second_list);
-
-    return di;
-}
-*/
-
-static DupeItem *dupe_item_find_path_by_list(const gchar *path, GList *work)
-{
-    while (work)
-    {
-        DupeItem *di = work->data;
-
-        if (strcmp(di->fd->path, path) == 0) return di;
-
-        work = work->next;
-    }
-
-    return NULL;
-}
-
-static DupeItem *dupe_item_find_path(DupeWindow *dw, const gchar *path)
-{
-    DupeItem *di;
-
-    di = dupe_item_find_path_by_list(path, dw->list);
-    if (!di && dw->second_set) di = dupe_item_find_path_by_list(path, dw->second_list);
-
-    return di;
 }
 
 /*
@@ -788,12 +735,6 @@ static void dupe_match_unlink_child(DupeItem *child, DupeItem *parent)
     }
 }
 
-static void dupe_match_unlink(DupeItem *a, DupeItem *b)
-{
-    dupe_match_unlink_child(a, b);
-    dupe_match_unlink_child(b, a);
-}
-
 static void dupe_match_link_clear(DupeItem *parent, gboolean unlink_children)
 {
     GList *work;
@@ -817,16 +758,6 @@ static void dupe_match_link_clear(DupeItem *parent, gboolean unlink_children)
 static gint dupe_match_link_exists(DupeItem *child, DupeItem *parent)
 {
     return (dupe_match_find_match(child, parent) != NULL);
-}
-
-static gdouble dupe_match_link_rank(DupeItem *child, DupeItem *parent)
-{
-    DupeMatch *dm;
-
-    dm = dupe_match_find_match(child, parent);
-    if (dm) return dm->rank;
-
-    return 0.0;
 }
 
 static DupeItem *dupe_match_highest_rank(DupeItem *child)
@@ -1841,18 +1772,6 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
     dupe_item_free(di);
 
     dupe_window_update_count(dw, FALSE);
-}
-
-static gboolean dupe_item_remove_by_path(DupeWindow *dw, const gchar *path)
-{
-    DupeItem *di;
-
-    di = dupe_item_find_path(dw, path);
-    if (!di) return FALSE;
-
-    dupe_item_remove(dw, di);
-
-    return TRUE;
 }
 
 static void dupe_add_item(DupeWindow *dw, DupeItem *di)
