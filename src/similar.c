@@ -179,6 +179,86 @@ void image_sim_alternate_processing(ImageSimilarityData *sd)
 #endif
 }
 
+void image_sim_calc_phash(ImageSimilarityData *sd)
+{
+    if (!sd || !sd->filled) return;
+
+    /* Precomputed cosine table: cos_table[n][k] = cosf(M_PI * (2*n+1) * k / 64.0f) */
+    static float cos_table[32][8];
+    static gboolean cos_table_init = FALSE;
+    if (!cos_table_init)
+    {
+        for (int n = 0; n < 32; n++)
+            for (int k = 0; k < 8; k++)
+                cos_table[n][k] = cosf((float)M_PI * (2*n+1) * k / 64.0f);
+        cos_table_init = TRUE;
+    }
+
+    /* Convert to grayscale (luminance) */
+    float gray[1024];
+    for (int i = 0; i < 1024; i++)
+        gray[i] = 0.299f * sd->avg_r[i] + 0.587f * sd->avg_g[i] + 0.114f * sd->avg_b[i];
+
+    /* Compute 8x8 top-left block of the 2D DCT */
+    float dct[8][8];
+    for (int u = 0; u < 8; u++)
+        for (int v = 0; v < 8; v++)
+        {
+            float sum = 0.0f;
+            for (int y = 0; y < 32; y++)
+            {
+                float row_sum = 0.0f;
+                for (int x = 0; x < 32; x++)
+                    row_sum += gray[y*32+x] * cos_table[x][u];
+                sum += row_sum * cos_table[y][v];
+            }
+            dct[u][v] = sum;
+        }
+
+    /* Collect 63 non-DC coefficients (skip dct[0][0]) */
+    float vals[63];
+    int n = 0;
+    for (int u = 0; u < 8; u++)
+        for (int v = 0; v < 8; v++)
+            if (u != 0 || v != 0)
+                vals[n++] = dct[u][v];
+
+    /* Find median via insertion sort of a copy */
+    float sorted[63];
+    for (int i = 0; i < 63; i++) sorted[i] = vals[i];
+    for (int i = 1; i < 63; i++)
+    {
+        float key = sorted[i];
+        int j = i - 1;
+        while (j >= 0 && sorted[j] > key) { sorted[j+1] = sorted[j]; j--; }
+        sorted[j+1] = key;
+    }
+    float median = sorted[31]; /* middle of 63 elements */
+
+    /* Build 63-bit hash: bit i set if vals[i] > median */
+    guint64 hash = 0;
+    for (int i = 0; i < 63; i++)
+    {
+        hash <<= 1;
+        if (vals[i] > median) hash |= 1;
+    }
+
+    sd->phash = hash;
+    sd->phash_filled = TRUE;
+}
+
+static gint sim_phash_vp_entry_dist(gconstpointer a, gconstpointer b)
+{
+    const SimVPEntry *ea = a;
+    const SimVPEntry *eb = b;
+    return __builtin_popcountll(ea->phash ^ eb->phash);
+}
+
+VPTree *image_sim_phash_vptree_build(GList *entries)
+{
+    return vptree_build(entries, sim_phash_vp_entry_dist);
+}
+
 void image_sim_calc_coarse(ImageSimilarityData *sd)
 {
     for (int cy = 0; cy < 4; cy++) {
