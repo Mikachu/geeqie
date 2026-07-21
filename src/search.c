@@ -1597,7 +1597,7 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
     }
 
     if (tmatch && sd->match_similarity_enable && sd->img_cd->similarity)
-    {
+    { //XXX add perceptual hash mode here too?
         gdouble value = 0.0;
 
         tmatch = FALSE;
@@ -2725,6 +2725,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     tab_completion_set_initial_dir(sd->entry_similarity, sd->search_dir_fd->path);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
+    //XXX add checkbox for perceptual hash mode?
     pref_checkbox_new_int(hbox, _("Ignore rotation"),
                 options->rot_invariant_sim, &options->rot_invariant_sim);
 
