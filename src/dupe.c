@@ -1250,9 +1250,11 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         g_list_length(dw->list) >= DUPE_VPTREE_MIN_ITEMS)
     {
         gint max_t = options->rot_invariant_sim ? 8 : 1;
+        gint idx = 0;
         for (GList *w = dw->list; w; w = w->next)
         {
             DupeItem *di = w->data;
+            di->vptree_idx = idx++;
             if (!di->simd || !di->simd->filled) continue;
             if (!di->simd->coarse_filled)
                 image_sim_calc_coarse(di->simd);
@@ -1264,6 +1266,9 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
         }
+        gint n_items = g_list_length(dw->list);
+        dw->vptree_seen_gen = g_new0(guint, n_items);
+        dw->vptree_current_gen = 0;
         dw->vptree = image_sim_vptree_build(dw->vptree_entries);
     }
 
@@ -1285,15 +1290,13 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
         GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
 
-        /* Multiple rotations of the same DupeItem may appear; deduplicate. */
-        GHashTable *seen = g_hash_table_new(NULL, NULL);
         for (GList *work = candidates; work; work = work->next)
         {
             SimVPEntry *e = work->data;
             DupeItem *di = e->user_data;
             if (di == needle) continue;
-            if (g_hash_table_contains(seen, di)) continue;
-            g_hash_table_add(seen, di);
+            if (dw->vptree_seen_gen[di->vptree_idx] == dw->vptree_current_gen) continue;
+            dw->vptree_seen_gen[di->vptree_idx] = dw->vptree_current_gen;
             if (!dupe_match_link_exists(needle, di))
             {
                 gdouble rank;
@@ -1301,7 +1304,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     dupe_match_link(di, needle, rank);
             }
         }
-        g_hash_table_destroy(seen);
+        dw->vptree_seen_gen++;
         g_list_free(candidates);
         return;
     }
@@ -3412,6 +3415,10 @@ void dupe_window_clear(DupeWindow *dw)
     dw->second_vptree = NULL;
     g_list_free_full(dw->vptree_entries, g_free);
     dw->vptree_entries = NULL;
+
+    g_free(dw->vptree_seen_gen);
+    dw->vptree_seen_gen = NULL;
+    dw->vptree_current_gen = 0;
 
     dupe_match_reset_list(dw->second_list);
 
