@@ -1856,23 +1856,17 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
 {
     GHashTable *table[] = { dw->list_cache, dw->second_list_cache };
 
+    if (g_hash_table_lookup(table[dw->second_drop], di->fd))
+    {
+        dupe_item_free(di);
+        return;
+    }
     GList *other_node = g_hash_table_lookup(table[!dw->second_drop], di->fd);
     if (other_node)
     {
         DupeItem *other = other_node->data;
-        if (dw->second_drop)
-        {
-            /* moving from first list to second: O(1) removal */
-            dw->list = g_list_remove_link(dw->list, other_node);
-            g_list_free_1(other_node);
-        }
-        else
-        {
-            /* moving from second list to first */
-            dupe_second_remove(dw, other);
-        }
-        dupe_item_free(other);
         g_hash_table_remove(table[!dw->second_drop], di->fd);
+        dupe_item_remove(dw, other);
     }
 
     if (dw->second_drop) {
