@@ -1854,19 +1854,34 @@ static gboolean dupe_item_remove_by_path(DupeWindow *dw, const gchar *path)
 
 static void dupe_add_item(DupeWindow *dw, DupeItem *di)
 {
-    GHashTable *table[] = { dw->list_cache, dw->second_list_cache };  
-  
-    if (g_hash_table_contains(table[!dw->second_drop], di->fd))  
-    {  
-        dupe_item_free(di);  
-        return;  
-    }  
-    g_hash_table_add(table[dw->second_drop], di->fd);  
+    GHashTable *table[] = { dw->list_cache, dw->second_list_cache };
 
-    if (dw->second_drop)
+    GList *other_node = g_hash_table_lookup(table[!dw->second_drop], di->fd);
+    if (other_node)
+    {
+        DupeItem *other = other_node->data;
+        if (dw->second_drop)
+        {
+            /* moving from first list to second: O(1) removal */
+            dw->list = g_list_remove_link(dw->list, other_node);
+            g_list_free_1(other_node);
+        }
+        else
+        {
+            /* moving from second list to first */
+            dupe_second_remove(dw, other);
+        }
+        dupe_item_free(other);
+        g_hash_table_remove(table[!dw->second_drop], di->fd);
+    }
+
+    if (dw->second_drop) {
         dupe_second_add(dw, di);
-    else
+        g_hash_table_insert(table[1], di->fd, dw->second_list);
+    } else {
         dw->list = g_list_prepend(dw->list, di);
+        g_hash_table_insert(table[0], di->fd, dw->list);
+    }
 }
 
 static gboolean dupe_files_add_queue_done(DupeWindow *dw)
@@ -1995,14 +2010,14 @@ static void dupe_init_list_cache(DupeWindow *dw)
     {
         DupeItem *di = i->data;
 
-        g_hash_table_add(dw->list_cache, di->fd);
+        g_hash_table_insert(dw->list_cache, di->fd, i);
     }
 
     for (GList *i = dw->second_list; i != NULL; i = i->next)
     {
         DupeItem *di = i->data;
 
-        g_hash_table_add(dw->second_list_cache, di->fd);
+        g_hash_table_insert(dw->second_list_cache, di->fd, i);
     }
 }
 
