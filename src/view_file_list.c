@@ -1838,8 +1838,12 @@ VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_c
     else if (vf->list && vflist_selection_count(vf, NULL) == 0)
     {
         /* new directory navigation — no prior selection */
-        if (vf->layout)
-            layout_list_sync_fd(vf->layout, layout_image_get_fd(vf->layout));
+        if (vf->layout) {
+            FileData *fd = vf->layout->image_pending_fd
+                           ? vf->layout->image_pending_fd
+                           : layout_image_get_fd(vf->layout);
+            layout_list_sync_fd(vf->layout, fd);
+        }
         if (vflist_selection_count(vf, NULL) == 0)
             vflist_select_by_fd(vf, vf->list->data);
     }
