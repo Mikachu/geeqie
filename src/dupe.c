@@ -97,7 +97,6 @@ static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointe
 
 static void dupe_init_list_cache(DupeWindow *dw);
 static void dupe_destroy_list_cache(DupeWindow *dw);
-static gboolean dupe_insert_in_list_cache(DupeWindow *dw, FileData *fd);
 /*
  * ------------------------------------------------------------------
  * Window updates
@@ -1853,6 +1852,32 @@ static gboolean dupe_item_remove_by_path(DupeWindow *dw, const gchar *path)
     return TRUE;
 }
 
+static void dupe_add_item(DupeWindow *dw, DupeItem *di)
+{
+    GHashTable *table[] = { dw->list_cache, dw->second_list_cache };  
+  
+    if (g_hash_table_contains(table[!dw->second_drop], di->fd))  
+    {  
+        dupe_item_free(di);  
+        return;  
+    }  
+    g_hash_table_add(table[dw->second_drop], di->fd);  
+
+    if (dw->second_drop)
+        dupe_second_add(dw, di);
+    else
+        dw->list = g_list_prepend(dw->list, di);
+}
+
+static gboolean dupe_files_add_queue_done(DupeWindow *dw)
+{
+    dw->add_files_queue_id = 0;
+    dupe_destroy_list_cache(dw);
+    g_idle_add(dupe_check_start_cb, dw);
+    gtk_widget_set_sensitive(dw->controls_box, TRUE);
+    return FALSE;
+}
+
 static gboolean dupe_files_add_queue_cb(gpointer data)
 {
     DupeItem *di = NULL;
@@ -1863,13 +1888,7 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
     gtk_progress_bar_pulse(GTK_PROGRESS_BAR(dw->extra_label));
 
     if (!queue)
-    {
-        dw->add_files_queue_id = 0;
-        dupe_destroy_list_cache(dw);
-        g_idle_add(dupe_check_start_cb, dw);
-        gtk_widget_set_sensitive(dw->controls_box, TRUE);
-        return FALSE;
-    }
+        return dupe_files_add_queue_done(dw);
 
     fd = queue->data;
     if (fd)
@@ -1912,34 +1931,11 @@ static gboolean dupe_files_add_queue_cb(gpointer data)
 
     dupe_item_read_cache(di);
 
-    /* Ensure images in the lists have unique FileDatas */
-    if (!dupe_insert_in_list_cache(dw, di->fd))
-    {
-        dupe_item_free(di);
-        return TRUE;
-    }
-
-    if (dw->second_drop)
-    {
-        dupe_second_add(dw, di);
-    }
-    else
-    {
-        dw->list = g_list_prepend(dw->list, di);
-    }
+    dupe_add_item(dw, di);
 
     if (dw->add_files_queue)
-    {
         return TRUE;
-    }
-    else
-    {
-        dw->add_files_queue_id = 0;
-        dupe_destroy_list_cache(dw);
-        g_idle_add(dupe_check_start_cb, dw);
-        gtk_widget_set_sensitive(dw->controls_box, TRUE);
-        return FALSE;
-    }
+    return dupe_files_add_queue_done(dw);
 }
 
 static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectInfo *info,
@@ -1987,50 +1983,7 @@ static void dupe_files_add(DupeWindow *dw, CollectionData *collection, CollectIn
 
     if (!di) return;
 
-    /* Ensure images in the lists have unique FileDatas */
-    GList *work;
-    DupeItem *di_list;
-    work = g_list_first(dw->list);
-    while (work)
-    {
-        di_list = work->data;
-        if (di_list->fd == di->fd)
-        {
-            dupe_item_free(di);
-            return;
-        }
-        else
-        {
-            work = work->next;
-        }
-    }
-
-    if (dw->second_list)
-    {
-        work = g_list_first(dw->second_list);
-        while (work)
-        {
-            di_list = work->data;
-            if (di_list->fd == di->fd)
-            {
-                dupe_item_free(di);
-                return;
-            }
-            else
-            {
-                work = work->next;
-            }
-        }
-    }
-
-    if (dw->second_drop)
-    {
-        dupe_second_add(dw, di);
-    }
-    else
-    {
-        dw->list = g_list_prepend(dw->list, di);
-    }
+    dupe_add_item(dw, di);
 }
 
 static void dupe_init_list_cache(DupeWindow *dw)
@@ -2059,27 +2012,18 @@ static void dupe_destroy_list_cache(DupeWindow *dw)
     g_hash_table_destroy(dw->second_list_cache);
 }
 
-/* Return true if the fd was not in the cache */
-static gboolean dupe_insert_in_list_cache(DupeWindow *dw, FileData *fd)
-{
-    GHashTable *table[] = { dw->list_cache, dw->second_list_cache };
-
-    if (g_hash_table_contains(table[!dw->second_drop], fd))
-        return FALSE;
-
-    return g_hash_table_add(table[dw->second_drop], fd);
-}
-
 void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection)
 {
     CollectInfo *info;
 
+    dupe_init_list_cache(dw);    
     info = collection_get_first(collection);
     while (info)
     {
         dupe_files_add(dw, collection, info, NULL, FALSE);
         info = collection_next_by_info(collection, info);
     }
+    dupe_destroy_list_cache(dw);
 
     dupe_check_start(dw);
 }
