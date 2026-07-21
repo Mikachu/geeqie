@@ -1246,12 +1246,12 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
          DUPE_MATCH_SIM_LOW  | DUPE_MATCH_SIM_CUSTOM));
 
     /* Build VP-tree lazily on first call when list is large enough */
-    if (use_sim && !dw->second_set && !dw->vptree &&
-        g_list_length(dw->list) >= DUPE_VPTREE_MIN_ITEMS)
+    GList *build_list = dw->second_set ? dw->second_list : dw->list;    
+    if (use_sim && !dw->vptree && g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS)
     {
         gint max_t = options->rot_invariant_sim ? 8 : 1;
         gint idx = 0;
-        for (GList *w = dw->list; w; w = w->next)
+        for (GList *w = build_list; w; w = w->next)
         {
             DupeItem *di = w->data;
             di->vptree_idx = idx++;
@@ -1266,15 +1266,16 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
         }
-        gint n_items = g_list_length(dw->list);
+        gint n_items = idx;
         dw->vptree_seen_gen = g_new0(guint, n_items);
         dw->vptree_current_gen = 0;
         dw->vptree = image_sim_vptree_build(dw->vptree_entries);
     }
 
-    if (dw->vptree && use_sim && !dw->second_set &&
-        needle->simd && needle->simd->coarse_filled)
+    if (dw->vptree && use_sim && needle->simd)
     {
+        if (!needle->simd->coarse_filled)
+            image_sim_calc_coarse(needle->simd);
         gdouble m;
         if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
         else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
@@ -1304,11 +1305,13 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     dupe_match_link(di, needle, rank);
             }
         }
-        dw->vptree_seen_gen++;
+        dw->vptree_current_gen++;
         g_list_free(candidates);
         return;
     }
 
+    if (use_sim && dw->vptree)
+        fprintf(stderr,"warning: doing a linear scan!\n");
     /* fallback: original O(n) linear scan */
     if (dw->second_set)
     {
@@ -2912,6 +2915,14 @@ static void dupe_second_set_toggle_cb(GtkWidget *widget, gpointer data)
 
     dw->second_set = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 
+    vptree_free(dw->vptree);
+    dw->vptree = NULL;
+    g_list_free_full(dw->vptree_entries, g_free);
+    dw->vptree_entries = NULL;
+    g_free(dw->vptree_seen_gen);
+    dw->vptree_seen_gen = NULL;
+    dw->vptree_current_gen = 0;
+
     if (dw->second_set)
     {
         dupe_second_update_status(dw);
@@ -3411,8 +3422,6 @@ void dupe_window_clear(DupeWindow *dw)
 
     vptree_free(dw->vptree);
     dw->vptree = NULL;
-    vptree_free(dw->second_vptree);
-    dw->second_vptree = NULL;
     g_list_free_full(dw->vptree_entries, g_free);
     dw->vptree_entries = NULL;
 

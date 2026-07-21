@@ -80,7 +80,6 @@ struct _DupeWindow
     GList *dupes;           /* list of dupes (DupeItem, grouping the DupeMatches) */
     DupeMatchType match_mask;   /* mask of things to check for match */
     VPTree *vptree;         /* NULL when not in use */
-    VPTree *second_vptree;
     GList *vptree_entries;   /* GList of SimVPEntry*, owned, freed on clear */
     guint *vptree_seen_gen;  /* array[n_items], parallel to list order */
     guint  vptree_current_gen;
