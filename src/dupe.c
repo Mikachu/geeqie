@@ -89,6 +89,7 @@ static void dupe_second_add(DupeWindow *dw, DupeItem *di);
 static void dupe_second_listview_populate(DupeWindow *dw);
 static void dupe_second_remove(DupeWindow *dw, DupeItem *di);
 static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di);
+static void dupe_window_clear_vp(DupeWindow *dw);
 
 static void dupe_dnd_init(DupeWindow *dw);
 
@@ -1778,11 +1779,14 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
 {
     GHashTable *table[] = { dw->list_cache, dw->second_list_cache };
 
+    /* Already in the target list, nothing to do */
     if (g_hash_table_lookup(table[dw->second_drop], di->fd))
     {
         dupe_item_free(di);
         return;
     }
+
+    /* If it's in the other list, we remove it from there so it can be added here */
     GList *other_node = g_hash_table_lookup(table[!dw->second_drop], di->fd);
     if (other_node)
     {
@@ -1790,6 +1794,10 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
         g_hash_table_remove(table[!dw->second_drop], di->fd);
         dupe_item_remove(dw, other);
     }
+
+    /* Dropping in the list that the vp tree is for, clear the tree */
+    if (dw->vptree && (dw->second_set == dw->second_drop || other_node))
+        dupe_window_clear_vp(dw);
 
     if (dw->second_drop) {
         dupe_second_add(dw, di);
@@ -2800,13 +2808,7 @@ static void dupe_second_set_toggle_cb(GtkWidget *widget, gpointer data)
 
     dw->second_set = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 
-    vptree_free(dw->vptree);
-    dw->vptree = NULL;
-    g_list_free_full(dw->vptree_entries, g_free);
-    dw->vptree_entries = NULL;
-    g_free(dw->vptree_seen_gen);
-    dw->vptree_seen_gen = NULL;
-    dw->vptree_current_gen = 0;
+    dupe_window_clear_vp(dw);
 
     if (dw->second_set)
     {
@@ -3288,6 +3290,17 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
     return stop_signal;
 }
 
+static void dupe_window_clear_vp(DupeWindow *dw)
+{
+    vptree_free(dw->vptree);
+    dw->vptree = NULL;
+    g_list_free_full(dw->vptree_entries, g_free);
+    dw->vptree_entries = NULL;
+
+    g_free(dw->vptree_seen_gen);
+    dw->vptree_seen_gen = NULL;
+    dw->vptree_current_gen = 0;
+}
 
 void dupe_window_clear(DupeWindow *dw)
 {
@@ -3305,14 +3318,7 @@ void dupe_window_clear(DupeWindow *dw)
     dupe_list_free(dw->list);
     dw->list = NULL;
 
-    vptree_free(dw->vptree);
-    dw->vptree = NULL;
-    g_list_free_full(dw->vptree_entries, g_free);
-    dw->vptree_entries = NULL;
-
-    g_free(dw->vptree_seen_gen);
-    dw->vptree_seen_gen = NULL;
-    dw->vptree_current_gen = 0;
+    dupe_window_clear_vp(dw);
 
     dupe_match_reset_list(dw->second_list);
 
@@ -3329,6 +3335,8 @@ void dupe_window_close(DupeWindow *dw)
 
     g_list_free(dw->dupes);
     dupe_list_free(dw->list);
+
+    dupe_window_clear_vp(dw);
 
     dupe_list_free(dw->second_list);
 
