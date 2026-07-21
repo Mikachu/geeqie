@@ -77,6 +77,10 @@ struct _ImageLoader
     gint actual_width;
     gint actual_height;
 
+    /* what was the size before scaling (shrunk=TRUE)? */
+    gint original_width;
+    gint original_height;
+
     gboolean shrunk;
 
     gboolean done;

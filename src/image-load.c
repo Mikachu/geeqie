@@ -520,6 +520,8 @@ static void image_loader_size_cb(gpointer loader,
     }
     g_strfreev(mime_types);
 
+    il->original_width = width;
+    il->original_height = height;
     if (!scale)
     {
         image_loader_emit_size(il);
