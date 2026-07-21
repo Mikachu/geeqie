@@ -225,6 +225,30 @@ void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
     }
 }
 
+static gint sim_vp_entry_dist(gconstpointer a, gconstpointer b)
+{
+    const SimVPEntry *ea = a;
+    const SimVPEntry *eb = b;
+    gint d = 0;
+    for (gint i = 0; i < 16; i++)
+    {
+        d += abs(ea->coarse_r[i] - eb->coarse_r[i]);
+        d += abs(ea->coarse_g[i] - eb->coarse_g[i]);
+        d += abs(ea->coarse_b[i] - eb->coarse_b[i]);
+    }
+    return d;
+}
+
+VPTree *image_sim_vptree_build(GList *entries)
+{
+    return vptree_build(entries, sim_vp_entry_dist);
+}
+
+GList *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius)
+{
+    return vptree_range_query(tree, query, radius);
+}
+
 void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
 {
     gint w, h;

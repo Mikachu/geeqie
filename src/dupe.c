@@ -295,22 +295,6 @@ static void dupe_listview_realign_colors(DupeWindow *dw)
  * ------------------------------------------------------------------
  */
 
-/* Coarse L1 distance between two DupeItems' similarity data.
- * Max value = 16 * 255 * 3 = 12240. */
-static gint dupe_vp_entry_dist(gconstpointer a, gconstpointer b)
-{
-    const DupeVPEntry *ea = a;
-    const DupeVPEntry *eb = b;
-    gint d = 0;
-    for (gint i = 0; i < 16; i++)
-    {
-        d += abs(ea->coarse_r[i] - eb->coarse_r[i]);
-        d += abs(ea->coarse_g[i] - eb->coarse_g[i]);
-        d += abs(ea->coarse_b[i] - eb->coarse_b[i]);
-    }
-    return d;
-}
-
 #define DUPE_VPTREE_MIN_ITEMS 500  /* tune later; 0 to always use VP-tree */
 
 static DupeItem *dupe_item_new(FileData *fd)
@@ -1274,13 +1258,13 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 image_sim_calc_coarse(di->simd);
             for (gint t = 0; t < max_t; t++)
             {
-                DupeVPEntry *e = g_new(DupeVPEntry, 1);
+                SimVPEntry *e = g_new(SimVPEntry, 1);
                 image_sim_coarse_rot(di->simd, t, e->coarse_r, e->coarse_g, e->coarse_b);
-                e->di = di;
+                e->user_data = di;
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
         }
-        dw->vptree = vptree_build(dw->vptree_entries, dupe_vp_entry_dist);
+        dw->vptree = image_sim_vptree_build(dw->vptree_entries);
     }
 
     if (dw->vptree && use_sim && !dw->second_set &&
@@ -1294,19 +1278,19 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
 
         /* Query with needle's identity coarse grid; rotated entries in the
          * tree ensure all 8 transformations of each candidate are covered. */
-        DupeVPEntry query;
+        SimVPEntry query;
         image_sim_coarse_rot(needle->simd, 0, query.coarse_r, query.coarse_g, query.coarse_b);
-        query.di = needle;
+        query.user_data = needle;
 
         gint radius = (gint)((1.0 - m) * 255.0 * 16.0 * 3.0);
-        GList *candidates = vptree_range_query(dw->vptree, &query, radius);
+        GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
 
         /* Multiple rotations of the same DupeItem may appear; deduplicate. */
         GHashTable *seen = g_hash_table_new(NULL, NULL);
         for (GList *work = candidates; work; work = work->next)
         {
-            DupeVPEntry *e = work->data;
-            DupeItem *di = e->di;
+            SimVPEntry *e = work->data;
+            DupeItem *di = e->user_data;
             if (di == needle) continue;
             if (g_hash_table_contains(seen, di)) continue;
             g_hash_table_add(seen, di);
