@@ -3139,21 +3139,23 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
     GtkTreeIter iter;
 
     options->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-    dw->match_mask = DUPE_MATCH_SIM_CUSTOM;
+    if (dw->match_mask != DUPE_MATCH_SIM_PHASH) {
+        dw->match_mask = DUPE_MATCH_SIM_CUSTOM;
 
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(dw->combo));
-    valid = gtk_tree_model_get_iter_first(model, &iter);
-    while (valid)
-    {
-        gtk_tree_model_get(model, &iter, DUPE_MENU_COLUMN_MASK, &match_type, -1);
-        if (match_type == DUPE_MATCH_SIM_CUSTOM)
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(dw->combo));
+        valid = gtk_tree_model_get_iter_first(model, &iter);
+        while (valid)
         {
-            break;
+            gtk_tree_model_get(model, &iter, DUPE_MENU_COLUMN_MASK, &match_type, -1);
+            if (match_type == DUPE_MATCH_SIM_CUSTOM)
+            {
+                break;
+            }
+            valid = gtk_tree_model_iter_next(model, &iter);
         }
-        valid = gtk_tree_model_iter_next(model, &iter);
-    }
 
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(dw->combo), &iter);
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(dw->combo), &iter);
+    }
     dupe_window_recompare(dw);
 }
 
