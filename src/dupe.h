@@ -39,7 +39,8 @@ typedef enum
     DUPE_MATCH_SIM_MED  = 1 << 7,
     DUPE_MATCH_SIM_LOW  = 1 << 8,
     DUPE_MATCH_SIM_CUSTOM = 1 << 9,
-    DUPE_MATCH_NAME_CI = 1 << 10    /* same as name, but case insensitive */
+    DUPE_MATCH_NAME_CI = 1 << 10,   /* same as name, but case insensitive */
+    DUPE_MATCH_SIM_PHASH = 1 << 11, /* similarity via perceptual hash (dct) */
 } DupeMatchType;
 
 typedef struct _DupeItem DupeItem;
