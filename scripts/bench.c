@@ -1,5 +1,5 @@
 #/*
-    gcc -o bench bench.c src/similar.c src/vptree.c $(pkg-config --cflags --libs gtk+-2.0) -fcommon $CFLAGS
+    gcc -o bench bench.c src/similar.c src/vptree.c $(pkg-config --cflags --libs gtk+-2.0) -fcommon -lm $CFLAGS
     exit $!
 */
 
@@ -131,13 +131,15 @@ int main(int argc, char *argv[]) {
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;
-    printf("pairs: %ld  vp_candidates: %ld (%.1f%%)  vp_skipped: %ld (%.1f%%)  "
+    printf("pairs: %ld  vp_candidates: %ld (%.5f%%)  vp_skipped: %ld (%.5f%%)  "
            "elapsed: %.3f  checksum: %.6f\n",
            total_pairs, vp_candidates,
            100.0 * vp_candidates / total_pairs,
            total_pairs - vp_candidates,
            100.0 * (total_pairs - vp_candidates) / total_pairs, elapsed, checksum);
+    printf("matches: %ld (%.2f%%)  precision: %.2f%%\n", matches, 100.0 * matches / total_pairs, 100.0 * matches / vp_candidates);
 
+    return 0;
     long pairs = 0;
     matches = 0;
     checksum = 0.0;
