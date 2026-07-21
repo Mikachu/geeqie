@@ -1143,9 +1143,9 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
         gdouble m;
         if (options->duplicates_days_threshold) {
             if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) > 86400 * options->duplicates_days_threshold) {
-            return FALSE;
+                return FALSE;
+            }
         }
-    }
 
         if (mask & DUPE_MATCH_SIM_HIGH) m = 0.95;
         else if (mask & DUPE_MATCH_SIM_MED) m = 0.90;
@@ -1168,6 +1168,17 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
         DEBUG_3("similar: %32s %32s = %f", a->fd->name, b->fd->name, f);
     }
 
+    if (mask & DUPE_MATCH_SIM_PHASH)
+    {
+        gint threshold;
+        if (!a->simd || !b->simd || !a->simd->phash_filled || !b->simd->phash_filled)
+            return FALSE;
+        gint hamming = __builtin_popcountll(a->simd->phash ^ b->simd->phash);
+        *rank = (64 - hamming) / 64.0 * 100.0;
+        threshold = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);        
+        if (hamming > threshold) return FALSE;
+    }
+
     return TRUE;
 }
 
@@ -1178,32 +1189,52 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
     gboolean use_sim = !!(dw->match_mask &
         (DUPE_MATCH_SIM_HIGH | DUPE_MATCH_SIM_MED |
          DUPE_MATCH_SIM_LOW  | DUPE_MATCH_SIM_CUSTOM));
+    gboolean use_phash = !!(dw->match_mask & DUPE_MATCH_SIM_PHASH);
 
     /* Build VP-tree lazily on first call when list is large enough */
     GList *build_list = dw->second_set ? dw->second_list : dw->list;
-    if (use_sim && !dw->vptree && g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS)
+    if ((use_sim || use_phash) && !dw->vptree && (use_phash || g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS))
     {
-        gint max_t = options->rot_invariant_sim ? 8 : 1;
         gint idx = 0;
-        for (GList *w = build_list; w; w = w->next)
+        if (use_phash)
         {
-            DupeItem *di = w->data;
-            di->vptree_idx = idx++;
-            if (!di->simd || !di->simd->filled) continue;
-            if (!di->simd->coarse_filled)
-                image_sim_calc_coarse(di->simd);
-            for (gint t = 0; t < max_t; t++)
+            for (GList *w = build_list; w; w = w->next)
             {
+                DupeItem *di = w->data;
+                di->vptree_idx = idx++;
+                if (!di->simd || !di->simd->filled) continue;
+                if (!di->simd->phash_filled)
+                    image_sim_calc_phash(di->simd);
+                if (!di->simd->phash_filled) continue;
                 SimVPEntry *e = g_new(SimVPEntry, 1);
-                image_sim_coarse_rot(di->simd, t, e->coarse_r, e->coarse_g, e->coarse_b);
+                e->phash = di->simd->phash;
                 e->user_data = di;
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
+            dw->vptree = image_sim_phash_vptree_build(dw->vptree_entries);
         }
-        gint n_items = idx;
-        dw->vptree_seen_gen = g_new0(guint, n_items);
+        else
+        {
+            gint max_t = options->rot_invariant_sim ? 8 : 1;
+            for (GList *w = build_list; w; w = w->next)
+            {
+                DupeItem *di = w->data;
+                di->vptree_idx = idx++;
+                if (!di->simd || !di->simd->filled) continue;
+                if (!di->simd->coarse_filled)
+                    image_sim_calc_coarse(di->simd);
+                for (gint t = 0; t < max_t; t++)
+                {
+                    SimVPEntry *e = g_new(SimVPEntry, 1);
+                    image_sim_coarse_rot(di->simd, t, e->coarse_r, e->coarse_g, e->coarse_b);
+                    e->user_data = di;
+                    dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
+                }
+            }
+            dw->vptree = image_sim_vptree_build(dw->vptree_entries);
+        }
+        dw->vptree_seen_gen = g_new0(guint, idx);
         dw->vptree_current_gen = 1;
-        dw->vptree = image_sim_vptree_build(dw->vptree_entries);
     }
 
     if (dw->vptree && use_sim && needle->simd && needle->simd->filled)
@@ -1242,6 +1273,36 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         dw->vptree_current_gen++;
         g_list_free(candidates);
         return;
+    }
+    if (dw->vptree && use_phash && needle->simd && needle->simd->filled)
+    {
+        if (!needle->simd->phash_filled)
+            image_sim_calc_phash(needle->simd);
+        if (needle->simd->phash_filled)
+        {
+            SimVPEntry query;
+            query.phash = needle->simd->phash;
+            gint radius = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);        
+            query.user_data = needle;
+            GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
+            for (GList *work = candidates; work; work = work->next)
+            {
+                SimVPEntry *e = work->data;
+                DupeItem *di = e->user_data;
+                if (di == needle) continue;
+                if (dw->vptree_seen_gen[di->vptree_idx] == dw->vptree_current_gen) continue;
+                dw->vptree_seen_gen[di->vptree_idx] = dw->vptree_current_gen;
+                if (!dupe_match_link_exists(needle, di))
+                {
+                    gdouble rank;
+                    if (dupe_match(di, needle, dw->match_mask, &rank, TRUE))
+                        dupe_match_link(di, needle, rank);
+                }
+            }
+            dw->vptree_current_gen++;
+            g_list_free(candidates);
+        }
+        return; /* never fall through to linear scan for phash mode */
     }
 
     if (use_sim && dw->vptree)
@@ -1568,6 +1629,7 @@ static gboolean dupe_check_cb(gpointer data)
         if ((dw->match_mask & DUPE_MATCH_SIM_HIGH ||
              dw->match_mask & DUPE_MATCH_SIM_MED ||
              dw->match_mask & DUPE_MATCH_SIM_LOW ||
+             dw->match_mask & DUPE_MATCH_SIM_PHASH ||
              dw->match_mask & DUPE_MATCH_SIM_CUSTOM) &&
             !(dw->setup_mask & DUPE_MATCH_SIM_MED) )
         {
@@ -2885,6 +2947,7 @@ static void dupe_menu_setup(DupeWindow *dw)
     dupe_menu_add_item(store, _("Similarity"), DUPE_MATCH_SIM_MED, dw);
     dupe_menu_add_item(store, _("Similarity (low)"), DUPE_MATCH_SIM_LOW, dw);
     dupe_menu_add_item(store, _("Similarity (custom)"), DUPE_MATCH_SIM_CUSTOM, dw);
+    dupe_menu_add_item(store, _("Perceptual similarity"), DUPE_MATCH_SIM_PHASH, dw);
 
     g_signal_connect(G_OBJECT(dw->combo), "changed",
              G_CALLBACK(dupe_menu_type_cb), dw);
