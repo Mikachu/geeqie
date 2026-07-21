@@ -1882,7 +1882,9 @@ static void renderer_redraw(RendererTiles *rt, gint x, gint y, gint w, gint h,
 
 static void renderer_update_pixbuf(void *renderer, gboolean lazy)
 {
-    rt_queue_clear((RendererTiles *)renderer);
+    RendererTiles *rt = (RendererTiles *)renderer;
+    rt_queue_clear(rt);
+    rt_tile_free_all(rt);
 }
 
 static void renderer_update_zoom(void *renderer, gboolean lazy)
