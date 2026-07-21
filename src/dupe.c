@@ -1180,7 +1180,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
          DUPE_MATCH_SIM_LOW  | DUPE_MATCH_SIM_CUSTOM));
 
     /* Build VP-tree lazily on first call when list is large enough */
-    GList *build_list = dw->second_set ? dw->second_list : dw->list;    
+    GList *build_list = dw->second_set ? dw->second_list : dw->list;
     if (use_sim && !dw->vptree && g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS)
     {
         gint max_t = options->rot_invariant_sim ? 8 : 1;
@@ -1202,11 +1202,11 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         }
         gint n_items = idx;
         dw->vptree_seen_gen = g_new0(guint, n_items);
-        dw->vptree_current_gen = 0;
+        dw->vptree_current_gen = 1;
         dw->vptree = image_sim_vptree_build(dw->vptree_entries);
     }
 
-    if (dw->vptree && use_sim && needle->simd)
+    if (dw->vptree && use_sim && needle->simd && needle->simd->filled)
     {
         if (!needle->simd->coarse_filled)
             image_sim_calc_coarse(needle->simd);
