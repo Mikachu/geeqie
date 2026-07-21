@@ -1825,6 +1825,10 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
         dupe_match_link_clear(di, TRUE);
     }
 
+    /* Clear VP-tree if the removed item is in the haystack */
+    if (dw->vptree && (di->second == (gboolean)dw->second_set))
+        dupe_window_clear_vp(dw);
+
     if (dw->second_list && g_list_find(dw->second_list, di))
     {
         dupe_second_remove(dw, di);
