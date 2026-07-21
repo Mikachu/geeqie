@@ -1454,8 +1454,8 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
 
         if (di->width == 0 && di->height == 0)
         {
-            di->width = gdk_pixbuf_get_width(pixbuf);
-            di->height = gdk_pixbuf_get_height(pixbuf);
+            di->width = il->original_width;
+            di->height = il->original_height;
         }
         if (options->thumbnails.enable_sim_caching)
         {
@@ -1594,6 +1594,7 @@ static gboolean dupe_check_cb(gpointer data)
 
                     dw->img_loader = image_loader_new(di->fd);
                     image_loader_set_buffer_size(dw->img_loader, 8);
+                    image_loader_set_requested_size(dw->img_loader, 32, 32);
                     g_signal_connect(G_OBJECT(dw->img_loader), "error", (GCallback)dupe_loader_done_cb, dw);
                     g_signal_connect(G_OBJECT(dw->img_loader), "done", (GCallback)dupe_loader_done_cb, dw);
 
