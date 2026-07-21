@@ -501,13 +501,6 @@ static const transfo_fn transfo_funcs[8] = {
     image_sim_compare_fast_5, image_sim_compare_fast_7,
 };
 
-gdouble image_sim_compare_fast_transfo(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min, gchar transfo)
-{
-    if (!a || !b || !a->filled || !b->filled) return 0.0;
-    gint max_sim = (gint)((1.0 - min) * (255.0 * 1024.0 * 3.0));
-    return transfo_funcs[(guint)transfo & 7](a, b, max_sim);
-}
-
 gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min)
 {
     if (!a || !b || !a->filled || !b->filled) return 0.0;
