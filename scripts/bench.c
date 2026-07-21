@@ -98,13 +98,15 @@ int main(int argc, char *argv[]) {
     long matches = 0;
     gdouble checksum = 0.0;
 
+    gint *seen_gen = calloc(n, sizeof(gint));
+    gint gen = 0;
     for (int i = 0; i < n; i++)
     {
         SimVPEntry query;
         image_sim_coarse_rot(sims[i], 0, query.coarse_r, query.coarse_g, query.coarse_b);
         query.user_data = sims[i];
         GList *candidates = image_sim_vptree_query(vptree, &query, radius);
-        GHashTable *seen = g_hash_table_new(NULL, NULL);
+        gen++;
         for (GList *c = candidates; c; c = c->next)
         {
             SimVPEntry *e = c->data;
@@ -112,20 +114,20 @@ int main(int argc, char *argv[]) {
             if (other == sims[i]) continue;
             gint j = GPOINTER_TO_INT(g_hash_table_lookup(sim_idx, other));
             if (j <= i) continue;
-            if (g_hash_table_contains(seen, other)) continue;
-            g_hash_table_add(seen, other);
+            if (seen_gen[j] == gen) continue;
+            seen_gen[j] = gen;
             vp_candidates++;
             gdouble s = image_sim_compare_fast(sims[i], other, threshold);
             checksum += s;
             if (s > 0.0) matches++;
         }
-        g_hash_table_destroy(seen);
         g_list_free(candidates);
     }
 
     g_hash_table_destroy(sim_idx);
     vptree_free(vptree);
     free(entry_buf);
+    free(seen_gen);
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) * 1e-9;
