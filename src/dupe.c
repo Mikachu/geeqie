@@ -1101,6 +1101,11 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
 
     if (a->fd->path == b->fd->path) return FALSE;
 
+    /* Ignore pairs whose mtimes are too close (near-duplicate edits) */
+    if (options->duplicates_neartime_threshold &&
+        llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) < 60 * options->duplicates_neartime_threshold)
+        return FALSE;    
+
     if (mask & DUPE_MATCH_PATH)
     {
         if (utf8_compare(a->fd->path, b->fd->path, TRUE) != 0) return FALSE;
@@ -3124,6 +3129,13 @@ static void dupe_window_rotation_invariant_cb(GtkWidget *widget, gpointer data)
     dupe_window_recompare(dw);
 }
 
+static void dupe_window_custom_neartime_range_cb(GtkWidget *widget, gpointer data)
+{
+    DupeWindow *dw = data;
+    options->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    dupe_window_recompare(dw);
+}
+
 static void dupe_window_custom_date_range_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
@@ -3600,6 +3612,17 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_days_threshold);
     g_signal_connect(G_OBJECT(button), "value_changed",
                                                     G_CALLBACK(dupe_window_custom_date_range_cb), dw);
+    gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(button);
+
+    label = gtk_label_new(_("Ignore"));
+    gtk_box_pack_start(GTK_BOX(status_box), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(label);
+    button = gtk_spin_button_new_with_range(0, 3650, 1);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore matches with mtime within specified number of minutes");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_neartime_threshold);
+    g_signal_connect(G_OBJECT(button), "value_changed",
+                                                    G_CALLBACK(dupe_window_custom_neartime_range_cb), dw);
     gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
