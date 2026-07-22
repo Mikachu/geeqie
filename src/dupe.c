@@ -3445,6 +3445,8 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     GtkWidget *frame;
     GtkWidget *status_box;
     GtkWidget *controls_box;
+    GtkWidget *controls_box_1;
+    GtkWidget *controls_box_2;
     GtkWidget *label;
     GtkWidget *button;
     GtkListStore *store;
@@ -3547,22 +3549,25 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
 
     pref_line(dw->second_vbox, GTK_ORIENTATION_HORIZONTAL);
 
-    controls_box = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
+    controls_box = pref_box_new(vbox, FALSE, GTK_ORIENTATION_VERTICAL, 0);
     dw->controls_box = controls_box;
 
+    controls_box_1 = pref_box_new(controls_box, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
+    controls_box_2 = pref_box_new(controls_box, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
+
     label = gtk_label_new(_("Compare by:"));
-    gtk_box_pack_start(GTK_BOX(controls_box), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box_1), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
 
     dupe_menu_setup(dw);
-    gtk_box_pack_start(GTK_BOX(controls_box), dw->combo, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(controls_box_1), dw->combo, FALSE, FALSE, 0);
     gtk_widget_show(dw->combo);
 
     dw->button_thumbs = gtk_check_button_new_with_label(_("Thumbnails"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dw->button_thumbs), dw->show_thumbs);
     g_signal_connect(G_OBJECT(dw->button_thumbs), "toggled",
              G_CALLBACK(dupe_window_show_thumb_cb), dw);
-    gtk_box_pack_start(GTK_BOX(controls_box), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box_1), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(dw->button_thumbs);
 
     button = gtk_check_button_new_with_label(_("Ignore Rotation"));
@@ -3570,14 +3575,47 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), options->rot_invariant_sim);
     g_signal_connect(G_OBJECT(button), "toggled",
              G_CALLBACK(dupe_window_rotation_invariant_cb), dw);
-    gtk_box_pack_start(GTK_BOX(controls_box), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_start(GTK_BOX(controls_box_1), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
     button = gtk_check_button_new_with_label(_("Compare two file sets"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dw->second_set);
     g_signal_connect(G_OBJECT(button), "toggled",
              G_CALLBACK(dupe_second_set_toggle_cb), dw);
-    gtk_box_pack_end(GTK_BOX(controls_box), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_box_pack_end(GTK_BOX(controls_box_1), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(button);
+
+    label = gtk_label_new(_("Custom Threshold"));
+    gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(label);
+    button = gtk_spin_button_new_with_range(1, 100, 1);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom similarity threshold");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_similarity_threshold);
+    g_signal_connect(G_OBJECT(button), "value_changed",
+                                                    G_CALLBACK(dupe_window_custom_threshold_cb), dw);
+    gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(button);
+
+    label = gtk_label_new(_("Day Range"));
+    gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(label);
+    button = gtk_spin_button_new_with_range(0, 3650, 1);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom date threshold in days");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_days_threshold);
+    g_signal_connect(G_OBJECT(button), "value_changed",
+                                                    G_CALLBACK(dupe_window_custom_date_range_cb), dw);
+    gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(button);
+
+    label = gtk_label_new(_("Ignore"));
+    gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
+    gtk_widget_show(label);
+    button = gtk_spin_button_new_with_range(0, 3650, 1);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore matches with mtime within specified number of minutes");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_neartime_threshold);
+    g_signal_connect(G_OBJECT(button), "value_changed",
+                                                    G_CALLBACK(dupe_window_custom_neartime_range_cb), dw);
+    gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
     status_box = gtk_hbox_new(FALSE, 0);
@@ -3592,39 +3630,6 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     dw->status_label = gtk_label_new("");
     gtk_container_add(GTK_CONTAINER(frame), dw->status_label);
     gtk_widget_show(dw->status_label);
-
-    label = gtk_label_new(_("Custom Threshold"));
-    gtk_box_pack_start(GTK_BOX(status_box), label, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(label);
-    button = gtk_spin_button_new_with_range(1, 100, 1);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom similarity threshold");
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_similarity_threshold);
-    g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_threshold_cb), dw);
-    gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(button);
-
-    label = gtk_label_new(_("Day Range"));
-    gtk_box_pack_start(GTK_BOX(status_box), label, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(label);
-    button = gtk_spin_button_new_with_range(0, 3650, 1);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom date threshold in days");
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_days_threshold);
-    g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_date_range_cb), dw);
-    gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(button);
-
-    label = gtk_label_new(_("Ignore"));
-    gtk_box_pack_start(GTK_BOX(status_box), label, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(label);
-    button = gtk_spin_button_new_with_range(0, 3650, 1);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore matches with mtime within specified number of minutes");
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_neartime_threshold);
-    g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_neartime_range_cb), dw);
-    gtk_box_pack_start(GTK_BOX(status_box), button, FALSE, FALSE, PREF_PAD_SPACE);
-    gtk_widget_show(button);
 
     dw->extra_label = gtk_progress_bar_new();
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(dw->extra_label), 0.0);
