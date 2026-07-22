@@ -42,6 +42,7 @@ struct _ConfOptions
 
     guint duplicates_similarity_threshold;
     guint duplicates_days_threshold;
+    guint duplicates_neartime_threshold;
     gboolean rot_invariant_sim;
 
     gint open_recent_list_maxsize;
