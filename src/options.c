@@ -48,6 +48,7 @@ ConfOptions *init_options(ConfOptions *options)
     options->dnd_icon_size = 48;
     options->duplicates_similarity_threshold = 99;
     options->duplicates_days_threshold = 0;
+    options->duplicates_neartime_threshold = 0;
     options->rot_invariant_sim = TRUE;
 
     options->file_filter.disable = FALSE;
