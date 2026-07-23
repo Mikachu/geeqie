@@ -367,23 +367,23 @@ static void dupe_item_write_cache(DupeItem *di)
  * ------------------------------------------------------------------
  */
 
-static gint dupe_listview_find_item(GtkListStore *store, DupeItem *item, GtkTreeIter *iter)
+static gint dupe_listview_find_item(DupeWindow *dw, DupeItem *item, GtkTreeIter *iter)
 {
-    gboolean valid;
-    gint row = 0;
+    GtkTreeRowReference *ref;
+    GtkTreePath *path;
+    GtkTreeModel *model;
 
-    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), iter);
-    while (valid)
-    {
-        DupeItem *item_n;
-        gtk_tree_model_get(GTK_TREE_MODEL(store), iter, DUPE_COLUMN_POINTER, &item_n, -1);
-        if (item_n == item) return row;
+    ref = g_hash_table_lookup(dw->item_to_rowref, item);
+    if (!ref) return -1;
 
-        valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), iter);
-        row++;
-    }
+    path = gtk_tree_row_reference_get_path(ref);
+    if (!path) return -1;
 
-    return -1;
+    model = gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview));
+    gtk_tree_model_get_iter(model, iter, path);
+    gint row = gtk_tree_path_get_indices(path)[0];
+    gtk_tree_path_free(path);
+    return row;
 }
 
 static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
@@ -403,7 +403,7 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     {
         DupeMatch *dm;
 
-        row = dupe_listview_find_item(store, parent, &iter);
+        row = dupe_listview_find_item(dw, parent, &iter);
 
         row++;
 
@@ -464,6 +464,10 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
                 DUPE_COLUMN_DIMENSIONS, text[DUPE_COLUMN_DIMENSIONS],
                 DUPE_COLUMN_PATH, text[DUPE_COLUMN_PATH],
                 -1);
+    GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
+    g_hash_table_insert(dw->item_to_rowref, di,
+                        gtk_tree_row_reference_new(GTK_TREE_MODEL(store), path));
+    gtk_tree_path_free(path);
 
     g_free(text[DUPE_COLUMN_RANK]);
     g_free(text[DUPE_COLUMN_SIZE]);
@@ -477,6 +481,7 @@ static void dupe_listview_populate(DupeWindow *dw)
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     gtk_list_store_clear(store);
+    g_hash_table_remove_all(dw->item_to_rowref);
 
     work = g_list_last(dw->dupes);
     while (work)
@@ -514,8 +519,9 @@ static void dupe_listview_remove(DupeWindow *dw, DupeItem *di)
     if (!di) return;
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
-    row = dupe_listview_find_item(store, di, &iter);
+    row = dupe_listview_find_item(dw, di, &iter);
     if (row < 0) return;
+    g_hash_table_remove(dw->item_to_rowref, di);
 
     tree_view_move_cursor_away(GTK_TREE_VIEW(dw->listview), &iter, TRUE);
     gtk_list_store_remove(store, &iter);
@@ -1310,7 +1316,7 @@ static void dupe_listview_set_thumb(DupeWindow *dw, DupeItem *di, GtkTreeIter *i
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     if (!iter)
     {
-        if (dupe_listview_find_item(store, di, &iter_n) >= 0)
+        if (dupe_listview_find_item(dw, di, &iter_n) >= 0)
         {
             iter = &iter_n;
         }
@@ -2047,20 +2053,6 @@ static void dupe_item_update(DupeWindow *dw, DupeItem *di)
 {
     if ( (dw->match_mask & DUPE_MATCH_NAME) || (dw->match_mask & DUPE_MATCH_PATH || (dw->match_mask & DUPE_MATCH_NAME_CI)) )
     {
-        /* only effects matches on name or path */
-/*
-        FileData *fd = file_data_ref(di->fd);
-        gint second;
-
-        second = di->second;
-        dupe_item_remove(dw, di);
-
-        dw->second_drop = second;
-        dupe_files_add(dw, NULL, NULL, fd, FALSE);
-        dw->second_drop = FALSE;
-
-        file_data_unref(fd);
-*/
         dupe_check_start(dw);
     }
     else
@@ -2071,7 +2063,7 @@ static void dupe_item_update(DupeWindow *dw, DupeItem *di)
         /* update the listview(s) */
 
         store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
-        row = dupe_listview_find_item(store, di, &iter);
+        row = dupe_listview_find_item(dw, di, &iter);
         if (row >= 0)
         {
             gtk_list_store_set(store, &iter,
@@ -2082,10 +2074,16 @@ static void dupe_item_update(DupeWindow *dw, DupeItem *di)
         if (dw->second_listview)
         {
             store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->second_listview)));
-            row = dupe_listview_find_item(store, di, &iter);
-            if (row >= 0)
+            gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+            while (valid)
             {
-                gtk_list_store_set(store, &iter, 1, di->fd->path, -1);
+                DupeItem *di_n;
+                gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, DUPE_COLUMN_POINTER, &di_n, -1);
+                if (di_n == di) {
+                    gtk_list_store_set(store, &iter, 1, di->fd->path, -1);
+                    break;
+                }
+                valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
             }
         }
     }
@@ -2206,6 +2204,7 @@ static void dupe_window_recompare(DupeWindow *dw)
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     gtk_list_store_clear(store);
+    g_hash_table_remove_all(dw->item_to_rowref);
 
     g_hash_table_remove_all(dw->dupes_set);
     g_list_free(dw->dupes);
@@ -3349,6 +3348,7 @@ void dupe_window_clear(DupeWindow *dw)
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     gtk_list_store_clear(store);
+    g_hash_table_remove_all(dw->item_to_rowref);
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(dw->listview));
 
     g_hash_table_remove_all(dw->dupes_set);
@@ -3373,6 +3373,7 @@ void dupe_window_close(DupeWindow *dw)
     dupe_window_list = g_list_remove(dupe_window_list, dw);
     gtk_widget_destroy(dw->window);
 
+    g_hash_table_destroy(dw->item_to_rowref);
     g_hash_table_destroy(dw->dupes_set);
     g_list_free(dw->dupes);
     dupe_list_free(dw->list);
@@ -3418,6 +3419,8 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     dw->match_mask = match_mask;
 
     dw->dupes_set = g_hash_table_new(NULL, NULL);
+    dw->item_to_rowref = g_hash_table_new_full(NULL, NULL, NULL,
+                         (GDestroyNotify)gtk_tree_row_reference_free);
 
     dw->window = window_new(GTK_WINDOW_TOPLEVEL, "dupe", NULL, NULL, _("Find duplicates"));
 
@@ -3830,7 +3833,7 @@ static void dupe_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer 
         GtkTreeIter iter;
 
         store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
-        if (dupe_listview_find_item(store, dw->click_item, &iter) >= 0)
+        if (dupe_listview_find_item(dw, dw->click_item, &iter) >= 0)
         {
             GtkTreeSelection *selection;
             GtkTreePath *tpath;
