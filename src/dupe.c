@@ -785,15 +785,18 @@ static void dupe_match_reparent(DupeWindow *dw, DupeItem *old, DupeItem *new)
     if (!old || !new || !dupe_match_link_exists(old, new)) return;
 
     dupe_match_link_clear(new, TRUE);
+
+    /* Update back-links in each child's group */
     work = old->group;
     while (work)
     {
         DupeMatch *dm = work->data;
-        dupe_match_unlink_child(old, dm->di);
-        dupe_match_link_child(new, dm->di, dm->rank);
+        DupeMatch *back = dupe_match_find_match(old, dm->di); /* find dm->di->group entry pointing to old */
+        if (back) back->di = new;
         work = work->next;
     }
 
+    /* Transfer old->group to new->group (forward links are correct as-is) */
     new->group = old->group;
     old->group = NULL;
 
