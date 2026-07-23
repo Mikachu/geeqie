@@ -251,48 +251,6 @@ static void widget_set_cursor(GtkWidget *widget, gint icon)
 
 /*
  * ------------------------------------------------------------------
- * row color utils
- * ------------------------------------------------------------------
- */
-
-static void dupe_listview_realign_colors(DupeWindow *dw)
-{
-    GtkTreeModel *store;
-    GtkTreeIter iter;
-    gboolean color_set = TRUE;
-    DupeItem *parent = NULL;
-    gboolean valid;
-
-    store = gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview));
-    valid = gtk_tree_model_get_iter_first(store, &iter);
-    while (valid)
-    {
-        DupeItem *child;
-        DupeItem *child_parent;
-
-        gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &child, -1);
-        child_parent = dupe_match_find_parent(dw, child);
-        if (!parent || parent != child_parent)
-        {
-            if (!parent)
-            {
-                /* keep the first row as it is */
-                gtk_tree_model_get(store, &iter, DUPE_COLUMN_COLOR, &color_set, -1);
-            }
-            else
-            {
-                color_set = !color_set;
-            }
-            parent = dupe_match_find_parent(dw, child);
-        }
-        gtk_list_store_set(GTK_LIST_STORE(store), &iter, DUPE_COLUMN_COLOR, color_set, -1);
-
-        valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
-    }
-}
-
-/*
- * ------------------------------------------------------------------
  * Dupe item utils
  * ------------------------------------------------------------------
  */
@@ -435,7 +393,6 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     gchar *text[DUPE_COLUMN_COUNT];
     GtkListStore *store;
     GtkTreeIter iter;
-    gboolean color_set = FALSE;
     gint rank;
 
     if (!parent) return;
@@ -447,7 +404,6 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
         DupeMatch *dm;
 
         row = dupe_listview_find_item(store, parent, &iter);
-        gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, DUPE_COLUMN_COLOR, &color_set, -1);
 
         row++;
 
@@ -464,15 +420,6 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     }
     else
     {
-        if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter))
-        {
-            gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, DUPE_COLUMN_COLOR, &color_set, -1);
-            color_set = !color_set;
-        }
-        else
-        {
-            color_set = FALSE;
-        }
         row = 0;
         rank = 0;
     }
@@ -505,7 +452,6 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
         text[DUPE_COLUMN_DIMENSIONS] = g_strdup("");
     }
     text[DUPE_COLUMN_PATH] = di->fd->path;
-    text[DUPE_COLUMN_COLOR] = NULL;
 
     gtk_list_store_insert(store, &iter, row);
     gtk_list_store_set(store, &iter,
@@ -517,7 +463,6 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
                 DUPE_COLUMN_DATE, text[DUPE_COLUMN_DATE],
                 DUPE_COLUMN_DIMENSIONS, text[DUPE_COLUMN_DIMENSIONS],
                 DUPE_COLUMN_PATH, text[DUPE_COLUMN_PATH],
-                DUPE_COLUMN_COLOR, color_set,
                 -1);
 
     g_free(text[DUPE_COLUMN_RANK]);
@@ -574,11 +519,6 @@ static void dupe_listview_remove(DupeWindow *dw, DupeItem *di)
 
     tree_view_move_cursor_away(GTK_TREE_VIEW(dw->listview), &iter, TRUE);
     gtk_list_store_remove(store, &iter);
-
-    if (g_list_find(dw->dupes, di) != NULL)
-    {
-        if (!dw->color_frozen) dupe_listview_realign_colors(dw);
-    }
 }
 
 
@@ -2320,7 +2260,6 @@ static void dupe_window_remove_selection(DupeWindow *dw, GtkWidget *listview)
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
 
-    dw->color_frozen = TRUE;
     work = list;
     while (work)
     {
@@ -2330,11 +2269,8 @@ static void dupe_window_remove_selection(DupeWindow *dw, GtkWidget *listview)
         work = work->next;
         dupe_item_remove(dw, di);
     }
-    dw->color_frozen = FALSE;
 
     g_list_free(list);
-
-    dupe_listview_realign_colors(dw);
 }
 
 static void dupe_window_edit_selected(DupeWindow *dw, const gchar *key)
@@ -3009,12 +2945,16 @@ static void dupe_listview_color_cb(GtkTreeViewColumn *tree_column, GtkCellRender
                    GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data)
 {
     DupeWindow *dw = data;
-    gboolean set;
+    DupeItem *di;
+    DupeItem *parent;
+    gint idx;
 
-    gtk_tree_model_get(tree_model, iter, DUPE_COLUMN_COLOR, &set, -1);
+    gtk_tree_model_get(tree_model, iter, DUPE_COLUMN_POINTER, &di, -1);
+    parent = dupe_match_find_parent(dw, di);
+    idx = g_list_index(dw->dupes, parent);
     g_object_set(G_OBJECT(cell),
              "cell-background-gdk", dupe_listview_color_shifted(dw->listview),
-             "cell-background-set", set, NULL);
+             "cell-background-set", (idx % 2 == 0), NULL);
 }
 
 static void dupe_listview_add_column(DupeWindow *dw, GtkWidget *listview, gint n, const gchar *title, gboolean image, gboolean right_justify)

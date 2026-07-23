@@ -62,7 +62,7 @@ struct _DupeItem
 
     GList *group;           /* List of match data */
     gdouble group_rank;
-    gint vptree_idx;        /* index into DupeWindow->vptree_seen_gen, -1 if unset */  
+    gint vptree_idx;        /* index into DupeWindow->vptree_seen_gen, -1 if unset */
 
     gint second;
 };
@@ -126,8 +126,6 @@ struct _DupeWindow
     GtkWidget *second_vbox;     /* box of second widgets */
     GtkWidget *second_listview;
     GtkWidget *second_status_label;
-
-    gboolean color_frozen;
 };
 
 
