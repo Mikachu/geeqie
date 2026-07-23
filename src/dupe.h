@@ -79,10 +79,11 @@ struct _DupeWindow
 {
     GList *list;            /* dropped files (DupeItem) */
     GList *dupes;           /* list of dupes (DupeItem, grouping the DupeMatches) */
+    GHashTable *dupes_set;  /* hash set mirror of dupes */
     DupeMatchType match_mask;   /* mask of things to check for match */
     VPTree *vptree;         /* NULL when not in use */
-    GList *vptree_entries;   /* GList of SimVPEntry*, owned, freed on clear */
-    guint *vptree_seen_gen;  /* array[n_items], parallel to list order */
+    GList *vptree_entries;  /* GList of SimVPEntry*, owned, freed on clear */
+    guint *vptree_seen_gen; /* array[n_items], parallel to list order */
     guint  vptree_current_gen;
 
     GtkWidget *window;
