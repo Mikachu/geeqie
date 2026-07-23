@@ -603,7 +603,9 @@ static void vflist_select_image(ViewFile *vf, FileData *sel_fd)
 
     if (!sel_fd) return;
 
-    cur_fd = layout_image_get_fd(vf->layout);
+    cur_fd = vf->layout->image_pending_fd
+             ? vf->layout->image_pending_fd
+             : layout_image_get_fd(vf->layout);
     if (sel_fd == cur_fd) return; /* no change */
 
     row = g_list_index(vf->list, sel_fd);
@@ -1767,6 +1769,7 @@ static void vflist_populate_view(ViewFile *vf, gboolean force)
     {
         GtkTreeIter iter;
         GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(vf->listview));
+        gtk_tree_selection_unselect_all(sel);
         gboolean valid = gtk_tree_model_get_iter_first(store, &iter);
         while (valid)
         {
@@ -1831,8 +1834,17 @@ VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_c
                 gtk_tree_selection_select_iter(sel, &iter);
             valid = gtk_tree_model_iter_next(model, &iter);
         }
+        if (vflist_selection_count(vf, NULL) == 0) {
+        /* old files not in new list — treat like new-directory navigation */
+        if (vf->layout) {
+            FileData *fd = vf->layout->image_pending_fd
+                           ? vf->layout->image_pending_fd
+                           : layout_image_get_fd(vf->layout);
+            layout_list_sync_fd(vf->layout, fd);
+        }
         if (vflist_selection_count(vf, NULL) == 0)
-            vflist_select_closest(vf, dld->selected->data);
+            vflist_select_by_fd(vf, vf->list->data);
+        }
         filelist_free(dld->selected);
     }
     else if (vf->list && vflist_selection_count(vf, NULL) == 0)
