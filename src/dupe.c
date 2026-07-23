@@ -2576,9 +2576,9 @@ static GtkWidget *dupe_menu_popup_main(DupeWindow *dw, DupeItem *di)
                 G_CALLBACK(dupe_menu_remove_cb), dw);
     menu_item_add_stock_sensitive(menu, _("C_lear"), GTK_STOCK_CLEAR, (dw->list != NULL),
                 G_CALLBACK(dupe_menu_clear_cb), dw);
-    menu_item_add_divider(menu);
+    /*menu_item_add_divider(menu);
     menu_item_add_stock(menu, _("Close _window"), GTK_STOCK_CLOSE,
-                G_CALLBACK(dupe_menu_close_cb), dw);
+                G_CALLBACK(dupe_menu_close_cb), dw);*/
 
     return menu;
 }
@@ -2868,9 +2868,9 @@ static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di)
                       G_CALLBACK(dupe_second_menu_remove_cb), dw);
     menu_item_add_stock_sensitive(menu, _("C_lear"), GTK_STOCK_CLEAR, notempty,
                    G_CALLBACK(dupe_second_menu_clear_cb), dw);
-    menu_item_add_divider(menu);
+    /*menu_item_add_divider(menu);
     menu_item_add_stock(menu, _("Close _window"), GTK_STOCK_CLOSE,
-                G_CALLBACK(dupe_menu_close_cb), dw);
+                G_CALLBACK(dupe_menu_close_cb), dw);*/
 
     return menu;
 }
