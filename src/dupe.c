@@ -284,6 +284,30 @@ static inline void dupe_list_free(GList *list)
     g_list_free_full(list, (GDestroyNotify)dupe_item_free);
 }
 
+static DupeItem *dupe_item_find_fd_by_list(FileData *fd, GList *work)
+{
+    while (work)
+    {
+        DupeItem *di = work->data;
+
+        if (di->fd == fd) return di;
+
+        work = work->next;
+    }
+
+    return NULL;
+}
+
+static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
+{
+    DupeItem *di;
+
+    di = dupe_item_find_fd_by_list(fd, dw->list);
+    if (!di && dw->second_set) di = dupe_item_find_fd_by_list(fd, dw->second_list);
+
+    return di;
+}
+
 /*
  * ------------------------------------------------------------------
  * Image property cache
@@ -2420,11 +2444,33 @@ static void dupe_menu_rename_cb(GtkWidget *widget, gpointer data)
     file_util_rename(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window);
 }
 
+typedef struct {
+    DupeWindow *dw;
+    GList *list;   /* DupeItem* list captured at delete time */
+} DupeDeleteData;
+
 static void dupe_menu_delete_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
+    GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(dw->listview));
+    GtkTreeModel *store;
+    GList *slist = gtk_tree_selection_get_selected_rows(selection, &store);
 
-    file_util_delete_notify_done(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window, delete_finished_cb, dw);
+    DupeDeleteData *dd = g_new0(DupeDeleteData, 1);
+    dd->dw = dw;
+    for (GList *w = slist; w; w = w->next)
+    {
+        GtkTreeIter iter;
+        DupeItem *di = NULL;
+        gtk_tree_model_get_iter(store, &iter, w->data);
+        gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di, -1);
+        if (di) dd->list = g_list_prepend(dd->list, file_data_ref(di->fd));
+    }
+    g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
+    g_list_free(slist);
+
+    file_util_delete_notify_done(NULL, dupe_listview_get_selection(dw, dw->listview),
+                                 dw->window, delete_finished_cb, dd);
 }
 
 static void dupe_menu_copy_path_cb(GtkWidget *widget, gpointer data)
@@ -3934,26 +3980,30 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
 
 }
 
+
 /**
  * @brief Refresh window after a file delete operation
  * @param success (ud->phase != UTILITY_PHASE_CANCEL) #file_util_dialog_run
  * @param dest_path Not used
  * @param data #DupeWindow
- * 
+ *
  * If the window is refreshed after each file of a large set is deleted,
  * the UI slows to an unacceptable level. The #FileUtilDoneFunc is used
  * to call this function once, when the entire delete operation is completed.
  */
 static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointer data)
 {
-    DupeWindow *dw = data;
-
-    if (!success)
+    DupeDeleteData *dd = data;
+    if (success)
     {
-        return;
+        for (GList *work = dd->list; work; work = work->next) {
+            FileData *fd = work->data;
+            DupeItem *di = dupe_item_find_fd(dd->dw, fd);
+            if (di) dupe_item_remove(dd->dw, di);
+        }
     }
-
-    dupe_window_remove_selection(dw, dw->listview);
+    filelist_free(dd->list);
+    g_free(dd);
 }
 
 /* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
