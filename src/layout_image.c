@@ -1050,6 +1050,7 @@ static gboolean layout_image_load_idle_cb(LayoutWindow *lw)
     if (lw->full_screen && lw->image != lw->full_screen->imd)
         image_change_fd(lw->full_screen->imd, fd, image_zoom_get_default(lw->full_screen->imd));
 
+    file_data_unref(fd);
     return FALSE;
 }
 
@@ -1058,8 +1059,10 @@ void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
     if (!layout_valid(&lw)) return;
 
     image_loader_abort(lw->image->il);
-    lw->image_pending_fd = fd;
+    file_data_unref(lw->image_pending_fd);
+    lw->image_pending_fd = file_data_ref(fd);
     layout_list_sync_fd(lw, fd);
+
     g_clear_handle_id(&lw->image_pending_idle_id, g_source_remove);
     lw->image_pending_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
     //lw->image_pending_idle_id = g_timeout_add_full(G_PRIORITY_HIGH_IDLE, 50, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
