@@ -55,7 +55,7 @@
 
 #define DUPE_DEF_WIDTH 800
 #define DUPE_DEF_HEIGHT 400
-#define DUPE_PROGRESS_PULSE_STEP 0.0001
+#define DUPE_PROGRESS_PULSE_STEP 0.01
 
 #define DUPE_PHASH_XATTR       "user.geeqie.perceptual_hash"
 #define DUPE_PHASH_MTIME_XATTR "user.geeqie.perceptual_hash.mtime"
@@ -2081,8 +2081,8 @@ void dupe_window_add_files(DupeWindow *dw, GList *list, gboolean recurse)
     }
     if (dw->add_files_queue_id == 0)
     {
-        gtk_progress_bar_pulse(GTK_PROGRESS_BAR(dw->extra_label));
         gtk_progress_bar_set_pulse_step(GTK_PROGRESS_BAR(dw->extra_label), DUPE_PROGRESS_PULSE_STEP);
+        gtk_progress_bar_pulse(GTK_PROGRESS_BAR(dw->extra_label));
         gtk_progress_bar_set_text(GTK_PROGRESS_BAR(dw->extra_label), _("Loading file list"));
 
         dw->add_files_queue_id = g_idle_add(dupe_files_add_queue_cb, dw);
