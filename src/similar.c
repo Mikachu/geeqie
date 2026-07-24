@@ -334,7 +334,7 @@ void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
     guchar *p;
     gint i;
     gint j;
-    gint x_inc, y_inc, xy_inc;
+    gint x_inc, y_inc;
     gint xs, ys;
     gint w_left, h_left;
 
@@ -384,25 +384,47 @@ void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
 
             if (x_small) i = (gfloat)w / 32 * xs;
                     else x_inc = (gint)roundf((gfloat)w_left/(32-xs));
-            xy_inc = x_inc * y_inc;
             r = g = b = 0;
             xpos = pix + (i * p_step);
 
-            for (y = j; y < j + y_inc; y++)
-            {
-                p = xpos + (y * rs);
-                for (x = i; x < i + x_inc; x++)
+            if (has_alpha) {
+                gint opaque = 0;
+                for (y = j; y < j + y_inc; y++)
                 {
-                    r += p[0];
-                    g += p[1];
-                    b += p[2];
-                    p += p_step;
+                    p = xpos + (y * rs);
+                    for (x = i; x < i + x_inc; x++)
+                    {
+                        gint visible = !!p[3];
+                        r += p[0] * visible;
+                        g += p[1] * visible;
+                        b += p[2] * visible;
+                        p += 4;
+                        opaque += visible;
+                    }
                 }
-            }
 
-            r /= xy_inc;
-            g /= xy_inc;
-            b /= xy_inc;
+                if (!opaque) opaque = 1;
+                r /= opaque;
+                g /= opaque;
+                b /= opaque;
+            } else {
+                gint xy_inc = x_inc * y_inc;
+                for (y = j; y < j + y_inc; y++)
+                {
+                    p = xpos + (y * rs);
+                    for (x = i; x < i + x_inc; x++)
+                    {
+                        r += p[0];
+                        g += p[1];
+                        b += p[2];
+                        p += 3;
+                    }
+                }
+
+                r /= xy_inc;
+                g /= xy_inc;
+                b /= xy_inc;
+            }
 
             t = ys * 32 + xs;
             sd->avg_r[t] = r;
