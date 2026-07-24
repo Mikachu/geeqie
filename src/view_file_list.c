@@ -1803,8 +1803,6 @@ static gboolean vflist_dir_load_done_cb(gpointer data)
         /* stale load — discard results */
         filelist_free(dld->files);
         filelist_free(dld->dirs);
-        filelist_free(dld->old_list);
-        filelist_free(dld->selected);
         return G_SOURCE_REMOVE;
     }
 
@@ -1820,34 +1818,7 @@ static gboolean vflist_dir_load_done_cb(gpointer data)
     vflist_populate_view(vf, FALSE);
     g_clear_handle_id(&VFLIST(vf)->autosize_idle_id, g_source_remove);
 VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW, vflist_autosize_column_cb, vf, NULL);
-    if (dld->selected)
-    {
-        GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
-        GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(vf->listview));
-        GtkTreeIter iter;
-        gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
-        while (valid)
-        {
-            FileData *fd;
-            gtk_tree_model_get(model, &iter, FILE_COLUMN_POINTER, &fd, -1);
-            if (g_list_find(dld->selected, fd))
-                gtk_tree_selection_select_iter(sel, &iter);
-            valid = gtk_tree_model_iter_next(model, &iter);
-        }
-        if (vflist_selection_count(vf, NULL) == 0) {
-        /* old files not in new list — treat like new-directory navigation */
-        if (vf->layout) {
-            FileData *fd = vf->layout->image_pending_fd
-                           ? vf->layout->image_pending_fd
-                           : layout_image_get_fd(vf->layout);
-            layout_list_sync_fd(vf->layout, fd);
-        }
-        if (vflist_selection_count(vf, NULL) == 0)
-            vflist_select_by_fd(vf, vf->list->data);
-        }
-        filelist_free(dld->selected);
-    }
-    else if (vf->list && vflist_selection_count(vf, NULL) == 0)
+    if (vf->list && vflist_selection_count(vf, NULL) == 0)
     {
         /* new directory navigation — no prior selection */
         if (vf->layout) {
@@ -1873,7 +1844,6 @@ gboolean vflist_refresh(ViewFile *vf)
     gboolean ret = TRUE;
 
     old_list = vf->list;
-    vf->list = NULL;
 
     DEBUG_1("%s vflist_refresh: read dir", get_exec_time());
     if (vf->dir_fd)
@@ -1890,7 +1860,6 @@ gboolean vflist_refresh(ViewFile *vf)
         dld->done_cb = vflist_dir_load_done_cb;
         dld->done_data = vf;
         dld->follow_symlinks = TRUE;
-        dld->selected = vflist_selection_get_list(vf);
 
         filelist_read_async(dld);
         return TRUE;
