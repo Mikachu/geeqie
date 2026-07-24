@@ -1707,7 +1707,7 @@ static gboolean dupe_check_cb(gpointer data)
         dupe_window_update_progress(dw, _("Comparing..."), 0.0, FALSE);
         dw->setup_done = TRUE;
         dupe_setup_reset(dw);
-        dw->setup_count = g_list_length(dw->list);
+        dw->setup_count = g_hash_table_size(dw->list_node_map);
     }
 
     if (!dw->working)
@@ -1747,8 +1747,8 @@ static void dupe_check_start(DupeWindow *dw)
 {
     dw->setup_done = FALSE;
 
-    dw->setup_count = g_list_length(dw->list);
-    if (dw->second_set) dw->setup_count += g_list_length(dw->second_list);
+    dw->setup_count = g_hash_table_size(dw->list_node_map);
+    if (dw->second_set) dw->setup_count += g_hash_table_size(dw->second_list_node_map);
 
     dw->setup_mask = 0;
     dupe_setup_reset(dw);
@@ -1811,7 +1811,7 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
         parent = dupe_match_find_parent(dw, di);
         if (di == parent)
         {
-            if (g_list_length(parent->group) < 2)
+            if (!parent->group || !parent->group->next)
             {
                 DupeItem *child;
 
@@ -1839,7 +1839,7 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
         }
         else
         {
-            if (g_list_length(parent->group) < 2)
+            if (!parent->group || !parent->group->next)
             {
                 dupe_match_link_clear(parent, TRUE);
                 dupe_listview_remove(dw, parent);
