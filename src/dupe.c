@@ -1883,13 +1883,18 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
     if (dw->vptree && (di->second == (gboolean)dw->second_set))
         dupe_window_clear_vp(dw);
 
-    if (dw->second_list && g_list_find(dw->second_list, di))
+    if (di->second)
     {
         dupe_second_remove(dw, di);
     }
     else
     {
-        dw->list = g_list_remove(dw->list, di);
+        GList *link = g_hash_table_lookup(dw->list_node_map, di);
+        if (link) {
+            g_hash_table_remove(dw->list_node_map, di);
+            dw->list = g_list_remove_link(dw->list, link);
+            g_list_free_1(link);
+        }
     }
     dupe_item_free(di);
 
@@ -1925,6 +1930,7 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
         g_hash_table_insert(table[1], di->fd, dw->second_list);
     } else {
         dw->list = g_list_prepend(dw->list, di);
+        g_hash_table_insert(dw->list_node_map, di, dw->list);
         g_hash_table_insert(table[0], di->fd, dw->list);
     }
 }
@@ -2829,13 +2835,21 @@ static void dupe_second_add(DupeWindow *dw, DupeItem *di)
 
     di->second = TRUE;
     dw->second_list = g_list_prepend(dw->second_list, di);
+    g_hash_table_insert(dw->second_list_node_map, di, dw->second_list);
     if (!dw->add_files_queue_id)
         dupe_second_listview_populate(dw);
 }
 
 static void dupe_second_remove(DupeWindow *dw, DupeItem *di)
 {
-    dw->second_list = g_list_remove(dw->second_list, di);
+    GList *link = g_hash_table_lookup(dw->second_list_node_map, di);
+    if (link) {
+        g_hash_table_remove(dw->second_list_node_map, di);
+        dw->second_list = g_list_remove_link(dw->second_list, link);
+        g_list_free_1(link);
+    } else {
+        return;
+    }
 
     if (!dw->add_files_queue_id) {
         dupe_second_listview_populate(dw);
@@ -2856,6 +2870,7 @@ static void dupe_second_clear(DupeWindow *dw)
 
     dupe_list_free(dw->second_list);
     dw->second_list = NULL;
+    g_hash_table_remove_all(dw->second_list_node_map);
 
     dupe_match_reset_list(dw->list);
 
@@ -3468,6 +3483,7 @@ void dupe_window_clear(DupeWindow *dw)
 
     dupe_list_free(dw->list);
     dw->list = NULL;
+    g_hash_table_remove_all(dw->list_node_map);
 
     dupe_window_clear_vp(dw);
 
@@ -3486,6 +3502,9 @@ void dupe_window_close(DupeWindow *dw)
 
     g_hash_table_destroy(dw->item_to_rowref);
     g_hash_table_destroy(dw->dupes_set);
+    g_hash_table_destroy(dw->list_node_map);
+    g_hash_table_destroy(dw->second_list_node_map);
+
     g_list_free(dw->dupes);
     dupe_list_free(dw->list);
 
@@ -3532,6 +3551,8 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     dw->dupes_set = g_hash_table_new(NULL, NULL);
     dw->item_to_rowref = g_hash_table_new_full(NULL, NULL, NULL,
                          (GDestroyNotify)gtk_tree_row_reference_free);
+    dw->list_node_map = g_hash_table_new(NULL, NULL);
+    dw->second_list_node_map = g_hash_table_new(NULL, NULL);
 
     dw->window = window_new(GTK_WINDOW_TOPLEVEL, "dupe", NULL, NULL, _("Find duplicates"));
 
