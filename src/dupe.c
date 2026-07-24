@@ -98,7 +98,6 @@ static void dupe_window_clear_vp(DupeWindow *dw);
 static void dupe_dnd_init(DupeWindow *dw);
 
 static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data);
-static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointer data);
 /*
  * ------------------------------------------------------------------
  * Window updates
@@ -1799,7 +1798,8 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
         {
             image_loader_free(dw->img_loader);
             dw->img_loader = NULL;
-            dw->idle_id = g_idle_add(dupe_check_cb, dw);
+            if (!dw->idle_id)
+                dw->idle_id = g_idle_add(dupe_check_cb, dw);
         }
     }
 
@@ -2131,23 +2131,13 @@ static void dupe_item_update(DupeWindow *dw, DupeItem *di)
 
 }
 
-static void dupe_item_update_fd_in_list(DupeWindow *dw, FileData *fd, GList *work)
-{
-    while (work)
-    {
-        DupeItem *di = work->data;
-
-        if (di->fd == fd)
-            dupe_item_update(dw, di);
-
-        work = work->next;
-    }
-}
-
 static void dupe_item_update_fd(DupeWindow *dw, FileData *fd)
 {
-    dupe_item_update_fd_in_list(dw, fd, dw->list);
-    if (dw->second_set) dupe_item_update_fd_in_list(dw, fd, dw->second_list);
+    GList *link = g_hash_table_lookup(dw->list_node_map, fd);
+    if (!link && dw->second_set) {
+        link = g_hash_table_lookup(dw->second_list_node_map, fd);
+    }
+    if (link) dupe_item_update(dw, link->data);
 }
 
 
@@ -2458,33 +2448,11 @@ static void dupe_menu_rename_cb(GtkWidget *widget, gpointer data)
     file_util_rename(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window);
 }
 
-typedef struct {
-    DupeWindow *dw;
-    GList *list;   /* DupeItem* list captured at delete time */
-} DupeDeleteData;
-
 static void dupe_menu_delete_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
-    GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(dw->listview));
-    GtkTreeModel *store;
-    GList *slist = gtk_tree_selection_get_selected_rows(selection, &store);
 
-    DupeDeleteData *dd = g_new0(DupeDeleteData, 1);
-    dd->dw = dw;
-    for (GList *w = slist; w; w = w->next)
-    {
-        GtkTreeIter iter;
-        DupeItem *di = NULL;
-        gtk_tree_model_get_iter(store, &iter, w->data);
-        gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di, -1);
-        if (di) dd->list = g_list_prepend(dd->list, file_data_ref(di->fd));
-    }
-    g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
-    g_list_free(slist);
-
-    file_util_delete_notify_done(NULL, dupe_listview_get_selection(dw, dw->listview),
-                                 dw->window, delete_finished_cb, dd);
+    file_util_delete(NULL, dupe_listview_get_selection(dw, dw->listview), dw->window);
 }
 
 static void dupe_menu_copy_path_cb(GtkWidget *widget, gpointer data)
@@ -4000,7 +3968,7 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
         case FILEDATA_CHANGE_COPY:
             break;
         case FILEDATA_CHANGE_DELETE:
-            /* Update the UI only once, after the operation finishes */
+            dupe_item_remove(dw, dupe_item_find_fd(dw, fd));
             break;
         case FILEDATA_CHANGE_UNSPECIFIED:
         case FILEDATA_CHANGE_WRITE_METADATA:
@@ -4008,31 +3976,3 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
     }
 
 }
-
-
-/**
- * @brief Refresh window after a file delete operation
- * @param success (ud->phase != UTILITY_PHASE_CANCEL) #file_util_dialog_run
- * @param dest_path Not used
- * @param data #DupeWindow
- *
- * If the window is refreshed after each file of a large set is deleted,
- * the UI slows to an unacceptable level. The #FileUtilDoneFunc is used
- * to call this function once, when the entire delete operation is completed.
- */
-static void delete_finished_cb(gboolean success, const gchar *dest_path, gpointer data)
-{
-    DupeDeleteData *dd = data;
-    if (success)
-    {
-        for (GList *work = dd->list; work; work = work->next) {
-            FileData *fd = work->data;
-            DupeItem *di = dupe_item_find_fd(dd->dw, fd);
-            if (di) dupe_item_remove(dd->dw, di);
-        }
-    }
-    filelist_free(dd->list);
-    g_free(dd);
-}
-
-/* vim: set shiftwidth=8 softtabstop=0 cindent cinoptions={1s: */
