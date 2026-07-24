@@ -96,8 +96,6 @@ struct _DupeWindow
     GtkWidget *button_thumbs;
     GList *add_files_queue;
     guint add_files_queue_id;
-    GHashTable *list_cache;
-    GHashTable *second_list_cache;
     GHashTable *list_node_map;        /* DupeItem* -> GList* node in dw->list */
     GHashTable *second_list_node_map; /* DupeItem* -> GList* node in dw->second_list */
     GtkWidget *controls_box;
