@@ -1681,6 +1681,7 @@ void exif_free_preview(guchar *buf)
         UnmapData *ud = (UnmapData *)work->data;
         if (ud->ptr == buf)
         {
+            munmap(ud->map_data, ud->map_len);
             exif_unmap_list = g_list_remove_link(exif_unmap_list, work);
             g_free(ud);
             return;
