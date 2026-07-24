@@ -1314,6 +1314,7 @@ void exif_free_preview(guchar *buf)
 			{
 			munmap(ud->map_data, ud->map_len);
 			exif_unmap_list = g_list_remove_link(exif_unmap_list, work);
+			g_list_free_1(work);
 			g_free(ud);
 			return;
 			}
