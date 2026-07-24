@@ -288,28 +288,11 @@ static inline void dupe_list_free(GList *list)
     g_list_free_full(list, (GDestroyNotify)dupe_item_free);
 }
 
-static DupeItem *dupe_item_find_fd_by_list(FileData *fd, GList *work)
-{
-    while (work)
-    {
-        DupeItem *di = work->data;
-
-        if (di->fd == fd) return di;
-
-        work = work->next;
-    }
-
-    return NULL;
-}
-
 static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
 {
-    DupeItem *di;
-
-    di = dupe_item_find_fd_by_list(fd, dw->list);
-    if (!di && dw->second_set) di = dupe_item_find_fd_by_list(fd, dw->second_list);
-
-    return di;
+    GList *link = g_hash_table_lookup(dw->list_node_map, fd);
+    if (!link && dw->second_set) link = g_hash_table_lookup(dw->second_list_node_map, fd);
+    return link ? link->data : NULL;
 }
 
 /*
@@ -1889,9 +1872,9 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
     }
     else
     {
-        GList *link = g_hash_table_lookup(dw->list_node_map, di);
+        GList *link = g_hash_table_lookup(dw->list_node_map, di->fd);
         if (link) {
-            g_hash_table_remove(dw->list_node_map, di);
+            g_hash_table_remove(dw->list_node_map, di->fd);
             dw->list = g_list_remove_link(dw->list, link);
             g_list_free_1(link);
         }
@@ -1930,7 +1913,7 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
         g_hash_table_insert(table[1], di->fd, dw->second_list);
     } else {
         dw->list = g_list_prepend(dw->list, di);
-        g_hash_table_insert(dw->list_node_map, di, dw->list);
+        g_hash_table_insert(dw->list_node_map, di->fd, dw->list);
         g_hash_table_insert(table[0], di->fd, dw->list);
     }
 }
@@ -2835,16 +2818,16 @@ static void dupe_second_add(DupeWindow *dw, DupeItem *di)
 
     di->second = TRUE;
     dw->second_list = g_list_prepend(dw->second_list, di);
-    g_hash_table_insert(dw->second_list_node_map, di, dw->second_list);
+    g_hash_table_insert(dw->second_list_node_map, di->fd, dw->second_list);
     if (!dw->add_files_queue_id)
         dupe_second_listview_populate(dw);
 }
 
 static void dupe_second_remove(DupeWindow *dw, DupeItem *di)
 {
-    GList *link = g_hash_table_lookup(dw->second_list_node_map, di);
+    GList *link = g_hash_table_lookup(dw->second_list_node_map, di->fd);
     if (link) {
-        g_hash_table_remove(dw->second_list_node_map, di);
+        g_hash_table_remove(dw->second_list_node_map, di->fd);
         dw->second_list = g_list_remove_link(dw->second_list, link);
         g_list_free_1(link);
     } else {
