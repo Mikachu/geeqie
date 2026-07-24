@@ -49,12 +49,16 @@
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
 
 
+#include <sys/xattr.h>
 #include <math.h>
 
 
 #define DUPE_DEF_WIDTH 800
 #define DUPE_DEF_HEIGHT 400
 #define DUPE_PROGRESS_PULSE_STEP 0.0001
+
+#define DUPE_PHASH_XATTR       "user.geeqie.perceptual_hash"
+#define DUPE_PHASH_MTIME_XATTR "user.geeqie.perceptual_hash.mtime"
 
 /* column assignment order (simply change them here) */
 enum {
@@ -314,12 +318,58 @@ static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
  * ------------------------------------------------------------------
  */
 
+static void dupe_item_read_phash_xattr(DupeItem *di)
+{
+    if (di->simd && di->simd->phash_filled) return;
+
+    char mtime_buf[64];
+    ssize_t len = getxattr(di->fd->path, DUPE_PHASH_MTIME_XATTR,
+                           mtime_buf, sizeof(mtime_buf) - 1);
+    if (len <= 0) return;
+    mtime_buf[len] = '\0';
+
+    gchar *end;
+    glong stored_sec  = (glong)g_ascii_strtoll(mtime_buf, &end, 10);
+    if (!end || *end != '.') return;
+    glong stored_nsec = (glong)g_ascii_strtoll(end + 1, NULL, 10);
+
+    if (stored_sec  != (glong)di->fd->dat.tv_sec ||
+        stored_nsec != di->fd->dat.tv_nsec) return;
+
+    char hash_buf[32];
+    len = getxattr(di->fd->path, DUPE_PHASH_XATTR,
+                   hash_buf, sizeof(hash_buf) - 1);
+    if (len <= 0) return;
+    hash_buf[len] = '\0';
+
+    guint64 hash = g_ascii_strtoull(hash_buf, NULL, 10);
+
+    if (!di->simd) di->simd = image_sim_new();
+    di->simd->phash = hash;
+    di->simd->phash_filled = TRUE;
+}
+
+static void dupe_item_write_phash_xattr(DupeItem *di)
+{
+    if (!di->simd || !di->simd->phash_filled) return;
+
+    char buf[32];
+    gint len = g_snprintf(buf, sizeof(buf), "%" G_GUINT64_FORMAT, di->simd->phash);
+    setxattr(di->fd->path, DUPE_PHASH_XATTR, buf, len, 0);
+
+    char mtime_buf[64];
+    len = g_snprintf(mtime_buf, sizeof(mtime_buf), "%ld.%ld",
+                     (glong)di->fd->dat.tv_sec, di->fd->dat.tv_nsec);
+    setxattr(di->fd->path, DUPE_PHASH_MTIME_XATTR, mtime_buf, len, 0);
+}
+
 static void dupe_item_read_cache(DupeItem *di)
 {
     gchar *path;
     CacheData *cd;
 
     if (!di) return;
+    dupe_item_read_phash_xattr(di);
 
     path = cache_find_location(CACHE_TYPE_SIM, di->fd->path);
     if (!path) return;
@@ -335,8 +385,15 @@ static void dupe_item_read_cache(DupeItem *di)
 
     if (cd)
     {
-        if (!di->simd && cd->sim)
+        if (cd->sim && (!di->simd || !di->simd->filled))
         {
+            if (di->simd && di->simd->phash_filled)
+            {
+                /* Preserve phash loaded from xattr */
+                cd->sim->phash = di->simd->phash;
+                cd->sim->phash_filled = TRUE;
+                image_sim_free(di->simd);
+            }
             di->simd = cd->sim;
             cd->sim = NULL;
         }
@@ -374,7 +431,7 @@ static void dupe_item_write_cache(DupeItem *di)
             guchar digest[16];
             if (md5_digest_from_text(di->md5sum, digest)) cache_sim_data_set_md5sum(cd, digest);
         }
-        if (di->simd) cache_sim_data_set_similarity(cd, di->simd);
+        if (di->simd && di->simd->filled) cache_sim_data_set_similarity(cd, di->simd);
 
         if (cache_sim_data_save(cd))
         {
@@ -1085,7 +1142,7 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
     /* Ignore pairs whose mtimes are too close (near-duplicate edits) */
     if (options->duplicates_neartime_threshold &&
         llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) < 60 * options->duplicates_neartime_threshold)
-        return FALSE;    
+        return FALSE;
 
     if (mask & DUPE_MATCH_PATH)
     {
@@ -1161,7 +1218,7 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
             return FALSE;
         gint hamming = __builtin_popcountll(a->simd->phash ^ b->simd->phash);
         *rank = (64 - hamming) / 64.0 * 100.0;
-        threshold = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);        
+        threshold = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);
         if (hamming > threshold) return FALSE;
     }
 
@@ -1188,10 +1245,13 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
             {
                 DupeItem *di = w->data;
                 di->vptree_idx = idx++;
-                if (!di->simd || !di->simd->filled) continue;
-                if (!di->simd->phash_filled)
+                if (!di->simd) continue;
+                if (!di->simd->phash_filled) {
+                    if (!di->simd->filled) continue;
                     image_sim_calc_phash(di->simd);
-                if (!di->simd->phash_filled) continue;
+                    if (!di->simd->phash_filled) continue;
+                    dupe_item_write_phash_xattr(di);
+                }
                 SimVPEntry *e = g_new(SimVPEntry, 1);
                 e->phash = di->simd->phash;
                 e->user_data = di;
@@ -1231,7 +1291,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
         else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
         else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)options->duplicates_similarity_threshold / 100.0;
-        else                                              m = 0.85;
+        else                                             m = 0.85;
 
         /* Query with needle's identity coarse grid; rotated entries in the
          * tree ensure all 8 transformations of each candidate are covered. */
@@ -1260,15 +1320,17 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         g_list_free(candidates);
         return;
     }
-    if (dw->vptree && use_phash && needle->simd && needle->simd->filled)
+    if (dw->vptree && use_phash && needle->simd && (needle->simd->filled || needle->simd->phash_filled))
     {
-        if (!needle->simd->phash_filled)
-            image_sim_calc_phash(needle->simd);
+        gboolean had_phash = needle->simd->phash_filled;
+        if (!had_phash) image_sim_calc_phash(needle->simd);
+        if (!had_phash && needle->simd->phash_filled)
+            dupe_item_write_phash_xattr(needle);
         if (needle->simd->phash_filled)
         {
             SimVPEntry query;
             query.phash = needle->simd->phash;
-            gint radius = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);        
+            gint radius = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);
             query.user_data = needle;
             GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
             for (GList *work = candidates; work; work = work->next)
@@ -1625,7 +1687,7 @@ static gboolean dupe_check_cb(gpointer data)
             {
                 DupeItem *di = dw->setup_point->data;
 
-                if (!di->simd)
+                if (!di->simd || !di->simd->filled)
                 {
                     dupe_window_update_progress(dw, _("Reading similarity data..."),
                         dw->setup_count == 0 ? 0.0 : (gdouble)dw->setup_n / dw->setup_count, FALSE);
@@ -2017,7 +2079,7 @@ void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection)
 {
     CollectInfo *info;
 
-    dupe_init_list_cache(dw);    
+    dupe_init_list_cache(dw);
     info = collection_get_first(collection);
     while (info)
     {
@@ -2027,7 +2089,7 @@ void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection)
     dupe_destroy_list_cache(dw);
 
     if (dw->second_set)
-        dupe_second_listview_populate(dw);    
+        dupe_second_listview_populate(dw);
     dupe_check_start(dw);
 }
 
