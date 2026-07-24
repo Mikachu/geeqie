@@ -1452,7 +1452,7 @@ GList *filelist_filter(GList *list, gboolean is_dir_list)
 
             list = g_list_remove_link(list, link);
             file_data_unref(fd);
-            g_list_free(link);
+            g_list_free_1(link);
         }
 
         work = work->next;
@@ -1718,7 +1718,7 @@ GList *file_data_filter_marks_list(GList *list, guint filter)
         {
             list = g_list_remove_link(list, link);
             file_data_unref(fd);
-            g_list_free(link);
+            g_list_free_1(link);
         }
     }
 
