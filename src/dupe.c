@@ -88,6 +88,7 @@ static gint dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble *ra
 
 static void dupe_thumb_step(DupeWindow *dw);
 static gint dupe_check_cb(gpointer data);
+static GList *dupe_setup_point_step(DupeWindow *dw, GList *p);
 
 static void dupe_second_add(DupeWindow *dw, DupeItem *di);
 static void dupe_second_listview_populate(DupeWindow *dw);
@@ -1550,6 +1551,11 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
         }
 
         image_sim_alternate_processing(di->simd);
+
+        if (!pixbuf) {
+            dw->setup_point = dupe_setup_point_step(dw, dw->setup_point);
+            dw->setup_n++;
+        }
     }
 
     image_loader_free(dw->img_loader);
@@ -1692,6 +1698,8 @@ static gboolean dupe_check_cb(gpointer data)
                         di->simd = image_sim_new();
                         image_loader_free(dw->img_loader);
                         dw->img_loader = NULL;
+                        dw->setup_point = dupe_setup_point_step(dw, dw->setup_point);
+                        dw->setup_n++;
                         return TRUE;
                     }
                     dw->idle_id = 0;
