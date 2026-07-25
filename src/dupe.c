@@ -349,7 +349,7 @@ static void dupe_item_read_cache(DupeItem *di)
     CacheData *cd;
 
     if (!di) return;
-    dupe_item_read_phash_xattr(di);
+    //dupe_item_read_phash_xattr(di);
 
     path = cache_find_location(CACHE_TYPE_SIM, di->fd->path);
     if (!path) return;
@@ -1230,7 +1230,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     if (!di->simd->filled) continue;
                     image_sim_calc_phash(di->simd);
                     if (!di->simd->phash_filled) continue;
-                    dupe_item_write_phash_xattr(di);
+                    //dupe_item_write_phash_xattr(di);
                 }
                 SimVPEntry *e = g_new(SimVPEntry, 1);
                 e->phash = di->simd->phash;
@@ -1305,7 +1305,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         gboolean had_phash = needle->simd->phash_filled;
         if (!had_phash) image_sim_calc_phash(needle->simd);
         if (!had_phash && needle->simd->phash_filled)
-            dupe_item_write_phash_xattr(needle);
+            ;//dupe_item_write_phash_xattr(needle);
         if (needle->simd->phash_filled)
         {
             SimVPEntry query;
