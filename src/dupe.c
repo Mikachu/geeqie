@@ -2480,11 +2480,33 @@ static void dupe_menu_remove_cb(GtkWidget *widget, gpointer data)
     dupe_window_remove_selection(dw, dw->listview);
 }
 
+static void dummy_cancel_cb(GenericDialog *gd, gpointer data)
+{
+}
+
+static void dupe_menu_clear_ok_cb(GenericDialog *gd, gpointer data)
+{
+    DupeWindow *dw = data;
+    dupe_window_clear(dw);
+}
+
 static void dupe_menu_clear_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
+    GenericDialog *gd;
 
-    dupe_window_clear(dw);
+    if (g_hash_table_size(dw->list_node_map) < 5) {
+        dupe_menu_clear_ok_cb(NULL, data);
+        return;
+    }
+    gd = generic_dialog_new(_("Clear list"), "clear_dupe_list", dw->window, TRUE,
+                            dummy_cancel_cb, NULL);
+    generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION,
+                   _("Clear list"),
+                   _("This will remove all entries from the list."));
+    generic_dialog_add_button(gd, GTK_STOCK_OK, NULL, dupe_menu_clear_ok_cb, TRUE);
+    gd->data = dw;
+    gtk_widget_show(gd->dialog);
 }
 
 static void dupe_menu_close_cb(GtkWidget *widget, gpointer data)
@@ -2841,12 +2863,31 @@ static void dupe_second_menu_remove_cb(GtkWidget *widget, gpointer data)
     dupe_window_remove_selection(dw, dw->second_listview);
 }
 
+static void dupe_second_menu_clear_ok_cb(GenericDialog *gd, gpointer data)
+{
+    DupeWindow *dw = data;
+    dupe_second_clear(dw);
+    dupe_window_recompare(dw);
+}
+
 static void dupe_second_menu_clear_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
+    GenericDialog *gd;
 
-    dupe_second_clear(dw);
-    dupe_window_recompare(dw);
+    if (g_hash_table_size(dw->second_list_node_map) < 5) {
+        dupe_second_menu_clear_ok_cb(NULL, data);
+        return;
+    }
+
+    gd = generic_dialog_new(_("Clear second list"), "clear_dupe_second_list", dw->window, TRUE,
+                            dummy_cancel_cb, NULL);
+    generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION,
+                   _("Clear second list"),
+                   _("This will remove all entries from the list."));
+    generic_dialog_add_button(gd, GTK_STOCK_OK, NULL, dupe_second_menu_clear_ok_cb, TRUE);
+    gd->data = dw;
+    gtk_widget_show(gd->dialog);
 }
 
 static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di)
