@@ -84,7 +84,7 @@ static GList *dupe_window_list = NULL;  /* list of open DupeWindow *s */
 
 static DupeItem *dupe_match_find_parent(DupeWindow *dw, DupeItem *child);
 
-static gint dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble *rank, gint fast);
+static gint dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *rank, gint fast);
 
 static void dupe_thumb_step(DupeWindow *dw);
 static gint dupe_check_cb(gpointer data);
@@ -1113,16 +1113,18 @@ static void dupe_match_rank(DupeWindow *dw)
  * ------------------------------------------------------------------
  */
 
-static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble *rank, gint fast)
+static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *rank, gint fast)
 {
+    DupeMatchType mask = dw->match_mask;
     *rank = 0.0;
 
     if (a->fd->path == b->fd->path) return FALSE;
 
     /* Ignore pairs whose mtimes are too close (near-duplicate edits) */
-    if (options->duplicates_neartime_threshold &&
-        llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) < 60 * options->duplicates_neartime_threshold)
+    if (dw->duplicates_neartime_threshold &&
+        llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) < 60 * dw->duplicates_neartime_threshold)
         return FALSE;
+
 
     if (mask & DUPE_MATCH_PATH)
     {
@@ -1164,15 +1166,15 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
     {
         gdouble f;
         gdouble m;
-        if (options->duplicates_days_threshold) {
-            if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) > 86400 * options->duplicates_days_threshold) {
+        if (dw->duplicates_days_threshold) {
+            if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) > 86400 * dw->duplicates_days_threshold) {
                 return FALSE;
             }
         }
 
         if (mask & DUPE_MATCH_SIM_HIGH) m = 0.95;
         else if (mask & DUPE_MATCH_SIM_MED) m = 0.90;
-        else if (mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)options->duplicates_similarity_threshold / 100.0;
+        else if (mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
         else m = 0.85;
 
         if (fast)
@@ -1198,7 +1200,7 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeMatchType mask, gdouble
             return FALSE;
         gint hamming = __builtin_popcountll(a->simd->phash ^ b->simd->phash);
         *rank = (64 - hamming) / 64.0 * 100.0;
-        threshold = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);
+        threshold = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold / 100.0) * 64);
         if (hamming > threshold) return FALSE;
     }
 
@@ -1241,7 +1243,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         }
         else
         {
-            gint max_t = options->rot_invariant_sim ? 8 : 1;
+            gint max_t = dw->rot_invariant_sim ? 8 : 1;
             for (GList *w = build_list; w; w = w->next)
             {
                 DupeItem *di = w->data;
@@ -1270,7 +1272,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         gdouble m;
         if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
         else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
-        else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)options->duplicates_similarity_threshold / 100.0;
+        else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
         else                                             m = 0.85;
 
         /* Query with needle's identity coarse grid; rotated entries in the
@@ -1292,7 +1294,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
             if (!dupe_match_link_exists(needle, di))
             {
                 gdouble rank;
-                if (dupe_match(di, needle, dw->match_mask, &rank, TRUE))
+                if (dupe_match(di, needle, dw, &rank, TRUE))
                     dupe_match_link(di, needle, rank);
             }
         }
@@ -1310,7 +1312,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         {
             SimVPEntry query;
             query.phash = needle->simd->phash;
-            gint radius = (gint)((1.0 - (gdouble)options->duplicates_similarity_threshold / 100.0) * 64);
+            gint radius = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold / 100.0) * 64);
             query.user_data = needle;
             GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
             for (GList *work = candidates; work; work = work->next)
@@ -1323,7 +1325,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 if (!dupe_match_link_exists(needle, di))
                 {
                     gdouble rank;
-                    if (dupe_match(di, needle, dw->match_mask, &rank, TRUE))
+                    if (dupe_match(di, needle, dw, &rank, TRUE))
                         dupe_match_link(di, needle, rank);
                 }
             }
@@ -1363,7 +1365,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         {
             gdouble rank;
 
-            if (dupe_match(di, needle, dw->match_mask, &rank, TRUE))
+            if (dupe_match(di, needle, dw, &rank, TRUE))
             {
                 dupe_match_link(di, needle, rank);
             }
@@ -3173,6 +3175,7 @@ static void dupe_window_rotation_invariant_cb(GtkWidget *widget, gpointer data)
     DupeWindow *dw = data;
 
     options->rot_invariant_sim = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+    dw->rot_invariant_sim = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 
@@ -3180,6 +3183,7 @@ static void dupe_window_custom_neartime_range_cb(GtkWidget *widget, gpointer dat
 {
     DupeWindow *dw = data;
     options->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    dw->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 
@@ -3187,6 +3191,7 @@ static void dupe_window_custom_date_range_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
     options->duplicates_days_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    dw->duplicates_days_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 
@@ -3199,6 +3204,7 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
     GtkTreeIter iter;
 
     options->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    dw->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
     if (dw->match_mask != DUPE_MATCH_SIM_PHASH) {
         dw->match_mask = DUPE_MATCH_SIM_CUSTOM;
 
@@ -3631,6 +3637,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_box_pack_start(GTK_BOX(controls_box_1), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(dw->button_thumbs);
 
+    dw->rot_invariant_sim = options->rot_invariant_sim;
     button = gtk_check_button_new_with_label(_("Ignore Rotation"));
     gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore image orientation");
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), options->rot_invariant_sim);
@@ -3646,6 +3653,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_box_pack_end(GTK_BOX(controls_box_1), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
+    dw->duplicates_similarity_threshold = options->duplicates_similarity_threshold;
     label = gtk_label_new(_("Custom Threshold"));
     gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
@@ -3657,6 +3665,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
+    dw->duplicates_days_threshold = options->duplicates_days_threshold;
     label = gtk_label_new(_("Day Range"));
     gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
@@ -3668,6 +3677,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
+    dw->duplicates_neartime_threshold = options->duplicates_neartime_threshold;
     label = gtk_label_new(_("Ignore"));
     gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
