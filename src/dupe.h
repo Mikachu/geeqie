@@ -102,6 +102,11 @@ struct _DupeWindow
 
     gboolean show_thumbs;
 
+    guint duplicates_similarity_threshold;
+    guint duplicates_days_threshold;
+    guint duplicates_neartime_threshold;
+    gboolean rot_invariant_sim;
+
     guint idle_id; /* event source id */
     GList *working;
     gint setup_done;
