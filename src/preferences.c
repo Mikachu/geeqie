@@ -248,9 +248,37 @@ static void config_window_apply(void)
 
     g_free(options->image_overlay.template_string);
     g_free(options->image_overlay.font);
+    if (options->mouse_bindings)
+    {
+        GList *work = options->mouse_bindings;
+        while (work)
+        {
+            MouseBinding *b = work->data;
+            g_free(b->action_name);
+            g_free(b);
+            work = work->next;
+        }
+        g_list_free(options->mouse_bindings);
+    }
+
     *options = *c_options;
     options->image_overlay.template_string = g_strdup(c_options->image_overlay.template_string);
     options->image_overlay.font = g_strdup(c_options->image_overlay.font);
+    options->mouse_bindings = NULL;
+    if (c_options->mouse_bindings)
+    {
+        GList *work = c_options->mouse_bindings;
+        while (work)
+        {
+            MouseBinding *ob = work->data;
+            MouseBinding *nb = g_new(MouseBinding, 1);
+            nb->button = ob->button;
+            nb->state = ob->state;
+            nb->action_name = g_strdup(ob->action_name);
+            options->mouse_bindings = g_list_append(options->mouse_bindings, nb);
+            work = work->next;
+        }
+    }
 
     options->stereo.mode = (options->stereo.mode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
                            (options->stereo.tmp.mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
@@ -1007,6 +1035,70 @@ static void image_overlay_set_background_colour_cb(GtkWidget *widget, gpointer d
     gtk_widget_destroy(dialog);
 }
 
+typedef struct {
+    GtkAction *action;
+    gchar *name;    /* gtk_action_get_name(), do not free (owned by action) */
+    gchar *label;   /* mnemonic-stripped, must be freed by caller */
+} ActionItem;
+
+static gint sort_action_list(gpointer a, gpointer b)
+{
+    ActionItem *left = a,
+               *right = b;
+    return strcmp(left->label, right->label);
+}
+
+static GList *layout_collect_actions(LayoutWindow *lw)
+{
+    GList *groups, *actions;
+    GList *result = NULL;
+
+    groups = gtk_ui_manager_get_action_groups(lw->ui_manager);
+    while (groups)
+    {
+        actions = gtk_action_group_list_actions(GTK_ACTION_GROUP(groups->data));
+        while (actions)
+        {
+            GtkAction *action = GTK_ACTION(actions->data);
+            gchar *label = NULL;
+            ActionItem *item;
+
+            g_object_get(action, "label", &label, NULL);
+            if (label)
+            {
+                gchar *label2;
+
+                if (pango_parse_markup(label, -1, '_', NULL, &label2, NULL, NULL) && label2)
+                {
+                    g_free(label);
+                    label = label2;
+                }
+
+                item = g_new0(ActionItem, 1);
+                item->action = action;
+                item->name = (gchar *)gtk_action_get_name(action);
+                item->label = label;
+                result = g_list_prepend(result, item);
+            }
+            actions = actions->next;
+        }
+        groups = groups->next;
+    }
+
+    return g_list_sort(result, sort_action_list);
+}
+
+static void layout_action_item_free(ActionItem *item)
+{
+    g_free(item->label);
+    g_free(item);
+}
+
+static void layout_action_list_free(GList *list)
+{
+    g_list_free_full(list, (GDestroyNotify)layout_action_item_free);
+}
+
 static void accel_store_populate(void)
 {
     LayoutWindow *lw;
@@ -1022,50 +1114,39 @@ static void accel_store_populate(void)
     lw = layout_window_list->data; /* get the actions from the first window, it should not matter, they should be the same in all windows */
 
     g_assert(lw && lw->ui_manager);
-    groups = gtk_ui_manager_get_action_groups(lw->ui_manager);
-    while (groups)
+    GList *items = layout_collect_actions(lw);
+    GList *work;
+
+    for (work = items; work; work = work->next)
     {
-        actions = gtk_action_group_list_actions(GTK_ACTION_GROUP(groups->data));
-        while (actions)
+        ActionItem *item = work->data;
+        const gchar *accel_path = gtk_action_get_accel_path(item->action);
+        GtkAccelKey key;
+
+        if (accel_path && gtk_accel_map_lookup_entry(accel_path, &key))
         {
-            action = GTK_ACTION(actions->data);
-            accel_path = gtk_action_get_accel_path(action);
-            if (accel_path && gtk_accel_map_lookup_entry(accel_path, &key))
+            gchar *tooltip;
+            gchar *accel;
+
+            g_object_get(item->action, "tooltip", &tooltip, NULL);
+            accel = gtk_accelerator_name(key.accel_key, key.accel_mods);
+
+            if (tooltip)
             {
-                gchar *label, *label2, *tooltip, *accel;
-                g_object_get(action,
-                         "tooltip", &tooltip,
-                         "label", &label,
-                         NULL);
-
-                if (pango_parse_markup(label, -1, '_', NULL, &label2, NULL, NULL) && label2)
-                {
-                    g_free(label);
-                    label = label2;
-                }
-
-                accel = gtk_accelerator_name(key.accel_key, key.accel_mods);
-
-                if (tooltip)
-                {
-                    gtk_tree_store_append(accel_store, &iter, NULL);
-                    gtk_tree_store_set(accel_store, &iter,
-                               AE_ACTION, label,
-                               AE_KEY, accel,
-                               AE_TOOLTIP, tooltip ? tooltip : "",
-                               AE_ACCEL, accel_path,
-                               -1);
-                }
-
-                g_free(accel);
-                g_free(label);
-                g_free(tooltip);
+                gtk_tree_store_append(accel_store, &iter, NULL);
+                gtk_tree_store_set(accel_store, &iter,
+                           AE_ACTION, item->label,
+                           AE_KEY, accel,
+                           AE_TOOLTIP, tooltip,
+                           AE_ACCEL, accel_path,
+                           -1);
             }
-            actions = actions->next;
-        }
 
-        groups = groups->next;
+            g_free(accel);
+            g_free(tooltip);
+        }
     }
+    layout_action_list_free(items);
 }
 
 static void accel_store_cleared_cb(GtkCellRendererAccel *accel, gchar *path_string, gpointer user_data)
@@ -2083,6 +2164,335 @@ static void config_tab_accelerators(GtkWidget *notebook)
     gtk_widget_show(button);
 }
 
+enum {
+    MB_ACTION_NAME,
+    MB_ACTION_LABEL,
+    MB_BUTTON,
+    MB_STATE,
+    MB_BUTTON_TEXT,
+};
+
+static GtkListStore *mouse_binding_store = NULL;
+static GtkWidget *mouse_binding_view = NULL;
+static GtkTreeViewColumn *mouse_binding_column = NULL;
+
+static MouseBinding *mouse_binding_find_for_action(const gchar *action_name)
+{
+    GList *work;
+
+    for (work = c_options->mouse_bindings; work; work = work->next)
+    {
+        MouseBinding *b = work->data;
+
+        if (b->action_name && strcmp(b->action_name, action_name) == 0)
+            return b;
+    }
+
+    return NULL;
+}
+
+static gchar *mouse_binding_format_button(guint button, GdkModifierType state)
+{
+    gchar *accel_label;
+    gchar *result;
+
+    if (button == 0) return g_strdup("");
+
+    /* GDK_BUTTON_PRESS_MASK etc are not accelerator flags; build a readable
+       string manually: "Ctrl+Shift+Button8" style */
+    accel_label = gtk_accelerator_get_label(0, state);
+    result = g_strdup_printf("%sButton%u", accel_label ? accel_label : "", button);
+    g_free(accel_label);
+    return result;
+}
+
+static void mouse_binding_set_for_action(const gchar *action_name, guint button, GdkModifierType state)
+{
+    GList *work, *next;
+    MouseBinding *b;
+
+    /* an action can have at most one mouse binding for now */
+    work = c_options->mouse_bindings;
+    while (work)
+    {
+        next = work->next;
+        b = work->data;
+        if (b->action_name && strcmp(b->action_name, action_name) == 0)
+        {
+            c_options->mouse_bindings = g_list_delete_link(c_options->mouse_bindings, work);
+            g_free(b->action_name);
+            g_free(b);
+        }
+        work = next;
+    }
+
+    /* the same button/state combination cannot be bound to two actions */
+    work = c_options->mouse_bindings;
+    while (work)
+    {
+        next = work->next;
+        b = work->data;
+        if (b->button == button && b->state == state)
+        {
+            DEBUG_1("mouse binding %u/%u already used, removing", button, state);
+            c_options->mouse_bindings = g_list_delete_link(c_options->mouse_bindings, work);
+            g_free(b->action_name);
+            g_free(b);
+        }
+        work = next;
+    }
+
+    b = g_new(MouseBinding, 1);
+    b->button = button;
+    b->state = state;
+    b->action_name = g_strdup(action_name);
+    c_options->mouse_bindings = g_list_append(c_options->mouse_bindings, b);
+}
+
+static void mouse_binding_clear_for_action(const gchar *action_name)
+{
+    GList *work, *next;
+
+    work = c_options->mouse_bindings;
+    while (work)
+    {
+        MouseBinding *b = work->data;
+        next = work->next;
+        if (b->action_name && strcmp(b->action_name, action_name) == 0)
+        {
+            c_options->mouse_bindings = g_list_delete_link(c_options->mouse_bindings, work);
+            g_free(b->action_name);
+            g_free(b);
+        }
+        work = next;
+    }
+}
+
+static void mouse_binding_store_populate(void)
+{
+    GList *items, *work;
+
+    if (!mouse_binding_store || !layout_window_list || !layout_window_list->data) return;
+
+    gtk_list_store_clear(mouse_binding_store);
+
+    work = items = layout_collect_actions(layout_window_list->data);
+    while (work)
+    {
+        ActionItem *item = work->data;
+        MouseBinding *b = mouse_binding_find_for_action(item->name);
+        GtkTreeIter iter;
+        gchar *button_text = mouse_binding_format_button(b ? b->button : 0, b ? b->state : 0);
+
+        gtk_list_store_append(mouse_binding_store, &iter);
+        gtk_list_store_set(mouse_binding_store, &iter,
+                    MB_ACTION_NAME, item->name,
+                    MB_ACTION_LABEL, item->label,
+                    MB_BUTTON, b ? b->button : 0,
+                    MB_STATE, b ? b->state : 0,
+                    MB_BUTTON_TEXT, button_text,
+                    -1);
+        g_free(button_text);
+        work = work->next;
+    }
+    layout_action_list_free(items);
+}
+
+static void mouse_binding_capture_response_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    GtkWidget *dialog = data;
+    guint mask = gtk_accelerator_get_default_mod_mask();
+
+    g_object_set_data(G_OBJECT(dialog), "captured-button", GUINT_TO_POINTER(event->button));
+    g_object_set_data(G_OBJECT(dialog), "captured-state", GUINT_TO_POINTER(event->state & mask));
+    gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+}
+
+static gboolean mouse_binding_capture_scroll_cb(GtkWidget *widget, GdkEventScroll *event, gpointer data)
+{
+    GtkWidget *dialog = data;
+    guint mask = gtk_accelerator_get_default_mod_mask();
+    guint button;
+
+    switch (event->direction)
+    {
+    case GDK_SCROLL_UP:
+        button = MOUSE_BUTTON_WHEEL_UP;
+        break;
+    case GDK_SCROLL_DOWN:
+        button = MOUSE_BUTTON_WHEEL_DOWN;
+        break;
+    case GDK_SCROLL_LEFT:
+        button = MOUSE_BUTTON_WHEEL_LEFT;
+        break;
+    case GDK_SCROLL_RIGHT:
+        button = MOUSE_BUTTON_WHEEL_RIGHT;
+        break;
+    default:
+        /* GDK_SCROLL_SMOOTH has no fixed direction, ignore it */
+        return TRUE;
+    }
+
+    g_object_set_data(G_OBJECT(dialog), "captured-button", GUINT_TO_POINTER(button));
+    g_object_set_data(G_OBJECT(dialog), "captured-state", GUINT_TO_POINTER(event->state & mask));
+    gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+    return TRUE;
+}
+
+static void mouse_binding_capture_for_row(GtkWidget *parent, const gchar *action_name)
+{
+    GtkWidget *dialog;
+    GtkWidget *capture_area;
+    GtkWidget *content;
+    gint response;
+    guint button;
+    GdkModifierType state;
+
+    dialog = gtk_dialog_new_with_buttons(_("Set mouse binding"),
+                    GTK_WINDOW(gtk_widget_get_toplevel(parent)),
+                    GTK_DIALOG_MODAL,
+                    GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                    NULL);
+
+    content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    capture_area = gtk_button_new_with_label(_("Click here with the button/modifiers to bind..."));
+    gtk_widget_add_events(capture_area, GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK);
+    g_signal_connect(G_OBJECT(capture_area), "button-press-event",
+             G_CALLBACK(mouse_binding_capture_response_cb), dialog);
+    g_signal_connect(G_OBJECT(capture_area), "scroll-event",
+             G_CALLBACK(mouse_binding_capture_scroll_cb), dialog);
+    gtk_box_pack_start(GTK_BOX(content), capture_area, FALSE, FALSE, PREF_PAD_GAP);
+    gtk_widget_show(capture_area);
+
+    g_object_set_data(G_OBJECT(dialog), "captured-button", GUINT_TO_POINTER(0));
+
+    response = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    button = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(dialog), "captured-button"));
+    state = (GdkModifierType)GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(dialog), "captured-state"));
+
+    if (response == GTK_RESPONSE_OK && button != 0)
+    {
+        mouse_binding_set_for_action(action_name, button, state);
+        mouse_binding_store_populate();
+    }
+
+    gtk_widget_destroy(dialog);
+}
+
+static void mouse_binding_clear_cb(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *view = data;
+    GtkTreeSelection *selection;
+    GtkTreeIter iter;
+    gchar *action_name;
+
+    if (!mouse_binding_store) return;
+    selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) return;
+
+    gtk_tree_model_get(GTK_TREE_MODEL(mouse_binding_store), &iter,
+               MB_ACTION_NAME, &action_name,
+               -1);
+
+    mouse_binding_clear_for_action(action_name);
+    g_free(action_name);
+    mouse_binding_store_populate();
+}
+
+static gboolean mouse_binding_view_button_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    GtkTreeViewColumn *column;
+    GtkTreePath *path;
+    GtkTreeIter iter;
+    gchar *action_name;
+
+    if (event->type != GDK_BUTTON_PRESS || event->button != MOUSE_BUTTON_LEFT) return FALSE;
+    if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), event->x, event->y, &path, &column, NULL, NULL)) return FALSE;
+
+    if (column != mouse_binding_column)
+    {
+        gtk_tree_path_free(path);
+        return FALSE;
+    }
+
+    gtk_tree_selection_select_path(gtk_tree_view_get_selection(GTK_TREE_VIEW(widget)), path);
+    gtk_tree_model_get_iter(GTK_TREE_MODEL(mouse_binding_store), &iter, path);
+    gtk_tree_path_free(path);
+
+    gtk_tree_model_get(GTK_TREE_MODEL(mouse_binding_store), &iter, MB_ACTION_NAME, &action_name, -1);
+    mouse_binding_capture_for_row(widget, action_name);
+    g_free(action_name);
+
+    mouse_binding_store_populate();
+
+    return TRUE;
+}
+
+static void config_tab_mouse(GtkWidget *notebook)
+{
+    GtkWidget *vbox;
+    GtkWidget *group;
+    GtkWidget *scrolled;
+    GtkWidget *hbox;
+    GtkWidget *button;
+    GtkTreeSelection *selection;
+    GtkCellRenderer *renderer;
+    GtkTreeViewColumn *column;
+
+    vbox = scrolled_notebook_page(notebook, _("Mouse"));
+
+    group = pref_group_new(vbox, TRUE, _("Mouse buttons"), GTK_ORIENTATION_VERTICAL);
+
+    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
+    gtk_box_pack_start(GTK_BOX(group), scrolled, TRUE, TRUE, 0);
+    gtk_widget_show(scrolled);
+
+    mouse_binding_store = gtk_list_store_new(5,
+                                             G_TYPE_STRING,
+                                             G_TYPE_STRING,
+                                             G_TYPE_UINT,
+                                             G_TYPE_UINT,
+                                             G_TYPE_STRING);
+    mouse_binding_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(mouse_binding_store));
+    g_object_unref(mouse_binding_store);
+    selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(mouse_binding_view));
+    gtk_tree_selection_set_mode(GTK_TREE_SELECTION(selection), GTK_SELECTION_SINGLE);
+    gtk_tree_view_set_enable_search(GTK_TREE_VIEW(mouse_binding_view), FALSE);
+
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes(_("Action"), renderer,
+                                "text", MB_ACTION_LABEL, NULL);
+    gtk_tree_view_column_set_sort_column_id(column, MB_ACTION_LABEL);
+    gtk_tree_view_column_set_resizable(column, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(mouse_binding_view), column);
+
+    renderer = gtk_cell_renderer_text_new();
+    column = gtk_tree_view_column_new_with_attributes(_("Binding"), renderer,
+                                "text", MB_BUTTON_TEXT, NULL);
+    gtk_tree_view_column_set_resizable(column, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(mouse_binding_view), column);
+    mouse_binding_column = column;
+
+    g_signal_connect(G_OBJECT(mouse_binding_view), "button-press-event",
+             G_CALLBACK(mouse_binding_view_button_press_cb), NULL);
+
+    mouse_binding_store_populate();
+    gtk_container_add(GTK_CONTAINER(scrolled), mouse_binding_view);
+    gtk_widget_show(mouse_binding_view);
+
+    hbox = pref_box_new(group, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_BUTTON_GAP);
+
+    button = pref_button_new(NULL, GTK_STOCK_REMOVE, NULL, FALSE,
+                 G_CALLBACK(mouse_binding_clear_cb), mouse_binding_view);
+    gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 0);
+    gtk_widget_show(button);
+}
+
 /* stereo tab */
 static void config_tab_stereo(GtkWidget *notebook)
 {
@@ -2175,10 +2585,41 @@ static void config_window_create(void)
     {
         g_free(c_options->image_overlay.template_string);
         g_free(c_options->image_overlay.font);
+
+        if (c_options->mouse_bindings)
+        {
+            GList *work = c_options->mouse_bindings;
+            while (work)
+            {
+                MouseBinding *b = work->data;
+                g_free(b->action_name);
+                g_free(b);
+                work = work->next;
+            }
+            g_list_free(c_options->mouse_bindings);
+        }
     }
+
     *c_options = *options;
     c_options->image_overlay.template_string = g_strdup(options->image_overlay.template_string);
     c_options->image_overlay.font = g_strdup(options->image_overlay.font);
+
+    if (options->mouse_bindings)
+    {
+        GList *work = options->mouse_bindings;
+        c_options->mouse_bindings = NULL;
+        while (work)
+        {
+            MouseBinding *ob = work->data;
+            MouseBinding *nb = g_new(MouseBinding, 1);
+            nb->button = ob->button;
+            nb->state = ob->state;
+            nb->action_name = g_strdup(ob->action_name);
+            c_options->mouse_bindings = g_list_prepend(c_options->mouse_bindings, nb);
+            work = work->next;
+        }
+        c_options->mouse_bindings = g_list_reverse(c_options->mouse_bindings);
+    }
 
     configwindow = window_new(GTK_WINDOW_TOPLEVEL, "preferences", PIXBUF_INLINE_ICON_CONFIG, NULL, _("Preferences"));
     gtk_window_set_type_hint(GTK_WINDOW(configwindow), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -2237,6 +2678,7 @@ static void config_window_create(void)
     config_tab_general(notebook);
     config_tab_image(notebook);
     config_tab_windows(notebook);
+    config_tab_mouse(notebook);
     config_tab_accelerators(notebook);
     config_tab_files(notebook);
     config_tab_metadata(notebook);

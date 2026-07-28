@@ -127,6 +127,9 @@ ConfOptions *init_options(ConfOptions *options)
     options->open_recent_list_maxsize = 10;
     options->place_dialogs_under_mouse = FALSE;
 
+    // XXX add corresponding free of this list somewhere appropriate
+    options->mouse_bindings = NULL; /* list of MouseBinding */
+
     options->progressive_key_scrolling = TRUE;
     options->keyboard_scroll_step = 1;
 
