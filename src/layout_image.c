@@ -1472,11 +1472,49 @@ static void layout_image_focus_in_cb(ImageWindow *imd, gpointer data)
     }
 }
 
+static gboolean layout_image_mouse_binding_activate(LayoutWindow *lw, guint button, GdkModifierType state)
+{
+    GList *work;
+
+    if (!lw->action_group) return FALSE;
+
+    for (work = options->mouse_bindings; work; work = work->next)
+    {
+        MouseBinding *mb = work->data;
+        GtkAction *action;
+
+        if (mb->button != button) continue;
+        if (mb->state != (state & gtk_accelerator_get_default_mod_mask())) continue;
+
+        action = gtk_action_group_get_action(lw->action_group, mb->action_name);
+        if (!action) continue;
+
+        gtk_action_activate(action);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean layout_image_mouse_binding_dispatch(LayoutWindow *lw, GdkEventButton *event)
+{
+    return layout_image_mouse_binding_activate(lw, event->button, event->state);
+}
+
+void gtk_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+{
+    GdkEventButton *event = data;
+    *x = event->x_root;
+    *y = event->y_root;
+    *push_in = TRUE;
+}
 
 static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
 {
     LayoutWindow *lw = data;
     GtkWidget *menu;
+
+    if (layout_image_mouse_binding_dispatch(lw, event)) return;
 
     switch (event->button)
     {
@@ -1501,6 +1539,23 @@ static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpoi
     }
 }
 
+static guint layout_image_scroll_direction_to_button(GdkScrollDirection direction)
+{
+    switch (direction)
+    {
+        case GDK_SCROLL_UP:
+            return MOUSE_BUTTON_WHEEL_UP;
+        case GDK_SCROLL_DOWN:
+            return MOUSE_BUTTON_WHEEL_DOWN;
+        case GDK_SCROLL_LEFT:
+            return MOUSE_BUTTON_WHEEL_LEFT;
+        case GDK_SCROLL_RIGHT:
+            return MOUSE_BUTTON_WHEEL_RIGHT;
+        default:
+            return 0;
+    }
+}
+
 static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpointer data)
 {
     LayoutWindow *lw = data;
@@ -1513,6 +1568,8 @@ static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpoi
         layout_image_activate(lw, i, FALSE);
     }
 
+    if (layout_image_mouse_binding_activate(lw, layout_image_scroll_direction_to_button(event->direction), event->state))
+        return;
 
     if (event->state & GDK_CONTROL_MASK)
     {
