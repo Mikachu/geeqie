@@ -2097,7 +2097,7 @@ static gboolean pr_mouse_release_cb(GtkWidget *widget, GdkEventButton *bevent, g
         {
             pr_scroller_start(pr, bevent->x, bevent->y);
         }
-        else if (bevent->button == MOUSE_BUTTON_LEFT || bevent->button == MOUSE_BUTTON_MIDDLE)
+        else
         {
             pr_clicked_signal(pr, bevent);
         }
