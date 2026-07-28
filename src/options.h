@@ -21,6 +21,13 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
+/* mouse bindings */
+typedef struct {
+    guint button;
+    GdkModifierType state;
+    gchar *action_name;
+} MouseBinding;
+
 typedef struct _ConfOptions ConfOptions;
 
 struct _ConfOptions
@@ -32,6 +39,7 @@ struct _ConfOptions
     gboolean mousewheel_scrolls;
     gboolean image_lm_click_nav;
     gboolean show_icon_names;
+    GList *mouse_bindings; /* list of MouseBinding */
 
     /* various */
     gboolean tree_descend_subdirs;

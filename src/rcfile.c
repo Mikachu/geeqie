@@ -434,6 +434,28 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_INT(*options, stereo.fixed_y2);
 }
 
+static void write_mouse_bindings(GString *outstr, gint indent)
+{
+    GList *work = options->mouse_bindings;
+
+    if (!work) return;
+
+    WRITE_NL(); WRITE_STRING("<mouse_bindings>");
+    indent++;
+    while (work)
+    {
+        MouseBinding *b = work->data;
+        WRITE_NL(); WRITE_STRING("<mouse_binding ");
+        write_uint_option(outstr, indent, "button", b->button);
+        write_int_option(outstr, indent, "state", b->state);
+        write_char_option(outstr, indent, "action", b->action_name);
+        WRITE_STRING("/>");
+        work = work->next;
+    }
+    indent--;
+    WRITE_NL(); WRITE_STRING("</mouse_bindings>");
+}
+
 static void write_color_profile(GString *outstr, gint indent)
 {
     gint i;
@@ -511,6 +533,9 @@ gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options)
 
     indent++;
 
+    write_mouse_bindings(outstr, indent);
+
+    WRITE_SEPARATOR();
     write_color_profile(outstr, indent);
 
     WRITE_SEPARATOR();
@@ -824,6 +849,60 @@ static void options_parse_color_profiles(GQParserData *parser_data, GMarkupParse
     }
 }
 
+static void options_load_mouse_binding(const gchar **attribute_names, const gchar **attribute_values)
+{
+    MouseBinding *b = g_new0(MouseBinding, 1);
+    gboolean have_button = FALSE;
+    gboolean have_action = FALSE;
+    gint state = 0;
+
+    while (*attribute_names)
+    {
+        const gchar *option = *attribute_names++;
+        const gchar *value = *attribute_values++;
+
+        if (read_uint_option(option, "button", value, &b->button))
+        {
+            have_button = TRUE;
+            continue;
+        }
+        if (read_int_option(option, "state", value, &state))
+        {
+            b->state = state;
+            continue;
+        }
+        if (read_char_option(option, "action", value, &b->action_name))
+        {
+            have_action = TRUE;
+            continue;
+        }
+    }
+
+    if (have_button && have_action)
+    {
+        options->mouse_bindings = g_list_append(options->mouse_bindings, b);
+    }
+    else
+    {
+        g_free(b->action_name);
+        g_free(b);
+    }
+}
+
+static void options_parse_mouse_bindings(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+{
+    if (g_ascii_strcasecmp(element_name, "mouse_binding") == 0)
+    {
+        options_load_mouse_binding(attribute_names, attribute_values);
+        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
+    }
+    else
+    {
+        log_printf("unexpected in <mouse_bindings>: <%s>\n", element_name);
+        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
+    }
+}
+
 static void options_parse_filter(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "file_type") == 0)
@@ -889,6 +968,20 @@ static void options_parse_global(GQParserData *parser_data, GMarkupParseContext 
     {
         options_load_color_profiles(parser_data, context, element_name, attribute_names, attribute_values, data, error);
         options_parse_func_push(parser_data, options_parse_color_profiles, NULL, GINT_TO_POINTER(0));
+    }
+    else if (g_ascii_strcasecmp(element_name, "mouse_bindings") == 0)
+    {
+        GList *work = options->mouse_bindings;
+        while (work)
+        {
+            MouseBinding *b = work->data;
+            g_free(b->action_name);
+            g_free(b);
+            work = work->next;
+        }
+        g_list_free(options->mouse_bindings);
+        options->mouse_bindings = NULL;
+        options_parse_func_push(parser_data, options_parse_mouse_bindings, NULL, NULL);
     }
     else if (g_ascii_strcasecmp(element_name, "filter") == 0)
     {
