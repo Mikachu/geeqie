@@ -1446,7 +1446,6 @@ void sizer_set_limits(GtkWidget *sizer,
     sd->vsize_max = vsize_max;
 }
 
-
 /*
  *-----------------------------------------------------------------------------
  * storing data in a history list with key,data pairs

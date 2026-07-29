@@ -78,7 +78,7 @@ void layout_image_prev(LayoutWindow *lw);
 void layout_image_first(LayoutWindow *lw);
 void layout_image_last(LayoutWindow *lw);
 
-void layout_image_menu_popup(LayoutWindow *lw);
+void layout_image_menu_popup(LayoutWindow *lw, GdkEvent *event);
 
 void layout_image_to_root(LayoutWindow *lw);
 
