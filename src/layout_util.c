@@ -157,7 +157,7 @@ gboolean layout_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
             switch (event->keyval)
             {
                 case GDK_KEY_Menu:
-                    layout_image_menu_popup(lw);
+                    layout_image_menu_popup(lw, event);
                     break;
                 default:
                     stop_signal = FALSE;

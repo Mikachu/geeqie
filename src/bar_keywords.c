@@ -1136,8 +1136,10 @@ static void bar_pane_keywords_add_to_selected_cb(GtkWidget *menu_widget, gpointe
     string_list_free(keywords);
 }
 
-static void bar_pane_keywords_menu_popup(GtkWidget *widget, PaneKeywordsData *pkd, gint x, gint y)
+static void bar_pane_keywords_menu_popup(GtkWidget *widget, PaneKeywordsData *pkd, GdkEventButton *bevent)
 {
+    gint x = bevent->x;
+    gint y = bevent->y;
     GtkWidget *menu;
     GtkWidget *item;
     GtkWidget *submenu;
@@ -1227,7 +1229,7 @@ static void bar_pane_keywords_menu_popup(GtkWidget *widget, PaneKeywordsData *pk
     menu_item_add_check(submenu, _("Collapse unchecked"), pkd->collapse_unchecked, G_CALLBACK(bar_pane_keywords_collapse_unchecked_toggle_cb), pkd);
     menu_item_add_check(submenu, _("Hide unchecked"), pkd->hide_unchecked, G_CALLBACK(bar_pane_keywords_hide_unchecked_toggle_cb), pkd);
 
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, GDK_CURRENT_TIME);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
 }
 
 
@@ -1236,7 +1238,7 @@ static gboolean bar_pane_keywords_menu_cb(GtkWidget *widget, GdkEventButton *bev
     PaneKeywordsData *pkd = data;
     if (bevent->button == MOUSE_BUTTON_RIGHT)
     {
-        bar_pane_keywords_menu_popup(widget, pkd, bevent->x, bevent->y);
+        bar_pane_keywords_menu_popup(widget, pkd, bevent);
         return TRUE;
     }
     return FALSE;

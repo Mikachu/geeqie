@@ -887,8 +887,10 @@ static void vd_dnd_drop_receive(GtkWidget *widget,
 
         if (done == FALSE)
         {
+            GdkEventButton event;
             vd->popup = vd_drop_menu(vd, active);
-            gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, NULL, NULL, 0, time);
+            widget_coords_to_root(widget, x, y, &event.x_root, &event.y_root);
+            gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, popup_menu_at_event, &event, 0, time);
         }
 
         vd->drop_fd = fd;
