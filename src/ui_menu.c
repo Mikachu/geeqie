@@ -159,18 +159,42 @@ GtkWidget *popup_menu_short_lived(void)
     return menu;
 }
 
+void widget_coords_to_root(GtkWidget *widget, gint x, gint y, gdouble *root_x, gdouble *root_y)
+{
+    gint rx, ry;
+    gdk_window_get_root_coords(gtk_widget_get_window(widget), x, y, &rx, &ry);
+    *root_x = rx;
+    *root_y = ry;
+}
+
+void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+{
+    GdkEventButton *event = data;
+    *x = event->x_root;
+    *y = event->y_root;
+    popup_menu_position_clamp(menu, x, y, 0);
+    *push_in = TRUE;
+}
+
 gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
 {
     gboolean adjusted = FALSE;
     gint w, h;
     gint xw, xh;
     GtkRequisition requisition;
+    GdkScreen *screen;
+    GdkRectangle monitor;
+    gint monitor_num;
 
     gtk_widget_get_requisition(GTK_WIDGET(menu), &requisition);
     w = requisition.width;
     h = requisition.height;
-    xw = gdk_screen_width();
-    xh = gdk_screen_height();
+
+    screen = gtk_widget_get_screen(GTK_WIDGET(menu));
+    monitor_num = gdk_screen_get_monitor_at_point(screen, *x, *y);
+    gdk_screen_get_monitor_geometry(screen, monitor_num, &monitor);
+    xw = monitor.x + monitor.width;
+    xh = monitor.y + monitor.height;
 
     if (*x + w > xw)
     {
@@ -190,14 +214,14 @@ gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
         adjusted = TRUE;
     };
 
-    if (*x < 0)
+    if (*x < monitor.x)
     {
-        *x = 0;
+        *x = monitor.x;
         adjusted = TRUE;
     }
-    if (*y < 0)
+    if (*y < monitor.y)
     {
-        *y = 0;
+        *y = monitor.y;
         adjusted = TRUE;
     }
 

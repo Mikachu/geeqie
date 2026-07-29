@@ -1289,7 +1289,7 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
             tip_unschedule(vf);
 
             vf->popup = vf_pop_menu(vf);
-            gtk_menu_popup(GTK_MENU(vf->popup), NULL, NULL, vfi_menu_position_cb, vf, 0, GDK_CURRENT_TIME);
+            gtk_menu_popup(GTK_MENU(vf->popup), NULL, NULL, vfi_menu_position_cb, vf, 0, event->time);
             break;
         default:
             stop_signal = FALSE;
@@ -1391,7 +1391,7 @@ gboolean vficon_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
             break;
         case MOUSE_BUTTON_RIGHT:
             vf->popup = vf_pop_menu(vf);
-            gtk_menu_popup(GTK_MENU(vf->popup), NULL, NULL, NULL, NULL, bevent->button, bevent->time);
+            gtk_menu_popup(GTK_MENU(vf->popup), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
             break;
         default:
             break;
