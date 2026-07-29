@@ -1089,7 +1089,7 @@ static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent
         GtkWidget *menu;
 
         menu = search_result_menu(sd, (mfd != NULL), (search_result_count(sd, NULL) == 0));
-        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, bevent->button, bevent->time);
+        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
     }
 
     if (!mfd) return FALSE;
@@ -1297,7 +1297,7 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
                 sd->click_fd = mfd ? mfd->fd : NULL;
                 menu = search_result_menu(sd, (mfd != NULL), (search_result_count(sd, NULL) > 0));
                 gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                           search_result_menu_pos_cb, sd, 0, GDK_CURRENT_TIME);
+                           search_result_menu_pos_cb, sd, 0, event->time);
             }
                 break;
             default:

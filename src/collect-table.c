@@ -1208,7 +1208,7 @@ static gboolean collection_table_press_key_cb(GtkWidget *widget, GdkEventKey *ev
             tip_unschedule(ct);
 
             ct->popup = collection_table_popup_menu(ct, (info != NULL));
-            gtk_menu_popup(GTK_MENU(ct->popup), NULL, NULL, collection_table_menu_pos_cb, ct, 0, GDK_CURRENT_TIME);
+            gtk_menu_popup(GTK_MENU(ct->popup), NULL, NULL, collection_table_menu_pos_cb, ct, 0, event->time);
             break;
         default:
             stop_signal = FALSE;
@@ -1560,7 +1560,7 @@ static gboolean collection_table_press_cb(GtkWidget *widget, GdkEventButton *bev
             break;
         case MOUSE_BUTTON_RIGHT:
             ct->popup = collection_table_popup_menu(ct, (info != NULL));
-            gtk_menu_popup(GTK_MENU(ct->popup), NULL, NULL, NULL, NULL, bevent->button, bevent->time);
+            gtk_menu_popup(GTK_MENU(ct->popup), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
             break;
         default:
             break;
@@ -2231,11 +2231,14 @@ static void collection_table_dnd_receive(GtkWidget *widget, GdkDragContext *cont
                 if (isdir(fd->path))
                 {
                     GtkWidget *menu;
+                    GdkEventButton event;
 
                     ct->drop_list = list;
                     ct->drop_info = drop_info;
                     menu = collection_table_drop_menu(ct);
-                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, time);
+                    event.x_root = x;
+                    event.y_root = y;
+                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, &event, 0, time);
                     return;
                 }
                 work = work->next;

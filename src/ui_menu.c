@@ -159,6 +159,14 @@ GtkWidget *popup_menu_short_lived(void)
     return menu;
 }
 
+void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+{
+    GdkEventButton *event = data;
+    *x = event->x_root;
+    *y = event->y_root;
+    *push_in = TRUE;
+}
+
 gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
 {
     gboolean adjusted = FALSE;

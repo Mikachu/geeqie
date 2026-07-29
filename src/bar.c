@@ -252,7 +252,7 @@ static void bar_expander_add_cb(GtkWidget *widget, gpointer data)
 }
 
 
-static void bar_menu_popup(GtkWidget *widget)
+static void bar_menu_popup(GtkWidget *widget, GdkEventButton *bevent)
 {
     GtkWidget *menu;
     GtkWidget *bar;
@@ -296,7 +296,7 @@ static void bar_menu_popup(GtkWidget *widget)
         pane++;
     }
 
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, bar, 0, GDK_CURRENT_TIME);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
 }
 
 
@@ -304,7 +304,7 @@ static gboolean bar_menu_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer 
 {
     if (bevent->button == MOUSE_BUTTON_RIGHT)
     {
-        bar_menu_popup(widget);
+        bar_menu_popup(widget, bevent);
         return TRUE;
     }
     return FALSE;

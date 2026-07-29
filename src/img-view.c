@@ -536,7 +536,7 @@ static gboolean view_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, 
             case GDK_KEY_F10:
                 menu = view_popup_menu(vw);
                 gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                           view_window_menu_pos_cb, vw, 0, GDK_CURRENT_TIME);
+                           view_window_menu_pos_cb, vw, 0, event->time);
                 break;
             default:
                 stop_signal = FALSE;
@@ -569,7 +569,7 @@ static void button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
             break;
         case MOUSE_BUTTON_RIGHT:
             menu = view_popup_menu(vw);
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, event->time);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
             break;
         default:
             break;
@@ -1426,9 +1426,11 @@ static void view_window_get_dnd_data(GtkWidget *widget, GdkDragContext *context,
                 FileData *fd = work->data;
                 if (isdir(fd->path))
                 {
-                    GtkWidget *menu;
-                    menu = view_confirm_dir_list(vw, list);
-                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, time);
+                    GtkWidget *menu = view_confirm_dir_list(vw, list);
+                    GdkEventButton event;
+                    event.x_root = x;
+                    event.y_root = y;
+                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, &event, 0, time);
                     return;
                 }
                 work = work->next;

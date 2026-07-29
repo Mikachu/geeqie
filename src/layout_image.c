@@ -624,12 +624,12 @@ static void layout_image_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *
     popup_menu_position_clamp(menu, x, y, 0);
 }
 
-void layout_image_menu_popup(LayoutWindow *lw)
+void layout_image_menu_popup(LayoutWindow *lw, GdkEvent *event)
 {
     GtkWidget *menu;
 
     menu = layout_image_pop_menu(lw);
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, layout_image_menu_pos_cb, lw, 0, GDK_CURRENT_TIME);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, layout_image_menu_pos_cb, lw, 0, event->key.time);
 }
 
 /*
@@ -1501,14 +1501,6 @@ static gboolean layout_image_mouse_binding_dispatch(LayoutWindow *lw, GdkEventBu
     return layout_image_mouse_binding_activate(lw, event->button, event->state);
 }
 
-void gtk_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
-{
-    GdkEventButton *event = data;
-    *x = event->x_root;
-    *y = event->y_root;
-    *push_in = TRUE;
-}
-
 static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
 {
     LayoutWindow *lw = data;
@@ -1532,7 +1524,7 @@ static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpoi
             {
                 g_object_set_data(G_OBJECT(menu), "click_parent", imd->widget);
             }
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, event->time);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
             break;
         default:
             break;
@@ -1684,7 +1676,7 @@ static void layout_image_button_inactive_cb(ImageWindow *imd, GdkEventButton *ev
             {
                 g_object_set_data(G_OBJECT(menu), "click_parent", imd->widget);
             }
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, event->time);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
             break;
         default:
             break;

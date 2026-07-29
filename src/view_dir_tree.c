@@ -756,7 +756,7 @@ gboolean vdtree_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
             vd_color_set(vd, vd->click_fd, TRUE);
 
             vd->popup = vd_pop_menu(vd, vd->click_fd);
-            gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, vd_menu_position_cb, vd, 0, GDK_CURRENT_TIME);
+            gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, vd_menu_position_cb, vd, 0, event->time);
 
             return TRUE;
             break;
@@ -939,8 +939,7 @@ gboolean vdtree_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
     if (bevent->button == MOUSE_BUTTON_RIGHT)
     {
         vd->popup = vd_pop_menu(vd, vd->click_fd);
-        gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, NULL, NULL,
-                   bevent->button, bevent->time);
+        gtk_menu_popup(GTK_MENU(vd->popup), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
     }
 
     return (bevent->button != MOUSE_BUTTON_LEFT);

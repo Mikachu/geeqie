@@ -2637,7 +2637,7 @@ static gboolean dupe_listview_press_cb(GtkWidget *widget, GdkEventButton *bevent
         {
             menu = dupe_menu_popup_second(dw, di);
         }
-        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, bevent->button, bevent->time);
+        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
     }
 
     if (!di) return FALSE;
@@ -3406,7 +3406,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
 
                     menu = dupe_menu_popup_main(dw, di);
                     gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                               dupe_popup_menu_pos_cb, listview, 0, GDK_CURRENT_TIME);
+                               dupe_popup_menu_pos_cb, listview, 0, event->time);
                 }
                 else
                 {
@@ -3414,7 +3414,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
 
                     menu = dupe_menu_popup_second(dw, di);
                     gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                               dupe_popup_menu_pos_cb, listview, 0, GDK_CURRENT_TIME);
+                               dupe_popup_menu_pos_cb, listview, 0, event->time);
                 }
                 break;
             default:
@@ -3893,9 +3893,11 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
                 FileData *fd = work->data;
                 if (isdir(fd->path))
                 {
-                    GtkWidget *menu;
-                    menu = dupe_confirm_dir_list(dw, list);
-                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, time);
+                    GtkWidget *menu = dupe_confirm_dir_list(dw, list);
+                    GdkEventButton event;
+                    event.x_root = x;
+                    event.y_root = y;
+                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, &event, 0, time);
                     return;
                 }
                 work = work->next;

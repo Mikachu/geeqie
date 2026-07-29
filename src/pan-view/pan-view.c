@@ -1267,7 +1267,7 @@ static gboolean pan_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, g
                 case GDK_KEY_F10:
                     menu = pan_popup_menu(pw);
                     gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                               pan_window_menu_pos_cb, pw, 0, GDK_CURRENT_TIME);
+                               pan_window_menu_pos_cb, pw, 0, event->time);
                     break;
                 case '/':
                     pan_search_toggle_visible(pw, TRUE);
@@ -1467,7 +1467,7 @@ static void button_cb(PixbufRenderer *pr, GdkEventButton *event, gpointer data)
         case MOUSE_BUTTON_RIGHT:
             pan_info_update(pw, pi);
             menu = pan_popup_menu(pw);
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, event->time);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
             break;
         default:
             break;

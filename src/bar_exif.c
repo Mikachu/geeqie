@@ -595,7 +595,7 @@ static void bar_pane_exif_toggle_show_all_cb(GtkWidget *menu_widget, gpointer da
     bar_pane_exif_update(ped);
 }
 
-static void bar_pane_exif_menu_popup(GtkWidget *widget, PaneExifData *ped)
+static void bar_pane_exif_menu_popup(GtkWidget *widget, PaneExifData *ped, GdkEventButton *bevent)
 {
     GtkWidget *menu;
     /* the widget can be either ExifEntry (for editing) or Pane (for new entry)
@@ -622,7 +622,7 @@ static void bar_pane_exif_menu_popup(GtkWidget *widget, PaneExifData *ped)
     menu_item_add_stock(menu, _("Add entry"), GTK_STOCK_ADD, G_CALLBACK(bar_pane_exif_conf_dialog_cb), ped->widget);
     menu_item_add_check(menu, _("Show hidden entries"), ped->show_all, G_CALLBACK(bar_pane_exif_toggle_show_all_cb), ped);
 
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, GDK_CURRENT_TIME);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
 }
 
 static gboolean bar_pane_exif_menu_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
@@ -630,7 +630,7 @@ static gboolean bar_pane_exif_menu_cb(GtkWidget *widget, GdkEventButton *bevent,
     PaneExifData *ped = data;
     if (bevent->button == MOUSE_BUTTON_RIGHT)
     {
-        bar_pane_exif_menu_popup(widget, ped);
+        bar_pane_exif_menu_popup(widget, ped, bevent);
         return TRUE;
     }
     return FALSE;
