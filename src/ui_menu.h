@@ -43,6 +43,13 @@ GtkWidget *menu_item_add_simple(GtkWidget *menu, const gchar *label,
 
 GtkWidget *popup_menu_short_lived(void);
 
+/* helper for gtk to show the menu where you clicked (a little insane that you have
+ * to do this manually, but hey, that's gtk for you) */
+void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data);
+/* that's not all, you have to do this for drag-n-drop events since those only give
+ * widget relative coords, and the event values are double. you can't help but love gtk */
+void widget_coords_to_root(GtkWidget *widget, gint x, gint y, gdouble *root_x, gdouble *root_y);
+
 /* clamp a menu's position to within the screen
  * if menu will attempt to stay out of region y to y+height
  */
