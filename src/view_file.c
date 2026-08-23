@@ -495,6 +495,14 @@ static void vf_pop_menu_toggle_view_type_cb(GtkWidget *widget, gpointer data)
     layout_views_set(vf->layout, vf->layout->options.dir_view_type, new_type);
 }
 
+static void vf_pop_menu_toggle_filter_cb(GtkWidget *widget, gpointer data)
+{
+	ViewFile *vf = data;
+
+	options->file_filter.disable = !options->file_filter.disable;
+	if (vf->layout) layout_refresh(vf->layout);
+}
+
 static void vf_pop_menu_refresh_cb(GtkWidget *widget, gpointer data)
 {
     ViewFile *vf = data;
@@ -630,6 +638,9 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
 
     item = menu_item_add_radio(menu, _("View as _Icons"), GINT_TO_POINTER(FILEVIEW_ICON), vf->type == FILEVIEW_ICON,
                                            G_CALLBACK(vf_pop_menu_toggle_view_type_cb), vf);
+
+	menu_item_add_check(menu, _("Disable file _filtering"), options->file_filter.disable,
+				G_CALLBACK(vf_pop_menu_toggle_filter_cb), vf);
 
     switch (vf->type)
     {
