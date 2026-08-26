@@ -125,7 +125,7 @@ GType image_loader_get_type(void);
 ImageLoader *image_loader_new(FileData *fd);
 
 void image_loader_free(ImageLoader *il);
-void image_loader_free_async(ImageLoader *il);
+void image_loader_free_async(ImageLoader *il, gpointer data);
 void image_loader_abort(ImageLoader *il);
 
 /* delay area_ready signals */

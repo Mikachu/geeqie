@@ -1026,7 +1026,7 @@ static void image_reset(ImageWindow *imd)
     g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);
 
 #ifdef ASYNC_FREE
-    image_loader_free_async(imd->il);
+    image_loader_free_async(imd->il, imd);
 #else
     image_loader_free(imd->il);
 #endif
@@ -1397,7 +1397,7 @@ void image_move_from_image(ImageWindow *imd, ImageWindow *source)
     imd->collection_info = source->collection_info;
 
 #ifdef ASYNC_FREE
-    image_loader_free_async(imd->il);
+    image_loader_free_async(imd->il, imd);
 #else
     image_loader_free(imd->il);
 #endif
