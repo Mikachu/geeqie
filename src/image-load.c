@@ -795,7 +795,7 @@ static gboolean image_loader_free_idle_cb(gpointer data)
     return FALSE;
 }
 
-void image_loader_free_async(ImageLoader *il)
+void image_loader_free_async(ImageLoader *il, gpointer data)
 {
     if (!il) return;
     if (!il->thread ||
@@ -806,6 +806,9 @@ void image_loader_free_async(ImageLoader *il)
     }
     g_atomic_int_inc(&image_loader_async_free_count);
     g_mutex_lock(il->data_mutex);
+    if (data)
+        g_signal_handlers_disconnect_matched(G_OBJECT(il), G_SIGNAL_MATCH_DATA,
+                                             0, 0, NULL, NULL, data);
     il->stopping = TRUE;
     il->async_free = TRUE;
     if (il->loader) il->backend.abort(il->loader);
