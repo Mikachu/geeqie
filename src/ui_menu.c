@@ -198,7 +198,7 @@ gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
 
     if (*x + w > xw)
     {
-        *x = xw - w;
+        *x -= w;
         adjusted = TRUE;
     }
     if (*y + h > xh)
