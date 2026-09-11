@@ -105,6 +105,10 @@ struct _ImageLoader
     gboolean async_free;
 
     guchar *mapped_file;
+    guchar *mmap_base;      /* non-NULL only when mapped_file points partway into
+                             * a larger mmap'd region (e.g. an embedded MKV cover
+                             * attachment); holds the real base pointer to munmap(). */
+    gsize mmap_base_len;    /* real length to pass to munmap() alongside mmap_base */
     gsize read_buffer_size;
     guint idle_read_loop_count;
 };

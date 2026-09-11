@@ -5,6 +5,7 @@ AM_CFLAGS =				\
 	$(GLIB_CFLAGS) $(GTK_CFLAGS)	\
 	$(LCMS_CFLAGS)			\
 	$(EXIV2_CFLAGS)			\
+	$(MATROSKA_CFLAGS)			\
 	$(LUA_CFLAGS)			\
 	-I$(top_srcdir)			\
 	-I$(top_builddir)		\
@@ -15,6 +16,7 @@ AM_CXXFLAGS =				\
 	$(GLIB_CFLAGS) $(GTK_CFLAGS)	\
 	$(LCMS_CFLAGS)			\
 	$(EXIV2_CFLAGS)			\
+	$(MATROSKA_CFLAGS)			\
 	$(LUA_CFLAGS)			\
 	-I$(top_srcdir)			\
 	-I$(top_builddir)
@@ -130,6 +132,8 @@ geeqie_SOURCES = \
 	exif-int.h	\
 	exif-common.c   \
 	exiv2.cc	\
+	format_mkv.cc	\
+	format_mkv.h	\
 	filecache.c	\
 	filecache.h	\
 	filedata.c	\
@@ -248,7 +252,7 @@ geeqie_SOURCES = \
 	lua.c		\
 	glua.h
 
-geeqie_LDADD = $(GTK_LIBS) $(GLIB_LIBS) $(INTLLIBS) $(JPEG_LIBS) $(TIFF_LIBS) $(LCMS_LIBS) $(EXIV2_LIBS) $(LUA_LIBS)
+geeqie_LDADD = $(GTK_LIBS) $(GLIB_LIBS) $(INTLLIBS) $(JPEG_LIBS) $(TIFF_LIBS) $(LCMS_LIBS) $(EXIV2_LIBS) $(LUA_LIBS) $(MATROSKA_LIBS)
 
 EXTRA_DIST = \
 	keymap_template.c \
