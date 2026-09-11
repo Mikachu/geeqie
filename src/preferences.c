@@ -104,7 +104,8 @@ static gchar *format_class_list[] = {
     N_("Unknown"),
     N_("Image"),
     N_("RAW Image"),
-    N_("Metadata")
+    N_("Metadata"),
+    N_("Video file"),
     };
 
 /* config memory values */
