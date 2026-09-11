@@ -246,6 +246,7 @@ void filter_add_defaults(void)
     filter_add_if_missing("gqv", GQ_APPNAME " image collection", GQ_COLLECTION_EXT, FORMAT_CLASS_META, FALSE, FALSE, TRUE);
     filter_add_if_missing("ufraw", "UFRaw ID file", ".ufraw", FORMAT_CLASS_META, FALSE, FALSE, TRUE);
     filter_add_if_missing("pto", "Panorama script file", ".pto", FORMAT_CLASS_META, FALSE, FALSE, TRUE);
+    filter_add_if_missing("mkv", "Matroska video", ".mkv;.webm", FORMAT_CLASS_VIDEO, FALSE, FALSE, TRUE);
 
     /* These are the raw camera formats with embedded jpeg/exif.
      * (see format_raw.c and/or exiv2.cc)
@@ -296,6 +297,7 @@ GList *filter_to_list(const gchar *extensions)
         if (g_ascii_strcasecmp(ext, "%image") == 0) file_class = FORMAT_CLASS_IMAGE;
         else if (g_ascii_strcasecmp(ext, "%raw") == 0) file_class = FORMAT_CLASS_RAWIMAGE;
         else if (g_ascii_strcasecmp(ext, "%meta") == 0) file_class = FORMAT_CLASS_META;
+        else if (g_ascii_strcasecmp(ext, "%video") == 0) file_class = FORMAT_CLASS_VIDEO;
         else if (g_ascii_strcasecmp(ext, "%unknown") == 0) file_class = FORMAT_CLASS_UNKNOWN;
 
         if (file_class == -1)
