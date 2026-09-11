@@ -368,6 +368,30 @@ AM_CONDITIONAL(HAVE_EXIV2, [test "x$HAVE_EXIV2" = xyes])
 AC_SUBST(EXIV2_CFLAGS)
 AC_SUBST(EXIV2_LIBS)
 
+#  libebml / libmatroska support
+# ----------------------------------------------------------------------
+
+AC_ARG_ENABLE([matroska],
+  AS_HELP_STRING([--disable-matroska], [disable matroska/mkv cover extraction support]),
+    [libmatroska=$enableval], [libmatroska=auto])
+
+if test "x${libmatroska}" != "xno"; then
+  PKG_CHECK_MODULES(MATROSKA, [libebml >= 1.3 libmatroska >= 1.4],
+    [
+      HAVE_MATROSKA=yes
+      AC_DEFINE(HAVE_MATROSKA, 1, [define to enable matroska/mkv cover attachment extraction])
+    ],
+    [
+      HAVE_MATROSKA=no
+      AC_MSG_WARN([$MATROSKA_PKG_ERRORS])
+    ])
+else
+  HAVE_MATROSKA=disabled
+fi
+
+AM_CONDITIONAL(HAVE_MATROSKA, [test "x$HAVE_MATROSKA" = xyes])
+AC_SUBST(MATROSKA_CFLAGS)
+AC_SUBST(MATROSKA_LIBS)
 
 #  Gettext support
 # ----------------------------------------------------------------------
@@ -485,7 +509,7 @@ Flags:
   Gtk:           $GTK_CFLAGS
   Glib:          $GLIB_CFLAGS
   Thread:        $GTHREAD_LIBS
-  Others:        $JPEG_LIBS $TIFF_LIBS $LCMS_LIBS $EXIV2_LIBS $LUA_LIBS
+  Others:        $JPEG_LIBS $TIFF_LIBS $LCMS_LIBS $EXIV2_LIBS $LUA_LIBS $MATROSKA_LIBS
 
 Localization:
   NLS support:   $USE_NLS
@@ -501,6 +525,7 @@ Support:
   LCMS:          $HAVE_LCMS
   Exiv2:         $HAVE_EXIV2
   Lirc:          $HAVE_LIRC
+  Matroska:      $HAVE_MATROSKA
   Lua:           $HAVE_LUA
 
 Documentation:

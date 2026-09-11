@@ -24,9 +24,11 @@
 #include "image_load_gdk.h"
 #include "image_load_jpeg.h"
 #include "image_load_tiff.h"
+#include "format_mkv.h"
 
 #include "exif.h"
 #include "filedata.h"
+#include "filefilter.h"
 #include "pixbuf_util.h"
 #include "ui_fileops.h"
 #include "gq-marshal.h"
@@ -717,6 +719,24 @@ static gboolean image_loader_setup_source(ImageLoader *il)
 
     il->mapped_file = NULL;
 
+    if (il->fd && filter_file_class(il->fd->path, FORMAT_CLASS_VIDEO))
+    {
+        guchar *base = NULL;
+        gsize base_len = 0;
+        guchar *cover_data = NULL;
+        gsize cover_len = 0;
+
+        if (mkv_get_cover_region(il->fd->path, &base, &base_len, &cover_data, &cover_len))
+        {
+            il->mmap_base = base;
+            il->mmap_base_len = base_len;
+            il->mapped_file = cover_data;
+            il->bytes_total = cover_len;
+            DEBUG_1("Usable embedded cover attachment loaded from file %s", il->fd->path);
+            return TRUE;
+        }
+    }
+
     if (il->fd)
     {
         ExifData *exif = exif_read_fd(il->fd);
@@ -726,44 +746,41 @@ static gboolean image_loader_setup_source(ImageLoader *il)
         else
             il->mapped_file = exif_get_preview(exif, (guint *)&il->bytes_total, 0, 0); /* get the largest available preview image or NULL for normal images*/
 
+        exif_free_fd(il->fd, exif);
         if (il->mapped_file)
         {
             il->preview = TRUE;
             DEBUG_1("Usable reduced size (preview) image loaded from file %s", il->fd->path);
+            return TRUE;
         }
-        exif_free_fd(il->fd, exif);
     }
 
+    /* normal file */
+    gint load_fd;
 
-    if (!il->mapped_file)
+    pathl = path_from_utf8(il->fd->path);
+    load_fd = open(pathl, O_RDONLY | O_NONBLOCK);
+    g_free(pathl);
+    if (load_fd == -1) return FALSE;
+
+    if (fstat(load_fd, &st) == 0)
     {
-        /* normal file */
-        gint load_fd;
-
-        pathl = path_from_utf8(il->fd->path);
-        load_fd = open(pathl, O_RDONLY | O_NONBLOCK);
-        g_free(pathl);
-        if (load_fd == -1) return FALSE;
-
-        if (fstat(load_fd, &st) == 0)
-        {
-            il->bytes_total = st.st_size;
-        }
-        else
-        {
-            close(load_fd);
-            return FALSE;
-        }
-
-        il->mapped_file = mmap(0, il->bytes_total, PROT_READ|PROT_WRITE, MAP_PRIVATE, load_fd, 0);
-        close(load_fd);
-        if (il->mapped_file == MAP_FAILED)
-        {
-            il->mapped_file = 0;
-            return FALSE;
-        }
-        il->preview = FALSE;
+        il->bytes_total = st.st_size;
     }
+    else
+    {
+        close(load_fd);
+        return FALSE;
+    }
+
+    il->mapped_file = mmap(0, il->bytes_total, PROT_READ|PROT_WRITE, MAP_PRIVATE, load_fd, 0);
+    close(load_fd);
+    if (il->mapped_file == MAP_FAILED)
+    {
+        il->mapped_file = 0;
+        return FALSE;
+    }
+    il->preview = FALSE;
 
     return TRUE;
 }
@@ -774,7 +791,13 @@ static void image_loader_stop_source(ImageLoader *il)
 
     if (il->mapped_file)
     {
-        if (il->preview)
+        if (il->mmap_base)
+        {
+            munmap(il->mmap_base, il->mmap_base_len);
+            il->mmap_base = NULL;
+            il->mmap_base_len = 0;
+        }
+        else if (il->preview)
         {
             exif_free_preview(il->mapped_file);
         }
