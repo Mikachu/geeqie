@@ -161,6 +161,21 @@ static gboolean image_loader_tiff_load (gpointer loader, const guchar *buf, gsiz
         return FALSE;
     }
 
+    {
+        ImageLoader *il = (ImageLoader *) lt->data;
+        guint requested_page = (il && il->fd) ? il->fd->page_num : 0;
+        guint16 page_total = TIFFNumberOfDirectories(tiff);
+
+        if (il && il->fd) il->fd->page_total = page_total;
+
+        if (requested_page > 0 && requested_page < page_total)
+        {
+            if (!TIFFSetDirectory(tiff, (tdir_t) requested_page))
+            {
+                DEBUG_1("Could not select TIFF page %u, using first page", requested_page);
+            }
+        }
+    }
 
     if (!TIFFGetField (tiff, TIFFTAG_IMAGEWIDTH, &width))
     {
