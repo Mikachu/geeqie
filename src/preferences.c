@@ -1511,8 +1511,8 @@ static void config_tab_windows(GtkWidget *notebook)
 
     gtk_widget_set_tooltip_markup(image_overlay_template_view,
     _("<i>%name%</i> results in the filename of the picture.\n"
-      "Also available: <i>%collection%</i>, <i>%number%</i>, <i>%total%</i>, <i>%date%</i>,\n"
-      "<i>%size%</i> (filesize), <i>%width%</i>, <i>%height%</i>, <i>%res%</i> (resolution)\n"
+      "Also available: <i>%collection%</i>, <i>%number%</i>, <i>%total%</i>, <i>%page%</i>, <i>%page_total%</i>,\n"
+      "<i>%date%</i>, <i>%size%</i> (filesize), <i>%width%</i>, <i>%height%</i>, <i>%res%</i> (resolution)\n"
       "To access exif data use the exif name, e. g. <i>%formatted.Camera%</i> is the formatted camera name,\n"
       "<i>%Exif.Photo.DateTimeOriginal%</i> the date of the original shot.\n"
       "<i>%formatted.Camera:20</i> notation will truncate the displayed data to 20 characters and will add 3 dots at the end to denote the truncation.\n"
