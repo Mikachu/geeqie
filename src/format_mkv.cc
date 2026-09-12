@@ -105,17 +105,20 @@ AdvanceOuterSibling(EbmlStream &aStream, const EbmlSemanticContext &ctx,
 }
 
 extern "C" gboolean
-mkv_get_cover_region(const gchar *path,
+mkv_get_image_region(const gchar *path, guint index,
                      guchar **mmap_base_out, gsize *mmap_base_len_out,
-                     guchar **cover_data_out, gsize *cover_len_out)
+                     guchar **image_data_out, gsize *image_len_out,
+                     guint *total_images_out)
 {
     int fd;
     struct stat st;
     guchar *base = NULL;
     gsize base_len = 0;
 
-    if (!path || !mmap_base_out || !mmap_base_len_out || !cover_data_out || !cover_len_out)
+    if (!path || !mmap_base_out || !mmap_base_len_out || !image_data_out || !image_len_out)
         return FALSE;
+
+    if (total_images_out) *total_images_out = 0;
 
     fd = open(path, O_RDONLY);
     if (fd == -1) return FALSE;
@@ -138,6 +141,7 @@ mkv_get_cover_region(const gchar *path,
         int UpperElementLevel = 0;
         bool bAllowDummy = false;
         bool found = false;
+        guint image_count = 0;
         guint64 attachment_offset = 0;
         guint64 attachment_len = 0;
 
@@ -334,7 +338,7 @@ mkv_get_cover_region(const gchar *path,
 
         {
             EbmlElement *attached_elem = aStream.FindNextElement(EBML_CONTEXT(attachments_elem), UpperElementLevel, 0xFFFFFFFFL, bAllowDummy);
-            while (attached_elem && !found)
+            while (attached_elem)
             {
                 if (UpperElementLevel > 0) break;
                 if (UpperElementLevel < 0) UpperElementLevel = 0;
@@ -378,18 +382,24 @@ mkv_get_cover_region(const gchar *path,
                     delete attachedchild_elem;
                     if (have_data && mime_type.size() >= 6 && mime_type.compare(0, 6, "image/") == 0)
                     {
-                        attachment_offset = data_start;
-                        attachment_len = data_len;
-                        found = true;
+                        if (image_count == index)
+                        {
+                            attachment_offset = data_start;
+                            attachment_len = data_len;
+                            found = true;
+                        }
+                        image_count++;
                     }
                 }
                 if (AdvanceOuterSibling(aStream, EBML_CONTEXT(attachments_elem), attached_elem,
-                                        UpperElementLevel, bAllowDummy, found))
+                                        UpperElementLevel, bAllowDummy, false))
                     break;
             }
         }
 
         delete attachments_elem;
+
+        if (total_images_out) *total_images_out = image_count;
 
         if (!found ||
             attachment_offset > base_len || attachment_len > base_len - attachment_offset)
@@ -399,8 +409,8 @@ mkv_get_cover_region(const gchar *path,
 
         *mmap_base_out = base;
         *mmap_base_len_out = base_len;
-        *cover_data_out = base + attachment_offset;
-        *cover_len_out = attachment_len;
+        *image_data_out = base + attachment_offset;
+        *image_len_out = attachment_len;
         return TRUE;
     }
     catch (...)
@@ -414,15 +424,18 @@ fail:
 #else /* !HAVE_MATROSKA */
 
 extern "C" gboolean
-mkv_get_cover_region(const gchar *path,
+mkv_get_image_region(const gchar *path, guint index
                       guchar **mmap_base_out, gsize *mmap_base_len_out,
-                      guchar **cover_data_out, gsize *cover_len_out)
+                      guchar **image_data_out, gsize *image_len_out,
+                      guint *total_images_out)
 {
     (void) path;
+    (void) index;
     (void) mmap_base_out;
     (void) mmap_base_len_out;
-    (void) cover_data_out;
-    (void) cover_len_out;
+    (void) image_data_out;
+    (void) image_len_out;
+    if (total_images_out) *total_images_out = 0;
     return FALSE;
 }
 

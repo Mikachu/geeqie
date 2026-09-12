@@ -541,6 +541,10 @@ struct _FileData {
 
     GdkPixbuf *pixbuf; /* full-size image, only complete images, NULL during loading
                   all FileData with non-NULL pixbuf are referenced by image_cache */
+    guint page_num;   /* requested sub-image/page index for multi-image files
+                       * (TIFF pages, MKV image attachments, ...); 0 by default */
+    guint page_total; /* number of sub-images/pages available, as discovered by the
+                       * loader backend; 0 or 1 means "not a multi-image file" */
 
     HistMap *histmap;
 
