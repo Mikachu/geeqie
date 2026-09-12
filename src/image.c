@@ -1697,6 +1697,33 @@ void image_stereo_pixbuf_set(ImageWindow *imd, StereoPixbufData stereo_mode)
     image_reload(imd);
 }
 
+/* multi-image / page navigation */
+
+guint image_get_page(ImageWindow *imd)
+{
+    return (imd && imd->image_fd) ? imd->image_fd->page_num : 0;
+}
+
+guint image_get_page_total(ImageWindow *imd)
+{
+    return (imd && imd->image_fd) ? imd->image_fd->page_total : 0;
+}
+
+void image_set_page(ImageWindow *imd, guint page_num)
+{
+    if (!imd || !imd->image_fd) return;
+    if (imd->image_fd->page_num == page_num) return;
+
+    imd->image_fd->page_num = page_num;
+    /* reuse the existing "file changed on disk" invalidation path: this
+     * evicts the runtime pixbuf cache entry and the thumbnail cache entry
+     * for this FileData, and reloads the currently displayed image, exactly
+     * as if the file had been touched externally (see file_cache_notify_cb,
+     * thumb_notify_cb, image_notify_cb). Simple by design: no per-page cache
+     * keying yet, every page switch is a full reload. */
+    file_data_send_notification(imd->image_fd, NOTIFY_REREAD);
+}
+
 /* read ahead */
 
 void image_prebuffer_set(ImageWindow *imd, FileData *fd)
