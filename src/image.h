@@ -109,6 +109,11 @@ void image_stereo_swap(ImageWindow *imd);
 StereoPixbufData image_stereo_pixbuf_get(ImageWindow *imd);
 void image_stereo_pixbuf_set(ImageWindow *imd, StereoPixbufData stereo_mode);
 
+/* multi-image / page navigation (TIFF pages, MKV image attachments, ...) */
+guint image_get_page(ImageWindow *imd);
+guint image_get_page_total(ImageWindow *imd);
+void image_set_page(ImageWindow *imd, guint page_num);
+
 /* read ahead, pass NULL to cancel */
 void image_prebuffer_set(ImageWindow *imd, FileData *fd);
 
