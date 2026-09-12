@@ -1437,6 +1437,41 @@ void layout_image_last(LayoutWindow *lw)
     }
 }
 
+/* multi-image / page navigation */
+
+guint layout_image_page_total(LayoutWindow *lw)
+{
+    if (!layout_valid(&lw)) return 0;
+
+    return image_get_page_total(lw->image);
+}
+
+void layout_image_page_next(LayoutWindow *lw)
+{
+    guint total;
+    guint page;
+    if (!layout_valid(&lw)) return;
+
+    total = image_get_page_total(lw->image);
+    page = image_get_page(lw->image);
+    if (total < 2 || page + 1 == total) return;
+
+    image_set_page(lw->image, page + 1);
+}
+
+void layout_image_page_prev(LayoutWindow *lw)
+{
+    guint total;
+    guint page;
+    if (!layout_valid(&lw)) return;
+
+    total = image_get_page_total(lw->image);
+    page = image_get_page(lw->image);
+    if (total < 2 || page == 0) return;
+
+    image_set_page(lw->image, page - 1);
+}
+
 /*
  *----------------------------------------------------------------------------
  * mouse callbacks
