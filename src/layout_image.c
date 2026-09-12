@@ -76,7 +76,7 @@ static void layout_image_full_screen_stop_func(FullScreenData *fs, gpointer data
 
     /* restore image window */
     lw->image = fs->normal_imd;
-    image_attach_window(lw->image, lw->window, NULL, GQ_APPNAME, FALSE);    
+    image_attach_window(lw->image, lw->window, NULL, GQ_APPNAME, FALSE);
     lw->full_screen = NULL;
 
     if (fs->window == fs->normal_window)
@@ -109,7 +109,7 @@ void layout_image_full_screen_start(LayoutWindow *lw, gboolean force_same_region
     {
         lw->image = lw->full_screen->imd;
         image_attach_window(lw->image, lw->window, NULL, GQ_APPNAME, FALSE);
-    }        
+    }
 
     layout_image_set_buttons(lw);
 
