@@ -1511,7 +1511,7 @@ static GtkActionEntry menu_entries[] = {
   { "NextImageAlt1",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "Page_Down",        N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "NextImageAlt2",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "KP_Page_Down",     N_("Next Image"),           CB(layout_menu_image_next_cb) },
   { "LastImage",    GTK_STOCK_GOTO_BOTTOM,  N_("_Last Image"),          "End",          N_("Last Image"),           CB(layout_menu_image_last_cb) },
-  { "RandomImage",  NULL,           N_("_Random Image"),        "S",        N_("Random Image"),     CB(layout_menu_image_random_cb) },  
+  { "RandomImage",  NULL,           N_("_Random Image"),        "S",        N_("Random Image"),     CB(layout_menu_image_random_cb) },
   { "ImageForward", GTK_STOCK_GOTO_LAST, N_("Image Forward"), NULL, N_("Image Forward"), CB(layout_menu_image_forward_cb) },
   { "ImageBack",    GTK_STOCK_GOTO_FIRST, N_("Image Back"),   NULL, N_("Image Back"),    CB(layout_menu_image_back_cb) },
   { "Back",     GTK_STOCK_GO_BACK,  N_("_Back"),                NULL,           N_("Back"),             CB(layout_menu_back_cb) },
