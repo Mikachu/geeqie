@@ -78,6 +78,10 @@ void layout_image_prev(LayoutWindow *lw);
 void layout_image_first(LayoutWindow *lw);
 void layout_image_last(LayoutWindow *lw);
 
+guint layout_image_page_total(LayoutWindow *lw);
+void layout_image_page_next(LayoutWindow *lw);
+void layout_image_page_prev(LayoutWindow *lw);
+
 void layout_image_menu_popup(LayoutWindow *lw, GdkEvent *event);
 
 void layout_image_to_root(LayoutWindow *lw);
