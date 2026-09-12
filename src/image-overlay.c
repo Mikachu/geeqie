@@ -580,6 +580,13 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
         osd_template_insert(vars, "date", (gchar *) text_from_time(fd->dat.tv_sec), OSDT_NONE);
         osd_template_insert(vars, "size", text_from_size_abrev(fd->size), OSDT_FREE);
         osd_template_insert(vars, "zoom", image_zoom_get_as_text(imd), OSDT_FREE);
+        if (image_get_page_total(imd) > 1) {
+            osd_template_insert(vars, "page", g_strdup_printf("%d", image_get_page(imd) + 1), OSDT_NO_DUP);
+            osd_template_insert(vars, "page_total", g_strdup_printf("%d", image_get_page_total(imd)), OSDT_NO_DUP);
+        } else {
+            osd_template_insert(vars, "page", NULL, OSDT_NO_DUP);
+            osd_template_insert(vars, "page_total", NULL, OSDT_NO_DUP);
+        }
 
         if (!imd->unknown)
         {
