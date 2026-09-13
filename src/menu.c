@@ -30,7 +30,6 @@
 #include "filedata.h"
 #include "img-view.h"
 #include "pixbuf_util.h"
-#include "preferences.h"
 #include "slideshow.h"
 #include "utilops.h"
 #include "ui_fileops.h"
