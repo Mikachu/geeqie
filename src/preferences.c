@@ -84,7 +84,7 @@ static ThumbSize thumb_size_list[] =
     { 256, 256 }
 };
 
-enum {
+enum { /* filter entry */
     FE_ENABLE,
     FE_EXTENSION,
     FE_DESCRIPTION,
@@ -93,7 +93,7 @@ enum {
     FE_ALLOW_SIDECAR
 };
 
-enum {
+enum { /* accel entry */
     AE_ACTION,
     AE_KEY,
     AE_TOOLTIP,
@@ -197,6 +197,53 @@ static gboolean accel_apply_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIt
     return FALSE;
 }
 
+/* Frees the dynamically-allocated members of a ConfOptions struct
+ * (mouse bindings list, overlay template/font strings) without
+ * freeing the struct itself. Safe to call on a zeroed struct. */
+static void conf_options_free_internal(ConfOptions *o)
+{
+    g_free(o->image_overlay.template_string);
+    g_free(o->image_overlay.font);
+
+    if (o->mouse_bindings)
+    {
+        GList *work = o->mouse_bindings;
+        while (work)
+        {
+            MouseBinding *b = work->data;
+            g_free(b->action_name);
+            g_free(b);
+            work = work->next;
+        }
+        g_list_free(o->mouse_bindings);
+    }
+}
+
+/* Shallow-copies src into dest, then deep-copies the members that
+ * conf_options_free_internal() knows how to free (mouse bindings list,
+ * overlay template/font strings), so dest ends up independently owned. */
+static void conf_options_copy(ConfOptions *dest, const ConfOptions *src)
+{
+    GList *work;
+
+    *dest = *src;
+    dest->image_overlay.template_string = g_strdup(src->image_overlay.template_string);
+    dest->image_overlay.font = g_strdup(src->image_overlay.font);
+
+    dest->mouse_bindings = NULL;
+    work = src->mouse_bindings;
+    while (work)
+    {
+        MouseBinding *ob = work->data;
+        MouseBinding *nb = g_new(MouseBinding, 1);
+        nb->button = ob->button;
+        nb->state = ob->state;
+        nb->action_name = g_strdup(ob->action_name);
+        dest->mouse_bindings = g_list_prepend(dest->mouse_bindings, nb);
+        work = work->next;
+    }
+    dest->mouse_bindings = g_list_reverse(dest->mouse_bindings);
+}
 
 static void config_window_apply(void)
 {
@@ -205,19 +252,23 @@ static void config_window_apply(void)
              colors_changed = FALSE,
              render_intent_changed = FALSE;
 
-    if (options->file_filter.show_hidden_files != c_options->file_filter.show_hidden_files) refresh = TRUE;
-    if (options->file_filter.show_parent_directory != c_options->file_filter.show_parent_directory) refresh = TRUE;
-    if (options->file_filter.show_dot_directory != c_options->file_filter.show_dot_directory) refresh = TRUE;
-    if (options->file_sort.case_sensitive != c_options->file_sort.case_sensitive) refresh = TRUE;
-    if (options->file_sort.natural != c_options->file_sort.natural) refresh = TRUE;
-    if (options->file_filter.disable_file_extension_checks != c_options->file_filter.disable_file_extension_checks) refresh = TRUE;
-    if (options->file_filter.disable != c_options->file_filter.disable) refresh = TRUE;
+#define COMPARE_OPT(name) (options->name != c_options->name)
+    if (COMPARE_OPT(file_filter.show_hidden_files) ||
+        COMPARE_OPT(file_filter.show_parent_directory) ||
+        COMPARE_OPT(file_filter.show_dot_directory) ||
+        COMPARE_OPT(file_sort.case_sensitive) ||
+        COMPARE_OPT(file_sort.natural) ||
+        COMPARE_OPT(file_filter.disable_file_extension_checks) ||
+        COMPARE_OPT(file_filter.disable))
+    {
+        refresh = TRUE;
+    }
 
     config_entry_to_option(safe_delete_path_entry, &c_options->file_ops.safe_delete_path, remove_trailing_slash);
 
-    if (options->thumbnails.max_width != c_options->thumbnails.max_width
-        || options->thumbnails.max_height != c_options->thumbnails.max_height
-        || options->thumbnails.quality != c_options->thumbnails.quality)
+    if (COMPARE_OPT(thumbnails.max_width) ||
+        COMPARE_OPT(thumbnails.max_height) ||
+        COMPARE_OPT(thumbnails.quality))
     {
         thumb_format_changed = TRUE;
         refresh = TRUE;
@@ -226,9 +277,9 @@ static void config_window_apply(void)
     config_entry_to_option(sidecar_ext_entry, &c_options->sidecar.ext, NULL);
     sidecar_ext_parse(c_options->sidecar.ext);
 
-    if (options->image.use_custom_border_color != c_options->image.use_custom_border_color
-        || options->image.use_custom_border_color_in_fullscreen != c_options->image.use_custom_border_color_in_fullscreen
-        || !gdk_color_equal(&options->image.border_color, &c_options->image.border_color))
+    if (COMPARE_OPT(image.use_custom_border_color) ||
+        COMPARE_OPT(image.use_custom_border_color_in_fullscreen) ||
+        !gdk_color_equal(&options->image.border_color, &c_options->image.border_color))
     {
         colors_changed = TRUE;
     }
@@ -241,45 +292,15 @@ static void config_window_apply(void)
     }
     config_entry_to_option(color_profile_screen_file_entry, &c_options->color_profile.screen_file, NULL);
 
-    if (options->color_profile.render_intent != c_options->color_profile.render_intent)
+    if (COMPARE_OPT(color_profile.render_intent))
     {
         render_intent_changed = TRUE;
     }
 #endif
+#undef COMPARE_OPT
 
-    g_free(options->image_overlay.template_string);
-    g_free(options->image_overlay.font);
-    if (options->mouse_bindings)
-    {
-        GList *work = options->mouse_bindings;
-        while (work)
-        {
-            MouseBinding *b = work->data;
-            g_free(b->action_name);
-            g_free(b);
-            work = work->next;
-        }
-        g_list_free(options->mouse_bindings);
-    }
-
-    *options = *c_options;
-    options->image_overlay.template_string = g_strdup(c_options->image_overlay.template_string);
-    options->image_overlay.font = g_strdup(c_options->image_overlay.font);
-    options->mouse_bindings = NULL;
-    if (c_options->mouse_bindings)
-    {
-        GList *work = c_options->mouse_bindings;
-        while (work)
-        {
-            MouseBinding *ob = work->data;
-            MouseBinding *nb = g_new(MouseBinding, 1);
-            nb->button = ob->button;
-            nb->state = ob->state;
-            nb->action_name = g_strdup(ob->action_name);
-            options->mouse_bindings = g_list_append(options->mouse_bindings, nb);
-            work = work->next;
-        }
-    }
+    conf_options_free_internal(options);
+    conf_options_copy(options, c_options);
 
     options->stereo.mode = (options->stereo.mode & (PR_STEREO_HORIZ | PR_STEREO_VERT | PR_STEREO_FIXED | PR_STEREO_ANAGLYPH | PR_STEREO_HALF)) |
                            (options->stereo.tmp.mirror_right ? PR_STEREO_MIRROR_RIGHT : 0) |
@@ -330,6 +351,7 @@ static void config_window_close_cb(GtkWidget *widget, gpointer data)
     gtk_widget_destroy(configwindow);
     configwindow = NULL;
     filter_store = NULL;
+    g_clear_pointer(&c_options, conf_options_free_internal);
 }
 
 static gboolean config_window_delete(GtkWidget *widget, GdkEventAny *event, gpointer data)
@@ -361,56 +383,66 @@ static void config_window_save_cb(GtkWidget *widget, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
+enum { QUALITY_MENU_COLUMN_NAME = 0, QUALITY_MENU_COLUMN_VALUE };
+
 static void quality_menu_cb(GtkWidget *combo, gpointer data)
 {
-    gint *option = data;
+    guint *option = data;
+    GtkTreeModel *store;
+    GtkTreeIter iter;
 
-    switch (gtk_combo_box_get_active(GTK_COMBO_BOX(combo)))
-    {
-        case 0:
-        default:
-            *option = GDK_INTERP_NEAREST;
-            break;
-        case 1:
-            *option = GDK_INTERP_TILES;
-            break;
-        case 2:
-            *option = GDK_INTERP_BILINEAR;
-            break;
-        case 3:
-            *option = GDK_INTERP_HYPER;
-            break;
-    }
+    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return;
+    gtk_tree_model_get(store, &iter, QUALITY_MENU_COLUMN_VALUE, option, -1);
 }
 
 static void add_quality_menu(GtkWidget *table, gint column, gint row, const gchar *text,
                  guint option, guint *option_c)
 {
     GtkWidget *combo;
-    gint current = 0;
+    GtkListStore *store;
+    GtkCellRenderer *renderer;
+    GtkTreeIter iter;
+    gint current = 0, i;
+    static const struct {
+        const gchar *text;
+        guint value;
+    } quality_items[] = {
+        { N_("Nearest (worst, but fastest)"), GDK_INTERP_NEAREST },
+        { N_("Tiles"),                        GDK_INTERP_TILES },
+        { N_("Bilinear"),                     GDK_INTERP_BILINEAR },
+        { N_("Hyper (best, but slowest)"),    GDK_INTERP_HYPER },
+    };
 
     *option_c = option;
 
     pref_table_label(table, column, row, text, 0.0);
 
-    combo = gtk_combo_box_text_new();
+    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_UINT);
 
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Nearest (worst, but fastest)"));
-    if (option == GDK_INTERP_NEAREST) current = 0;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Tiles"));
-    if (option == GDK_INTERP_TILES) current = 1;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Bilinear"));
-    if (option == GDK_INTERP_BILINEAR) current = 2;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Hyper (best, but slowest)"));
-    if (option == GDK_INTERP_HYPER) current = 3;
+    for (i = 0; i < (gint)G_N_ELEMENTS(quality_items); i++)
+    {
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           QUALITY_MENU_COLUMN_NAME, _(quality_items[i].text),
+                           QUALITY_MENU_COLUMN_VALUE, quality_items[i].value, -1);
+        if (option == quality_items[i].value) current = i;
+    }
+    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(store);
+
+    renderer = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer,
+                       "text", QUALITY_MENU_COLUMN_NAME, NULL);
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
 
     g_signal_connect(G_OBJECT(combo), "changed",
-             G_CALLBACK(quality_menu_cb), option_c);
+                     G_CALLBACK(quality_menu_cb), option_c);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
-             GTK_EXPAND | GTK_FILL, 0, 0, 0);
+                     GTK_EXPAND | GTK_FILL, 0, 0, 0);
     gtk_widget_show(combo);
 }
 
@@ -438,9 +470,7 @@ static void add_thumb_size_menu(GtkWidget *table, gint column, gint row, gchar *
     GtkWidget *combo;
     gint current;
     gint i;
-
-    c_options->thumbnails.max_width = options->thumbnails.max_width;
-    c_options->thumbnails.max_height = options->thumbnails.max_height;
+    gchar buf[40];
 
     pref_table_label(table, column, row, text, 0.0);
 
@@ -450,25 +480,22 @@ static void add_thumb_size_menu(GtkWidget *table, gint column, gint row, gchar *
     for (i = 0; (guint) i < G_N_ELEMENTS(thumb_size_list); i++)
     {
         gint w, h;
-        gchar *buf;
 
         w = thumb_size_list[i].w;
         h = thumb_size_list[i].h;
 
-        buf = g_strdup_printf("%d x %d", w, h);
+        g_snprintf(buf, sizeof(buf), "%d x %d", w, h);
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), buf);
-        g_free(buf);
 
-        if (w == options->thumbnails.max_width && h == options->thumbnails.max_height) current = i;
+        if (w == options->thumbnails.max_width &&
+            h == options->thumbnails.max_height) current = i;
     }
 
     if (current == -1)
     {
-        gchar *buf;
-
-        buf = g_strdup_printf("%s %d x %d", _("Custom"), options->thumbnails.max_width, options->thumbnails.max_height);
+        g_snprintf(buf, sizeof(buf), "%s %d x %d", _("Custom"),
+                   options->thumbnails.max_width, options->thumbnails.max_height);
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), buf);
-        g_free(buf);
 
         current = i;
     }
@@ -610,57 +637,48 @@ static void filter_store_populate(void)
 
     gtk_list_store_clear(filter_store);
 
-    work = filter_get_list();
-    while (work)
+    for (work = filter_get_list(); work; work = work->next)
     {
-        FilterEntry *fe;
         GtkTreeIter iter;
 
-        fe = work->data;
-        work = work->next;
-
         gtk_list_store_append(filter_store, &iter);
-        gtk_list_store_set(filter_store, &iter, 0, fe, -1);
+        gtk_list_store_set(filter_store, &iter, 0, work->data, -1);
     }
 }
 
-static void filter_store_ext_edit_cb(GtkCellRendererText *cell, gchar *path_str,
-                     gchar *new_text, gpointer data)
+static FilterEntry *filter_store_get_fe(GtkTreeModel *model, const gchar *path_str)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe = data;
     GtkTreePath *tpath;
     GtkTreeIter iter;
-
-    if (!new_text || strlen(new_text) < 1) return;
+    FilterEntry *fe;
 
     tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    gtk_tree_model_get_iter(model, &iter, tpath);
+    gtk_tree_model_get(model, &iter, 0, &fe, -1);
+    gtk_tree_path_free(tpath);
 
+    return fe;
+}
+
+static void filter_store_ext_edit_cb(GtkCellRendererText *cell, gchar *path_str,
+                                     gchar *new_text, gpointer data)
+{
+    if (!new_text || !new_text[0]) return;
+
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
     g_free(fe->extensions);
     fe->extensions = g_strdup(new_text);
-
-    gtk_tree_path_free(tpath);
     filter_rebuild();
 }
 
 static void filter_store_class_edit_cb(GtkCellRendererText *cell, gchar *path_str,
-                       gchar *new_text, gpointer data)
+                                       gchar *new_text, gpointer data)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe = data;
-    GtkTreePath *tpath;
-    GtkTreeIter iter;
-    gint i;
-
     if (!new_text || !new_text[0]) return;
 
-    tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
 
-    for (i = 0; i < FILE_FORMAT_CLASSES; i++)
+    for (gint i = 0; i < FILE_FORMAT_CLASSES; i++)
     {
         if (strcmp(new_text, _(format_class_list[i])) == 0)
         {
@@ -668,84 +686,46 @@ static void filter_store_class_edit_cb(GtkCellRendererText *cell, gchar *path_st
             break;
         }
     }
-
-    gtk_tree_path_free(tpath);
     filter_rebuild();
 }
 
 static void filter_store_desc_edit_cb(GtkCellRendererText *cell, gchar *path_str,
-                      gchar *new_text, gpointer data)
+                                      gchar *new_text, gpointer data)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe;
-    GtkTreePath *tpath;
-    GtkTreeIter iter;
-
     if (!new_text || !new_text[0]) return;
 
-    tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
 
     g_free(fe->description);
     fe->description = g_strdup(new_text);
-
-    gtk_tree_path_free(tpath);
 }
 
 static void filter_store_enable_cb(GtkCellRendererToggle *renderer,
-                   gchar *path_str, gpointer data)
+                                   gchar *path_str, gpointer data)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe;
-    GtkTreePath *tpath;
-    GtkTreeIter iter;
-
-    tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
 
     fe->enabled = !fe->enabled;
-
-    gtk_tree_path_free(tpath);
     filter_rebuild();
 }
 
 static void filter_store_writable_cb(GtkCellRendererToggle *renderer,
-                     gchar *path_str, gpointer data)
+                                     gchar *path_str, gpointer data)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe;
-    GtkTreePath *tpath;
-    GtkTreeIter iter;
-
-    tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
 
     fe->writable = !fe->writable;
     if (fe->writable) fe->allow_sidecar = FALSE;
-
-    gtk_tree_path_free(tpath);
     filter_rebuild();
 }
 
 static void filter_store_sidecar_cb(GtkCellRendererToggle *renderer,
-                    gchar *path_str, gpointer data)
+                                    gchar *path_str, gpointer data)
 {
-    GtkWidget *model = data;
-    FilterEntry *fe;
-    GtkTreePath *tpath;
-    GtkTreeIter iter;
-
-    tpath = gtk_tree_path_new_from_string(path_str);
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, tpath);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &fe, -1);
+    FilterEntry *fe = filter_store_get_fe(data, path_str);
 
     fe->allow_sidecar = !fe->allow_sidecar;
     if (fe->allow_sidecar) fe->writable = FALSE;
-
-    gtk_tree_path_free(tpath);
     filter_rebuild();
 }
 
@@ -758,30 +738,13 @@ static void filter_set_func(GtkTreeViewColumn *tree_column, GtkCellRenderer *cel
 
     switch (GPOINTER_TO_INT(data))
     {
-        case FE_ENABLE:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "active", fe->enabled, NULL);
-            break;
-        case FE_EXTENSION:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "text", fe->extensions, NULL);
-            break;
-        case FE_DESCRIPTION:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "text", fe->description, NULL);
-            break;
-        case FE_CLASS:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "text", _(format_class_list[fe->file_class]), NULL);
-            break;
-        case FE_WRITABLE:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "active", fe->writable, NULL);
-            break;
-        case FE_ALLOW_SIDECAR:
-            g_object_set(GTK_CELL_RENDERER(cell),
-                     "active", fe->allow_sidecar, NULL);
-            break;
+        case FE_ENABLE:        g_object_set(cell, "active", fe->enabled, NULL); break;
+        case FE_WRITABLE:      g_object_set(cell, "active", fe->writable, NULL); break;
+        case FE_ALLOW_SIDECAR: g_object_set(cell, "active", fe->allow_sidecar, NULL); break;
+        case FE_EXTENSION:     g_object_set(cell, "text",   fe->extensions, NULL); break;
+        case FE_DESCRIPTION:   g_object_set(cell, "text",   fe->description, NULL); break;
+        case FE_CLASS:         g_object_set(cell, "text",
+                                       _(format_class_list[fe->file_class]), NULL); break;
     }
 }
 
@@ -891,8 +854,7 @@ static void filter_disable_cb(GtkWidget *widget, gpointer data)
 {
     GtkWidget *frame = data;
 
-    gtk_widget_set_sensitive(frame,
-                 !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)));
+    gtk_widget_set_sensitive(frame, !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)));
 }
 
 static void safe_delete_view_cb(GtkWidget *widget, gpointer data)
@@ -909,11 +871,9 @@ static void safe_delete_clear_cb(GtkWidget *widget, gpointer data)
 {
     GenericDialog *gd;
     GtkWidget *entry;
-    gd = generic_dialog_new(_("Clear trash"),
-                "clear_trash", widget, TRUE,
-                dummy_cancel_cb, NULL);
+    gd = generic_dialog_new(_("Clear trash"), "clear_trash", widget, TRUE, dummy_cancel_cb, NULL);
     generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION, _("Clear trash"),
-                    _("This will remove the trash contents."));
+                               _("This will remove the trash contents."));
     generic_dialog_add_button(gd, GTK_STOCK_OK, NULL, safe_delete_clear_ok_cb, TRUE);
     entry = gtk_entry_new();
     gtk_widget_set_can_focus(entry, FALSE);
@@ -928,8 +888,7 @@ static void image_overlay_template_view_changed_cb(GtkWidget *widget, gpointer d
 {
     GtkWidget *pTextView;
     GtkTextBuffer *pTextBuffer;
-    GtkTextIter iStart;
-    GtkTextIter iEnd;
+    GtkTextIter iStart, iEnd;
     gchar *text;
 
     pTextView = GTK_WIDGET(data);
@@ -1051,23 +1010,24 @@ static gint sort_action_list(gpointer a, gpointer b)
 
 static GList *layout_collect_actions(LayoutWindow *lw)
 {
-    GList *groups, *actions;
     GList *result = NULL;
 
-    groups = gtk_ui_manager_get_action_groups(lw->ui_manager);
-    while (groups)
+    for (GList *groups = gtk_ui_manager_get_action_groups(lw->ui_manager);
+         groups;
+         groups = groups->next)
     {
-        actions = gtk_action_group_list_actions(GTK_ACTION_GROUP(groups->data));
-        while (actions)
+        for (GList *actions = gtk_action_group_list_actions(GTK_ACTION_GROUP(groups->data));
+             actions;
+             actions = actions->next)
         {
             GtkAction *action = GTK_ACTION(actions->data);
             gchar *label = NULL;
-            ActionItem *item;
 
             g_object_get(action, "label", &label, NULL);
             if (label)
             {
                 gchar *label2;
+                ActionItem *item;
 
                 if (pango_parse_markup(label, -1, '_', NULL, &label2, NULL, NULL) && label2)
                 {
@@ -1081,12 +1041,10 @@ static GList *layout_collect_actions(LayoutWindow *lw)
                 item->label = label;
                 result = g_list_prepend(result, item);
             }
-            actions = actions->next;
         }
-        groups = groups->next;
     }
 
-    return g_list_sort(result, sort_action_list);
+    return g_list_sort(result, (GCompareFunc)sort_action_list);
 }
 
 static void layout_action_item_free(ActionItem *item)
@@ -1164,15 +1122,10 @@ static gboolean accel_remove_key_cb(GtkTreeModel *model, GtkTreePath *path, GtkT
 {
     gchar *accel1 = data;
     gchar *accel2;
-    GtkAccelKey key1;
-    GtkAccelKey key2;
 
     gtk_tree_model_get(model, iter, AE_KEY, &accel2, -1);
 
-    gtk_accelerator_parse(accel1, &key1.accel_key, &key1.accel_mods);
-    gtk_accelerator_parse(accel2, &key2.accel_key, &key2.accel_mods);
-
-    if (key1.accel_key == key2.accel_key && key1.accel_mods == key2.accel_mods)
+    if (*accel1 && strcmp(accel1, accel2) == 0)
     {
         gtk_tree_store_set(accel_store, iter, AE_KEY, "",  -1);
         DEBUG_1("accelerator key '%s' is already used, removing.", accel1);
@@ -1341,7 +1294,6 @@ static void config_tab_general(GtkWidget *notebook)
 
     group = pref_group_new(vbox, FALSE, _("Slide show"), GTK_ORIENTATION_VERTICAL);
 
-    c_options->slideshow.delay = options->slideshow.delay;
     spin = pref_spin_new(group, _("Delay between image change:"), _("seconds"),
                  SLIDESHOW_MIN_SECONDS, SLIDESHOW_MAX_SECONDS, 1.0, 1,
                  options->slideshow.delay ? (gdouble)options->slideshow.delay / SLIDESHOW_SUBSECOND_PRECISION : 10.0,
@@ -1395,7 +1347,6 @@ static void config_tab_image(GtkWidget *notebook)
                  options->image.max_autofit_size, &c_options->image.max_autofit_size);
     pref_checkbox_link_sensitivity(ct_button, spin);
 
-    c_options->image.zoom_increment = options->image.zoom_increment;
     spin = pref_spin_new(group, _("Zoom increment:"), NULL,
                  0.01, 4.0, 0.01, 2, (gdouble)options->image.zoom_increment / 100.0,
                  G_CALLBACK(zoom_increment_cb), NULL);
@@ -1421,16 +1372,11 @@ static void config_tab_image(GtkWidget *notebook)
     pref_color_button_new(group, _("Border color"), &options->image.border_color,
                   G_CALLBACK(pref_color_button_set_cb), &c_options->image.border_color);
 
-    c_options->image.border_color = options->image.border_color;
-
     pref_color_button_new(group, _("Alpha channel color 1"), &options->image.alpha_color_1,
                   G_CALLBACK(pref_color_button_set_cb), &c_options->image.alpha_color_1);
 
     pref_color_button_new(group, _("Alpha channel color 2"), &options->image.alpha_color_2,
                   G_CALLBACK(pref_color_button_set_cb), &c_options->image.alpha_color_2);
-
-    c_options->image.alpha_color_1 = options->image.alpha_color_1;
-    c_options->image.alpha_color_2 = options->image.alpha_color_2;
 
     group = pref_group_new(vbox, FALSE, _("Convenience"), GTK_ORIENTATION_VERTICAL);
 
@@ -1483,8 +1429,6 @@ static void config_tab_windows(GtkWidget *notebook)
 
     group = pref_group_new(vbox, FALSE, _("Full screen"), GTK_ORIENTATION_VERTICAL);
 
-    c_options->fullscreen.screen = options->fullscreen.screen;
-    c_options->fullscreen.above = options->fullscreen.above;
     hbox = fullscreen_prefs_selection_new(_("Location:"), &c_options->fullscreen.screen, &c_options->fullscreen.above);
     gtk_box_pack_start(GTK_BOX(group), hbox, FALSE, FALSE, 0);
     gtk_widget_show(hbox);
@@ -2487,18 +2431,17 @@ static void config_tab_stereo(GtkWidget *notebook)
     add_stereo_mode_menu(table, 0, 0, _("Windowed stereo mode"), options->stereo.mode, &c_options->stereo.mode, FALSE);
 
     table = pref_table_new(group, 2, 2, TRUE, FALSE);
-    box = pref_table_box(table, 0, 0, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Mirror left image"),
-                  options->stereo.mode & PR_STEREO_MIRROR_LEFT, &c_options->stereo.tmp.mirror_left);
-    box = pref_table_box(table, 1, 0, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Flip left image"),
-                  options->stereo.mode & PR_STEREO_FLIP_LEFT, &c_options->stereo.tmp.flip_left);
-    box = pref_table_box(table, 0, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Mirror right image"),
-                  options->stereo.mode & PR_STEREO_MIRROR_RIGHT, &c_options->stereo.tmp.mirror_right);
-    box = pref_table_box(table, 1, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Flip right image"),
-                  options->stereo.mode & PR_STEREO_FLIP_RIGHT, &c_options->stereo.tmp.flip_right);
+
+#define ADD_MIRROR_FLIP_CHECKBOX(col, row, label, srcmode, mask, field) \
+    box = pref_table_box(table, col, row, GTK_ORIENTATION_HORIZONTAL, NULL); \
+    pref_checkbox_new_int(box, label, \
+                  srcmode & mask, field);
+
+    ADD_MIRROR_FLIP_CHECKBOX(0, 0, _("Mirror left image"),  options->stereo.mode, PR_STEREO_MIRROR_LEFT, &c_options->stereo.tmp.mirror_left);
+    ADD_MIRROR_FLIP_CHECKBOX(1, 0, _("Flip left image"),    options->stereo.mode, PR_STEREO_FLIP_LEFT, &c_options->stereo.tmp.flip_left);
+    ADD_MIRROR_FLIP_CHECKBOX(0, 1, _("Mirror right image"), options->stereo.mode, PR_STEREO_MIRROR_RIGHT, &c_options->stereo.tmp.mirror_right);
+    ADD_MIRROR_FLIP_CHECKBOX(1, 1, _("Flip right image"),   options->stereo.mode, PR_STEREO_FLIP_RIGHT, &c_options->stereo.tmp.flip_right);
+
     pref_checkbox_new_int(group, _("Swap left and right images"),
                   options->stereo.mode & PR_STEREO_SWAP, &c_options->stereo.tmp.swap);
     pref_checkbox_new_int(group, _("Disable stereo mode on single image source"),
@@ -2512,18 +2455,13 @@ static void config_tab_stereo(GtkWidget *notebook)
     table = pref_table_new(box2, 2, 1, FALSE, FALSE);
     add_stereo_mode_menu(table, 0, 0, _("Fullscreen stereo mode"), options->stereo.fsmode, &c_options->stereo.fsmode, TRUE);
     table = pref_table_new(box2, 2, 2, TRUE, FALSE);
-    box = pref_table_box(table, 0, 0, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Mirror left image"),
-                  options->stereo.fsmode & PR_STEREO_MIRROR_LEFT, &c_options->stereo.tmp.fs_mirror_left);
-    box = pref_table_box(table, 1, 0, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Flip left image"),
-                  options->stereo.fsmode & PR_STEREO_FLIP_LEFT, &c_options->stereo.tmp.fs_flip_left);
-    box = pref_table_box(table, 0, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Mirror right image"),
-                  options->stereo.fsmode & PR_STEREO_MIRROR_RIGHT, &c_options->stereo.tmp.fs_mirror_right);
-    box = pref_table_box(table, 1, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
-    pref_checkbox_new_int(box, _("Flip right image"),
-                  options->stereo.fsmode & PR_STEREO_FLIP_RIGHT, &c_options->stereo.tmp.fs_flip_right);
+
+    ADD_MIRROR_FLIP_CHECKBOX(0, 0, _("Mirror left image"),  options->stereo.fsmode, PR_STEREO_MIRROR_LEFT, &c_options->stereo.tmp.fs_mirror_left);
+    ADD_MIRROR_FLIP_CHECKBOX(1, 0, _("Flip left image"),    options->stereo.fsmode, PR_STEREO_FLIP_LEFT, &c_options->stereo.tmp.fs_flip_left);
+    ADD_MIRROR_FLIP_CHECKBOX(0, 1, _("Mirror right image"), options->stereo.fsmode, PR_STEREO_MIRROR_RIGHT, &c_options->stereo.tmp.fs_mirror_right);
+    ADD_MIRROR_FLIP_CHECKBOX(1, 1, _("Flip right image"),   options->stereo.fsmode, PR_STEREO_FLIP_RIGHT, &c_options->stereo.tmp.fs_flip_right);
+#undef ADD_MIRROR_FLIP_CHECKBOX
+
     pref_checkbox_new_int(box2, _("Swap left and right images"),
                   options->stereo.fsmode & PR_STEREO_SWAP, &c_options->stereo.tmp.fs_swap);
     pref_checkbox_new_int(box2, _("Disable stereo mode on single image source"),
@@ -2531,18 +2469,16 @@ static void config_tab_stereo(GtkWidget *notebook)
 
     group2 = pref_group_new(box2, FALSE, _("Fixed position"), GTK_ORIENTATION_VERTICAL);
     table = pref_table_new(group2, 5, 3, FALSE, FALSE);
-    pref_table_spin_new_int(table, 0, 0, _("Width"), NULL,
-              1, 5000, 1, options->stereo.fixed_w, &c_options->stereo.fixed_w);
-    pref_table_spin_new_int(table, 3, 0,  _("Height"), NULL,
-              1, 5000, 1, options->stereo.fixed_h, &c_options->stereo.fixed_h);
-    pref_table_spin_new_int(table, 0, 1,  _("Left X"), NULL,
-              0, 5000, 1, options->stereo.fixed_x1, &c_options->stereo.fixed_x1);
-    pref_table_spin_new_int(table, 3, 1,  _("Left Y"), NULL,
-              0, 5000, 1, options->stereo.fixed_y1, &c_options->stereo.fixed_y1);
-    pref_table_spin_new_int(table, 0, 2,  _("Right X"), NULL,
-              0, 5000, 1, options->stereo.fixed_x2, &c_options->stereo.fixed_x2);
-    pref_table_spin_new_int(table, 3, 2,  _("Right Y"), NULL,
-              0, 5000, 1, options->stereo.fixed_y2, &c_options->stereo.fixed_y2);
+#define ADD_FIXED_SPIN(col, row, label, minv, member) \
+    pref_table_spin_new_int(table, col, row, label, NULL, \
+              minv, 5000, 1, options->stereo.member, &c_options->stereo.member);
+
+    ADD_FIXED_SPIN(0, 0, _("Width"),   1, fixed_w);
+    ADD_FIXED_SPIN(3, 0, _("Height"),  1, fixed_h);
+    ADD_FIXED_SPIN(0, 1, _("Left X"),  0, fixed_x1);
+    ADD_FIXED_SPIN(3, 1, _("Left Y"),  0, fixed_y1);
+    ADD_FIXED_SPIN(0, 2, _("Right X"), 0, fixed_x2);
+    ADD_FIXED_SPIN(3, 2, _("Right Y"), 0, fixed_y2);
 
 }
 
@@ -2558,44 +2494,9 @@ static void config_window_create(void)
     if (!c_options)
         c_options = g_new(ConfOptions, 1);
     else
-    {
-        g_free(c_options->image_overlay.template_string);
-        g_free(c_options->image_overlay.font);
+        conf_options_free_internal(c_options);
 
-        if (c_options->mouse_bindings)
-        {
-            GList *work = c_options->mouse_bindings;
-            while (work)
-            {
-                MouseBinding *b = work->data;
-                g_free(b->action_name);
-                g_free(b);
-                work = work->next;
-            }
-            g_list_free(c_options->mouse_bindings);
-        }
-    }
-
-    *c_options = *options;
-    c_options->image_overlay.template_string = g_strdup(options->image_overlay.template_string);
-    c_options->image_overlay.font = g_strdup(options->image_overlay.font);
-
-    if (options->mouse_bindings)
-    {
-        GList *work = options->mouse_bindings;
-        c_options->mouse_bindings = NULL;
-        while (work)
-        {
-            MouseBinding *ob = work->data;
-            MouseBinding *nb = g_new(MouseBinding, 1);
-            nb->button = ob->button;
-            nb->state = ob->state;
-            nb->action_name = g_strdup(ob->action_name);
-            c_options->mouse_bindings = g_list_prepend(c_options->mouse_bindings, nb);
-            work = work->next;
-        }
-        c_options->mouse_bindings = g_list_reverse(c_options->mouse_bindings);
-    }
+    conf_options_copy(c_options, options);
 
     configwindow = window_new(GTK_WINDOW_TOPLEVEL, "preferences", PIXBUF_INLINE_ICON_CONFIG, NULL, _("Preferences"));
     gtk_window_set_type_hint(GTK_WINDOW(configwindow), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -2615,32 +2516,21 @@ static void config_window_create(void)
     gtk_box_pack_end(GTK_BOX(win_vbox), hbox, FALSE, FALSE, 0);
     gtk_widget_show(hbox);
 
-    button = pref_button_new(NULL, GTK_STOCK_OK, NULL, FALSE,
-                 G_CALLBACK(config_window_ok_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(hbox), button);
-    gtk_widget_set_can_default(button, TRUE);
+#define ADD_ACTION_BUTTON(stock, cb) \
+    button = pref_button_new(NULL, stock, NULL, FALSE, \
+                 G_CALLBACK(cb), NULL); \
+    gtk_container_add(GTK_CONTAINER(hbox), button); \
+    gtk_widget_set_can_default(button, TRUE); \
+    gtk_widget_show(button);
+
+    ADD_ACTION_BUTTON(GTK_STOCK_OK, config_window_ok_cb);
     gtk_widget_grab_default(button);
-    gtk_widget_show(button);
-
     ct_button = button;
+    ADD_ACTION_BUTTON(GTK_STOCK_SAVE, config_window_save_cb);
+    ADD_ACTION_BUTTON(GTK_STOCK_APPLY, config_window_apply_cb);
+    ADD_ACTION_BUTTON(GTK_STOCK_CANCEL, config_window_close_cb);
 
-    button = pref_button_new(NULL, GTK_STOCK_SAVE, NULL, FALSE,
-                 G_CALLBACK(config_window_save_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(hbox), button);
-    gtk_widget_set_can_default(button, TRUE);
-    gtk_widget_show(button);
-
-    button = pref_button_new(NULL, GTK_STOCK_APPLY, NULL, FALSE,
-                 G_CALLBACK(config_window_apply_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(hbox), button);
-    gtk_widget_set_can_default(button, TRUE);
-    gtk_widget_show(button);
-
-    button = pref_button_new(NULL, GTK_STOCK_CANCEL, NULL, FALSE,
-                 G_CALLBACK(config_window_close_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(hbox), button);
-    gtk_widget_set_can_default(button, TRUE);
-    gtk_widget_show(button);
+#undef ADD_ACTION_BUTTON
 
     if (!generic_dialog_get_alternative_button_order(configwindow))
     {
