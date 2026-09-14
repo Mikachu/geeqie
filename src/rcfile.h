@@ -42,6 +42,7 @@ gboolean read_bool_option(const gchar *option, const gchar *label, const gchar *
 
 #define WRITE_BOOL(_source_, _name_) write_bool_option(outstr, indent, #_name_, (_source_)._name_)
 #define WRITE_INT(_source_, _name_) write_int_option(outstr, indent, #_name_, (_source_)._name_)
+#define WRITE_INT_NAME(_source_, _name_, _member_) write_int_option(outstr, indent, #_name_, (_source_)._member_)
 #define WRITE_UINT(_source_, _name_) write_uint_option(outstr, indent, #_name_, (_source_)._name_)
 #define WRITE_INT_UNIT(_source_, _name_, _unit_) write_int_unit_option(outstr, indent, #_name_, (_source_)._name_, _unit_)
 #define WRITE_CHAR(_source_, _name_) write_char_option(outstr, indent, #_name_, (_source_)._name_)
@@ -53,6 +54,7 @@ gboolean read_bool_option(const gchar *option, const gchar *label, const gchar *
 
 #define READ_BOOL(_target_, _name_) read_bool_option(option, #_name_, value, &(_target_)._name_)
 #define READ_INT(_target_, _name_) read_int_option(option, #_name_, value, &(_target_)._name_)
+#define READ_INT_NAME(_target_, _name_, _member_) read_int_option(option, #_name_, value, &(_target_)._member_)
 #define READ_UINT(_target_, _name_) read_uint_option(option, #_name_, value, &(_target_)._name_)
 #define READ_INT_CLAMP(_target_, _name_, _min_, _max_) read_int_option_clamp(option, #_name_, value, &(_target_)._name_, _min_, _max_)
 #define READ_UINT_CLAMP(_target_, _name_, _min_, _max_) read_uint_option_clamp(option, #_name_, value, &(_target_)._name_, _min_, _max_)
