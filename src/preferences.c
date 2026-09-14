@@ -826,58 +826,28 @@ static void image_overlay_set_font_cb(GtkWidget *widget, gpointer data)
     c_options->image_overlay.font = g_strdup(font);
 }
 
-static void image_overlay_set_text_colour_cb(GtkWidget *widget, gpointer data)
+static void image_overlay_set_colour_cb(GtkWidget *widget, gpointer data)
 {
     GtkWidget *dialog;
-    GdkColor colour;
     GtkColorSelection *colorsel;
+    struct ColorA *col = data;
+    gboolean is_text = data == &c_options->image_overlay.text;
 
-    dialog = gtk_color_selection_dialog_new("Image Overlay Text Colour");
-    gtk_window_set_keep_above(GTK_WINDOW(dialog),TRUE);
-    colour.red = options->image_overlay.text_red*257;
-    colour.green = options->image_overlay.text_green*257;
-    colour.blue = options->image_overlay.text_blue*257;
+    dialog = gtk_color_selection_dialog_new(is_text ? _("Image Overlay Text Colour")
+                                                    : _("Image Overlay Background Colour"));
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
+    col->c.red *= 257; col->c.green *= 257; col->c.blue *= 257;
     colorsel = GTK_COLOR_SELECTION(gtk_color_selection_dialog_get_color_selection(GTK_COLOR_SELECTION_DIALOG(dialog)));
     gtk_color_selection_set_has_opacity_control(colorsel, TRUE);
-    gtk_color_selection_set_current_color(colorsel, &colour);
-    gtk_color_selection_set_current_alpha(colorsel, options->image_overlay.text_alpha*257);
+    gtk_color_selection_set_current_color(colorsel, &col->c);
+    gtk_color_selection_set_current_alpha(colorsel, col->a * 257);
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
     {
-        gtk_color_selection_get_current_color(colorsel, &colour);
-        c_options->image_overlay.text_red = colour.red/257;
-        c_options->image_overlay.text_green = colour.green/257;
-        c_options->image_overlay.text_blue = colour.blue/257;
-        c_options->image_overlay.text_alpha = gtk_color_selection_get_current_alpha(colorsel)/257;
+        gtk_color_selection_get_current_color(colorsel, &col->c);
+        col->a = gtk_color_selection_get_current_alpha(colorsel)/257;
     }
-    gtk_widget_destroy (dialog);
-}
-
-
-static void image_overlay_set_background_colour_cb(GtkWidget *widget, gpointer data)
-{
-    GtkWidget *dialog;
-    GdkColor colour;
-    GtkColorSelection *colorsel;
-
-    dialog = gtk_color_selection_dialog_new("Image Overlay Background Colour");
-    gtk_window_set_keep_above(GTK_WINDOW(dialog),TRUE);
-    colour.red = options->image_overlay.background_red*257;
-    colour.green = options->image_overlay.background_green*257;
-    colour.blue = options->image_overlay.background_blue*257;
-    colorsel = GTK_COLOR_SELECTION(gtk_color_selection_dialog_get_color_selection(GTK_COLOR_SELECTION_DIALOG(dialog)));
-    gtk_color_selection_set_has_opacity_control(colorsel, TRUE);
-    gtk_color_selection_set_current_color(colorsel, &colour);
-    gtk_color_selection_set_current_alpha(colorsel, options->image_overlay.background_alpha*257);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
-    {
-        gtk_color_selection_get_current_color(colorsel, &colour);
-        c_options->image_overlay.background_red = colour.red/257;
-        c_options->image_overlay.background_green = colour.green/257;
-        c_options->image_overlay.background_blue = colour.blue/257;
-        c_options->image_overlay.background_alpha = gtk_color_selection_get_current_alpha(colorsel)/257;
-    }
+    col->c.red /= 257; col->c.green /= 257; col->c.blue /= 257;
     gtk_widget_destroy(dialog);
 }
 
@@ -1366,12 +1336,12 @@ static void config_tab_windows(GtkWidget *notebook)
     gtk_widget_show(button);
 
     button = pref_button_new(NULL, GTK_STOCK_COLOR_PICKER, _("Text"), FALSE,
-                 G_CALLBACK(image_overlay_set_text_colour_cb), NULL);
+                 G_CALLBACK(image_overlay_set_colour_cb), &c_options->image_overlay.text);
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
 
     button = pref_button_new(NULL, GTK_STOCK_COLOR_PICKER, _("Background"), FALSE,
-                 G_CALLBACK(image_overlay_set_background_colour_cb), NULL);
+                 G_CALLBACK(image_overlay_set_colour_cb), &c_options->image_overlay.background);
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
 

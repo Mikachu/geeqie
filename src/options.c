@@ -115,14 +115,14 @@ ConfOptions *init_options(ConfOptions *options)
     options->image_overlay.x = 10;
     options->image_overlay.y = -10;
     options->image_overlay.font = g_strdup("Sans 10");
-    options->image_overlay.text_red = 0;
-    options->image_overlay.text_green = 0;
-    options->image_overlay.text_blue = 0;
-    options->image_overlay.text_alpha = 255;
-    options->image_overlay.background_red = 240;
-    options->image_overlay.background_green = 240;
-    options->image_overlay.background_blue = 240;
-    options->image_overlay.background_alpha = 210;
+    options->image_overlay.text.c.red = 0;
+    options->image_overlay.text.c.green = 0;
+    options->image_overlay.text.c.blue = 0;
+    options->image_overlay.text.a = 255;
+    options->image_overlay.background.c.red = 240;
+    options->image_overlay.background.c.green = 240;
+    options->image_overlay.background.c.blue = 240;
+    options->image_overlay.background.a = 210;
 
     options->lazy_image_sync = FALSE;
     options->mousewheel_scrolls = FALSE;

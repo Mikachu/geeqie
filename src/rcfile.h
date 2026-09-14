@@ -33,6 +33,7 @@ void write_int_option(GString *str, gint indent, const gchar *label, gint n);
 gboolean read_int_option(const gchar *option, const gchar *label, const gchar *value, gint *n);
 void write_uint_option(GString *str, gint indent, const gchar *label, guint n);
 gboolean read_uint_option(const gchar *option, const gchar *label, const gchar *value, guint *n);
+gboolean read_uint16_option(const gchar *option, const gchar *label, const gchar *value, guint16 *n);
 gboolean read_uint_option_clamp(const gchar *option, const gchar *label, const gchar *value, guint *n, guint min, guint max);
 gboolean read_int_option_clamp(const gchar *option, const gchar *label, const gchar *value, gint *n, gint min, gint max);
 void write_int_unit_option(GString *str, gint indent, gchar *label, gint n, gint subunits);
@@ -56,6 +57,7 @@ gboolean read_bool_option(const gchar *option, const gchar *label, const gchar *
 #define READ_INT(_target_, _name_) read_int_option(option, #_name_, value, &(_target_)._name_)
 #define READ_INT_NAME(_target_, _name_, _member_) read_int_option(option, #_name_, value, &(_target_)._member_)
 #define READ_UINT(_target_, _name_) read_uint_option(option, #_name_, value, &(_target_)._name_)
+#define READ_UINT16_NAME(_target_, _name_, _member_) read_uint16_option(option, #_name_, value, &(_target_)._member_)
 #define READ_INT_CLAMP(_target_, _name_, _min_, _max_) read_int_option_clamp(option, #_name_, value, &(_target_)._name_, _min_, _max_)
 #define READ_UINT_CLAMP(_target_, _name_, _min_, _max_) read_uint_option_clamp(option, #_name_, value, &(_target_)._name_, _min_, _max_)
 #define READ_INT_UNIT(_target_, _name_, _unit_) read_int_unit_option(option, #_name_, value, &(_target_)._name_, _unit_)

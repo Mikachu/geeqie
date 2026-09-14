@@ -166,14 +166,10 @@ struct _ConfOptions
         gchar *template_string;
         gint x;
         gint y;
-        guint text_red;
-        guint text_green;
-        guint text_blue;
-        guint text_alpha;
-        guint background_red;
-        guint background_green;
-        guint background_blue;
-        guint background_alpha;
+        struct ColorA {
+            GdkColor c;
+            gint a;
+        } text, background;
         gchar *font;
     } image_overlay;
 
