@@ -611,53 +611,16 @@ gint fullscreen_prefs_find_screen_for_widget(GtkWidget *widget)
     return n;
 }
 
-enum {
-    FS_MENU_COLUMN_NAME = 0,
-    FS_MENU_COLUMN_VALUE
-};
-
-#define BUTTON_ABOVE_KEY  "button_above"
-
-static void fullscreen_prefs_selection_cb(GtkWidget *combo, gpointer data)
-{
-    gint *value = data;
-    GtkTreeModel *store;
-    GtkTreeIter iter;
-    GtkWidget *button;
-
-    if (!value) return;
-
-    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return;
-    gtk_tree_model_get(store, &iter, FS_MENU_COLUMN_VALUE, value, -1);
-
-    button = g_object_get_data(G_OBJECT(combo), BUTTON_ABOVE_KEY);
-    if (button)
-    {
-        gtk_widget_set_sensitive(button, *value != -1);
-    }
-}
-
-static void fullscreen_prefs_selection_add(GtkListStore *store, const gchar *text, gint value)
-{
-    GtkTreeIter iter;
-
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter, FS_MENU_COLUMN_NAME, text,
-                     FS_MENU_COLUMN_VALUE, value, -1);
-}
-
 GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value, gboolean *above_value)
 {
     GtkWidget *vbox;
     GtkWidget *hbox;
     GtkWidget *combo;
-    GtkListStore *store;
-    GtkCellRenderer *renderer;
     GList *list;
     GList *work;
+    PrefComboItem *items;
     gint current = 0;
-    gint n;
+    guint n;
 
     if (!screen_value) return NULL;
 
@@ -665,43 +628,41 @@ GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value,
     hbox = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
     if (text) pref_label_new(hbox, text);
 
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
+    list = fullscreen_prefs_list();
+    n = g_list_length(list);
+    items = g_new0(PrefComboItem, 3 + n + 1);
 
-    renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer,
-                       "text", FS_MENU_COLUMN_NAME, NULL);
-
-    fullscreen_prefs_selection_add(store, _("Determined by Window Manager"), -1);
-    fullscreen_prefs_selection_add(store, _("Active screen"), 0);
+    items[0].text = N_("Determined by Window Manager");  items[0].value = -1;
+    items[1].text = N_("Active screen");                 items[1].value = 0;
     if (*screen_value == 0) current = 1;
-    fullscreen_prefs_selection_add(store, _("Active monitor"), 1);
+    items[2].text = N_("Active monitor");                items[2].value = 1;
     if (*screen_value == 1) current = 2;
 
     n = 3;
-    list = fullscreen_prefs_list();
     work = list;
     while (work)
     {
         ScreenData *sd = work->data;
 
-        fullscreen_prefs_selection_add(store, sd->description, sd->number);
+        items[n].text = sd->description;
+        items[n].value = sd->number;
+
         if (*screen_value == sd->number) current = n;
 
         work = work->next;
         n++;
     }
-    g_list_free_full(list, (GDestroyNotify)screen_data_free);
+    items[n].text = NULL;
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
+    combo = pref_combo_new_int(items, current);
+    g_free(items);
+    g_list_free_full(list, (GDestroyNotify)screen_data_free);
 
     gtk_box_pack_start(GTK_BOX(hbox), combo, FALSE, FALSE, 0);
     gtk_widget_show(combo);
 
     g_signal_connect(G_OBJECT(combo), "changed",
-             G_CALLBACK(fullscreen_prefs_selection_cb), screen_value);
+             G_CALLBACK(pref_combo_get_int), screen_value);
 
     return vbox;
 }
