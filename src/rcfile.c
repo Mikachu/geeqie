@@ -423,8 +423,8 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_BOOL(*options, metadata.keywords_case_sensitive);
     WRITE_NL(); WRITE_BOOL(*options, metadata.write_orientation);
 
-    WRITE_NL(); WRITE_INT(*options, stereo.mode);
-    WRITE_NL(); WRITE_INT(*options, stereo.fsmode);
+    WRITE_NL(); WRITE_INT_NAME(*options, stereo.mode, stereo.window.mode);
+    WRITE_NL(); WRITE_INT_NAME(*options, stereo.fsmode, stereo.fs.mode);
     WRITE_NL(); WRITE_BOOL(*options, stereo.enable_fsmode);
     WRITE_NL(); WRITE_INT(*options, stereo.fixed_w);
     WRITE_NL(); WRITE_INT(*options, stereo.fixed_h);
@@ -744,8 +744,8 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_BOOL(*options, metadata.keywords_case_sensitive)) continue;
         if (READ_BOOL(*options, metadata.write_orientation)) continue;
 
-        if (READ_INT(*options, stereo.mode)) continue;
-        if (READ_INT(*options, stereo.fsmode)) continue;
+        if (READ_INT_NAME(*options, stereo.mode, stereo.window.mode)) continue;
+        if (READ_INT_NAME(*options, stereo.fsmode, stereo.fs.mode)) continue;
         if (READ_BOOL(*options, stereo.enable_fsmode)) continue;
         if (READ_INT(*options, stereo.fixed_w)) continue;
         if (READ_INT(*options, stereo.fixed_h)) continue;

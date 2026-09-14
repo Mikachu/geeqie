@@ -210,6 +210,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
              * imd widget, so just fullscreen the window itself and reuse imd */
             fs->window = window;
             fs->imd = imd;
+            fs->imd->fullscreen = TRUE;
 
             if (options->fullscreen.above)
                 gtk_window_set_keep_above(GTK_WINDOW(fs->window), TRUE);
@@ -229,6 +230,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
         fs->window = window;
 
         fs->imd = image_new(FALSE);
+        fs->imd->fullscreen = TRUE;
         gtk_container_add(GTK_CONTAINER(fs_container), fs->imd->widget);
 
         image_background_set_color_from_options(fs->imd, TRUE);
@@ -244,7 +246,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
         image_move_from_image(fs->imd, fs->normal_imd);
 
         if (options->stereo.enable_fsmode)
-            image_stereo_set(fs->imd, options->stereo.fsmode);
+            image_stereo_set(fs->imd, options->stereo.fs.mode);
 
         gtk_widget_show(fs->imd->widget);
 
@@ -303,6 +305,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
     gtk_widget_realize(fs->window);
 
     fs->imd = image_new(FALSE);
+    fs->imd->fullscreen = TRUE;
 
     gtk_container_add(GTK_CONTAINER(fs->window), fs->imd->widget);
 
@@ -330,7 +333,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
     }
 
     if (options->stereo.enable_fsmode) {
-        image_stereo_set(fs->imd, options->stereo.fsmode);
+        image_stereo_set(fs->imd, options->stereo.fs.mode);
     }
 
     gtk_widget_show(fs->window);
@@ -362,7 +365,7 @@ void fullscreen_stop(FullScreenData *fs)
         image_move_from_image(fs->normal_imd, fs->imd);
         if (options->stereo.enable_fsmode)
         {
-            image_stereo_set(fs->normal_imd, options->stereo.mode);
+            image_stereo_set(fs->normal_imd, options->stereo.window.mode);
         }
     }
 
@@ -377,6 +380,7 @@ void fullscreen_stop(FullScreenData *fs)
             gtk_widget_destroy(fs->imd->widget);
         else
         {
+            fs->imd->fullscreen = FALSE;
             gtk_window_unfullscreen(GTK_WINDOW(fs->window));
             g_signal_handlers_disconnect_by_func(fs->imd->pr, fullscreen_mouse_moved, fs);
         }
