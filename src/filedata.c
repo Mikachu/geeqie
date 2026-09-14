@@ -517,6 +517,16 @@ FileData *file_data_new_dir(const gchar *path_utf8)
     return file_data_new_simple(path_utf8);
 }
 
+FileData *file_data_new_dir_exist(const gchar *path_utf8)
+{
+    struct stat st;
+
+    if (!stat_utf8(path_utf8, &st) || !S_ISDIR(st.st_mode))
+        return NULL;
+
+    return file_data_new(path_utf8, &st, TRUE);
+}
+
 /*
  *-----------------------------------------------------------------------------
  * reference counting

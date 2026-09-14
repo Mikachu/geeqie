@@ -725,7 +725,27 @@ static void filter_disable_cb(GtkWidget *widget, gpointer data)
 
 static void safe_delete_view_cb(GtkWidget *widget, gpointer data)
 {
-    layout_set_path(NULL, gtk_entry_get_text(GTK_ENTRY(safe_delete_path_entry)));
+    FileData *fd = file_data_new_dir_exist(gtk_entry_get_text(GTK_ENTRY(safe_delete_path_entry)));
+    if (fd)
+    {
+        LayoutOptions lop;
+        LayoutWindow *lw = NULL;
+        if (!layout_valid(&lw)) {
+            file_data_unref(fd);
+            return;
+        }
+        layout_sync_options_with_current_state(lw);
+        lop = lw->options;
+        lop.id = NULL;
+        lw = layout_new(fd, &lop);
+        layout_set_fd(lw, fd);
+        layout_sort_set(lw, options->file_sort.method, options->file_sort.ascending);
+        file_data_unref(fd);
+    }
+    else
+    {
+        warning_dialog(_("Safe delete path does not exist"), NULL, GTK_STOCK_DIALOG_WARNING, safe_delete_path_entry);
+    }
 }
 
 static void safe_delete_clear_ok_cb(GenericDialog *gd, gpointer data)
