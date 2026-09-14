@@ -333,10 +333,9 @@ static void config_window_apply(void)
 
 static void config_window_close_cb(GtkWidget *widget, gpointer data)
 {
-    gtk_widget_destroy(configwindow);
-    configwindow = NULL;
-    filter_store = NULL;
+    g_clear_pointer(&configwindow, gtk_widget_destroy);
     g_clear_pointer(&c_options, conf_options_free_internal);
+    g_clear_object(&filter_store);
 }
 
 static gboolean config_window_delete(GtkWidget *widget, GdkEventAny *event, gpointer data)
@@ -1436,7 +1435,6 @@ static void config_tab_files(GtkWidget *notebook)
 
     filter_store = gtk_list_store_new(1, G_TYPE_POINTER);
     filter_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(filter_store));
-    g_object_unref(filter_store);
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(filter_view));
     gtk_tree_selection_set_mode(GTK_TREE_SELECTION(selection), GTK_SELECTION_SINGLE);
 
