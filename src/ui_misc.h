@@ -199,5 +199,6 @@ GtkWidget *pref_color_button_new(GtkWidget *parent_box,
                  GCallback func, gpointer data);
 
 gchar *text_widget_text_pull(GtkWidget *text_widget);
+void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(const gchar *));
 
 #endif

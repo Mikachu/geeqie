@@ -47,7 +47,6 @@
 #include "rcfile.h"
 #include "bar.h"
 #include "bar_sort.h"
-#include "preferences.h"
 
 #ifdef HAVE_LIRC
 #include "lirc.h"

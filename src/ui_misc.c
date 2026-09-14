@@ -1689,3 +1689,14 @@ gchar *text_widget_text_pull(GtkWidget *text_widget)
     }
 
 }
+
+void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(const gchar *))
+{
+    const gchar *buf;
+
+    g_clear_pointer(option, g_free);
+    buf = gtk_entry_get_text(GTK_ENTRY(entry));
+    if (!func) func = g_strdup;
+    if (buf && *buf)
+        *option = func(buf);
+}
