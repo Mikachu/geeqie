@@ -157,26 +157,9 @@ static void slideshow_delay_cb(GtkWidget *spin, gpointer data)
 
 /*
  *-----------------------------------------------------------------------------
- * sync progam to config window routine (private)
+ * sync program to config window routine (private)
  *-----------------------------------------------------------------------------
  */
-
-void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(const gchar *))
-{
-    const gchar *buf;
-
-    g_free(*option);
-    *option = NULL;
-    buf = gtk_entry_get_text(GTK_ENTRY(entry));
-    if (buf && *buf)
-    {
-        if (func)
-            *option = func(buf);
-        else
-            *option = g_strdup(buf);
-    }
-}
-
 
 static gboolean accel_apply_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
