@@ -441,27 +441,6 @@ static FileData *file_data_new_local(const gchar *path, struct stat *st, gboolea
     return ret;
 }
 
-FileData *file_data_new_simple(const gchar *path_utf8)
-{
-    struct stat st;
-    FileData *fd;
-
-    if (!stat_utf8(path_utf8, &st))
-    {
-        st.st_size = 0;
-        st.st_mtime = 0;
-    }
-
-    fd = g_hash_table_lookup(file_data_pool, path_utf8);
-    if (!fd) fd = file_data_new(path_utf8, &st, TRUE);
-    if (fd)
-    {
-        file_data_ref(fd);
-    }
-
-    return fd;
-}
-
 void read_exif_time_data(FileData *file)
 {
     if (file->exifdate > 0)
@@ -510,7 +489,7 @@ void set_exif_time_data(GList *files)
     }
 }
 
-FileData *file_data_new_no_grouping(const gchar *path_utf8)
+FileData *file_data_new_simple(const gchar *path_utf8)
 {
     struct stat st;
 
@@ -523,20 +502,19 @@ FileData *file_data_new_no_grouping(const gchar *path_utf8)
     return file_data_new(path_utf8, &st, TRUE);
 }
 
+FileData *file_data_new_group(const gchar *path_utf8)
+{
+    return file_data_new_simple(path_utf8);
+}
+
+FileData *file_data_new_no_grouping(const gchar *path_utf8)
+{
+    return file_data_new_simple(path_utf8);
+}
+
 FileData *file_data_new_dir(const gchar *path_utf8)
 {
-    struct stat st;
-
-    if (!stat_utf8(path_utf8, &st))
-    {
-        st.st_size = 0;
-        st.st_mtime = 0;
-    }
-    else
-        /* dir or non-existing yet */
-        g_assert(S_ISDIR(st.st_mode));
-
-    return file_data_new(path_utf8, &st, TRUE);
+    return file_data_new_simple(path_utf8);
 }
 
 /*
@@ -1326,43 +1304,6 @@ gboolean filelist_read_lstat(FileData *dir_fd, GList **files, GList **dirs)
 {
     return filelist_read_real(dir_fd->path, files, dirs, FALSE);
 }
-
-FileData *file_data_new_group(const gchar *path_utf8)
-{
-    gchar *dir;
-    struct stat st;
-    FileData *fd;
-
-    if (!file_data_pool)
-    {
-        file_data_pool = g_hash_table_new(g_str_hash, g_str_equal);
-    }
-
-    if (!stat_utf8(path_utf8, &st))
-    {
-        st.st_size = 0;
-        st.st_mtime = 0;
-    }
-
-    if (S_ISDIR(st.st_mode))
-        return file_data_new(path_utf8, &st, TRUE);
-
-    dir = remove_level_from_path(path_utf8);
-
-    if (!file_data_pool)
-        file_data_pool = g_hash_table_new(g_str_hash, g_str_equal);
-
-    fd = g_hash_table_lookup(file_data_pool, path_utf8);
-    if (!fd) fd = file_data_new(path_utf8, &st, TRUE);
-    if (fd)
-    {
-        file_data_ref(fd);
-    }
-
-    g_free(dir);
-    return fd;
-}
-
 
 void filelist_free(GList *list)
 {
