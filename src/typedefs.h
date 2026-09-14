@@ -503,6 +503,7 @@ struct _ImageWindow
     gint orientation;
     gboolean desaturate;
     gint user_stereo;
+    gboolean fullscreen; /* only needed to apply the correct stereo settings */
 };
 
 #define FILEDATA_MARKS_SIZE 6
