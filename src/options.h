@@ -40,6 +40,7 @@ struct _ConfOptions
     gboolean image_lm_click_nav;
     gboolean show_icon_names;
     GList *mouse_bindings; /* list of MouseBinding */
+    GtkTreeStore *accel_store;
 
     /* various */
     gboolean tree_descend_subdirs;
