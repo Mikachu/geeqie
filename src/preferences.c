@@ -368,63 +368,24 @@ static void config_window_save_cb(GtkWidget *widget, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-enum { QUALITY_MENU_COLUMN_NAME = 0, QUALITY_MENU_COLUMN_VALUE };
-
-static void quality_menu_cb(GtkWidget *combo, gpointer data)
-{
-    guint *option = data;
-    GtkTreeModel *store;
-    GtkTreeIter iter;
-
-    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return;
-    gtk_tree_model_get(store, &iter, QUALITY_MENU_COLUMN_VALUE, option, -1);
-}
-
 static void add_quality_menu(GtkWidget *table, gint column, gint row, const gchar *text,
-                 guint option, guint *option_c)
+                             gint option, gint *option_c)
 {
-    GtkWidget *combo;
-    GtkListStore *store;
-    GtkCellRenderer *renderer;
-    GtkTreeIter iter;
-    gint current = 0, i;
-    static const struct {
-        const gchar *text;
-        guint value;
-    } quality_items[] = {
+    const PrefComboItem quality_items[] = {
         { N_("Nearest (worst, but fastest)"), GDK_INTERP_NEAREST },
         { N_("Tiles"),                        GDK_INTERP_TILES },
         { N_("Bilinear"),                     GDK_INTERP_BILINEAR },
         { N_("Hyper (best, but slowest)"),    GDK_INTERP_HYPER },
+        { NULL, 0 },
     };
+    GtkWidget *combo = pref_combo_new_int(quality_items, option);
 
     *option_c = option;
 
     pref_table_label(table, column, row, text, 0.0);
 
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_UINT);
-
-    for (i = 0; i < (gint)G_N_ELEMENTS(quality_items); i++)
-    {
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter,
-                           QUALITY_MENU_COLUMN_NAME, _(quality_items[i].text),
-                           QUALITY_MENU_COLUMN_VALUE, quality_items[i].value, -1);
-        if (option == quality_items[i].value) current = i;
-    }
-    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
-
-    renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer,
-                       "text", QUALITY_MENU_COLUMN_NAME, NULL);
-
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
-
     g_signal_connect(G_OBJECT(combo), "changed",
-                     G_CALLBACK(quality_menu_cb), option_c);
+                     G_CALLBACK(pref_combo_get_int), option_c);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
                      GTK_EXPAND | GTK_FILL, 0, 0, 0);
@@ -494,120 +455,40 @@ static void add_thumb_size_menu(GtkWidget *table, gint column, gint row, gchar *
     gtk_widget_show(combo);
 }
 
-static void stereo_mode_menu_cb(GtkWidget *combo, gpointer data)
-{
-    gint *option = data;
-
-    switch (gtk_combo_box_get_active(GTK_COMBO_BOX(combo)))
-    {
-        case 0:
-        default:
-            *option = PR_STEREO_NONE;
-            break;
-        case 1:
-            *option = PR_STEREO_ANAGLYPH_RC;
-            break;
-        case 2:
-            *option = PR_STEREO_ANAGLYPH_GM;
-            break;
-        case 3:
-            *option = PR_STEREO_ANAGLYPH_YB;
-            break;
-        case 4:
-            *option = PR_STEREO_ANAGLYPH_GRAY_RC;
-            break;
-        case 5:
-            *option = PR_STEREO_ANAGLYPH_GRAY_GM;
-            break;
-        case 6:
-            *option = PR_STEREO_ANAGLYPH_GRAY_YB;
-            break;
-        case 7:
-            *option = PR_STEREO_ANAGLYPH_DB_RC;
-            break;
-        case 8:
-            *option = PR_STEREO_ANAGLYPH_DB_GM;
-            break;
-        case 9:
-            *option = PR_STEREO_ANAGLYPH_DB_YB;
-            break;
-        case 10:
-            *option = PR_STEREO_HORIZ;
-            break;
-        case 11:
-            *option = PR_STEREO_HORIZ | PR_STEREO_HALF;
-            break;
-        case 12:
-            *option = PR_STEREO_VERT;
-            break;
-        case 13:
-            *option = PR_STEREO_VERT | PR_STEREO_HALF;
-            break;
-        case 14:
-            *option = PR_STEREO_FIXED;
-            break;
-    }
-}
-
 static void add_stereo_mode_menu(GtkWidget *table, gint column, gint row, const gchar *text,
-                 gint option, gint *option_c, gboolean add_fixed)
+                                 gint option, gint *option_c, gboolean add_fixed)
 {
     GtkWidget *combo;
-    gint current = 0;
+    PrefComboItem items[16] = {
+        { N_("Single image"),                     PR_STEREO_NONE },
+        { N_("Anaglyph Red-Cyan"),                PR_STEREO_ANAGLYPH_RC },
+        { N_("Anaglyph Green-Magenta"),           PR_STEREO_ANAGLYPH_GM },
+        { N_("Anaglyph Yellow-Blue"),             PR_STEREO_ANAGLYPH_YB },
+        { N_("Anaglyph Gray Red-Cyan"),           PR_STEREO_ANAGLYPH_GRAY_RC },
+        { N_("Anaglyph Gray Green-Magenta"),      PR_STEREO_ANAGLYPH_GRAY_GM },
+        { N_("Anaglyph Gray Yellow-Blue"),        PR_STEREO_ANAGLYPH_GRAY_YB },
+        { N_("Anaglyph Dubois Red-Cyan"),         PR_STEREO_ANAGLYPH_DB_RC },
+        { N_("Anaglyph Dubois Green-Magenta"),    PR_STEREO_ANAGLYPH_DB_GM },
+        { N_("Anaglyph Dubois Yellow-Blue"),      PR_STEREO_ANAGLYPH_DB_YB },
+        { N_("Side by Side"),                     PR_STEREO_HORIZ },
+        { N_("Side by Side Half size"),           PR_STEREO_HORIZ | PR_STEREO_HALF },
+        { N_("Top - Bottom"),                     PR_STEREO_VERT },
+        { N_("Top - Bottom Half size"),           PR_STEREO_VERT | PR_STEREO_HALF },
+        { N_("Fixed position"),                   PR_STEREO_FIXED },
+        { NULL, 0 }
+    };
 
     *option_c = option;
 
     pref_table_label(table, column, row, text, 0.0);
 
-    combo = gtk_combo_box_text_new();
+    if (!add_fixed)
+        items[14].text = NULL;
 
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Single image"));
-
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Red-Cyan"));
-    if (option & PR_STEREO_ANAGLYPH_RC) current = 1;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Green-Magenta"));
-    if (option & PR_STEREO_ANAGLYPH_GM) current = 2;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Yellow-Blue"));
-    if (option & PR_STEREO_ANAGLYPH_YB) current = 3;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Gray Red-Cyan"));
-    if (option & PR_STEREO_ANAGLYPH_GRAY_RC) current = 4;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Gray Green-Magenta"));
-    if (option & PR_STEREO_ANAGLYPH_GRAY_GM) current = 5;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Gray Yellow-Blue"));
-    if (option & PR_STEREO_ANAGLYPH_GRAY_YB) current = 6;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Dubois Red-Cyan"));
-    if (option & PR_STEREO_ANAGLYPH_DB_RC) current = 7;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Dubois Green-Magenta"));
-    if (option & PR_STEREO_ANAGLYPH_DB_GM) current = 8;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Anaglyph Dubois Yellow-Blue"));
-    if (option & PR_STEREO_ANAGLYPH_DB_YB) current = 9;
-
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Side by Side"));
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Side by Side Half size"));
-    if (option & PR_STEREO_HORIZ)
-    {
-        current = 10;
-        if (option & PR_STEREO_HALF) current = 11;
-    }
-
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Top - Bottom"));
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Top - Bottom Half size"));
-    if (option & PR_STEREO_VERT)
-    {
-        current = 12;
-        if (option & PR_STEREO_HALF) current = 13;
-    }
-
-    if (add_fixed)
-    {
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Fixed position"));
-        if (option & PR_STEREO_FIXED) current = 14;
-    }
-
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
+    combo = pref_combo_new_int(items, option);
 
     g_signal_connect(G_OBJECT(combo), "changed",
-             G_CALLBACK(stereo_mode_menu_cb), option_c);
+             G_CALLBACK(pref_combo_get_int), option_c);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
              GTK_EXPAND | GTK_FILL, 0, 0, 0);
@@ -1762,55 +1643,25 @@ static void config_tab_metadata(GtkWidget *notebook)
 
 /* metadata tab */
 #ifdef HAVE_LCMS
-static void intent_menu_cb(GtkWidget *combo, gpointer data)
+static void add_intent_menu(GtkWidget *table, gint column, gint row, const gchar *text, guint option, gint *option_c)
 {
-    gint *option = data;
-
-    switch (gtk_combo_box_get_active(GTK_COMBO_BOX(combo)))
-    {
-        case 0:
-        default:
-            *option = INTENT_PERCEPTUAL;
-            break;
-        case 1:
-            *option = INTENT_RELATIVE_COLORIMETRIC;
-            break;
-        case 2:
-            *option = INTENT_SATURATION;
-            break;
-        case 3:
-            *option = INTENT_ABSOLUTE_COLORIMETRIC;
-            break;
-    }
-}
-
-static void add_intent_menu(GtkWidget *table, gint column, gint row, const gchar *text,
-                 guint option, guint *option_c)
-{
-    GtkWidget *combo;
-    gint current = 0;
+    const PrefComboItem intent_items[] = {
+        { N_("Perceptual"),            INTENT_PERCEPTUAL },
+        { N_("Relative Colorimetric"), INTENT_RELATIVE_COLORIMETRIC },
+        { N_("Saturation"),            INTENT_SATURATION },
+        { N_("Absolute Colorimetric"), INTENT_ABSOLUTE_COLORIMETRIC },
+        { NULL, 0 },
+    };
+    GtkWidget *combo = pref_combo_new_int(intent_items, option);
 
     *option_c = option;
 
     pref_table_label(table, column, row, text, 0.0);
 
-    combo = gtk_combo_box_text_new();
-
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Perceptual"));
-    if (option == INTENT_PERCEPTUAL) current = 0;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Relative Colorimetric"));
-    if (option == INTENT_RELATIVE_COLORIMETRIC) current = 1;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Saturation"));
-    if (option == INTENT_SATURATION) current = 2;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Absolute Colorimetric"));
-    if (option == INTENT_ABSOLUTE_COLORIMETRIC) current = 3;
-
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
-
-    gtk_widget_set_tooltip_text(combo,"Refer to the lcms documentation for the defaults used when the selected Intent is not available");
+    gtk_widget_set_tooltip_text(combo, "Refer to the lcms documentation for the defaults used when the selected Intent is not available");
 
     g_signal_connect(G_OBJECT(combo), "changed",
-             G_CALLBACK(intent_menu_cb), option_c);
+                     G_CALLBACK(pref_combo_get_int), option_c);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
              GTK_EXPAND | GTK_FILL, 0, 0, 0);

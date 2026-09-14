@@ -3060,71 +3060,32 @@ static void print_output_format_cb(GtkWidget *combo, gpointer data)
     pw->output_format = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
 }
 
-static GtkWidget *print_output_dpi_menu(GtkWidget * table, gint column, gint row,
-                    gdouble dpi, GCallback func, gpointer data)
+static void print_output_dpi_cb(GtkWidget *combo, gpointer data)
 {
-    static gint dpilist[] = { 150, 300, 600, 1200, 0, -1};
+    PrintWindow *pw = data;
+    gint n = -1;
+
+    pref_combo_get_int(combo, &n);
+
+    pw->max_dpi = (gdouble)n;
+}
+
+static GtkWidget *print_output_dpi_menu(GtkWidget * table, gint column, gint row,
+                                        gdouble dpi, GCallback func, gpointer data)
+{
     GtkWidget *combo;
-    GtkListStore *store;
-    GtkCellRenderer *renderer;
-    gint current = 1;
-    gint i;
 
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+    PrefComboItem items[] = { { "150", 150 }, { "300", 300 }, { "600", 600 },
+                              { "1200", 1200 }, { N_("Unlimited"), 0 }, { NULL, 0 }, };
 
-    i = 0;
-    while (dpilist[i] != -1)
-    {
-        GtkTreeIter iter;
-        gchar *text;
-
-        if (dpilist[i] == 0)
-        {
-            text = g_strdup(_("Unlimited"));
-        }
-        else
-        {
-            text = g_strdup_printf("%d", dpilist[i]);
-        }
-
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, 0, text, 1, dpilist[i], -1);
-        g_free(text);
-
-        if (dpi == (gdouble)dpilist[i]) current = i;
-
-        i++;
-    }
-
-    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
-
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), current);
+    combo = pref_combo_new_int(items, (gint)dpi);
     if (func) g_signal_connect(G_OBJECT(combo), "changed", func, data);
-
-    renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer, "text", 0, NULL);
 
     gtk_table_attach(GTK_TABLE(table), combo, column, column + 1, row, row + 1,
              GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
-}
-
-static void print_output_dpi_cb(GtkWidget *combo, gpointer data)
-{
-    PrintWindow *pw = data;
-    GtkTreeModel *store;
-    GtkTreeIter iter;
-    gint n = -1;
-
-    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return;
-    gtk_tree_model_get(store, &iter, 1, &n, -1);
-
-    pw->max_dpi = (gdouble)n;
 }
 
 static void print_text_field_set(PrintWindow *pw, TextInfo field, gboolean active)

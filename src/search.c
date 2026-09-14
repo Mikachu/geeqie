@@ -211,47 +211,46 @@ struct _MatchFileData
     gint rank;
 };
 
-typedef struct _MatchList MatchList;
-struct _MatchList
-{
-    const gchar *text;
-    MatchType type;
-};
-
-static const MatchList text_search_menu_path[] = {
+static const PrefComboItem text_search_menu_path[] = {
     { N_("folder"),     SEARCH_MATCH_NONE },
     { N_("comments"),   SEARCH_MATCH_ALL },
-    { N_("results"),    SEARCH_MATCH_CONTAINS }
+    { N_("results"),    SEARCH_MATCH_CONTAINS },
+    { NULL, 0 }
 };
 
-static const MatchList text_search_menu_name[] = {
+static const PrefComboItem text_search_menu_name[] = {
     { N_("contains"),   SEARCH_MATCH_CONTAINS },
-    { N_("is"),     SEARCH_MATCH_EQUAL }
+    { N_("is"),     SEARCH_MATCH_EQUAL },
+    { NULL, 0 }
 };
 
-static const MatchList text_search_menu_size[] = {
+static const PrefComboItem text_search_menu_size[] = {
     { N_("equal to"),   SEARCH_MATCH_EQUAL },
     { N_("less than"),  SEARCH_MATCH_UNDER },
     { N_("greater than"),   SEARCH_MATCH_OVER },
-    { N_("between"),    SEARCH_MATCH_BETWEEN }
+    { N_("between"),    SEARCH_MATCH_BETWEEN },
+    { NULL, 0 }
 };
 
-static const MatchList text_search_menu_date[] = {
+static const PrefComboItem text_search_menu_date[] = {
     { N_("equal to"),   SEARCH_MATCH_EQUAL },
     { N_("before"),     SEARCH_MATCH_UNDER },
     { N_("after"),      SEARCH_MATCH_OVER },
-    { N_("between"),    SEARCH_MATCH_BETWEEN }
+    { N_("between"),    SEARCH_MATCH_BETWEEN },
+    { NULL, 0 }
 };
 
-static const MatchList text_search_menu_keyword[] = {
+static const PrefComboItem text_search_menu_keyword[] = {
     { N_("match all"),  SEARCH_MATCH_ALL },
     { N_("match any"),  SEARCH_MATCH_ANY },
-    { N_("exclude"),    SEARCH_MATCH_NONE }
+    { N_("exclude"),    SEARCH_MATCH_NONE },
+    { NULL, 0 }
 };
 
-static const MatchList text_search_menu_comment[] = {
+static const PrefComboItem text_search_menu_comment[] = {
     { N_("contains"),   SEARCH_MATCH_CONTAINS },
-    { N_("miss"),       SEARCH_MATCH_NONE }
+    { N_("miss"),       SEARCH_MATCH_NONE },
+    { NULL, 0 }
 };
 
 static GList *search_window_list = NULL;
@@ -2209,11 +2208,6 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
  *-------------------------------------------------------------------
  */
 
-enum {
-    MENU_CHOICE_COLUMN_NAME = 0,
-    MENU_CHOICE_COLUMN_VALUE
-};
-
 static void search_thumb_toggle_cb(GtkWidget *button, gpointer data)
 {
     SearchData *sd = data;
@@ -2316,22 +2310,20 @@ static void search_result_add_column(SearchData * sd, gint n, const gchar *title
     gtk_tree_view_append_column(GTK_TREE_VIEW(sd->result_view), column);
 }
 
-static gboolean menu_choice_get_match_type(GtkWidget *combo, MatchType *type)
+static void menu_choice_get_match_type(GtkWidget *combo, MatchType *type)
 {
-    GtkTreeModel *store;
-    GtkTreeIter iter;
+    gint value;
 
-    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return FALSE;
-    gtk_tree_model_get(store, &iter, MENU_CHOICE_COLUMN_VALUE, type, -1);
-    return TRUE;
+    /* don't pass type here, enum may be different size than gint */
+    pref_combo_get_int(combo, &value);
+    *type = value;
 }
 
 static void menu_choice_path_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->search_type)) return;
+    menu_choice_get_match_type(combo, &sd->search_type);
 
     gtk_widget_set_visible(gtk_widget_get_parent(sd->check_recurse),
                 (sd->search_type == SEARCH_MATCH_NONE));
@@ -2341,14 +2333,14 @@ static void menu_choice_name_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_name)) return;
+    menu_choice_get_match_type(combo, &sd->match_name);
 }
 
 static void menu_choice_size_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_size)) return;
+    menu_choice_get_match_type(combo, &sd->match_size);
 
     gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_size_end),
                 (sd->match_size == SEARCH_MATCH_BETWEEN));
@@ -2358,7 +2350,7 @@ static void menu_choice_date_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_date)) return;
+    menu_choice_get_match_type(combo, &sd->match_date);
 
     gtk_widget_set_visible(gtk_widget_get_parent(sd->date_sel_end),
                 (sd->match_date == SEARCH_MATCH_BETWEEN));
@@ -2368,7 +2360,7 @@ static void menu_choice_dimensions_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_dimensions)) return;
+    menu_choice_get_match_type(combo, &sd->match_dimensions);
 
     gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_width_end),
                 (sd->match_dimensions == SEARCH_MATCH_BETWEEN));
@@ -2378,14 +2370,14 @@ static void menu_choice_keyword_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_keywords)) return;
+    menu_choice_get_match_type(combo, &sd->match_keywords);
 }
 
 static void menu_choice_comment_cb(GtkWidget *combo, gpointer data)
 {
     SearchData *sd = data;
 
-    if (!menu_choice_get_match_type(combo, &sd->match_comment)) return;
+    menu_choice_get_match_type(combo, &sd->match_comment);
 }
 
 static void menu_choice_spin_cb(GtkAdjustment *adjustment, gpointer data)
@@ -2425,44 +2417,9 @@ static void menu_choice_check_cb(GtkWidget *button, gpointer data)
     if (value) *value = active;
 }
 
-static GtkWidget *menu_choice_menu(const MatchList *items, gint item_count,
-                   GCallback func, gpointer data)
-{
-    GtkWidget *combo;
-    GtkCellRenderer *renderer;
-    GtkListStore *store;
-    gint i;
-
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
-
-    renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer,
-                       "text", MENU_CHOICE_COLUMN_NAME, NULL);
-
-    for (i = 0; i < item_count; i++)
-    {
-        GtkTreeIter iter;
-
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, MENU_CHOICE_COLUMN_NAME, _(items[i].text),
-                         MENU_CHOICE_COLUMN_VALUE, items[i].type, -1);
-    }
-
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
-
-    if (func) g_signal_connect(G_OBJECT(combo), "changed",
-                   G_CALLBACK(func), data);
-
-    return combo;
-}
-
 static GtkWidget *menu_choice(GtkWidget *box, GtkWidget **check, GtkWidget **menu,
                   const gchar *text, gboolean *value,
-                  const MatchList *items, gint item_count,
-                  GCallback func, gpointer data)
+                  const PrefComboItem *items, GCallback func, gpointer data)
 {
     GtkWidget *base_box;
     GtkWidget *hbox;
@@ -2492,7 +2449,8 @@ static GtkWidget *menu_choice(GtkWidget *box, GtkWidget **check, GtkWidget **men
 
     if (!items && !menu) return hbox;
 
-    option = menu_choice_menu(items, item_count, func, data);
+    option = pref_combo_new_int(items, items[0].value);
+    if (func) g_signal_connect(G_OBJECT(option), "changed", func, data);
     gtk_box_pack_start(GTK_BOX(hbox), option, FALSE, FALSE, 0);
     gtk_widget_show(option);
     if (menu) *menu = option;
@@ -2629,7 +2587,8 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     pref_label_new(hbox, _("Search:"));
 
-    sd->menu_path = menu_choice_menu(text_search_menu_path, G_N_ELEMENTS(text_search_menu_path),
+    sd->menu_path = pref_combo_new_int(text_search_menu_path, text_search_menu_path[0].value);
+    g_signal_connect(G_OBJECT(sd->menu_path), "changed",  
                      G_CALLBACK(menu_choice_path_cb), sd);
     gtk_box_pack_start(GTK_BOX(hbox), sd->menu_path, FALSE, FALSE, 0);
     gtk_widget_show(sd->menu_path);
@@ -2647,8 +2606,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file name */
     hbox = menu_choice(sd->box_search, &sd->check_name, &sd->menu_name,
                _("File name"), &sd->match_name_enable,
-               text_search_menu_name, G_N_ELEMENTS(text_search_menu_name),
-               G_CALLBACK(menu_choice_name_cb), sd);
+               text_search_menu_name, G_CALLBACK(menu_choice_name_cb), sd);
     combo = history_combo_new(&sd->entry_name, "", "search_name", -1);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
@@ -2659,8 +2617,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file size */
     hbox = menu_choice(sd->box_search, &sd->check_size, &sd->menu_size,
                _("File size is"), &sd->match_size_enable,
-               text_search_menu_size, G_N_ELEMENTS(text_search_menu_size),
-               G_CALLBACK(menu_choice_size_cb), sd);
+               text_search_menu_size, G_CALLBACK(menu_choice_size_cb), sd);
     sd->spin_size = menu_spin(hbox, 0, 1024*1024*1024, sd->search_size,
                   G_CALLBACK(menu_choice_spin_cb), &sd->search_size);
     hbox2 = gtk_hbox_new(FALSE, PREF_PAD_SPACE);
@@ -2672,8 +2629,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for file date */
     hbox = menu_choice(sd->box_search, &sd->check_date, &sd->menu_date,
                _("File date is"), &sd->match_date_enable,
-               text_search_menu_date, G_N_ELEMENTS(text_search_menu_date),
-               G_CALLBACK(menu_choice_date_cb), sd);
+               text_search_menu_date, G_CALLBACK(menu_choice_date_cb), sd);
     sd->date_sel = date_selection_new();
     date_selection_time_set(sd->date_sel, time(NULL));
     gtk_box_pack_start(GTK_BOX(hbox), sd->date_sel, FALSE, FALSE, 0);
@@ -2690,8 +2646,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image dimensions */
     hbox = menu_choice(sd->box_search, &sd->check_dimensions, &sd->menu_dimensions,
                _("Image dimensions are"), &sd->match_dimensions_enable,
-               text_search_menu_size, G_N_ELEMENTS(text_search_menu_size),
-               G_CALLBACK(menu_choice_dimensions_cb), sd);
+               text_search_menu_size, G_CALLBACK(menu_choice_dimensions_cb), sd);
     pad_box = pref_box_new(hbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 2);
     sd->spin_width = menu_spin(pad_box, 0, 1000000, sd->search_width,
                    G_CALLBACK(menu_choice_spin_cb), &sd->search_width);
@@ -2711,7 +2666,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image similarity */
     hbox = menu_choice(sd->box_search, &sd->check_similarity, NULL,
                _("Image content is"), &sd->match_similarity_enable,
-               NULL, 0, NULL, sd);
+               NULL, NULL, sd);
     sd->spin_similarity = menu_spin(hbox, 80, 100, sd->search_similarity,
                     G_CALLBACK(menu_choice_spin_cb), &sd->search_similarity);
 
@@ -2732,8 +2687,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image keywords */
     hbox = menu_choice(sd->box_search, &sd->check_keywords, &sd->menu_keywords,
                _("Keywords"), &sd->match_keywords_enable,
-               text_search_menu_keyword, G_N_ELEMENTS(text_search_menu_keyword),
-               G_CALLBACK(menu_choice_keyword_cb), sd);
+               text_search_menu_keyword, G_CALLBACK(menu_choice_keyword_cb), sd);
     sd->entry_keywords = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_keywords, TRUE, TRUE, 0);
     gtk_widget_set_sensitive(sd->entry_keywords, sd->match_keywords_enable);
@@ -2744,8 +2698,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     /* Search for image comment */
     hbox = menu_choice(sd->box_search, &sd->check_comment, &sd->menu_comment,
             _("Comment"), &sd->match_comment_enable,
-            text_search_menu_comment, G_N_ELEMENTS(text_search_menu_comment),
-            G_CALLBACK(menu_choice_comment_cb), sd);
+            text_search_menu_comment, G_CALLBACK(menu_choice_comment_cb), sd);
     sd->entry_comment = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_comment, TRUE, TRUE, 0);
     gtk_widget_set_sensitive(sd->entry_comment, sd->match_comment_enable);
