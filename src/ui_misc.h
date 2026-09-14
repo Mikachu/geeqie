@@ -201,4 +201,17 @@ GtkWidget *pref_color_button_new(GtkWidget *parent_box,
 gchar *text_widget_text_pull(GtkWidget *text_widget);
 void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(const gchar *));
 
+typedef struct {
+    const gchar *text;
+    gint value;
+} PrefComboItem;
+
+enum {
+    PREF_COMBO_COLUMN_NAME = 0,
+    PREF_COMBO_COLUMN_VALUE
+};
+
+GtkWidget *pref_combo_new_int(const PrefComboItem *items, gint current);
+void pref_combo_get_int(GtkWidget *combo, gint *value);
+
 #endif

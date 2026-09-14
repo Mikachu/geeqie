@@ -322,7 +322,7 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_SEPARATOR();
     WRITE_NL(); WRITE_BOOL(*options, image.zoom_2pass);
     WRITE_NL(); WRITE_BOOL(*options, image.zoom_to_fit_allow_expand);
-    WRITE_NL(); WRITE_UINT(*options, image.zoom_quality);
+    WRITE_NL(); WRITE_INT(*options, image.zoom_quality);
     WRITE_NL(); WRITE_INT(*options, image.zoom_increment);
     WRITE_NL(); WRITE_BOOL(*options, image.fit_window_to_image);
     WRITE_NL(); WRITE_BOOL(*options, image.limit_window_size);
@@ -349,7 +349,7 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_BOOL(*options, thumbnails.cache_into_dirs);
     WRITE_NL(); WRITE_BOOL(*options, thumbnails.use_xvpics);
     WRITE_NL(); WRITE_BOOL(*options, thumbnails.spec_standard);
-    WRITE_NL(); WRITE_UINT(*options, thumbnails.quality);
+    WRITE_NL(); WRITE_INT(*options, thumbnails.quality);
     WRITE_NL(); WRITE_BOOL(*options, thumbnails.use_exif);
 
     /* File sorting Options */
@@ -646,7 +646,7 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_UINT_CLAMP(*options, image.scroll_reset_method, 0, PR_SCROLL_RESET_COUNT - 1)) continue;
         if (READ_INT(*options, image.tile_cache_max)) continue;
         if (READ_INT(*options, image.image_cache_max)) continue;
-        if (READ_UINT_CLAMP(*options, image.zoom_quality, GDK_INTERP_NEAREST, GDK_INTERP_HYPER)) continue;
+        if (READ_INT_CLAMP(*options, image.zoom_quality, GDK_INTERP_NEAREST, GDK_INTERP_HYPER)) continue;
         if (READ_INT(*options, image.zoom_increment)) continue;
         if (READ_BOOL(*options, image.enable_read_ahead)) continue;
         if (READ_BOOL(*options, image.exif_rotate_enable)) continue;
@@ -666,7 +666,7 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_BOOL(*options, thumbnails.cache_into_dirs)) continue;
         if (READ_BOOL(*options, thumbnails.use_xvpics)) continue;
         if (READ_BOOL(*options, thumbnails.spec_standard)) continue;
-        if (READ_UINT_CLAMP(*options, thumbnails.quality, GDK_INTERP_NEAREST, GDK_INTERP_HYPER)) continue;
+        if (READ_INT_CLAMP(*options, thumbnails.quality, GDK_INTERP_NEAREST, GDK_INTERP_HYPER)) continue;
         if (READ_BOOL(*options, thumbnails.use_exif)) continue;
 
         /* File sorting options */
