@@ -118,7 +118,6 @@ static gint debug_c;
 
 static GtkWidget *configwindow = NULL;
 static GtkListStore *filter_store = NULL;
-static GtkTreeStore *accel_store = NULL;
 
 static GtkWidget *safe_delete_path_entry;
 
@@ -180,6 +179,29 @@ static gboolean accel_apply_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIt
     return FALSE;
 }
 
+static gboolean accel_store_clone_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+    GtkTreeStore *dest = data;
+    GtkTreeIter dest_iter;
+    gchar *action, *key, *tooltip, *accel_path;
+
+    gtk_tree_model_get(model, iter, AE_ACTION, &action, AE_KEY, &key, AE_TOOLTIP, &tooltip, AE_ACCEL, &accel_path, -1);
+    gtk_tree_store_append(dest, &dest_iter, NULL);
+    gtk_tree_store_set(dest, &dest_iter, AE_ACTION, action, AE_KEY, key, AE_TOOLTIP, tooltip, AE_ACCEL, accel_path, -1);
+    g_free(action); g_free(key); g_free(tooltip); g_free(accel_path);
+    return FALSE;
+}
+
+static GtkTreeStore *accel_store_clone(GtkTreeStore *src)
+{
+    if (src) {
+        GtkTreeStore *dest = gtk_tree_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+        gtk_tree_model_foreach(GTK_TREE_MODEL(src), accel_store_clone_cb, dest);
+        return dest;
+    } else
+        return NULL;
+}
+
 /* Frees the dynamically-allocated members of a ConfOptions struct
  * (mouse bindings list, overlay template/font strings) without
  * freeing the struct itself. Safe to call on a zeroed struct. */
@@ -200,6 +222,8 @@ static void conf_options_free_internal(ConfOptions *o)
         }
         g_list_free(o->mouse_bindings);
     }
+
+    g_clear_object(&o->accel_store);
 }
 
 /* Shallow-copies src into dest, then deep-copies the members that
@@ -226,6 +250,8 @@ static void conf_options_copy(ConfOptions *dest, const ConfOptions *src)
         work = work->next;
     }
     dest->mouse_bindings = g_list_reverse(dest->mouse_bindings);
+
+    dest->accel_store = accel_store_clone(src->accel_store);
 }
 
 /* Repacks the checkbox-derived booleans in m->{mirror,flip,swap,temp_disable}
@@ -322,7 +348,7 @@ static void config_window_apply(void)
         layout_refresh(NULL);
     }
 
-    if (accel_store) gtk_tree_model_foreach(GTK_TREE_MODEL(accel_store), accel_apply_cb, NULL);
+    if (options->accel_store) gtk_tree_model_foreach(GTK_TREE_MODEL(options->accel_store), accel_apply_cb, NULL);
 }
 
 /*
@@ -922,9 +948,9 @@ static void accel_store_populate(void)
     GtkAccelKey key;
     GtkTreeIter iter;
 
-    if (!accel_store || !layout_window_list || !layout_window_list->data) return;
+    if (!c_options->accel_store || !layout_window_list || !layout_window_list->data) return;
 
-    gtk_tree_store_clear(accel_store);
+    gtk_tree_store_clear(c_options->accel_store);
     lw = layout_window_list->data; /* get the actions from the first window, it should not matter, they should be the same in all windows */
 
     g_assert(lw && lw->ui_manager);
@@ -947,8 +973,8 @@ static void accel_store_populate(void)
 
             if (tooltip)
             {
-                gtk_tree_store_append(accel_store, &iter, NULL);
-                gtk_tree_store_set(accel_store, &iter,
+                gtk_tree_store_append(c_options->accel_store, &iter, NULL);
+                gtk_tree_store_set(c_options->accel_store, &iter,
                            AE_ACTION, item->label,
                            AE_KEY, accel,
                            AE_TOOLTIP, tooltip,
@@ -968,9 +994,34 @@ static void accel_store_cleared_cb(GtkCellRendererAccel *accel, gchar *path_stri
     GtkTreeIter iter;
     GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 
-    gtk_tree_model_get_iter(GTK_TREE_MODEL(accel_store), &iter, path);
-    gtk_tree_store_set(accel_store, &iter, AE_KEY, "", -1);
+    gtk_tree_model_get_iter(GTK_TREE_MODEL(c_options->accel_store), &iter, path);
+    gtk_tree_store_set(c_options->accel_store, &iter, AE_KEY, "", -1);
     gtk_tree_path_free(path);
+}
+
+typedef struct {
+    guint accel_key;
+    GdkModifierType accel_mods;
+    gchar *victim_path;   /* out: AE_ACCEL of the row currently holding accel_key/accel_mods, or NULL */
+} AccelFindData;
+
+static gboolean accel_find_owner_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+    AccelFindData *afd = data;
+    gchar *accel_str;
+    GtkAccelKey key;
+
+    gtk_tree_model_get(model, iter, AE_KEY, &accel_str, -1);
+    gtk_accelerator_parse(accel_str, &key.accel_key, &key.accel_mods);
+    g_free(accel_str);
+
+    if (key.accel_key == afd->accel_key && key.accel_mods == afd->accel_mods)
+    {
+        gtk_tree_model_get(model, iter, AE_ACCEL, &afd->victim_path, -1);
+        return TRUE; /* stop, only one possible owner */
+    }
+
+    return FALSE;
 }
 
 static gboolean accel_remove_key_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
@@ -980,29 +1031,44 @@ static gboolean accel_remove_key_cb(GtkTreeModel *model, GtkTreePath *path, GtkT
 
     gtk_tree_model_get(model, iter, AE_KEY, &accel2, -1);
 
-    if (*accel1 && strcmp(accel1, accel2) == 0)
+    if (strcmp(accel1, accel2) == 0)
     {
-        gtk_tree_store_set(accel_store, iter, AE_KEY, "",  -1);
+        gtk_tree_store_set(c_options->accel_store, iter, AE_KEY, "", -1);
         DEBUG_1("accelerator key '%s' is already used, removing.", accel1);
+        g_free(accel2);
+        return TRUE; /* stop, only one possible owner */
     }
 
     g_free(accel2);
-
     return FALSE;
 }
 
-
 static void accel_store_edited_cb(GtkCellRendererAccel *accel, gchar *path_string, guint accel_key, GdkModifierType accel_mods, guint hardware_keycode, gpointer user_data)
 {
-    GtkTreeModel *model = (GtkTreeModel *)accel_store;
+    GtkTreeModel *model = GTK_TREE_MODEL(c_options->accel_store);
     GtkTreeIter iter;
     gchar *acc;
     gchar *accel_path;
-    GtkAccelKey old_key, key;
+    GtkAccelKey old_key, key, victim_old_key;
+    AccelFindData afd = { accel_key, accel_mods, NULL };
     GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 
     gtk_tree_model_get_iter(model, &iter, path);
     gtk_tree_model_get(model, &iter, AE_ACCEL, &accel_path, -1);
+
+    /* find out, before mutating anything, whether some other action already owns this key combo */
+    if (afd.accel_key)
+    {
+        gtk_tree_model_foreach(GTK_TREE_MODEL(options->accel_store), accel_find_owner_cb, &afd);
+        if (afd.victim_path)
+        {
+            if (strcmp(afd.victim_path, accel_path) == 0)
+                /* the "victim" is the row being edited itself, not a real conflict */
+                g_clear_pointer(&afd.victim_path, g_free);
+            else
+                gtk_accel_map_lookup_entry(afd.victim_path, &victim_old_key);
+        }
+    }
 
     /* test if the accelerator can be stored without conflicts*/
     gtk_accel_map_lookup_entry(accel_path, &old_key);
@@ -1014,10 +1080,19 @@ static void accel_store_edited_cb(GtkCellRendererAccel *accel, gchar *path_strin
     /* restore the original for now, the key will be really changed when the changes are confirmed */
     gtk_accel_map_change_entry(accel_path, old_key.accel_key, old_key.accel_mods, TRUE);
 
-    acc = gtk_accelerator_name(key.accel_key, key.accel_mods);
-    gtk_tree_model_foreach(GTK_TREE_MODEL(accel_store), accel_remove_key_cb, acc);
+    /* likewise restore whatever other action's binding was collaterally stolen by the above, if any */
+    if (afd.victim_path)
+    {
+        gtk_accel_map_change_entry(afd.victim_path, victim_old_key.accel_key, victim_old_key.accel_mods, TRUE);
+        g_free(afd.victim_path);
+    }
 
-    gtk_tree_store_set(accel_store, &iter, AE_KEY, acc, -1);
+    acc = gtk_accelerator_name(key.accel_key, key.accel_mods);
+    if (*acc)
+        gtk_tree_model_foreach(model, accel_remove_key_cb, acc);
+
+    gtk_tree_store_set(c_options->accel_store, &iter, AE_KEY, acc, -1);
+    g_free(accel_path);
     gtk_tree_path_free(path);
     g_free(acc);
 }
@@ -1028,8 +1103,8 @@ static gboolean accel_default_scroll(GtkTreeView *data)
     GtkTreePath *path;
     GtkTreeViewColumn *column;
 
-    gtk_tree_model_get_iter_first(GTK_TREE_MODEL(accel_store), &iter);
-    path = gtk_tree_model_get_path(GTK_TREE_MODEL(accel_store), &iter);
+    gtk_tree_model_get_iter_first(GTK_TREE_MODEL(c_options->accel_store), &iter);
+    path = gtk_tree_model_get_path(GTK_TREE_MODEL(c_options->accel_store), &iter);
     column = gtk_tree_view_get_column(GTK_TREE_VIEW(data),0);
 
     gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(data),
@@ -1050,30 +1125,30 @@ static void accel_default_cb(GtkWidget *widget, gpointer data)
 
 void accel_remove_selection(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
-    gtk_tree_store_set(accel_store, iter, AE_KEY, "", -1);
+    gtk_tree_store_set(c_options->accel_store, iter, AE_KEY, "", -1);
 }
 
 void accel_reset_selection(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
     GtkAccelKey key;
-    gchar *accel_path, *accel;
+    gchar *accel_path, *acc;
 
     gtk_tree_model_get(model, iter, AE_ACCEL, &accel_path, -1);
     gtk_accel_map_lookup_entry(accel_path, &key);
-    accel = gtk_accelerator_name(key.accel_key, key.accel_mods);
+    acc = gtk_accelerator_name(key.accel_key, key.accel_mods);
 
-    gtk_tree_model_foreach(GTK_TREE_MODEL(accel_store), accel_remove_key_cb, accel);
+    gtk_tree_model_foreach(GTK_TREE_MODEL(c_options->accel_store), accel_remove_key_cb, acc);
 
-    gtk_tree_store_set(accel_store, iter, AE_KEY, accel, -1);
+    gtk_tree_store_set(c_options->accel_store, iter, AE_KEY, acc, -1);
     g_free(accel_path);
-    g_free(accel);
+    g_free(acc);
 }
 
 static void accel_reset_cb(GtkWidget *widget, gpointer data)
 {
     GtkTreeSelection *selection;
 
-    if (!accel_store) return;
+    if (!c_options->accel_store) return;
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(data));
     gtk_tree_selection_selected_foreach(selection, &accel_reset_selection, NULL);
 }
@@ -1852,10 +1927,18 @@ static void config_tab_accelerators(GtkWidget *notebook)
     gtk_box_pack_start(GTK_BOX(group), scrolled, TRUE, TRUE, 0);
     gtk_widget_show(scrolled);
 
-    accel_store = gtk_tree_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    if (!c_options->accel_store)
+    {
+        /* if this exists, it was just cloned from a valid live state, no need to recreate it */
+        c_options->accel_store = gtk_tree_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+        accel_store_populate();
+    }
+    if (!options->accel_store)
+        /* after this exists, it will be synced on apply/ok with the live state, and
+         * stay accurate, so no need to overwrite it after that */
+        options->accel_store = accel_store_clone(c_options->accel_store);
 
-    accel_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(accel_store));
-    g_object_unref(accel_store);
+    accel_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(c_options->accel_store));
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(accel_view));
     gtk_tree_selection_set_mode(GTK_TREE_SELECTION(selection), GTK_SELECTION_MULTIPLE);
 
@@ -1875,9 +1958,9 @@ static void config_tab_accelerators(GtkWidget *notebook)
 
     renderer = gtk_cell_renderer_accel_new();
     g_signal_connect(G_OBJECT(renderer), "accel-cleared",
-             G_CALLBACK(accel_store_cleared_cb), accel_store);
+             G_CALLBACK(accel_store_cleared_cb), c_options->accel_store);
     g_signal_connect(G_OBJECT(renderer), "accel-edited",
-             G_CALLBACK(accel_store_edited_cb), accel_store);
+             G_CALLBACK(accel_store_edited_cb), c_options->accel_store);
 
 
     g_object_set (renderer,
@@ -1916,7 +1999,6 @@ static void config_tab_accelerators(GtkWidget *notebook)
     gtk_tree_view_column_set_resizable(column, TRUE);
     gtk_tree_view_append_column(GTK_TREE_VIEW(accel_view), column);
 
-    accel_store_populate();
     gtk_container_add(GTK_CONTAINER(scrolled), accel_view);
     gtk_widget_show(accel_view);
 
@@ -2326,7 +2408,7 @@ static void config_window_create(void)
     GtkWidget *ct_button;
 
     if (!c_options)
-        c_options = g_new(ConfOptions, 1);
+        c_options = g_new0(ConfOptions, 1);
     else
         conf_options_free_internal(c_options);
 
