@@ -180,6 +180,14 @@ gboolean read_uint_option(const gchar *option, const gchar *label, const gchar *
     return TRUE;
 }
 
+gboolean read_uint16_option(const gchar *option, const gchar *label, const gchar *value, guint16 *n)
+{
+    guint tmp;
+    if (!read_uint_option(option, label, value, &tmp)) return FALSE;
+    *n = (guint16)tmp;
+    return TRUE;
+}
+
 gboolean read_uint_option_clamp(const gchar *option, const gchar *label, const gchar *value, guint *n, guint min, guint max)
 {
     gboolean ret;
@@ -371,14 +379,14 @@ static void write_global_attributes(GString *outstr, gint indent)
 
     WRITE_NL(); WRITE_INT(*options, image_overlay.x);
     WRITE_NL(); WRITE_INT(*options, image_overlay.y);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.text_red);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.text_green);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.text_blue);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.text_alpha);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.background_red);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.background_green);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.background_blue);
-    WRITE_NL(); WRITE_INT(*options, image_overlay.background_alpha);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.text_red,   image_overlay.text.c.red);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.text_green, image_overlay.text.c.green);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.text_blue,  image_overlay.text.c.blue);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.text_alpha, image_overlay.text.a);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.background_red,   image_overlay.background.c.red);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.background_green, image_overlay.background.c.green);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.background_blue,  image_overlay.background.c.blue);
+    WRITE_NL(); WRITE_INT_NAME(*options, image_overlay.background_alpha, image_overlay.background.a);
     WRITE_NL(); WRITE_CHAR(*options, image_overlay.font);
 
     /* Slideshow Options */
@@ -693,14 +701,14 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_CHAR(*options, image_overlay.template_string)) continue;
         if (READ_INT(*options, image_overlay.x)) continue;
         if (READ_INT(*options, image_overlay.y)) continue;
-        if (READ_INT(*options, image_overlay.text_red)) continue;
-        if (READ_INT(*options, image_overlay.text_green)) continue;
-        if (READ_INT(*options, image_overlay.text_blue)) continue;
-        if (READ_INT(*options, image_overlay.text_alpha)) continue;
-        if (READ_INT(*options, image_overlay.background_red)) continue;
-        if (READ_INT(*options, image_overlay.background_green)) continue;
-        if (READ_INT(*options, image_overlay.background_blue)) continue;
-        if (READ_INT(*options, image_overlay.background_alpha)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.text_red,   image_overlay.text.c.red)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.text_green, image_overlay.text.c.green)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.text_blue,  image_overlay.text.c.blue)) continue;
+        if (READ_INT_NAME(*options, image_overlay.text_alpha, image_overlay.text.a)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.background_red,   image_overlay.background.c.red)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.background_green, image_overlay.background.c.green)) continue;
+        if (READ_UINT16_NAME(*options, image_overlay.background_blue,  image_overlay.background.c.blue)) continue;
+        if (READ_INT_NAME(*options, image_overlay.background_alpha, image_overlay.background.a)) continue;
         if (READ_CHAR(*options, image_overlay.font)) continue;
 
         /* Slideshow options */
