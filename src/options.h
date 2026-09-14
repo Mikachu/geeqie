@@ -89,7 +89,7 @@ struct _ConfOptions
         ZoomMode zoom_mode;
         gboolean zoom_2pass;
         gboolean zoom_to_fit_allow_expand;
-        guint zoom_quality;
+        gint zoom_quality;
         gint zoom_increment;    /* 100 is 1.0, 5 is 0.05, 200 is 2.0, etc. */
 
         gboolean use_custom_border_color_in_fullscreen;
@@ -110,7 +110,7 @@ struct _ConfOptions
         gboolean cache_into_dirs;
         gboolean use_xvpics;
         gboolean spec_standard;
-        guint quality;
+        gint quality;
         gboolean use_exif;
     } thumbnails;
 

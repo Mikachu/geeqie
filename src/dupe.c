@@ -2948,61 +2948,36 @@ static void dupe_second_set_toggle_cb(GtkWidget *widget, gpointer data)
  *-------------------------------------------------------------------
  */
 
-enum {
-    DUPE_MENU_COLUMN_NAME = 0,
-    DUPE_MENU_COLUMN_MASK
-};
-
 static void dupe_menu_type_cb(GtkWidget *combo, gpointer data)
 {
     DupeWindow *dw = data;
-    GtkTreeModel *store;
-    GtkTreeIter iter;
+    gint value;
 
-    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter)) return;
-    gtk_tree_model_get(store, &iter, DUPE_MENU_COLUMN_MASK, &dw->match_mask, -1);
+    pref_combo_get_int(combo, &value);
+    dw->match_mask = (DupeMatchType)value;
 
     dupe_window_recompare(dw);
 }
 
-static void dupe_menu_add_item(GtkListStore *store, const gchar *text, DupeMatchType type, DupeWindow *dw)
-{
-    GtkTreeIter iter;
-
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter, DUPE_MENU_COLUMN_NAME, text,
-                     DUPE_MENU_COLUMN_MASK, type, -1);
-
-    if (dw->match_mask == type) gtk_combo_box_set_active_iter(GTK_COMBO_BOX(dw->combo), &iter);
-}
-
 static void dupe_menu_setup(DupeWindow *dw)
 {
-    GtkListStore *store;
-    GtkCellRenderer *renderer;
+    const PrefComboItem dupe_match_items[] = {
+        { N_("Name"),                  DUPE_MATCH_NAME },
+        { N_("Name case-insensitive"), DUPE_MATCH_NAME_CI },
+        { N_("Size"),                  DUPE_MATCH_SIZE },
+        { N_("Date"),                  DUPE_MATCH_DATE },
+        { N_("Dimensions"),            DUPE_MATCH_DIM },
+        { N_("Checksum"),              DUPE_MATCH_SUM },
+        { N_("Path"),                  DUPE_MATCH_PATH },
+        { N_("Similarity (high)"),     DUPE_MATCH_SIM_HIGH },
+        { N_("Similarity"),            DUPE_MATCH_SIM_MED },
+        { N_("Similarity (low)"),      DUPE_MATCH_SIM_LOW },
+        { N_("Similarity (custom)"),   DUPE_MATCH_SIM_CUSTOM },
+        { N_("Perceptual similarity"), DUPE_MATCH_SIM_PHASH },
+        { NULL, 0 }
+    };
 
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-    dw->combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
-
-    renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(dw->combo), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(dw->combo), renderer,
-                       "text", DUPE_MENU_COLUMN_NAME, NULL);
-
-    dupe_menu_add_item(store, _("Name"), DUPE_MATCH_NAME, dw);
-    dupe_menu_add_item(store, _("Name case-insensitive"), DUPE_MATCH_NAME_CI, dw);
-    dupe_menu_add_item(store, _("Size"), DUPE_MATCH_SIZE, dw);
-    dupe_menu_add_item(store, _("Date"), DUPE_MATCH_DATE, dw);
-    dupe_menu_add_item(store, _("Dimensions"), DUPE_MATCH_DIM, dw);
-    dupe_menu_add_item(store, _("Checksum"), DUPE_MATCH_SUM, dw);
-    dupe_menu_add_item(store, _("Path"), DUPE_MATCH_PATH, dw);
-    dupe_menu_add_item(store, _("Similarity (high)"), DUPE_MATCH_SIM_HIGH, dw);
-    dupe_menu_add_item(store, _("Similarity"), DUPE_MATCH_SIM_MED, dw);
-    dupe_menu_add_item(store, _("Similarity (low)"), DUPE_MATCH_SIM_LOW, dw);
-    dupe_menu_add_item(store, _("Similarity (custom)"), DUPE_MATCH_SIM_CUSTOM, dw);
-    dupe_menu_add_item(store, _("Perceptual similarity"), DUPE_MATCH_SIM_PHASH, dw);
+    dw->combo = pref_combo_new_int(dupe_match_items, dw->match_mask);
 
     g_signal_connect(G_OBJECT(dw->combo), "changed",
              G_CALLBACK(dupe_menu_type_cb), dw);
@@ -3212,7 +3187,7 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
         valid = gtk_tree_model_get_iter_first(model, &iter);
         while (valid)
         {
-            gtk_tree_model_get(model, &iter, DUPE_MENU_COLUMN_MASK, &match_type, -1);
+            gtk_tree_model_get(model, &iter, PREF_COMBO_COLUMN_VALUE, &match_type, -1);
             if (match_type == DUPE_MATCH_SIM_CUSTOM)
             {
                 break;

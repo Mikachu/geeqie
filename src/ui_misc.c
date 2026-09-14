@@ -1700,3 +1700,46 @@ void config_entry_to_option(GtkWidget *entry, gchar **option, gchar *(*func)(con
     if (buf && *buf)
         *option = func(buf);
 }
+
+GtkWidget *pref_combo_new_int(const PrefComboItem *items, gint current)
+{
+    GtkWidget *combo;
+    GtkListStore *store;
+    GtkCellRenderer *renderer;
+    gint active = 0;
+
+    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+    combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(store);
+
+    renderer = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(combo), renderer,
+                       "text", PREF_COMBO_COLUMN_NAME, NULL);
+
+    const PrefComboItem *it = items;
+    while (it->text) {
+        GtkTreeIter iter;
+
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                       PREF_COMBO_COLUMN_NAME, _(it->text),
+                       PREF_COMBO_COLUMN_VALUE, it->value, -1);
+        if (it->value == current) active = it - items;
+        it++;
+    }
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), active);
+
+    return combo;
+}
+
+void pref_combo_get_int(GtkWidget *combo, gint *value)
+{
+    GtkTreeModel *store;
+    GtkTreeIter iter;
+
+    store = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(combo), &iter))
+        gtk_tree_model_get(store, &iter, PREF_COMBO_COLUMN_VALUE, value, -1);
+}
