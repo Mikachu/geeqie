@@ -3452,7 +3452,7 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     print_output_set(pw, pw->output);
 
     vbox = print_window_layout_setup(pw, main_box);
-    pref_checkbox_new_int(vbox, _("Remember print settings"), pw->save_settings, &pw->save_settings);
+    pref_checkbox_new_int(vbox, _("Remember print settings"), &pw->save_settings);
 
     print_window_layout_sync_layout(pw);
     print_window_layout_sync_paper(pw);

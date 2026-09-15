@@ -1958,10 +1958,8 @@ static gboolean pan_warning(FileData *dir_fd)
     pref_spacer(group, PREF_PAD_INDENT);
     group = pref_box_new(group, TRUE, GTK_ORIENTATION_VERTICAL, PREF_PAD_GAP);
 
-    ct_button = pref_checkbox_new_int(group, _("Cache thumbnails"),
-                      options->thumbnails.enable_caching, &options->thumbnails.enable_caching);
-    button = pref_checkbox_new_int(group, _("Use shared thumbnail cache"),
-                       options->thumbnails.spec_standard, &options->thumbnails.spec_standard);
+    ct_button = pref_checkbox_new_int(group, _("Cache thumbnails"), &options->thumbnails.enable_caching);
+    button = pref_checkbox_new_int(group, _("Use shared thumbnail cache"), &options->thumbnails.spec_standard);
     pref_checkbox_link_sensitivity(ct_button, button);
 
     pref_line(box, 0);

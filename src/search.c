@@ -2600,8 +2600,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     tab_completion_add_select_button(sd->path_entry, NULL, TRUE);
     gtk_box_pack_start(GTK_BOX(hbox2), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
-    sd->check_recurse = pref_checkbox_new_int(hbox2, _("Recurse"),
-                          sd->search_path_recurse, &sd->search_path_recurse);
+    sd->check_recurse = pref_checkbox_new_int(hbox2, _("Recurse"), &sd->search_path_recurse);
 
     /* Search for file name */
     hbox = menu_choice(sd->box_search, &sd->check_name, &sd->menu_name,
@@ -2610,8 +2609,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     combo = history_combo_new(&sd->entry_name, "", "search_name", -1);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
-    pref_checkbox_new_int(hbox, _("Match case"),
-                  sd->search_name_match_case, &sd->search_name_match_case);
+    pref_checkbox_new_int(hbox, _("Match case"), &sd->search_name_match_case);
     gtk_widget_set_tooltip_text(GTK_WIDGET(combo), "When set to \"contains\", this field uses Perl Compatible Regular Expressions.\ne.g. use \n.*\\.jpg\n and not \n*.jpg\n\nSee the Help file.");
 
     /* Search for file size */
@@ -2681,8 +2679,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
     //XXX add checkbox for perceptual hash mode?
-    pref_checkbox_new_int(hbox, _("Ignore rotation"),
-                options->rot_invariant_sim, &options->rot_invariant_sim);
+    pref_checkbox_new_int(hbox, _("Ignore rotation"), &options->rot_invariant_sim);
 
     /* Search for image keywords */
     hbox = menu_choice(sd->box_search, &sd->check_keywords, &sd->menu_keywords,
@@ -2705,8 +2702,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
     g_signal_connect(G_OBJECT(sd->check_comment), "toggled",
             G_CALLBACK(menu_choice_check_cb), sd->entry_comment);
     gtk_widget_show(sd->entry_comment);
-    pref_checkbox_new_int(hbox, _("Match case"),
-                  sd->search_comment_match_case, &sd->search_comment_match_case);
+    pref_checkbox_new_int(hbox, _("Match case"), &sd->search_comment_match_case);
     gtk_widget_set_tooltip_text(GTK_WIDGET(sd->entry_comment), "This field uses Perl Compatible Regular Expressions.\ne.g. use \nabc.*ghk\n and not \nabc*ghk\n\nSee the Help file.");
 
     /* Done the types of searches */
