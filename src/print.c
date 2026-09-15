@@ -1224,7 +1224,7 @@ static gboolean print_job_ps_page_done(PrintWindow *pw)
     return ret;
 }
 
-static void print_job_ps_page_image_pixel(FILE *f, guchar *pix)
+static void print_job_ps_page_image_pixel(FILE *f, const guchar *pix)
 {
     static gchar hex_digits[] = "0123456789abcdef";
     gchar text[8];
@@ -1249,10 +1249,9 @@ static gboolean print_job_ps_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
     gint sw, sh;
     gint bps;
     gint rowstride;
-    guchar *pix;
+    const guchar *pix, *p;
     gint i, j;
     gint c;
-    guchar *p;
     guchar bps_buf[3];
     gboolean ret;
 
@@ -1281,7 +1280,7 @@ static gboolean print_job_ps_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
 
     bps = (gdk_pixbuf_get_has_alpha(pixbuf)) ? 4 : 3;
     rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-    pix = gdk_pixbuf_get_pixels(pixbuf);
+    pix = gdk_pixbuf_read_pixels(pixbuf);
 
     lc_pointer = g_strdup(setlocale(LC_NUMERIC, NULL));
     setlocale(LC_NUMERIC, POSTSCRIPT_LOCALE);
