@@ -722,8 +722,8 @@ static void cache_manager_render_dialog(GtkWidget *widget, const gchar *path)
     gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 0);
     gtk_widget_show(label);
 
-    pref_checkbox_new_int(cd->group, _("Include subfolders"), FALSE, &cd->recurse);
-    button = pref_checkbox_new_int(cd->group, _("Store thumbnails local to source images"), FALSE, &cd->local);
+    pref_checkbox_new_int(cd->group, _("Include subfolders"), &cd->recurse);
+    button = pref_checkbox_new_int(cd->group, _("Store thumbnails local to source images"), &cd->local);
     gtk_widget_set_sensitive(button, options->thumbnails.spec_standard);
 
     pref_line(cd->gd->vbox, PREF_PAD_SPACE);

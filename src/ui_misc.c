@@ -353,14 +353,12 @@ static void pref_checkbox_int_cb(GtkWidget *widget, gpointer data)
     *result = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
-GtkWidget *pref_checkbox_new_int(GtkWidget *parent_box, const gchar *text, gboolean active,
-                 gboolean *result)
+GtkWidget *pref_checkbox_new_int(GtkWidget *parent_box, const gchar *text, gboolean *active)
 {
     GtkWidget *button;
 
-    button = pref_checkbox_new(parent_box, text, active,
-                   G_CALLBACK(pref_checkbox_int_cb), result);
-    *result = active;
+    button = pref_checkbox_new(parent_box, text, *active,
+                   G_CALLBACK(pref_checkbox_int_cb), active);
 
     return button;
 }
@@ -542,14 +540,11 @@ static void pref_spin_int_cb(GtkWidget *widget, gpointer data)
 }
 
 GtkWidget *pref_spin_new_int(GtkWidget *parent_box, const gchar *text, const gchar *suffix,
-                 gint min, gint max, gint step,
-                 gint value, gint *value_var)
+                 gint min, gint max, gint step, gint *value)
 {
-    *value_var = value;
     return pref_spin_new(parent_box, text, suffix,
                  (gdouble)min, (gdouble)max, (gdouble)step, 0,
-                 value,
-                 G_CALLBACK(pref_spin_int_cb), value_var);
+                 *value, G_CALLBACK(pref_spin_int_cb), value);
 }
 
 static void pref_link_sensitivity_cb(GtkWidget *watch, GtkStateType prev_state, gpointer data)
@@ -706,15 +701,12 @@ GtkWidget *pref_table_spin(GtkWidget *table, gint column, gint row,
 
 GtkWidget *pref_table_spin_new_int(GtkWidget *table, gint column, gint row,
                    const gchar *text, const gchar *suffix,
-                   gint min, gint max, gint step,
-                   gint value, gint *value_var)
+                   gint min, gint max, gint step, gint *value)
 {
-    *value_var = value;
     return pref_table_spin(table, column, row,
                    text, suffix,
                    (gdouble)min, (gdouble)max, (gdouble)step, 0,
-                   value,
-                   G_CALLBACK(pref_spin_int_cb), value_var);
+                   *value, G_CALLBACK(pref_spin_int_cb), value);
 }
 
 

@@ -34,7 +34,7 @@ struct _ConfOptions
 {
     /* ui */
     gboolean progressive_key_scrolling;
-    guint keyboard_scroll_step;
+    gint keyboard_scroll_step;
     gboolean place_dialogs_under_mouse;
     gboolean mousewheel_scrolls;
     gboolean image_lm_click_nav;
