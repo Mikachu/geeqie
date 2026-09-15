@@ -570,8 +570,8 @@ static void bar_pane_exif_conf_dialog(GtkWidget *widget)
     generic_dialog_attach_default(gd, cdd->title_entry);
     gtk_widget_show(cdd->title_entry);
 
-    pref_checkbox_new_int(gd->vbox, _("Show only if set"), cdd->if_set, &cdd->if_set);
-    pref_checkbox_new_int(gd->vbox, _("Editable (supported only for XMP)"), cdd->editable, &cdd->editable);
+    pref_checkbox_new_int(gd->vbox, _("Show only if set"), &cdd->if_set);
+    pref_checkbox_new_int(gd->vbox, _("Editable (supported only for XMP)"), &cdd->editable);
 
     gtk_widget_show(gd->dialog);
 }

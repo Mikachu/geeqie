@@ -88,8 +88,7 @@ GtkWidget *pref_checkbox_new(GtkWidget *parent_box, const gchar *text, gboolean 
 GtkWidget *pref_checkbox_new_mnemonic(GtkWidget *parent_box, const gchar *text, gboolean active,
                       GCallback func, gpointer data);
 
-GtkWidget *pref_checkbox_new_int(GtkWidget *parent_box, const gchar *text, gboolean active,
-                 gboolean *result);
+GtkWidget *pref_checkbox_new_int(GtkWidget *parent_box, const gchar *text, gboolean *active);
 
 void pref_checkbox_link_sensitivity(GtkWidget *button, GtkWidget *widget);
 void pref_checkbox_link_sensitivity_swap(GtkWidget *button, GtkWidget *widget);
@@ -117,7 +116,7 @@ GtkWidget *pref_spin_new_mnemonic(GtkWidget *parent_box, const gchar *text, cons
 
 GtkWidget *pref_spin_new_int(GtkWidget *parent_box, const gchar *text, const gchar *suffix,
                  gint min, gint max, gint step,
-                 gint value, gint *value_var);
+                 gint *value);
 
 void pref_link_sensitivity(GtkWidget *widget, GtkWidget *watch);
 
@@ -147,7 +146,7 @@ GtkWidget *pref_table_spin(GtkWidget *table, gint column, gint row,
 GtkWidget *pref_table_spin_new_int(GtkWidget *table, gint column, gint row,
                    const gchar *text, const gchar *suffix,
                    gint min, gint max, gint step,
-                   gint value, gint *value_var);
+                   gint *value);
 
 
 GtkWidget *pref_toolbar_new(GtkWidget *parent_box, GtkToolbarStyle style);

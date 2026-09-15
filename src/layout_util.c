@@ -1660,12 +1660,12 @@ static GtkRadioActionEntry menu_split_radio_entries[] = {
 };
 
 static GtkRadioActionEntry menu_color_radio_entries[] = {
-  { "ColorProfile0",    NULL,           N_("Input _0: sRGB"),           NULL,           N_("Input 0: sRGB"),            COLOR_PROFILE_SRGB },
-  { "ColorProfile1",    NULL,           N_("Input _1: AdobeRGB compatible"),    NULL,           N_("Input 1: AdobeRGB compatible"), COLOR_PROFILE_ADOBERGB },
-  { "ColorProfile2",    NULL,           N_("Input _2"),             NULL,           N_("Input 2"),              COLOR_PROFILE_FILE },
-  { "ColorProfile3",    NULL,           N_("Input _3"),             NULL,           N_("Input 3"),              COLOR_PROFILE_FILE + 1 },
-  { "ColorProfile4",    NULL,           N_("Input _4"),             NULL,           N_("Input 4"),              COLOR_PROFILE_FILE + 2 },
-  { "ColorProfile5",    NULL,           N_("Input _5"),             NULL,           N_("Input 5"),              COLOR_PROFILE_FILE + 3 }
+  { "ColorProfile0",    NULL,           N_("sRGB"),           NULL,           N_("Input 0: sRGB"),            COLOR_PROFILE_SRGB },
+  { "ColorProfile1",    NULL,           N_("AdobeRGB compatible"),    NULL,           N_("Input 1: AdobeRGB compatible"), COLOR_PROFILE_ADOBERGB },
+  { "ColorProfile2",    NULL,           N_("External profile _1"),             NULL,           N_("External profile 1"),              COLOR_PROFILE_FILE },
+  { "ColorProfile3",    NULL,           N_("External profile _2"),             NULL,           N_("External profile 2"),              COLOR_PROFILE_FILE + 1 },
+  { "ColorProfile4",    NULL,           N_("External profile _3"),             NULL,           N_("External profile 3"),              COLOR_PROFILE_FILE + 2 },
+  { "ColorProfile5",    NULL,           N_("External profile _4"),             NULL,           N_("External profile 4"),              COLOR_PROFILE_FILE + 3 }
 };
 
 static GtkRadioActionEntry menu_histogram_channel[] = {
