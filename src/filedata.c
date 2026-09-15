@@ -2240,8 +2240,6 @@ gint file_data_verify_ci(FileData *fd, GList *list)
 {
     gint ret = CHANGE_OK;
     gchar *dir;
-    GList *work = NULL;
-    FileData *fd1 = NULL;
 
     if (!fd->change)
     {
@@ -2456,22 +2454,17 @@ gint file_data_verify_ci(FileData *fd, GList *list)
     /* During a rename operation, check if another planned destination file has
      * the same filename
      */
-    if(fd->change->type == FILEDATA_CHANGE_RENAME)
-    {
-        work = list;
-        while (work)
+    if (fd->change->type == FILEDATA_CHANGE_RENAME)
+        for (GList *work = list; work; work = work->next)
         {
-            fd1 = work->data;
-            work = work->next;
+            FileData *fd1 = work->data;
             if (fd1 != NULL && fd != fd1 )
-            {
                 if (!strcmp(fd->change->dest, fd1->change->dest))
                 {
                     ret |= CHANGE_DUPLICATE_DEST;
+                    break;
                 }
-            }
         }
-    }
 
     fd->change->error = ret;
     if (ret == 0) DEBUG_1("Change checked: OK: %s", fd->path);
