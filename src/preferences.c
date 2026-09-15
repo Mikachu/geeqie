@@ -2388,7 +2388,12 @@ void show_about_window(void)
     gtk_box_pack_start(GTK_BOX(vbox), button, TRUE, TRUE, 0);
     gtk_widget_show(button);
 
-    buf = g_strdup_printf(_("%s %s\n\nCopyright (c) 2006 John Ellis\nCopyright (c) %s The Geeqie Team\nwebsite: %s\nemail: %s\n\nReleased under the GNU General Public License"),
+    buf = g_strdup_printf(_("%s %s\n\n"
+                "Copyright (c) 2006 John Ellis\n"
+                "Copyright (c) %s The Geeqie Team\n"
+                "website: %s\n"
+                "email: %s\n\n"
+                "Released under the GNU General Public License"),
                   GQ_APPNAME,
                   VERSION,
                   "2008 - 2016",
