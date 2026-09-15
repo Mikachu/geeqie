@@ -559,7 +559,7 @@ struct _FileData {
     ExifData *exif;
     time_t exifdate;
     GHashTable *modified_xmp; // hash table which contains unwritten xmp metadata in format: key->list of string values
-    GList *cached_metadata;
+    GHashTable *cached_metadata;
 };
 
 typedef struct {

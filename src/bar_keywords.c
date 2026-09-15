@@ -303,9 +303,9 @@ static void bar_pane_keywords_keyword_toggle(GtkCellRendererToggle *toggle, cons
 
     list = keyword_list_pull(pkd->keyword_view);
     if (active)
-        keyword_tree_set(keyword_tree, &child_iter, &list);
+        keyword_tree_set(keyword_tree, child_iter, &list);
     else
-        keyword_tree_reset(keyword_tree, &child_iter, &list);
+        keyword_tree_reset(keyword_tree, child_iter, &list);
 
     g_signal_handlers_block_by_func(keyword_buffer, bar_pane_keywords_changed, pkd);
     keyword_list_push(pkd->keyword_view, list);
@@ -485,7 +485,7 @@ static void bar_pane_keywords_dnd_get(GtkWidget *tree_view, GdkDragContext *cont
     {
         case TARGET_APP_KEYWORD_PATH:
         {
-            GList *path = keyword_tree_get_path(keyword_tree, &child_iter);
+            GList *path = keyword_tree_get_path(keyword_tree, child_iter);
             gtk_selection_data_set(selection_data, gtk_selection_data_get_target(selection_data),
                            8, (gpointer) &path, sizeof(path));
             break;
@@ -1114,7 +1114,7 @@ static void bar_pane_keywords_add_to_selected_cb(GtkWidget *menu_widget, gpointe
     list = keyword_list_pull(pkd->keyword_view); /* Get the left keyword view */
 
     /* Now set the current image */
-    keyword_tree_set(keyword_tree, &child_iter, &list);
+    keyword_tree_set(keyword_tree, child_iter, &list);
 
     keyword_list_push(pkd->keyword_view, list); /* Set the left keyword view */
     string_list_free(list);
@@ -1122,7 +1122,7 @@ static void bar_pane_keywords_add_to_selected_cb(GtkWidget *menu_widget, gpointe
     bar_pane_keywords_changed(keyword_buffer, pkd); /* Get list of all keywords in the hierarchy */
 
     gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(model), &child_iter, &iter);
-    keywords = keyword_tree_get(keyword_tree, &child_iter);
+    keywords = keyword_tree_get(keyword_tree, child_iter);
 
     list = layout_selection_list(pkd->pane.lw);
     work = list;
