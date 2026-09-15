@@ -2090,10 +2090,10 @@ void layout_show_config_window(LayoutWindow *lw)
                  G_CALLBACK(home_path_set_current_cb), lc);
 
     pref_checkbox_new_int(group, _("Show date in directories list view"),
-                  lc->options.show_directory_date, &lc->options.show_directory_date);
+                          &lc->options.show_directory_date);
 
     pref_checkbox_new_int(group, _("Exit program when this window is closed"),
-                  lc->options.exit_on_close, &lc->options.exit_on_close);
+                          &lc->options.exit_on_close);
 
     group = pref_group_new(vbox, FALSE, _("Start-up directory:"), GTK_ORIENTATION_VERTICAL);
 
