@@ -323,15 +323,14 @@ GList *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius)
     return vptree_range_query(tree, query, radius);
 }
 
-void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
+void image_sim_fill_data(ImageSimilarityData *sd, const GdkPixbuf *pixbuf)
 {
     gint w, h;
     gint rs;
-    guchar *pix;
+    const guchar *pix, *p;
     gboolean has_alpha;
     gint p_step;
 
-    guchar *p;
     gint i;
     gint j;
     gint x_inc, y_inc;
@@ -345,7 +344,7 @@ void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
     w = gdk_pixbuf_get_width(pixbuf);
     h = gdk_pixbuf_get_height(pixbuf);
     rs = gdk_pixbuf_get_rowstride(pixbuf);
-    pix = gdk_pixbuf_get_pixels(pixbuf);
+    pix = gdk_pixbuf_read_pixels(pixbuf);
     has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
 
     p_step = has_alpha ? 4 : 3;
@@ -380,7 +379,7 @@ void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
             gint x, y;
             gint r, g, b;
             gint t;
-            guchar *xpos;
+            const guchar *xpos;
 
             if (x_small) i = (gfloat)w / 32 * xs;
                     else x_inc = (gint)roundf((gfloat)w_left/(32-xs));
@@ -442,7 +441,7 @@ void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf)
     sd->filled = TRUE;
 }
 
-ImageSimilarityData *image_sim_new_from_pixbuf(GdkPixbuf *pixbuf)
+ImageSimilarityData *image_sim_new_from_pixbuf(const GdkPixbuf *pixbuf)
 {
     ImageSimilarityData *sd;
 

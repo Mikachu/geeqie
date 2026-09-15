@@ -65,8 +65,8 @@ GList  *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius);
 void image_sim_calc_phash(ImageSimilarityData *sd);
 VPTree *image_sim_phash_vptree_build(GList *entries);
 
-void image_sim_fill_data(ImageSimilarityData *sd, GdkPixbuf *pixbuf);
-ImageSimilarityData *image_sim_new_from_pixbuf(GdkPixbuf *pixbuf);
+void image_sim_fill_data(ImageSimilarityData *sd, const GdkPixbuf *pixbuf);
+ImageSimilarityData *image_sim_new_from_pixbuf(const GdkPixbuf *pixbuf);
 
 gdouble image_sim_compare(ImageSimilarityData *a, ImageSimilarityData *b);
 gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min);

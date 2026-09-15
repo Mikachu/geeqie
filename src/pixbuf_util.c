@@ -496,14 +496,12 @@ static void pixbuf_copy_font(GdkPixbuf *src, gint sx, gint sy,
     gint sw, sh, srs;
     gboolean s_alpha;
     gint s_step;
-    guchar *s_pix;
+    const guchar *s_pix, *sp;
     gint dw, dh, drs;
     gboolean d_alpha;
     gint d_step;
-    guchar *d_pix;
+    guchar *d_pix, *dp;
 
-    guchar *sp;
-    guchar *dp;
     gint i, j;
 
     if (!src || !dest) return;
@@ -524,7 +522,7 @@ static void pixbuf_copy_font(GdkPixbuf *src, gint sx, gint sy,
     d_alpha = gdk_pixbuf_get_has_alpha(dest);
     srs = gdk_pixbuf_get_rowstride(src);
     drs = gdk_pixbuf_get_rowstride(dest);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
     d_pix = gdk_pixbuf_get_pixels(dest);
 
     s_step = (s_alpha) ? 4 : 3;

@@ -831,14 +831,13 @@ static void rt_tile_rotate_90_clockwise(RendererTiles *rt, GdkPixbuf **tile, gin
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *ip, *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar  *ip, *d_pix, *dp, *dpi;
     gint i, j;
     gint tw = rt->tile_width;
 
     srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
     spi = s_pix + (x * COLOR_BYTES);
 
     dest = rt_get_spare_tile(rt);
@@ -867,14 +866,13 @@ static void rt_tile_rotate_90_counter_clockwise(RendererTiles *rt, GdkPixbuf **t
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *ip, *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar  *ip, *d_pix, *dp, *dpi;
     gint i, j;
     gint th = rt->tile_height;
 
     srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
     spi = s_pix + (x * COLOR_BYTES);
 
     dest = rt_get_spare_tile(rt);
@@ -903,15 +901,14 @@ static void rt_tile_mirror_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gin
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar       *d_pix, *dp, *dpi;
     gint i, j;
 
     gint tw = rt->tile_width;
 
     srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
     spi = s_pix + (x * COLOR_BYTES);
 
     dest = rt_get_spare_tile(rt);
@@ -940,15 +937,14 @@ static void rt_tile_mirror_and_flip(RendererTiles *rt, GdkPixbuf **tile, gint x,
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *dpi;
+    const guchar *s_pix, *sp;
+    guchar       *d_pix, *dp, *dpi;
     gint i, j;
     gint tw = rt->tile_width;
     gint th = rt->tile_height;
 
     srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
 
     dest = rt_get_spare_tile(rt);
     drs = gdk_pixbuf_get_rowstride(dest);
@@ -976,14 +972,13 @@ static void rt_tile_flip_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gint 
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar       *d_pix, *dp, *dpi;
     gint i;
     gint th = rt->tile_height;
 
     srs = gdk_pixbuf_get_rowstride(src);
-    s_pix = gdk_pixbuf_get_pixels(src);
+    s_pix = gdk_pixbuf_read_pixels(src);
     spi = s_pix + (x * COLOR_BYTES);
 
     dest = rt_get_spare_tile(rt);

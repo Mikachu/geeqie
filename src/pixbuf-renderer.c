@@ -2154,13 +2154,12 @@ static void pr_signals_connect(PixbufRenderer *pr)
 static void pr_create_anaglyph_color(GdkPixbuf *pixbuf, GdkPixbuf *right, gint x, gint y, gint w, gint h, guint mode)
 {
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar       *d_pix, *dp, *dpi;
     gint i, j;
 
     srs = gdk_pixbuf_get_rowstride(right);
-    s_pix = gdk_pixbuf_get_pixels(right);
+    s_pix = gdk_pixbuf_read_pixels(right);
     spi = s_pix + (x * COLOR_BYTES);
 
     drs = gdk_pixbuf_get_rowstride(pixbuf);
@@ -2195,14 +2194,13 @@ static void pr_create_anaglyph_color(GdkPixbuf *pixbuf, GdkPixbuf *right, gint x
 static void pr_create_anaglyph_gray(GdkPixbuf *pixbuf, GdkPixbuf *right, gint x, gint y, gint w, gint h, guint mode)
 {
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar       *d_pix, *dp, *dpi;
     gint i, j;
     const double gc[3] = {0.299, 0.587, 0.114};
 
     srs = gdk_pixbuf_get_rowstride(right);
-    s_pix = gdk_pixbuf_get_pixels(right);
+    s_pix = gdk_pixbuf_read_pixels(right);
     spi = s_pix + (x * COLOR_BYTES);
 
     drs = gdk_pixbuf_get_rowstride(pixbuf);
@@ -2244,9 +2242,8 @@ static void pr_create_anaglyph_gray(GdkPixbuf *pixbuf, GdkPixbuf *right, gint x,
 static void pr_create_anaglyph_dubois(GdkPixbuf *pixbuf, GdkPixbuf *right, gint x, gint y, gint w, gint h, guint mode)
 {
     gint srs, drs;
-    guchar *s_pix, *d_pix;
-    guchar *sp, *dp;
-    guchar *spi, *dpi;
+    const guchar *s_pix, *sp, *spi;
+    guchar       *d_pix, *dp, *dpi;
     gint i, j, k;
     double pr_dubois_matrix[3][6];
     const static double pr_dubois_matrix_RC[3][6] = {
@@ -2276,7 +2273,7 @@ static void pr_create_anaglyph_dubois(GdkPixbuf *pixbuf, GdkPixbuf *right, gint 
     }
 
     srs = gdk_pixbuf_get_rowstride(right);
-    s_pix = gdk_pixbuf_get_pixels(right);
+    s_pix = gdk_pixbuf_read_pixels(right);
     spi = s_pix + (x * COLOR_BYTES);
 
     drs = gdk_pixbuf_get_rowstride(pixbuf);
@@ -2752,7 +2749,7 @@ gboolean pixbuf_renderer_get_pixel_colors(PixbufRenderer *pr, gint x_pixel, gint
 {
     GdkPixbuf *pb = pr->pixbuf;
     gint p_alpha, prs;
-    guchar *p_pix, *pp;
+    const guchar *p_pix, *pp;
     gint map_x, map_y, map_w, map_h;
     size_t xoff, yoff;
 
@@ -2781,7 +2778,7 @@ gboolean pixbuf_renderer_get_pixel_colors(PixbufRenderer *pr, gint x_pixel, gint
 
     p_alpha = gdk_pixbuf_get_has_alpha(pb);
     prs = gdk_pixbuf_get_rowstride(pb);
-    p_pix = gdk_pixbuf_get_pixels(pb);
+    p_pix = gdk_pixbuf_read_pixels(pb);
 
     xoff = (size_t)map_x * (p_alpha ? 4 : 3);
     yoff = (size_t)map_y * prs;
