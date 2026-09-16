@@ -50,10 +50,6 @@ static gint sidecar_file_priority(const gchar *extension);
 static void file_data_check_sidecars(const GList *basename_list);
 static void file_data_disconnect_sidecar_file(FileData *target, FileData *sfd);
 
-
-static SortType filelist_sort_method = SORT_NONE;
-static gboolean filelist_sort_ascend = TRUE;
-
 /*
  *-----------------------------------------------------------------------------
  * text conversion utils
@@ -887,17 +883,23 @@ void file_data_disable_grouping_list(GList *fd_list, gboolean disable)
  */
 
 
-gint filelist_sort_compare_filedata(FileData *fa, FileData *fb)
+typedef struct {
+    SortType method;
+    gboolean ascend;
+} FileSortData;
+
+gint filelist_sort_compare_filedata_cb(const FileData *fa, const FileData *fb, gpointer data)
 {
+    FileSortData *sort_data = data;
     gint ret;
-    if (!filelist_sort_ascend)
+    if (!sort_data->ascend)
     {
-        FileData *tmp = fa;
+        const FileData *tmp = fa;
         fa = fb;
         fb = tmp;
     }
 
-    switch (filelist_sort_method)
+    switch (sort_data->method)
     {
         case SORT_NAME:
             break;
@@ -921,6 +923,8 @@ gint filelist_sort_compare_filedata(FileData *fa, FileData *fb)
             /* fall back to name */
             break;
         case SORT_EXIFTIME:
+            if (!fa->exifdate) read_exif_time_data((FileData *)fa);
+            if (!fb->exifdate) read_exif_time_data((FileData *)fb);
             if (fa->exifdate < fb->exifdate) return -1;
             if (fa->exifdate > fb->exifdate) return 1;
             /* fall back to name */
@@ -948,44 +952,37 @@ gint filelist_sort_compare_filedata(FileData *fa, FileData *fb)
     return strcmp(fa->original_path, fb->original_path);
 }
 
-gint filelist_sort_compare_filedata_full(FileData *fa, FileData *fb, SortType method, gboolean ascend)
+gint filelist_sort_compare_filedata(FileData *fa, FileData *fb, SortType method, gboolean ascend)
 {
-    filelist_sort_method = method;
-    filelist_sort_ascend = ascend;
-    return filelist_sort_compare_filedata(fa, fb);
+    FileSortData sd = { method, ascend };
+    return filelist_sort_compare_filedata_cb(fa, fb, &sd);
 }
 
-static gint filelist_sort_file_cb(gpointer a, gpointer b)
+GList *filelist_sort_full(GList *list, SortType method, gboolean ascend, GCompareDataFunc cb)
 {
-    return filelist_sort_compare_filedata(a, b);
+    FileSortData sd = { method, ascend };
+    return g_list_sort_with_data(list, cb, &sd);
 }
 
-GList *filelist_sort_full(GList *list, SortType method, gboolean ascend, GCompareFunc cb)
+GList *filelist_insert_sort_full(GList *list, gpointer data, SortType method, gboolean ascend, GCompareDataFunc cb)
 {
-    filelist_sort_method = method;
-    filelist_sort_ascend = ascend;
-    return g_list_sort(list, cb);
+    FileSortData sd = { method, ascend };
+    return g_list_insert_sorted_with_data(list, data, cb, &sd);
 }
 
-GList *filelist_insert_sort_full(GList *list, gpointer data, SortType method, gboolean ascend, GCompareFunc cb)
+static gint sort_file_cb(gconstpointer a, gconstpointer b, gpointer data)
 {
-    filelist_sort_method = method;
-    filelist_sort_ascend = ascend;
-    return g_list_insert_sorted(list, data, cb);
+    return filelist_sort_compare_filedata_cb(a, b, data);
 }
 
 GList *filelist_sort(GList *list, SortType method, gboolean ascend)
 {
-    if (method == SORT_EXIFTIME)
-    {
-        set_exif_time_data(list);
-    }
-    return filelist_sort_full(list, method, ascend, (GCompareFunc) filelist_sort_file_cb);
+    return filelist_sort_full(list, method, ascend, sort_file_cb);
 }
 
 GList *filelist_insert_sort(GList *list, FileData *fd, SortType method, gboolean ascend)
 {
-    return filelist_insert_sort_full(list, fd, method, ascend, (GCompareFunc) filelist_sort_file_cb);
+    return filelist_insert_sort_full(list, fd, method, ascend, sort_file_cb);
 }
 
 /*
