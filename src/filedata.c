@@ -58,96 +58,26 @@ static void file_data_disconnect_sidecar_file(FileData *target, FileData *sfd);
 
 gchar *text_from_size(gint64 size)
 {
-    gchar *a, *b;
-    gchar *s, *d;
-    gint l, n, i;
-
-    /* what I would like to use is printf("%'d", size)
-     * BUT: not supported on every libc :(
-     */
-    if (size > G_MAXINT)
-    {
-        /* the %lld conversion is not valid in all libcs, so use a simple work-around */
-        a = g_strdup_printf("%d%09d", (guint)(size / 1000000000), (guint)(size % 1000000000));
-    }
-    else
-    {
-        a = g_strdup_printf("%d", (guint)size);
-    }
-    l = strlen(a);
-    n = (l - 1)/ 3;
-    if (n < 1) return a;
-
-    b = g_new(gchar, l + n + 1);
-
-    s = a;
-    d = b;
-    i = l - n * 3;
-    while (*s != '\0')
-    {
-        if (i < 1)
-        {
-            i = 3;
-            *d = ',';
-            d++;
-        }
-
-        *d = *s;
-        s++;
-        d++;
-        i--;
-    }
-    *d = '\0';
-
-    g_free(a);
-    return b;
+    return g_strdup_printf("%'"G_GUINT64_FORMAT, size);
 }
 
 gchar *text_from_size_abrev(gint64 size)
 {
-    if (size < (gint64)1024)
-    {
-        return g_strdup_printf(_("%d bytes"), (gint)size);
-    }
-    if (size < (gint64)1048576)
-    {
-        return g_strdup_printf(_("%.1f KiB"), (gdouble)size / 1024.0);
-    }
-    if (size < (gint64)1073741824)
-    {
-        return g_strdup_printf(_("%.1f MiB"), (gdouble)size / 1048576.0);
-    }
-
-    /* to avoid overflowing the gdouble, do division in two steps */
-    size /= 1048576;
-    return g_strdup_printf(_("%.1f GiB"), (gdouble)size / 1024.0);
+    return g_format_size_full(size, G_FORMAT_SIZE_IEC_UNITS);
 }
 
-/* note: returned string is valid until next call to text_from_time() */
-const gchar *text_from_time(time_t t)
+gchar *text_from_time(time_t t)
 {
-    static gchar *ret = NULL;
-    gchar buf[128];
-    gint buflen;
-    struct tm *btime;
-    GError *error = NULL;
+    GDateTime *dt;
+    gchar *ret;
 
-    btime = localtime(&t);
+    dt = g_date_time_new_from_unix_local(t);
+    if (!dt) return g_strdup("");
 
-    /* the %x warning about 2 digit years is not an error */
-    buflen = strftime(buf, sizeof(buf), "%x %X", btime);
-    if (buflen < 1) return "";
+    ret = g_date_time_format(dt, "%x %X");
+    g_date_time_unref(dt);
 
-    g_free(ret);
-    ret = g_locale_to_utf8(buf, buflen, NULL, NULL, &error);
-    if (error)
-    {
-        log_printf("Error converting locale strftime to UTF-8: %s\n", error->message);
-        g_error_free(error);
-        return "";
-    }
-
-    return ret;
+    return ret ? ret : g_strdup("");
 }
 
 /*

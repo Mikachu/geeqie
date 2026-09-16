@@ -503,7 +503,7 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     text[DUPE_COLUMN_THUMB] = "";
     text[DUPE_COLUMN_NAME] = (gchar *)di->fd->name;
     text[DUPE_COLUMN_SIZE] = text_from_size(di->fd->size);
-    text[DUPE_COLUMN_DATE] = (gchar *)text_from_time(di->fd->dat.tv_sec);
+    text[DUPE_COLUMN_DATE] = text_from_time(di->fd->dat.tv_sec);
     if (di->width > 0 && di->height > 0)
     {
         text[DUPE_COLUMN_DIMENSIONS] = g_strdup_printf("%d x %d", di->width, di->height);
@@ -532,6 +532,7 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
 
     g_free(text[DUPE_COLUMN_RANK]);
     g_free(text[DUPE_COLUMN_SIZE]);
+    g_free(text[DUPE_COLUMN_DATE]);
     g_free(text[DUPE_COLUMN_DIMENSIONS]);
 }
 
@@ -2197,7 +2198,9 @@ static void dupe_display_stats(DupeWindow *dw, DupeItem *di)
     buf = text_from_size(di->fd->size);
     dupe_display_label(gd->vbox, "size:", buf);
     g_free(buf);
-    dupe_display_label(gd->vbox, "date:", text_from_time(di->fd->dat.tv_sec));
+    buf = text_from_time(di->fd->dat.tv_sec);
+    dupe_display_label(gd->vbox, "date:", buf);
+    g_free(buf);
     buf = g_strdup_printf("%d x %d", di->width, di->height);
     dupe_display_label(gd->vbox, "dimensions:", buf);
     g_free(buf);

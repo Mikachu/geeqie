@@ -849,7 +849,7 @@ static void vflist_setup_iter(ViewFile *vf, GtkListStore *store, GtkTreeIter *it
     gchar *size;
     gchar *sidecars = NULL;
     gchar *name;
-    const gchar *time = text_from_time(fd->dat.tv_sec);
+    gchar *time = text_from_time(fd->dat.tv_sec);
     gchar *link = islink(fd->path) ? GQ_LINK_STR : "";
     const gchar *disabled_grouping;
     gchar *formatted;
@@ -897,6 +897,7 @@ static void vflist_setup_iter(ViewFile *vf, GtkListStore *store, GtkTreeIter *it
     g_free(sidecars);
     g_free(name);
     g_free(formatted);
+    g_free(time);
 }
 
 static void vflist_setup_iter_recursive(ViewFile *vf, GtkListStore *store, GList *list, gboolean force)

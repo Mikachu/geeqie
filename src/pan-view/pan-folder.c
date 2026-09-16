@@ -245,7 +245,7 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
 
     pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
 
-    pi_box = pan_item_text_new(pw, x, y, dir_fd->path, PAN_TEXT_ATTR_NONE,
+    pi_box = pan_item_text_new(pw, x, y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
                    PAN_TEXT_BORDER_SIZE,
                    PAN_TEXT_COLOR, 255);
 
@@ -382,7 +382,7 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
 
     *x = PAN_BOX_BORDER + ((*level) * MAX(PAN_BOX_BORDER, PAN_THUMB_GAP));
 
-    pi_box = pan_item_text_new(pw, *x, *y, dir_fd->path, PAN_TEXT_ATTR_NONE,
+    pi_box = pan_item_text_new(pw, *x, *y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
                    PAN_TEXT_BORDER_SIZE,
                    PAN_TEXT_COLOR, 255);
 

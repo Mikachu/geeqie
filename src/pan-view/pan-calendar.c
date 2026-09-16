@@ -118,7 +118,6 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
                        PAN_TEXT_BORDER_SIZE,
                        PAN_CAL_POPUP_TEXT_COLOR, 255);
         pan_item_set_key(plabel, "day_bubble");
-        g_free(buf);
 
         pan_item_size_by_item(pbox, plabel, 0);
 
@@ -306,7 +305,6 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
                         PAN_TEXT_ATTR_BOLD | PAN_TEXT_ATTR_HEADING,
                         PAN_TEXT_BORDER_SIZE,
                         PAN_CAL_MONTH_TEXT_COLOR, 255);
-        g_free(buf);
         pi_text->x = pi_month->x + (pi_month->width - pi_text->width) / 2;
 
         pi_month->height = pi_text->y + pi_text->height - pi_month->y;
@@ -382,7 +380,6 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
                 pi = pan_item_text_new(pw, x, y, buf, PAN_TEXT_ATTR_NONE,
                                PAN_TEXT_BORDER_SIZE,
                                PAN_CAL_DAY_TEXT_COLOR, 255);
-                g_free(buf);
 
                 pi->x = pi_day->x + (pi_day->width - pi->width) / 2;
                 pi->y = pi_day->y + (pi_day->height - pi->height) / 2;
@@ -392,7 +389,6 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
             pan_item_text_new(pw, x + 4, y + 4, buf, PAN_TEXT_ATTR_BOLD | PAN_TEXT_ATTR_HEADING,
                       PAN_TEXT_BORDER_SIZE,
                       PAN_CAL_DAY_TEXT_COLOR, 255);
-            g_free(buf);
 
 
             pan_item_size_coordinates(pi_day, PAN_BOX_BORDER, width, height);
