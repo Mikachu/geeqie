@@ -565,6 +565,8 @@ struct _FileData {
 typedef struct {
     gchar *dir_path;
     gboolean follow_symlinks;
+    gboolean want_files;
+    gboolean want_dirs;
     gint cancel;            /* atomic: set to 1 to cancel */
     GArray *entries;        /* output: array of DirEntry, NULL until thread fills it */
     gboolean success;
