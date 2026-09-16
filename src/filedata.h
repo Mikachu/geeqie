@@ -61,12 +61,12 @@ void file_data_change_info_free(FileDataChangeInfo *fdci, FileData *fd);
 void file_data_disable_grouping(FileData *fd, gboolean disable);
 void file_data_disable_grouping_list(GList *fd_list, gboolean disable);
 
-gint filelist_sort_compare_filedata(FileData *fa, FileData *fb);
-gint filelist_sort_compare_filedata_full(FileData *fa, FileData *fb, SortType method, gboolean ascend);
+gint filelist_sort_compare_filedata_cb(const FileData *fa, const FileData *fb, gpointer data);
+gint filelist_sort_compare_filedata(FileData *fa, FileData *fb, SortType method, gboolean ascend);
 GList *filelist_sort(GList *list, SortType method, gboolean ascend);
 GList *filelist_insert_sort(GList *list, FileData *fd, SortType method, gboolean ascend);
-GList *filelist_sort_full(GList *list, SortType method, gboolean ascend, GCompareFunc cb);
-GList *filelist_insert_sort_full(GList *list, gpointer data, SortType method, gboolean ascend, GCompareFunc cb);
+GList *filelist_sort_full(GList *list, SortType method, gboolean ascend, GCompareDataFunc cb);
+GList *filelist_insert_sort_full(GList *list, gpointer data, SortType method, gboolean ascend, GCompareDataFunc cb);
 
 GThread *filelist_read_async(gpointer data);
 gboolean filelist_read(FileData *dir_fd, GList **files, GList **dirs);

@@ -934,7 +934,7 @@ static void vflist_setup_iter_recursive(ViewFile *vf, GtkListStore *store, GList
                 }
                 else
                 {
-                    match = filelist_sort_compare_filedata_full(fd, old_fd, vf->sort_method, vf->sort_ascend);
+                    match = filelist_sort_compare_filedata(fd, old_fd, vf->sort_method, vf->sort_ascend);
 
                     if (match == 0) g_warning("multiple fd for the same path");
                 }
@@ -1484,7 +1484,7 @@ static void vflist_select_closest(ViewFile *vf, FileData *sel_fd)
         fd = work->data;
         work = work->next;
 
-        match = filelist_sort_compare_filedata_full(fd, sel_fd, vf->sort_method, vf->sort_ascend);
+        match = filelist_sort_compare_filedata(fd, sel_fd, vf->sort_method, vf->sort_ascend);
 
         if (match >= 0) break;
     }
