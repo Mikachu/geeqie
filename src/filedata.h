@@ -44,8 +44,11 @@ FileData *file_data_new_dir_exist(const gchar *path_utf8);
 #ifdef DEBUG_FILEDATA
 FileData *file_data_ref_debug(const gchar *file, gint line, FileData *fd);
 void file_data_unref_debug(const gchar *file, gint line, FileData *fd);
+static inline void file_data_unref(FileData *fd) {
 #define file_data_ref(fd) file_data_ref_debug(__FILE__, __LINE__, fd)
 #define file_data_unref(fd) file_data_unref_debug(__FILE__, __LINE__, fd)
+    file_data_unref(fd);
+}
 #else
 FileData *file_data_ref(FileData *fd);
 void file_data_unref(FileData *fd);

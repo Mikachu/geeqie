@@ -706,7 +706,7 @@ static gboolean vflist_select_idle_cb(gpointer data)
     if (VFLIST(vf)->select_fd)
     {
         vflist_select_image(vf, VFLIST(vf)->select_fd);
-        VFLIST(vf)->select_fd = NULL;
+        g_clear_pointer(&VFLIST(vf)->select_fd, file_data_unref);
     }
 
     VFLIST(vf)->select_idle_id = 0;
@@ -716,6 +716,7 @@ static gboolean vflist_select_idle_cb(gpointer data)
 static void vflist_select_idle_cancel(ViewFile *vf)
 {
     g_clear_handle_id(&VFLIST(vf)->select_idle_id, g_source_remove);
+    g_clear_pointer(&VFLIST(vf)->select_fd, file_data_unref);
 }
 
 static gboolean vflist_select_cb(GtkTreeSelection *selection, GtkTreeModel *store, GtkTreePath *tpath,
@@ -807,15 +808,16 @@ static void vflist_selection_changed_cb(GtkTreeSelection *selection, gpointer da
     VFLIST(vf)->autosize_idle_id = g_idle_add_full(G_PRIORITY_LOW,
                                                     vflist_autosize_column_cb, vf, NULL);
 
+    g_clear_pointer(&VFLIST(vf)->select_fd, file_data_unref);
+
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(vf->listview), &cursor_path, NULL);
     if (cursor_path)
     {
         gtk_tree_model_get_iter(store, &iter, cursor_path);
         gtk_tree_model_get(store, &iter, FILE_COLUMN_POINTER, &VFLIST(vf)->select_fd, -1);
+        if (VFLIST(vf)->select_fd) file_data_ref(VFLIST(vf)->select_fd);
         gtk_tree_path_free(cursor_path);
     }
-    else
-        VFLIST(vf)->select_fd = NULL;
 
     if (vf->layout && !VFLIST(vf)->select_idle_id)
         VFLIST(vf)->select_idle_id = g_idle_add(vflist_select_idle_cb, vf);
@@ -1398,7 +1400,7 @@ void vflist_select_all(ViewFile *vf)
                                        signal_id, 0, NULL, NULL, NULL);
     g_signal_emit_by_name(selection, "changed");
 
-    VFLIST(vf)->select_fd = NULL;
+    g_clear_pointer(&VFLIST(vf)->select_fd, file_data_unref);
 }
 
 void vflist_select_none(ViewFile *vf)

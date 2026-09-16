@@ -468,9 +468,9 @@ FileData *file_data_ref(FileData *fd)
     if (fd == NULL) return NULL;
     if (fd->magick != FD_MAGICK)
 #ifdef DEBUG_FILEDATA
-        DEBUG_0("fd magick mismatch @ %s:%d  fd=%p", file, line, fd);
+        DEBUG_0("fd magick mismatch[%x] @ %s:%d  fd=%p", fd->magick, file, line, fd);
 #else
-        DEBUG_0("fd magick mismatch fd=%p", fd);
+        DEBUG_0("fd magick mismatch[%x] fd=%p", fd->magick, fd);
 #endif
     g_assert(fd->magick == FD_MAGICK);
     fd->ref++;
@@ -485,6 +485,8 @@ FileData *file_data_ref(FileData *fd)
 
 static void file_data_free(FileData *fd)
 {
+    if (fd->magick != FD_MAGICK)
+        DEBUG_0("fd magick mismatch fd=%p", fd);
     g_assert(fd->magick == FD_MAGICK);
     g_assert(fd->ref == 0);
 
@@ -506,6 +508,7 @@ static void file_data_free(FileData *fd)
     g_assert(fd->sidecar_files == NULL); /* sidecar files must be freed before calling this */
 
     file_data_change_info_free(NULL, fd);
+    fd->magick = 0x424242;
     g_free(fd);
 }
 
@@ -530,6 +533,8 @@ static void file_data_consider_free(FileData *fd)
     GList *work;
     FileData *parent = fd->parent ? fd->parent : fd;
 
+    if (fd->magick != FD_MAGICK)
+        DEBUG_0("fd magick mismatch fd=%p", fd);
     g_assert(fd->magick == FD_MAGICK);
     if (file_data_check_has_ref(fd)) return;
     if (file_data_check_has_ref(parent)) return;
@@ -568,6 +573,7 @@ void file_data_unref(FileData *fd)
     g_assert(fd->magick == FD_MAGICK);
 
     fd->ref--;
+    g_assert(fd->ref >= 0);
 #ifdef DEBUG_FILEDATA
     DEBUG_2("file_data_unref fd=%p (%d): '%s' @ %s:%d", fd, fd->ref, fd->path,
         file, line);
