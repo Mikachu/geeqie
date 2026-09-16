@@ -64,7 +64,7 @@ gint pan_item_tri_draw(PanWindow *pw, PanItem *pi, GdkPixbuf *pixbuf, PixbufRend
                gint x, gint y, gint width, gint height);
 
 // Item text type
-PanItem *pan_item_text_new(PanWindow *pw, gint x, gint y, const gchar *text,
+PanItem *pan_item_text_new(PanWindow *pw, gint x, gint y, gchar *text,
                PanTextAttrType attr, PanBorderType border,
                guint8 r, guint8 g, guint8 b, guint8 a);
 gint pan_item_text_draw(PanWindow *pw, PanItem *pi, GdkPixbuf *pixbuf, PixbufRenderer *pr,
@@ -96,7 +96,7 @@ struct _PanTextAlignment {
 PanTextAlignment *pan_text_alignment_new(PanWindow *pw, gint x, gint y, const gchar *key);
 void pan_text_alignment_free(PanTextAlignment *ta);
 
-PanItem *pan_text_alignment_add(PanTextAlignment *ta, const gchar *label, const gchar *text);
+PanItem *pan_text_alignment_add(PanTextAlignment *ta, const gchar *label, gchar *text);
 void pan_text_alignment_calc(PanTextAlignment *ta, PanItem *box);
 
 #endif

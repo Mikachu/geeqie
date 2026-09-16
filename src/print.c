@@ -2025,7 +2025,9 @@ static gboolean print_job_text_image(PrintWindow *pw, const gchar *path,
     {
         if (newline)  g_string_append(string, "\n");
         if (space) g_string_append(string, " - ");
-        g_string_append(string, text_from_time(filetime(image_loader_get_fd(pw->job_loader)->path)));
+        gchar *buf = text_from_time(filetime(image_loader_get_fd(pw->job_loader)->path));
+        g_string_append(string, buf);
+        g_free(buf);
         newline = proof;
         space = !proof;
     }

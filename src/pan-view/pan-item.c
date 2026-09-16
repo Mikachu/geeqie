@@ -407,7 +407,7 @@ static void pan_item_text_compute_size(PanItem *pi, GtkWidget *widget)
     pi->height += pi->border * 2;
 }
 
-PanItem *pan_item_text_new(PanWindow *pw, gint x, gint y, const gchar *text,
+PanItem *pan_item_text_new(PanWindow *pw, gint x, gint y, gchar *text,
                PanTextAttrType attr, PanBorderType border,
                guint8 r, guint8 g, guint8 b, guint8 a)
 {
@@ -417,7 +417,7 @@ PanItem *pan_item_text_new(PanWindow *pw, gint x, gint y, const gchar *text,
     pi->type = PAN_ITEM_TEXT;
     pi->x = x;
     pi->y = y;
-    pi->text = g_strdup(text);
+    pi->text = text;
     pi->text_attr = attr;
 
     pi->color_r = r;
@@ -873,13 +873,13 @@ void pan_text_alignment_free(PanTextAlignment *ta)
     g_free(ta);
 }
 
-PanItem *pan_text_alignment_add(PanTextAlignment *ta, const gchar *label, const gchar *text)
+PanItem *pan_text_alignment_add(PanTextAlignment *ta, const gchar *label, gchar *text)
 {
     PanItem *item;
 
     if (label)
     {
-        item = pan_item_text_new(ta->pw, ta->x, ta->y, label,
+        item = pan_item_text_new(ta->pw, ta->x, ta->y, g_strdup(label),
                      PAN_TEXT_ATTR_BOLD, 0,
                      PAN_POPUP_TEXT_COLOR, 255);
         pan_item_set_key(item, ta->key);

@@ -30,7 +30,7 @@
 
 gchar *text_from_size(gint64 size);
 gchar *text_from_size_abrev(gint64 size);
-const gchar *text_from_time(time_t t);
+gchar *text_from_time(time_t t);
 
 /* these all do the same thing because this codebase is silly */
 FileData *file_data_new_group(const gchar *path_utf8);

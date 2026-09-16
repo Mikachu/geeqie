@@ -507,6 +507,7 @@ static void search_result_append(SearchData *sd, MatchFileData *mfd)
     GtkTreeIter iter;
     gchar *text_size;
     gchar *text_dim = NULL;
+    gchar *text_time;
 
     fd = mfd->fd;
 
@@ -514,6 +515,7 @@ static void search_result_append(SearchData *sd, MatchFileData *mfd)
 
     text_size = text_from_size(fd->size);
     if (mfd->width > 0 && mfd->height > 0) text_dim = g_strdup_printf("%d x %d", mfd->width, mfd->height);
+    text_time = text_from_time(fd->dat.tv_sec);
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(sd->result_view)));
     gtk_list_store_append(store, &iter);
@@ -523,11 +525,12 @@ static void search_result_append(SearchData *sd, MatchFileData *mfd)
                 SEARCH_COLUMN_THUMB, fd->thumb_pixbuf,
                 SEARCH_COLUMN_NAME, fd->name,
                 SEARCH_COLUMN_SIZE, text_size,
-                SEARCH_COLUMN_DATE, text_from_time(fd->dat.tv_sec),
+                SEARCH_COLUMN_DATE, text_time,
                 SEARCH_COLUMN_DIMENSIONS, text_dim,
                 SEARCH_COLUMN_PATH, fd->path,
                 -1);
 
+    g_free(text_time);
     g_free(text_size);
     g_free(text_dim);
 }

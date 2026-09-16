@@ -106,7 +106,7 @@ gchar *pan_date_value_string(time_t d, PanDateLengthType length)
             break;
         case PAN_DATE_LENGTH_EXACT:
         default:
-            return g_strdup(text_from_time(d));
+            return text_from_time(d);
             break;
     }
 

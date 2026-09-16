@@ -189,7 +189,7 @@ static gboolean vdlist_populate(ViewDir *vd, gboolean clear)
     {
         gint match;
         GdkPixbuf *pixbuf;
-        const gchar *date = "";
+        gchar *date = "";
         gboolean done = FALSE;
 
         fd = work->data;
@@ -282,6 +282,8 @@ static gboolean vdlist_populate(ViewDir *vd, gboolean clear)
                 done = TRUE;
             }
         }
+        if (*date)
+            g_free(date);
         work = work->next;
     }
 
