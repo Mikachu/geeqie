@@ -184,6 +184,7 @@ typedef enum {
     CHANGE_NO_SRC                  = 1 << 14,
     CHANGE_GENERIC_ERROR           = 1 << 16
 } ChangeError;
+#define CHANGE_NUM_ERRORS 17
 
 typedef enum {
     METADATA_PLAIN      = 0, /* format that can be edited and written back */
