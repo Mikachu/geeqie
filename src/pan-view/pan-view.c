@@ -1353,14 +1353,12 @@ void pan_info_update(PanWindow *pw, PanItem *pi)
 
     ta = pan_text_alignment_new(pw, pbox->x + PREF_PAD_BORDER, pbox->y + PREF_PAD_BORDER, "info");
 
-    pan_text_alignment_add(ta, _("Filename:"), pi->fd->name);
+    pan_text_alignment_add(ta, _("Filename:"), g_strdup(pi->fd->name));
     buf = remove_level_from_path(pi->fd->path);
     pan_text_alignment_add(ta, _("Location:"), buf);
-    g_free(buf);
     pan_text_alignment_add(ta, _("Date:"), text_from_time(pi->fd->dat.tv_sec));
     buf = text_from_size(pi->fd->size);
     pan_text_alignment_add(ta, _("Size:"), buf);
-    g_free(buf);
 
     if (pw->info_includes_exif)
     {
