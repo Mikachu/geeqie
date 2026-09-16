@@ -107,21 +107,21 @@ static void iconlist_free(GList *list)
 
 }
 
-gint iconlist_sort_file_cb(gpointer a, gpointer b)
+gint iconlist_sort_file_cb(gconstpointer a, gconstpointer b, gpointer data)
 {
-    IconData *ida = a;
-    IconData *idb = b;
-    return filelist_sort_compare_filedata(ida->fd, idb->fd);
+    const IconData *ida = a,
+                   *idb = b;
+    return filelist_sort_compare_filedata_cb(ida->fd, idb->fd, data);
 }
 
 GList *iconlist_sort(GList *list, SortType method, gboolean ascend)
 {
-    return filelist_sort_full(list, method, ascend, (GCompareFunc) iconlist_sort_file_cb);
+    return filelist_sort_full(list, method, ascend, iconlist_sort_file_cb);
 }
 
 GList *iconlist_insert_sort(GList *list, IconData *id, SortType method, gboolean ascend)
 {
-    return filelist_insert_sort_full(list, id, method, ascend, (GCompareFunc) iconlist_sort_file_cb);
+    return filelist_insert_sort_full(list, id, method, ascend, iconlist_sort_file_cb);
 }
 
 
@@ -1024,7 +1024,7 @@ static void vficon_select_closest(ViewFile *vf, FileData *sel_fd)
         fd = id->fd;
         work = work->next;
 
-        match = filelist_sort_compare_filedata_full(fd, sel_fd, vf->sort_method, vf->sort_ascend);
+        match = filelist_sort_compare_filedata(fd, sel_fd, vf->sort_method, vf->sort_ascend);
 
         if (match >= 0) break;
     }
@@ -1980,7 +1980,7 @@ static gboolean vficon_refresh_real(ViewFile *vf, gboolean keep_position)
                 continue;
             }
 
-            match = filelist_sort_compare_filedata_full(fd, new_fd, vf->sort_method, vf->sort_ascend);
+            match = filelist_sort_compare_filedata(fd, new_fd, vf->sort_method, vf->sort_ascend);
             if (match == 0) g_warning("multiple fd for the same path");
         }
         else if (work)
