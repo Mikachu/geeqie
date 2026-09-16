@@ -2170,20 +2170,30 @@ gint file_data_verify_ci_list(GList *list, gchar **desc, gboolean with_sidecars)
 {
     gint all_errors = 0;
     gint common_errors = ~0;
+    const gchar *per_error_name[CHANGE_NUM_ERRORS] = { NULL, };
 
     if (!list) return 0;
 
     for (GList *work = list; work; work = work->next)
     {
-        FileData *fd = work->data;
-        gint error;
+        FileData *fd = (FileData *)work->data;
+        gint error = with_sidecars ? file_data_sc_verify_ci(fd, list) : file_data_verify_ci(fd, list);
 
-        error = with_sidecars ? file_data_sc_verify_ci(fd, list) : file_data_verify_ci(fd, list);
         all_errors |= error;
         common_errors &= error;
 
-        /* temporarily stash the error here */
-        fd->magick ^= error;
+        if (!desc) continue;
+
+        for (gint i = 0; i < CHANGE_NUM_ERRORS; i++)
+        {
+            if (error & (1 << i))
+            {
+                if (per_error_name[i])
+                    per_error_name[i] = _("multiple files");
+                else
+                    per_error_name[i] = fd->name;
+            }
+        }
     }
 
     if (desc && all_errors)
@@ -2193,31 +2203,28 @@ gint file_data_verify_ci_list(GList *list, gchar **desc, gboolean with_sidecars)
         if (common_errors)
         {
             gchar *str = file_data_get_error_string(common_errors);
-            g_string_append(result, str);
-            g_string_append(result, "\n");
+            const gchar *name = _("all files");
+            if (list && !list->next)
+                name = ((FileData *)list->data)->name;
+            g_string_append_printf(result, "%s: %s\n", name, str);
             g_free(str);
         }
 
-        for (GList *work = list; work; work = work->next)
+        for (gint i = 0; i < CHANGE_NUM_ERRORS; i++)
         {
-            FileData *fd = work->data;
-            gint error = fd->magick ^ FD_MAGICK;
-            fd->magick ^= error;
-            error &= ~common_errors;
+            gint bit = 1 << i;
 
-            if (error)
-            {
-                gchar *str = file_data_get_error_string(error);
-                g_string_append_printf(result, "%s: %s\n", fd->name, str);
-                g_free(str);
-            }
+            if (!(bit & all_errors) || (bit & common_errors)) continue;
+
+            gchar *str = file_data_get_error_string(bit);
+            g_string_append_printf(result, "%s: %s\n", per_error_name[i], str);
+            g_free(str);
         }
         *desc = g_string_free(result, FALSE);
     }
 
     return all_errors;
 }
-
 
 /*
  * perform the change described by FileFataChangeInfo
