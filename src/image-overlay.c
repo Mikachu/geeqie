@@ -473,30 +473,18 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
 }
 
 typedef enum {
-    OSDT_NONE   = 0,
-    OSDT_FREE   = 1 << 0,
-    OSDT_NO_DUP     = 1 << 1
+    OSDT_NONE = 0,
+    OSDT_NO_DUP,
 } OsdTemplateFlags;
 
 static void osd_template_insert(GHashTable *vars, gchar *keyword, gchar *value, OsdTemplateFlags flags)
 {
     if (!value)
-    {
-        g_hash_table_insert(vars, keyword, g_strdup(""));
-        return;
-    }
+        value = g_strdup("");
+    else if (flags == OSDT_NONE)
+        value = g_strdup(value);
 
-    if (flags & OSDT_NO_DUP)
-    {
-        g_hash_table_insert(vars, keyword, value);
-        return;
-    }
-    else
-    {
-        g_hash_table_insert(vars, keyword, g_strdup(value));
-    }
-
-    if (flags & OSDT_FREE) g_free((gpointer) value);
+    g_hash_table_insert(vars, keyword, value);
 }
 
 static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
@@ -532,7 +520,7 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
             if (cd->name)
             {
                 if (file_extension_match(cd->name, GQ_COLLECTION_EXT))
-                    osd_template_insert(vars, "collection", remove_extension_from_path(cd->name), OSDT_FREE);
+                    osd_template_insert(vars, "collection", remove_extension_from_path(cd->name), OSDT_NO_DUP);
                 else
                     osd_template_insert(vars, "collection", cd->name, OSDT_NONE);
             }
@@ -578,8 +566,8 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
         osd_template_insert(vars, "total", g_strdup_printf("%d", t), OSDT_NO_DUP);
         osd_template_insert(vars, "name", (gchar *) name, OSDT_NONE);
         osd_template_insert(vars, "date", (gchar *) text_from_time(fd->dat.tv_sec), OSDT_NO_DUP);
-        osd_template_insert(vars, "size", text_from_size_abrev(fd->size), OSDT_FREE);
-        osd_template_insert(vars, "zoom", image_zoom_get_as_text(imd), OSDT_FREE);
+        osd_template_insert(vars, "size", text_from_size_abrev(fd->size), OSDT_NO_DUP);
+        osd_template_insert(vars, "zoom", image_zoom_get_as_text(imd), OSDT_NO_DUP);
         if (image_get_page_total(imd) > 1) {
             osd_template_insert(vars, "page", g_strdup_printf("%d", image_get_page(imd) + 1), OSDT_NO_DUP);
             osd_template_insert(vars, "page_total", g_strdup_printf("%d", image_get_page_total(imd)), OSDT_NO_DUP);
@@ -608,7 +596,7 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
 
             osd_template_insert(vars, "width", g_strdup_printf("%d", w), OSDT_NO_DUP);
             osd_template_insert(vars, "height", g_strdup_printf("%d", h), OSDT_NO_DUP);
-            osd_template_insert(vars, "res", g_strdup_printf("%d × %d", w, h), OSDT_FREE);
+            osd_template_insert(vars, "res", g_strdup_printf("%d × %d", w, h), OSDT_NO_DUP);
             }
         else
         {
