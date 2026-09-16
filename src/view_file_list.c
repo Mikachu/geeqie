@@ -1862,6 +1862,8 @@ gboolean vflist_refresh(ViewFile *vf)
         dld->done_cb = vflist_dir_load_done_cb;
         dld->done_data = vf;
         dld->follow_symlinks = TRUE;
+        dld->want_files = TRUE;
+        /* dld->want_dirs is FALSE */
 
         filelist_read_async(dld);
         return TRUE;
