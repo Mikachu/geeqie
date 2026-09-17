@@ -33,6 +33,7 @@
 #include "exif.h"
 
 #include <errno.h>
+#include <locale.h>
 
 #ifdef DEBUG_FILEDATA
 gint global_file_data_count = 0;
@@ -56,9 +57,31 @@ static void file_data_disconnect_sidecar_file(FileData *target, FileData *sfd);
  *-----------------------------------------------------------------------------
  */
 
+/* try to ensure we use ',' for thousands separators if the locale
+ * doesn't specify one */
+static gpointer init_locale(gpointer data)
+{
+    locale_t english = NULL;
+    if (localeconv()->thousands_sep[0] == '\0') {
+        english = newlocale(LC_NUMERIC_MASK, "en_US.utf8", (locale_t) 0);
+        if (!english)
+            english = newlocale(LC_NUMERIC_MASK, "en_US", (locale_t) 0);
+    }
+    if (!english)
+        english = LC_GLOBAL_LOCALE; /* give up */
+    return english;
+}
+
 gchar *text_from_size(gint64 size)
 {
-    return g_strdup_printf("%'"G_GUINT64_FORMAT, size);
+    static GOnce once = G_ONCE_INIT;
+    g_once(&once, init_locale, NULL);
+    locale_t prev = uselocale((locale_t)once.retval);
+
+    gchar *ret = g_strdup_printf("%'"G_GUINT64_FORMAT, size);
+
+    uselocale(prev);
+    return ret;
 }
 
 gchar *text_from_size_abrev(gint64 size)
