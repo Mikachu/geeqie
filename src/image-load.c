@@ -24,6 +24,7 @@
 #include "image_load_gdk.h"
 #include "image_load_jpeg.h"
 #include "image_load_tiff.h"
+#include "image_load_psd.h"
 #include "format_mkv.h"
 
 #include "exif.h"
@@ -517,7 +518,12 @@ static void image_loader_size_cb(gpointer loader,
     n = 0;
     while (mime_types[n])
     {
-        if (strstr(mime_types[n], "jpeg")) scale = TRUE;
+        if (strstr(mime_types[n], "jpeg") ||
+            strstr(mime_types[n], "photoshop"))
+        {
+            scale = TRUE;
+            break;
+        }
         n++;
     }
     g_strfreev(mime_types);
@@ -583,6 +589,12 @@ static void image_loader_setup_loader(ImageLoader *il)
     }
     else
 #endif
+    if (il->bytes_total >= 4 && memcmp(il->mapped_file, "8BPS", 4) == 0)
+    {
+        DEBUG_1("Using custom psd loader");
+        image_loader_backend_set_psd(&il->backend);
+    }
+    else
         image_loader_backend_set_default(&il->backend);
 
     il->loader = il->backend.loader_new(image_loader_area_updated_cb, image_loader_size_cb, il);
