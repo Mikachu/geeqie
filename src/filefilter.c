@@ -236,6 +236,7 @@ void filter_add_defaults(void)
     filter_add_if_missing("ico", "Icon file", ".ico;.cur", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
     filter_add_if_missing("ras", "Raster", ".ras", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
     filter_add_if_missing("svg", "Scalable Vector Graphics", ".svg", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
+    filter_add_if_missing("psd", "Adobe Photoshop Document", ".psd;.psb", FORMAT_CLASS_IMAGE, FALSE, FALSE, TRUE);
 
     /* special formats for stereo */
     filter_add_if_missing("jps", "Stereo side-by-side jpeg", ".jps", FORMAT_CLASS_IMAGE, TRUE, FALSE, TRUE);
