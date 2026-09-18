@@ -167,6 +167,8 @@ geeqie_SOURCES = \
 	image_load_gdk.h\
 	image_load_jpeg.c\
 	image_load_jpeg.h\
+	image_load_psd.c\
+	image_load_psd.h\
 	image_load_tiff.c\
 	image_load_tiff.h\
 	image-overlay.c	\
