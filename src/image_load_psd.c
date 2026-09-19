@@ -318,7 +318,8 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
 
     if ((guint64) width * height * stride > 1024ULL * 1024 * 1024) return NULL;
 
-    guchar *rgba = g_malloc0((gsize) width * height * stride);
+    guchar *rgba = g_malloc((gsize) width * height * stride);
+    memset(rgba, 255, (gsize) width * height * stride);
 
     if (compression == 0)
     {
@@ -350,7 +351,9 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
         }
 
         gboolean ok = TRUE;
-        for (guint32 c = 0; c < stride && ok; c++)
+        /* XXX some of my psb files seem to have garbage alpha in the composited
+         * image, so better just ignore it? */
+        for (guint32 c = 0; c < 3 /*stride*/ && ok; c++)
         {
             /* channels 0..3 map directly to R,G,B,A in the interleaved
              * buffer; anything beyond that (spot channels) is ignored */
