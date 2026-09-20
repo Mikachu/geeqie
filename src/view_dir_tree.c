@@ -989,7 +989,8 @@ static gint vdtree_sort_cb(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, 
                   (nda->fd->dat.tv_sec > ndb->fd->dat.tv_sec) ?  1 : (
                   (nda->fd->dat.tv_nsec < ndb->fd->dat.tv_nsec) ? -1 :
                   (nda->fd->dat.tv_nsec > ndb->fd->dat.tv_nsec) ?  1 : 0);
-            break;
+            if (ret)
+                break;
         case SORT_NAME:
         default:
             if (options->file_sort.case_sensitive)
