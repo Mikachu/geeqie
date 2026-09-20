@@ -454,7 +454,7 @@ gboolean vdtree_populate_path_by_iter(ViewDir *vd, GtkTreeIter *iter, gboolean f
             return TRUE;
         }
         file_data_check_changed_files(nd->fd); /* make sure we have recent info */
-        if (nd->fd->version == nd->version) return TRUE;
+        if (!force && nd->fd->version == nd->version) return TRUE;
     }
 
     vdtree_busy_push(vd);

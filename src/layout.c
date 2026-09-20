@@ -1065,7 +1065,10 @@ void layout_refresh(LayoutWindow *lw)
 
     DEBUG_1("layout refresh");
 
+    gboolean old = options->update_on_time_change;
+    options->update_on_time_change = TRUE;
     layout_refresh_lists(lw);
+    options->update_on_time_change = old;
 
     if (lw->image) layout_image_refresh(lw);
 }
