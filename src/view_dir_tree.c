@@ -982,25 +982,7 @@ static gint vdtree_sort_cb(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, 
         sort_ascend = vd->layout->options.dir_view_list_sort.ascend;
     }
 
-    switch (sort_method)
-    {
-        case SORT_TIME:
-            ret = (nda->fd->dat.tv_sec < ndb->fd->dat.tv_sec) ? -1 :
-                  (nda->fd->dat.tv_sec > ndb->fd->dat.tv_sec) ?  1 : (
-                  (nda->fd->dat.tv_nsec < ndb->fd->dat.tv_nsec) ? -1 :
-                  (nda->fd->dat.tv_nsec > ndb->fd->dat.tv_nsec) ?  1 : 0);
-            if (ret)
-                break;
-        case SORT_NAME:
-        default:
-            if (options->file_sort.case_sensitive)
-                ret = strcmp(nda->fd->collate_key_name, ndb->fd->collate_key_name);
-            else
-                ret = strcmp(nda->fd->collate_key_name_nocase, ndb->fd->collate_key_name_nocase);
-            break;
-    }
-
-    return sort_ascend ? ret : -ret;
+    return filelist_sort_compare_filedata(nda->fd, ndb->fd, sort_method, sort_ascend);
 }
 
 void vdtree_sort(ViewDir *vd)
