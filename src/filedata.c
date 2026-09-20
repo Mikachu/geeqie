@@ -121,9 +121,10 @@ void file_data_increment_version(FileData *fd)
 
 static gboolean file_data_check_changed_single_file(FileData *fd, struct stat *st)
 {
-    if (fd->size != st->st_size ||
-        fd->dat.tv_sec != st->st_mtim.tv_sec ||
-        fd->dat.tv_nsec != st->st_mtim.tv_nsec)
+    if (options->update_on_time_change &&
+        (fd->size != st->st_size ||
+         fd->dat.tv_sec != st->st_mtim.tv_sec ||
+         fd->dat.tv_nsec != st->st_mtim.tv_nsec))
     {
         fd->size = st->st_size;
         fd->dat = st->st_mtim;
