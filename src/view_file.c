@@ -421,13 +421,9 @@ static void vf_pop_menu_sort_cb(GtkWidget *widget, gpointer data)
     type = (SortType)GPOINTER_TO_INT(data);
 
     if (vf->layout)
-    {
         layout_sort_set(vf->layout, type, vf->sort_ascend);
-    }
     else
-    {
         vf_sort_set(vf, type, vf->sort_ascend);
-    }
 }
 
 static void vf_pop_menu_sort_ascend_cb(GtkWidget *widget, gpointer data)
@@ -435,13 +431,9 @@ static void vf_pop_menu_sort_ascend_cb(GtkWidget *widget, gpointer data)
     ViewFile *vf = data;
 
     if (vf->layout)
-    {
         layout_sort_set(vf->layout, vf->sort_method, !vf->sort_ascend);
-    }
     else
-    {
         vf_sort_set(vf, vf->sort_method, !vf->sort_ascend);
-    }
 }
 
 static void vf_pop_menu_sel_mark_cb(GtkWidget *widget, gpointer data)
@@ -549,7 +541,7 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
     menu = popup_menu_short_lived();
 
     g_signal_connect(G_OBJECT(menu), "destroy",
-             G_CALLBACK(vf_popup_destroy_cb), vf);
+                     G_CALLBACK(vf_popup_destroy_cb), vf);
 
     if (vf->clicked_mark > 0)
     {
@@ -568,24 +560,24 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
         vf->clicked_mark = 0;
 
         menu_item_add_sensitive(menu, str_set_mark, active,
-                    G_CALLBACK(vf_pop_menu_set_mark_sel_cb), vf);
+                                G_CALLBACK(vf_pop_menu_set_mark_sel_cb), vf);
 
         menu_item_add_sensitive(menu, str_res_mark, active,
-                    G_CALLBACK(vf_pop_menu_res_mark_sel_cb), vf);
+                                G_CALLBACK(vf_pop_menu_res_mark_sel_cb), vf);
 
         menu_item_add_sensitive(menu, str_toggle_mark, active,
-                    G_CALLBACK(vf_pop_menu_toggle_mark_sel_cb), vf);
+                                G_CALLBACK(vf_pop_menu_toggle_mark_sel_cb), vf);
 
         menu_item_add_divider(menu);
 
         menu_item_add_sensitive(menu, str_sel_mark, active,
-                    G_CALLBACK(vf_pop_menu_sel_mark_cb), vf);
+                                G_CALLBACK(vf_pop_menu_sel_mark_cb), vf);
         menu_item_add_sensitive(menu, str_sel_mark_or, active,
-                    G_CALLBACK(vf_pop_menu_sel_mark_or_cb), vf);
+                                G_CALLBACK(vf_pop_menu_sel_mark_or_cb), vf);
         menu_item_add_sensitive(menu, str_sel_mark_and, active,
-                    G_CALLBACK(vf_pop_menu_sel_mark_and_cb), vf);
+                                G_CALLBACK(vf_pop_menu_sel_mark_and_cb), vf);
         menu_item_add_sensitive(menu, str_sel_mark_minus, active,
-                    G_CALLBACK(vf_pop_menu_sel_mark_minus_cb), vf);
+                                G_CALLBACK(vf_pop_menu_sel_mark_minus_cb), vf);
 
         menu_item_add_divider(menu);
 
@@ -603,54 +595,54 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
     gtk_widget_set_sensitive(item, active);
 
     menu_item_add_stock_sensitive(menu, _("View in _new window"), GTK_STOCK_NEW, active,
-                      G_CALLBACK(vf_pop_menu_view_cb), vf);
+                                  G_CALLBACK(vf_pop_menu_view_cb), vf);
 
     menu_item_add_divider(menu);
     menu_item_add_stock_sensitive(menu, _("_Copy..."), GTK_STOCK_COPY, active,
-                      G_CALLBACK(vf_pop_menu_copy_cb), vf);
+                                  G_CALLBACK(vf_pop_menu_copy_cb), vf);
     menu_item_add_sensitive(menu, _("_Move..."), active,
-                G_CALLBACK(vf_pop_menu_move_cb), vf);
+                            G_CALLBACK(vf_pop_menu_move_cb), vf);
     menu_item_add_sensitive(menu, _("_Rename..."), active,
-                G_CALLBACK(vf_pop_menu_rename_cb), vf);
+                            G_CALLBACK(vf_pop_menu_rename_cb), vf);
     menu_item_add_stock_sensitive(menu, _("_Delete..."), GTK_STOCK_DELETE, active,
-                      G_CALLBACK(vf_pop_menu_delete_cb), vf);
+                                  G_CALLBACK(vf_pop_menu_delete_cb), vf);
     menu_item_add_sensitive(menu, _("_Copy path"), active,
-                G_CALLBACK(vf_pop_menu_copy_path_cb), vf);
+                            G_CALLBACK(vf_pop_menu_copy_path_cb), vf);
 
     menu_item_add_sensitive(menu, _("Enable file _grouping"), active,
-                G_CALLBACK(vf_pop_menu_enable_grouping_cb), vf);
+                            G_CALLBACK(vf_pop_menu_enable_grouping_cb), vf);
     menu_item_add_sensitive(menu, _("Disable file groupi_ng"), active,
-                G_CALLBACK(vf_pop_menu_disable_grouping_cb), vf);
+                            G_CALLBACK(vf_pop_menu_disable_grouping_cb), vf);
 
     menu_item_add_divider(menu);
 
     submenu = submenu_add_sort(NULL, G_CALLBACK(vf_pop_menu_sort_cb), vf,
-                   FALSE, FALSE, TRUE, vf->sort_method);
+                               FALSE, FALSE, TRUE, vf->sort_method);
     menu_item_add_divider(submenu);
     menu_item_add_check(submenu, _("Ascending"), vf->sort_ascend,
-                G_CALLBACK(vf_pop_menu_sort_ascend_cb), vf);
+                        G_CALLBACK(vf_pop_menu_sort_ascend_cb), vf);
 
     item = menu_item_add(menu, _("_Sort"), NULL, NULL);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
 
     item = menu_item_add_radio(menu, _("View as _List"), GINT_TO_POINTER(FILEVIEW_LIST), vf->type == FILEVIEW_LIST,
-                                           G_CALLBACK(vf_pop_menu_toggle_view_type_cb), vf);
+                               G_CALLBACK(vf_pop_menu_toggle_view_type_cb), vf);
 
     item = menu_item_add_radio(menu, _("View as _Icons"), GINT_TO_POINTER(FILEVIEW_ICON), vf->type == FILEVIEW_ICON,
-                                           G_CALLBACK(vf_pop_menu_toggle_view_type_cb), vf);
+                               G_CALLBACK(vf_pop_menu_toggle_view_type_cb), vf);
 
 	menu_item_add_check(menu, _("Disable file _filtering"), options->file_filter.disable,
-				G_CALLBACK(vf_pop_menu_toggle_filter_cb), vf);
+				        G_CALLBACK(vf_pop_menu_toggle_filter_cb), vf);
 
     switch (vf->type)
     {
     case FILEVIEW_LIST:
         menu_item_add_check(menu, _("Show _thumbnails"), VFLIST(vf)->thumbs_enabled,
-                    G_CALLBACK(vflist_pop_menu_thumbs_cb), vf);
+                            G_CALLBACK(vflist_pop_menu_thumbs_cb), vf);
         break;
     case FILEVIEW_ICON:
         menu_item_add_check(menu, _("Show filename _text"), VFICON(vf)->show_text,
-                    G_CALLBACK(vficon_pop_menu_show_names_cb), vf);
+                            G_CALLBACK(vficon_pop_menu_show_names_cb), vf);
         break;
     }
 
@@ -698,7 +690,7 @@ static void vf_destroy_cb(GtkWidget *widget, gpointer data)
     if (vf->popup)
     {
         g_signal_handlers_disconnect_matched(G_OBJECT(vf->popup), G_SIGNAL_MATCH_DATA,
-                             0, 0, 0, NULL, vf);
+                                             0, 0, 0, NULL, vf);
         gtk_widget_destroy(vf->popup);
     }
 
@@ -726,7 +718,7 @@ static GtkWidget *vf_marks_filter_init(ViewFile *vf)
         GtkWidget *check = gtk_check_button_new();
         gtk_box_pack_start(GTK_BOX(hbox), check, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(check), "toggled",
-             G_CALLBACK(vf_marks_filter_toggle_cb), vf);
+                         G_CALLBACK(vf_marks_filter_toggle_cb), vf);
 
         gtk_widget_show(check);
         vf->filter_check[i] = check;
@@ -740,7 +732,7 @@ void vf_mark_filter_toggle(ViewFile *vf, gint mark)
 {
     gint n = mark - 1;
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(vf->filter_check[n]),
-                     !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(vf->filter_check[n])));
+                                 !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(vf->filter_check[n])));
 }
 
 ViewFile *vf_new(FileViewType type, FileData *dir_fd)
@@ -756,7 +748,7 @@ ViewFile *vf_new(FileViewType type, FileData *dir_fd)
     vf->scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(vf->scrolled), GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(vf->scrolled),
-                       GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
     vf->filter = vf_marks_filter_init(vf);
 
@@ -766,7 +758,7 @@ ViewFile *vf_new(FileViewType type, FileData *dir_fd)
     gtk_widget_show(vf->scrolled);
 
     g_signal_connect(G_OBJECT(vf->widget), "destroy",
-             G_CALLBACK(vf_destroy_cb), vf);
+                     G_CALLBACK(vf_destroy_cb), vf);
 
     switch (type)
     {
@@ -777,11 +769,11 @@ ViewFile *vf_new(FileViewType type, FileData *dir_fd)
     vf_dnd_init(vf);
 
     g_signal_connect(G_OBJECT(vf->listview), "key_press_event",
-             G_CALLBACK(vf_press_key_cb), vf);
+                     G_CALLBACK(vf_press_key_cb), vf);
     g_signal_connect(G_OBJECT(vf->listview), "button_press_event",
-             G_CALLBACK(vf_press_cb), vf);
+                     G_CALLBACK(vf_press_cb), vf);
     g_signal_connect(G_OBJECT(vf->listview), "button_release_event",
-             G_CALLBACK(vf_release_cb), vf);
+                     G_CALLBACK(vf_release_cb), vf);
 
     gtk_container_add(GTK_CONTAINER(vf->scrolled), vf->listview);
     gtk_widget_show(vf->listview);
@@ -842,9 +834,7 @@ static void vf_set_thumb_fd(ViewFile *vf, FileData *fd)
 static void vf_thumb_status(ViewFile *vf, gdouble val, const gchar *text)
 {
     if (vf->func_thumb_status)
-    {
         vf->func_thumb_status(vf, val, text, vf->data_thumb_status);
-    }
 }
 
 static void vf_thumb_do(ViewFile *vf, FileData *fd)
@@ -877,9 +867,7 @@ static void vf_thumb_common_cb(ThumbLoader *tl, gpointer data)
     ViewFile *vf = data;
 
     if (vf->thumbs_filedata && vf->thumbs_loader == tl)
-    {
         vf_thumb_do(vf, vf->thumbs_filedata);
-    }
 
     while (vf_thumb_next(vf));
 }
@@ -923,10 +911,10 @@ static gboolean vf_thumb_next(ViewFile *vf)
 
     vf->thumbs_loader = thumb_loader_new(options->thumbnails.max_width, options->thumbnails.max_height);
     thumb_loader_set_callbacks(vf->thumbs_loader,
-                   vf_thumb_done_cb,
-                   vf_thumb_error_cb,
-                   NULL,
-                   vf);
+                               vf_thumb_done_cb,
+                               vf_thumb_error_cb,
+                               NULL,
+                               vf);
 
     if (!thumb_loader_start(vf->thumbs_loader, fd))
     {
@@ -991,12 +979,8 @@ guint vf_marks_get_filter(ViewFile *vf)
     if (!vf->marks_enabled) return 0;
 
     for (i = 0; i < FILEDATA_MARKS_SIZE ; i++)
-    {
         if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(vf->filter_check[i])))
-        {
             ret |= 1 << i;
-        }
-    }
     return ret;
 }
 

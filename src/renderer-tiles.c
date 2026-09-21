@@ -156,7 +156,7 @@ static gboolean rt_tile_is_visible(RendererTiles *rt, ImageTile *it);
 static void rt_queue_clear(RendererTiles *rt);
 static void rt_queue_merge(QueueData *parent, QueueData *qd);
 static void rt_queue(RendererTiles *rt, gint x, gint y, gint w, gint h,
-             gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing);
+                     gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing);
 
 static void rt_hierarchy_changed_cb(GtkWidget *widget, GtkWidget *previous_toplevel, gpointer data);
 static gint rt_queue_draw_idle_cb(gpointer data);
@@ -1232,8 +1232,8 @@ static gint rt_get_orientation(RendererTiles *rt)
 
 
 static void rt_tile_render(RendererTiles *rt, ImageTile *it,
-               gint x, gint y, gint w, gint h,
-               gboolean new_data, gboolean fast)
+                           gint x, gint y, gint w, gint h,
+                           gboolean new_data, gboolean fast)
 {
     PixbufRenderer *pr = rt->pr;
     gboolean has_alpha;
@@ -1956,7 +1956,7 @@ static void renderer_update_viewport(void *renderer)
             rt->stereo_off_y = rt->pr->stereo_fixed_y_left;
         }
     }
-        DEBUG_1("update size: %p  %d %d   %d %d", rt, rt->stereo_off_x, rt->stereo_off_y, rt->pr->viewport_width, rt->pr->viewport_height);
+    DEBUG_1("update size: %p  %d %d   %d %d", rt, rt->stereo_off_x, rt->stereo_off_y, rt->pr->viewport_width, rt->pr->viewport_height);
     rt_sync_scroll(rt);
     rt_overlay_update_sizes(rt);
     rt_border_clear(rt);
@@ -1979,8 +1979,8 @@ static void renderer_free(void *renderer)
     rt_overlay_list_clear(rt);
     /* disconnect "hierarchy-changed" */
     g_signal_handlers_disconnect_matched(G_OBJECT(rt->pr), G_SIGNAL_MATCH_DATA,
-                                                     0, 0, 0, NULL, rt);
-        g_free(rt);
+                                         0, 0, 0, NULL, rt);
+    g_free(rt);
 }
 
 static gboolean rt_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)

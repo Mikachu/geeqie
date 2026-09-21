@@ -467,7 +467,7 @@ static void setup_env_path(void)
 {
     const gchar *old_path = g_getenv("PATH");
     gchar *path = g_strconcat(GQ_BIN_DIR, ":", old_path, NULL);
-        g_setenv("PATH", path, TRUE);
+    g_setenv("PATH", path, TRUE);
     g_free(path);
 }
 

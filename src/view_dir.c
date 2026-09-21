@@ -682,8 +682,8 @@ GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd)
                 strcmp(fd->name, ".") != 0 &&
                 strcmp(fd->name, "..") != 0 &&
                 access_file(fd->path, W_OK | X_OK));
-        };
             break;
+        }
         case DIRVIEW_TREE:
         {
             if (fd)
@@ -693,43 +693,43 @@ GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd)
                 parent = remove_level_from_path(fd->path);
                 rename_delete_active = access_file(parent, W_OK | X_OK);
                 g_free(parent);
-            };
-        }
+            }
             break;
+        }
     }
 
     menu = popup_menu_short_lived();
     g_signal_connect(G_OBJECT(menu), "destroy",
-             G_CALLBACK(vd_popup_destroy_cb), vd);
+                     G_CALLBACK(vd_popup_destroy_cb), vd);
 
     menu_item_add_stock_sensitive(menu, _("_Up to parent"), GTK_STOCK_GO_UP,
-                      (vd->dir_fd && strcmp(vd->dir_fd->path, G_DIR_SEPARATOR_S) != 0),
-                      G_CALLBACK(vd_pop_menu_up_cb), vd);
+                                  (vd->dir_fd && strcmp(vd->dir_fd->path, G_DIR_SEPARATOR_S) != 0),
+                                  G_CALLBACK(vd_pop_menu_up_cb), vd);
 
     menu_item_add_divider(menu);
     menu_item_add_sensitive(menu, _("_Slideshow"), active,
-                G_CALLBACK(vd_pop_menu_slide_cb), vd);
+                            G_CALLBACK(vd_pop_menu_slide_cb), vd);
     menu_item_add_sensitive(menu, _("Slideshow recursive"), active,
-                G_CALLBACK(vd_pop_menu_slide_rec_cb), vd);
+                            G_CALLBACK(vd_pop_menu_slide_rec_cb), vd);
 
     menu_item_add_divider(menu);
     menu_item_add_stock_sensitive(menu, _("Find _duplicates..."), GTK_STOCK_FIND, active,
-                      G_CALLBACK(vd_pop_menu_dupe_cb), vd);
+                                  G_CALLBACK(vd_pop_menu_dupe_cb), vd);
     menu_item_add_stock_sensitive(menu, _("Find duplicates recursive..."), GTK_STOCK_FIND, active,
-                      G_CALLBACK(vd_pop_menu_dupe_rec_cb), vd);
+                                  G_CALLBACK(vd_pop_menu_dupe_rec_cb), vd);
 
     menu_item_add_divider(menu);
 
     menu_item_add_sensitive(menu, _("_New folder..."), new_folder_active,
-                G_CALLBACK(vd_pop_menu_new_cb), vd);
+                            G_CALLBACK(vd_pop_menu_new_cb), vd);
 
     menu_item_add_sensitive(menu, _("_Rename..."), rename_delete_active,
-                G_CALLBACK(vd_pop_menu_rename_cb), vd);
+                            G_CALLBACK(vd_pop_menu_rename_cb), vd);
     menu_item_add_stock_sensitive(menu, _("_Delete..."), GTK_STOCK_DELETE, rename_delete_active,
-                      G_CALLBACK(vd_pop_menu_delete_cb), vd);
+                                  G_CALLBACK(vd_pop_menu_delete_cb), vd);
 
     menu_item_add(menu, _("_Copy path"),
-              G_CALLBACK(vd_pop_menu_copy_path_cb), vd);
+                  G_CALLBACK(vd_pop_menu_copy_path_cb), vd);
 
     menu_item_add_divider(menu);
 
@@ -756,10 +756,10 @@ GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd)
     menu_item_add_divider(menu);
 
     menu_item_add_check(menu, _("Show _hidden files"), options->file_filter.show_hidden_files,
-                G_CALLBACK(vd_toggle_show_hidden_files_cb), vd);
+                        G_CALLBACK(vd_toggle_show_hidden_files_cb), vd);
 
     menu_item_add_stock(menu, _("Re_fresh"), GTK_STOCK_REFRESH,
-                G_CALLBACK(vd_pop_menu_refresh_cb), vd);
+                        G_CALLBACK(vd_pop_menu_refresh_cb), vd);
 
     return menu;
 }

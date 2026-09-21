@@ -526,10 +526,10 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
             }
 
             if (imd->color_profile_use_image && imd->color_profile_from_image != COLOR_PROFILE_NONE)
-                               {
-                               input_type = imd->color_profile_from_image;
-                               input_file = NULL;
-                               }
+            {
+                input_type = imd->color_profile_from_image;
+                input_file = NULL;
+            }
         }
 
         exif_free_fd(imd->image_fd, exif);
@@ -2050,21 +2050,21 @@ void image_set_frame(ImageWindow *imd, gboolean frame)
     if (frame)
     {
         imd->frame = gtk_frame_new(NULL);
-            g_object_ref(imd->pr);
+        g_object_ref(imd->pr);
         if (imd->has_frame != -1) gtk_container_remove(GTK_CONTAINER(imd->widget), imd->pr);
         gtk_container_add(GTK_CONTAINER(imd->frame), imd->pr);
 
-            g_object_unref(imd->pr);
+        g_object_unref(imd->pr);
         gtk_widget_set_can_focus(imd->frame, TRUE);
         gtk_widget_set_app_paintable(imd->frame, TRUE);
 
         g_signal_connect(G_OBJECT(imd->frame), "expose_event",
-                 G_CALLBACK(selectable_frame_expose_cb), NULL);
+                         G_CALLBACK(selectable_frame_expose_cb), NULL);
         g_signal_connect(G_OBJECT(imd->frame), "focus_in_event",
-                 G_CALLBACK(image_focus_in_cb), imd);
+                         G_CALLBACK(image_focus_in_cb), imd);
 
-            gtk_box_pack_start(GTK_BOX(imd->widget), imd->frame, TRUE, TRUE, 0);
-            gtk_widget_show(imd->frame);
+        gtk_box_pack_start(GTK_BOX(imd->widget), imd->frame, TRUE, TRUE, 0);
+        gtk_widget_show(imd->frame);
     }
     else
     {
@@ -2075,7 +2075,7 @@ void image_set_frame(ImageWindow *imd, gboolean frame)
             gtk_widget_destroy(imd->frame);
             imd->frame = NULL;
         }
-            gtk_box_pack_start(GTK_BOX(imd->widget), imd->pr, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(imd->widget), imd->pr, TRUE, TRUE, 0);
 
         g_object_unref(imd->pr);
     }

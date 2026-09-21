@@ -30,43 +30,43 @@
 
 
 static void gqv_cell_renderer_icon_get_property(GObject     *object,
-                        guint       param_id,
-                        GValue      *value,
-                        GParamSpec  *pspec);
+                                                guint       param_id,
+                                                GValue      *value,
+                                                GParamSpec  *pspec);
 static void gqv_cell_renderer_icon_set_property(GObject     *object,
-                        guint       param_id,
-                        const GValue    *value,
-                        GParamSpec  *pspec);
+                                                guint       param_id,
+                                                const GValue    *value,
+                                                GParamSpec  *pspec);
 static void gqv_cell_renderer_icon_init(GQvCellRendererIcon *celltext);
 static void gqv_cell_renderer_icon_class_init(GQvCellRendererIconClass *class);
 static void gqv_cell_renderer_icon_finalize(GObject *object);
 static void gqv_cell_renderer_icon_get_size(GtkCellRenderer    *cell,
-                        GtkWidget          *widget,
-                        GdkRectangle       *rectangle,
-                        gint           *x_offset,
-                        gint           *y_offset,
-                        gint           *width,
-                        gint           *height);
+                                            GtkWidget          *widget,
+                                            GdkRectangle       *rectangle,
+                                            gint           *x_offset,
+                                            gint           *y_offset,
+                                            gint           *width,
+                                            gint           *height);
 static void gqv_cell_renderer_icon_render(GtkCellRenderer   *cell,
-                       GdkWindow        *window,
-                       GtkWidget        *widget,
-                       GdkRectangle     *background_area,
-                       GdkRectangle     *cell_area,
-                       GdkRectangle     *expose_area,
-                       GtkCellRendererState flags);
+                                           GdkWindow        *window,
+                                           GtkWidget        *widget,
+                                           GdkRectangle     *background_area,
+                                           GdkRectangle     *cell_area,
+                                           GdkRectangle     *expose_area,
+                                           GtkCellRendererState flags);
 
 
 static gboolean gqv_cell_renderer_icon_activate(GtkCellRenderer      *cell,
-                        GdkEvent             *event,
-                        GtkWidget            *widget,
-                        const gchar          *path,
-                        GdkRectangle         *background_area,
-                        GdkRectangle         *cell_area,
-                        GtkCellRendererState  flags);
+                                            GdkEvent             *event,
+                                            GtkWidget            *widget,
+                                            const gchar          *path,
+                                            GdkRectangle         *background_area,
+                                            GdkRectangle         *cell_area,
+                                            GtkCellRendererState  flags);
 
 enum {
-  TOGGLED,
-  LAST_SIGNAL
+    TOGGLED,
+    LAST_SIGNAL
 };
 
 enum {
@@ -114,8 +114,8 @@ gqv_cell_renderer_icon_get_type(void)
         };
 
         cell_icon_type = g_type_register_static(GTK_TYPE_CELL_RENDERER,
-                            "GQvCellRendererIcon",
-                            &cell_icon_info, 0);
+                                                "GQvCellRendererIcon",
+                                                &cell_icon_info, 0);
     }
 
     return cell_icon_type;
@@ -146,130 +146,129 @@ gqv_cell_renderer_icon_class_init(GQvCellRendererIconClass *class)
     cell_class->activate = gqv_cell_renderer_icon_activate;
 
     g_object_class_install_property(object_class,
-                    PROP_PIXBUF,
-                    g_param_spec_object("pixbuf",
-                            "Pixbuf Object",
-                            "The pixbuf to render",
-                            GDK_TYPE_PIXBUF,
-                            G_PARAM_READWRITE));
+                                    PROP_PIXBUF,
+                                    g_param_spec_object("pixbuf",
+                                                        "Pixbuf Object",
+                                                        "The pixbuf to render",
+                                                        GDK_TYPE_PIXBUF,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_TEXT,
-                    g_param_spec_string("text",
-                            "Text",
-                            "Text to render",
-                            NULL,
-                            G_PARAM_READWRITE));
+                                    PROP_TEXT,
+                                    g_param_spec_string("text",
+                                                        "Text",
+                                                        "Text to render",
+                                                        NULL,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_BACKGROUND_GDK,
-                    g_param_spec_boxed("background_gdk",
-                            "Background color",
-                            "Background color as a GdkColor",
-                            GDK_TYPE_COLOR,
-                            G_PARAM_READWRITE));
+                                    PROP_BACKGROUND_GDK,
+                                    g_param_spec_boxed("background_gdk",
+                                                        "Background color",
+                                                        "Background color as a GdkColor",
+                                                        GDK_TYPE_COLOR,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_FOREGROUND_GDK,
-                    g_param_spec_boxed("foreground_gdk",
-                            "Foreground color",
-                            "Foreground color as a GdkColor",
-                            GDK_TYPE_COLOR,
-                            G_PARAM_READWRITE));
+                                    PROP_FOREGROUND_GDK,
+                                    g_param_spec_boxed("foreground_gdk",
+                                                        "Foreground color",
+                                                        "Foreground color as a GdkColor",
+                                                        GDK_TYPE_COLOR,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_FOCUSED,
-                    g_param_spec_boolean("has_focus",
-                            "Focus",
-                            "Draw focus indicator",
-                            FALSE,
-                            G_PARAM_READWRITE));
+                                    PROP_FOCUSED,
+                                    g_param_spec_boolean("has_focus",
+                                                        "Focus",
+                                                        "Draw focus indicator",
+                                                        FALSE,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_FIXED_WIDTH,
-                    g_param_spec_int("fixed_width",
-                            "Fixed width",
-                            "Width of cell",
-                            -1, FIXED_ICON_SIZE_MAX,
-                            -1,
-                            G_PARAM_READWRITE));
+                                    PROP_FIXED_WIDTH,
+                                    g_param_spec_int("fixed_width",
+                                                        "Fixed width",
+                                                        "Width of cell",
+                                                        -1, FIXED_ICON_SIZE_MAX,
+                                                        -1,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_FIXED_HEIGHT,
-                    g_param_spec_int("fixed_height",
-                            "Fixed height",
-                            "Height of icon excluding text",
-                            -1, FIXED_ICON_SIZE_MAX,
-                            -1,
-                            G_PARAM_READWRITE));
+                                    PROP_FIXED_HEIGHT,
+                                    g_param_spec_int("fixed_height",
+                                                        "Fixed height",
+                                                        "Height of icon excluding text",
+                                                        -1, FIXED_ICON_SIZE_MAX,
+                                                        -1,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_BACKGROUND_SET,
-                    g_param_spec_boolean("background_set",
-                            "Background set",
-                            "Whether this tag affects the background color",
-                            FALSE,
-                            G_PARAM_READWRITE));
+                                    PROP_BACKGROUND_SET,
+                                    g_param_spec_boolean("background_set",
+                                                        "Background set",
+                                                        "Whether this tag affects the background color",
+                                                        FALSE,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_FOREGROUND_SET,
-                    g_param_spec_boolean("foreground_set",
-                            "Foreground set",
-                            "Whether this tag affects the foreground color",
-                            FALSE,
-                            G_PARAM_READWRITE));
+                                    PROP_FOREGROUND_SET,
+                                    g_param_spec_boolean("foreground_set",
+                                                        "Foreground set",
+                                                        "Whether this tag affects the foreground color",
+                                                        FALSE,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_SHOW_TEXT,
-                    g_param_spec_boolean("show_text",
-                            "Show text",
-                            "Whether the text is displayed",
-                            TRUE,
-                            G_PARAM_READWRITE));
+                                    PROP_SHOW_TEXT,
+                                    g_param_spec_boolean("show_text",
+                                                        "Show text",
+                                                        "Whether the text is displayed",
+                                                        TRUE,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_SHOW_MARKS,
-                    g_param_spec_boolean("show_marks",
-                            "Show marks",
-                            "Whether the marks are displayed",
-                            TRUE,
-                            G_PARAM_READWRITE));
+                                    PROP_SHOW_MARKS,
+                                    g_param_spec_boolean("show_marks",
+                                                        "Show marks",
+                                                        "Whether the marks are displayed",
+                                                        TRUE,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_NUM_MARKS,
-                    g_param_spec_int("num_marks",
-                            "Number of marks",
-                            "Number of marks",
-                            0, 32,
-                            6,
-                            G_PARAM_READWRITE));
+                                    PROP_NUM_MARKS,
+                                    g_param_spec_int("num_marks",
+                                                        "Number of marks",
+                                                        "Number of marks",
+                                                        0, 32,
+                                                        6,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_MARKS,
-                    g_param_spec_uint("marks",
-                            "Marks",
-                            "Marks bit array",
-                            0, 0xffffffff,
-                            0,
-                            G_PARAM_READWRITE));
+                                    PROP_MARKS,
+                                    g_param_spec_uint("marks",
+                                                        "Marks",
+                                                        "Marks bit array",
+                                                        0, 0xffffffff,
+                                                        0,
+                                                        G_PARAM_READWRITE));
 
     g_object_class_install_property(object_class,
-                    PROP_TOGGLED,
-                    g_param_spec_uint("toggled_mark",
-                            "Toggled mark",
-                            "Toggled mark",
-                            0, 32,
-                            0,
-                            G_PARAM_READWRITE));
-    toggle_cell_signals[TOGGLED] =
-        g_signal_new("toggled",
-        G_OBJECT_CLASS_TYPE (object_class),
-        G_SIGNAL_RUN_LAST,
-        G_STRUCT_OFFSET (GQvCellRendererIconClass, toggled),
-        NULL, NULL,
-        g_cclosure_marshal_VOID__STRING,
-        G_TYPE_NONE, 1,
-        G_TYPE_STRING);
+                                    PROP_TOGGLED,
+                                    g_param_spec_uint("toggled_mark",
+                                                        "Toggled mark",
+                                                        "Toggled mark",
+                                                        0, 32,
+                                                        0,
+                                                        G_PARAM_READWRITE));
+    toggle_cell_signals[TOGGLED] = g_signal_new("toggled",
+                                                G_OBJECT_CLASS_TYPE (object_class),
+                                                G_SIGNAL_RUN_LAST,
+                                                G_STRUCT_OFFSET (GQvCellRendererIconClass, toggled),
+                                                NULL, NULL,
+                                                g_cclosure_marshal_VOID__STRING,
+                                                G_TYPE_NONE, 1,
+                                                G_TYPE_STRING);
 
 }
 
@@ -286,10 +285,8 @@ gqv_cell_renderer_icon_finalize(GObject *object)
 }
 
 static void
-gqv_cell_renderer_icon_get_property(GObject *object,
-                    guint   param_id,
-                    GValue  *value,
-                    GParamSpec  *pspec)
+gqv_cell_renderer_icon_get_property(GObject *object, guint param_id,
+                                    GValue *value, GParamSpec *pspec)
 {
     GQvCellRendererIcon *cellicon = GQV_CELL_RENDERER_ICON(object);
 
@@ -360,8 +357,7 @@ gqv_cell_renderer_icon_get_property(GObject *object,
 }
 
 static void
-set_bg_color(GQvCellRendererIcon *cellicon,
-         GdkColor         *color)
+set_bg_color(GQvCellRendererIcon *cellicon, GdkColor *color)
 {
     if (color)
     {
@@ -385,8 +381,7 @@ set_bg_color(GQvCellRendererIcon *cellicon,
     }
 }
 
-static void set_fg_color(GQvCellRendererIcon *cellicon,
-             GdkColor         *color)
+static void set_fg_color(GQvCellRendererIcon *cellicon, GdkColor *color)
 {
     if (color)
     {
@@ -411,10 +406,8 @@ static void set_fg_color(GQvCellRendererIcon *cellicon,
 }
 
 static void
-gqv_cell_renderer_icon_set_property(GObject     *object,
-                    guint       param_id,
-                    const GValue    *value,
-                    GParamSpec      *pspec)
+gqv_cell_renderer_icon_set_property(GObject *object, guint param_id,
+                                    const GValue *value, GParamSpec *pspec)
 {
     GQvCellRendererIcon *cellicon = GQV_CELL_RENDERER_ICON(object);
 
@@ -540,12 +533,12 @@ gqv_cell_renderer_icon_new(void)
 }
 
 static void gqv_cell_renderer_icon_get_size(GtkCellRenderer    *cell,
-                        GtkWidget          *widget,
-                        GdkRectangle       *cell_area,
-                        gint           *x_offset,
-                        gint           *y_offset,
-                        gint           *width,
-                        gint           *height)
+                                            GtkWidget          *widget,
+                                            GdkRectangle       *cell_area,
+                                            gint               *x_offset,
+                                            gint               *y_offset,
+                                            gint               *width,
+                                            gint               *height)
 {
     GQvCellRendererIcon *cellicon = (GQvCellRendererIcon *) cell;
     gint calc_width;
@@ -557,22 +550,14 @@ static void gqv_cell_renderer_icon_get_size(GtkCellRenderer    *cell,
     gtk_cell_renderer_get_alignment(cell, &xalign, &yalign);
 
     if (cellicon->fixed_width > 0)
-    {
         calc_width = cellicon->fixed_width;
-    }
     else
-    {
         calc_width = (cellicon->pixbuf) ? gdk_pixbuf_get_width(cellicon->pixbuf) : 0;
-    }
 
     if (cellicon->fixed_height > 0)
-    {
         calc_height = cellicon->fixed_height;
-    }
     else
-    {
         calc_height = (cellicon->pixbuf) ? gdk_pixbuf_get_height(cellicon->pixbuf) : 0;
-    }
 
     if (cellicon->show_text && cellicon->text)
     {
@@ -613,18 +598,18 @@ static void gqv_cell_renderer_icon_get_size(GtkCellRenderer    *cell,
         }
     }
 
-    if (width) *width = calc_width;
+    if (width)   *width = calc_width;
     if (height) *height = calc_height;
 }
 
 static void
 gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
-                  GdkWindow         *window,
-                  GtkWidget         *widget,
-                  GdkRectangle      *background_area,
-                  GdkRectangle      *cell_area,
-                  GdkRectangle      *expose_area,
-                  GtkCellRendererState  flags)
+                              GdkWindow             *window,
+                              GtkWidget             *widget,
+                              GdkRectangle          *background_area,
+                              GdkRectangle          *cell_area,
+                              GdkRectangle          *expose_area,
+                              GtkCellRendererState  flags)
 
 {
     cairo_t *cr = gdk_cairo_create(window);
@@ -634,7 +619,6 @@ gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
     GdkRectangle cell_rect;
     GtkStateType state;
     gint xpad, ypad;
-
 
     pixbuf = cellicon->pixbuf;
     text = cellicon->text;
@@ -648,8 +632,8 @@ gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
     gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
 
     gqv_cell_renderer_icon_get_size(cell, widget, cell_area,
-                    &cell_rect.x, &cell_rect.y,
-                    &cell_rect.width, &cell_rect.height);
+                                    &cell_rect.x, &cell_rect.y,
+                                    &cell_rect.width, &cell_rect.height);
 
     cell_rect.x += xpad;
     cell_rect.y += ypad;
@@ -683,24 +667,17 @@ gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
         pix_rect.x = cell_area->x + (cell_area->width - pix_rect.width) / 2;
 
         if (cellicon->fixed_height > 0)
-        {
             pix_rect.y = cell_area->y + ypad + (cellicon->fixed_height - pix_rect.height) / 2;
-        }
         else
-        {
             pix_rect.y = cell_area->y + cell_rect.y;
-        }
 
-        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect)
-            && gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect)
-           )
+        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect) &&
+            gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect))
         {
             gdk_cairo_set_source_pixbuf(cr, pixbuf, pix_rect.x, pix_rect.y);
             cairo_rectangle (cr,
-                    draw_rect.x,
-                    draw_rect.y,
-                    draw_rect.width,
-                    draw_rect.height);
+                             draw_rect.x, draw_rect.y,
+                             draw_rect.width, draw_rect.height);
 
             cairo_fill (cr);
         }
@@ -725,17 +702,16 @@ gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
             pix_rect.y -= TOGGLE_SPACING;
         }
 
-        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect)
-            && gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect)
-            )
+        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect) &&
+            gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect))
         {
 
             gtk_paint_layout(gtk_widget_get_style(widget), window,
-                     state, TRUE,
-                     cell_area, widget,
-                     "cellrenderertext",
-                     pix_rect.x - text_rect.x, pix_rect.y,
-                     layout);
+                             state, TRUE,
+                             cell_area, widget,
+                             "cellrenderertext",
+                             pix_rect.x - text_rect.x, pix_rect.y,
+                             layout);
         }
         g_object_unref(layout);
     }
@@ -751,49 +727,46 @@ gqv_cell_renderer_icon_render(GtkCellRenderer       *cell,
         pix_rect.x = cell_area->x + xpad + (cell_rect.width - pix_rect.width + 1) / 2 + (TOGGLE_SPACING - TOGGLE_WIDTH) / 2;
         pix_rect.y = cell_area->y + ypad + (cell_rect.height - pix_rect.height) + (TOGGLE_SPACING - TOGGLE_WIDTH) / 2;
 
-        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect)
-            && gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect)
-            )
+        if (gdk_rectangle_intersect(cell_area, &pix_rect, &draw_rect) &&
+            gdk_rectangle_intersect(expose_area, &draw_rect, &draw_rect))
         {
             for (i = 0; i < cellicon->num_marks; i++)
             {
                 gtk_paint_check(gtk_widget_get_style(widget), window,
-                     state, (cellicon->marks & (1 << i)) ? GTK_SHADOW_IN : GTK_SHADOW_OUT,
-                     cell_area, widget, "cellcheck",
-                     pix_rect.x + i * TOGGLE_SPACING + (TOGGLE_WIDTH - TOGGLE_SPACING) / 2,
-                     pix_rect.y,
-                     TOGGLE_WIDTH, TOGGLE_WIDTH);
+                                state, (cellicon->marks & (1 << i)) ? GTK_SHADOW_IN : GTK_SHADOW_OUT,
+                                cell_area, widget, "cellcheck",
+                                pix_rect.x + i * TOGGLE_SPACING + (TOGGLE_WIDTH - TOGGLE_SPACING) / 2,
+                                pix_rect.y,
+                                TOGGLE_WIDTH, TOGGLE_WIDTH);
             }
         }
-            }
+    }
 
     if (cellicon->focused && gtk_widget_has_focus(widget))
     {
-        gtk_paint_focus(gtk_widget_get_style(widget), window,
-                state,
-                cell_area, widget,
-                "cellrendererfocus",
-                cell_area->x, cell_area->y,
-                cell_area->width, cell_area->height);
+        gtk_paint_focus(gtk_widget_get_style(widget), window, state,
+                        cell_area, widget, "cellrendererfocus",
+                        cell_area->x, cell_area->y,
+                        cell_area->width, cell_area->height);
     }
     cairo_destroy(cr);
 }
 
-static gboolean gqv_cell_renderer_icon_activate(GtkCellRenderer      *cell,
-                        GdkEvent             *event,
-                        GtkWidget            *widget,
-                        const gchar          *path,
-                        GdkRectangle         *background_area,
-                        GdkRectangle         *cell_area,
-                        GtkCellRendererState  flags)
+static gboolean gqv_cell_renderer_icon_activate(GtkCellRenderer       *cell,
+                                                GdkEvent              *event,
+                                                GtkWidget             *widget,
+                                                const gchar           *path,
+                                                GdkRectangle          *background_area,
+                                                GdkRectangle          *cell_area,
+                                                GtkCellRendererState  flags)
 {
     GQvCellRendererIcon *cellicon = (GQvCellRendererIcon *) cell;
     GdkEventButton *bevent = &event->button;
 
     if (cellicon->show_marks &&
         event->type == GDK_BUTTON_PRESS &&
-            !(bevent->state & GDK_SHIFT_MASK ) &&
-            !(bevent->state & GDK_CONTROL_MASK ))
+        !(bevent->state & GDK_SHIFT_MASK) &&
+        !(bevent->state & GDK_CONTROL_MASK))
     {
         GdkRectangle rect;
         GdkRectangle cell_rect;
@@ -803,8 +776,8 @@ static gboolean gqv_cell_renderer_icon_activate(GtkCellRenderer      *cell,
         gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
 
         gqv_cell_renderer_icon_get_size(cell, widget, cell_area,
-                        &cell_rect.x, &cell_rect.y,
-                        &cell_rect.width, &cell_rect.height);
+                                        &cell_rect.x, &cell_rect.y,
+                                        &cell_rect.width, &cell_rect.height);
 
         cell_rect.x += xpad;
         cell_rect.y += ypad;
@@ -816,7 +789,9 @@ static gboolean gqv_cell_renderer_icon_activate(GtkCellRenderer      *cell,
         rect.y = cell_area->y + ypad + (cell_rect.height - TOGGLE_SPACING) + (TOGGLE_SPACING - TOGGLE_WIDTH) / 2;
         for (i = 0; i < cellicon->num_marks; i++)
         {
-            rect.x = cell_area->x + xpad + (cell_rect.width - TOGGLE_SPACING * cellicon->num_marks + 1) / 2 + i * TOGGLE_SPACING;
+            rect.x = cell_area->x + xpad + 
+                     (cell_rect.width - TOGGLE_SPACING * cellicon->num_marks + 1) / 2 +
+                     i * TOGGLE_SPACING;
 
             if (bevent->x >= rect.x && bevent->x < rect.x + rect.width &&
                 bevent->y >= rect.y && bevent->y < rect.y + rect.height)

@@ -56,7 +56,7 @@ struct _ImageLoaderJpeg {
 struct error_handler_data {
     struct jpeg_error_mgr pub;
     sigjmp_buf setjmp_buffer;
-        GError **error;
+    GError **error;
 };
 
 /* explode gray image data from jpeg library into rgb components in pixbuf */
@@ -130,7 +130,7 @@ convert_cmyk_to_rgb (struct jpeg_decompress_struct *cinfo,
 
 static gpointer image_loader_jpeg_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, gpointer data)
 {
-        ImageLoaderJpeg *loader = g_new0(ImageLoaderJpeg, 1);
+    ImageLoaderJpeg *loader = g_new0(ImageLoaderJpeg, 1);
 
     loader->area_updated_cb = area_updated_cb;
     loader->size_cb = size_cb;
@@ -142,29 +142,29 @@ static void
 fatal_error_handler (j_common_ptr cinfo)
 {
     struct error_handler_data *errmgr;
-        char buffer[JMSG_LENGTH_MAX];
+    char buffer[JMSG_LENGTH_MAX];
 
     errmgr = (struct error_handler_data *) cinfo->err;
 
-        /* Create the message */
-        (* cinfo->err->format_message) (cinfo, buffer);
+    /* Create the message */
+    (* cinfo->err->format_message) (cinfo, buffer);
 
-        /* broken check for *error == NULL for robustness against
-         * crappy JPEG library
-         */
-        if (errmgr->error && *errmgr->error == NULL) {
-                g_set_error (errmgr->error,
-                             GDK_PIXBUF_ERROR,
-                             cinfo->err->msg_code == JERR_OUT_OF_MEMORY
-                 ? GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY
-                 : GDK_PIXBUF_ERROR_CORRUPT_IMAGE,
-                             _("Error interpreting JPEG image file (%s)"),
-                             buffer);
+    /* broken check for *error == NULL for robustness against
+     * crappy JPEG library
+     */
+    if (errmgr->error && *errmgr->error == NULL) {
+        g_set_error(errmgr->error,
+                    GDK_PIXBUF_ERROR,
+                    cinfo->err->msg_code == JERR_OUT_OF_MEMORY
+                    ? GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY
+                    : GDK_PIXBUF_ERROR_CORRUPT_IMAGE,
+                    _("Error interpreting JPEG image file (%s)"),
+                    buffer);
     }
 
     siglongjmp (errmgr->setjmp_buffer, 1);
 
-        g_assert_not_reached ();
+    g_assert_not_reached ();
 }
 
 static void
@@ -193,17 +193,17 @@ void image_loader_jpeg_read_scanline(struct jpeg_decompress_struct *cinfo, gucha
 
     switch (cinfo->out_color_space)
     {
-            case JCS_GRAYSCALE:
-              explode_gray_into_buf (cinfo, lines);
-              break;
-            case JCS_RGB:
-              /* do nothing */
-              break;
-            case JCS_CMYK:
-              convert_cmyk_to_rgb (cinfo, lines);
-              break;
-            default:
-              break;
+        case JCS_GRAYSCALE:
+            explode_gray_into_buf (cinfo, lines);
+            break;
+        case JCS_RGB:
+            /* do nothing */
+            break;
+        case JCS_CMYK:
+            convert_cmyk_to_rgb (cinfo, lines);
+            break;
+        default:
+            break;
     }
 }
 
@@ -316,9 +316,9 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
     cinfo.err = jpeg_std_error (&jerr.pub);
     if (lj->stereo) cinfo2.err = jpeg_std_error (&jerr.pub);
     jerr.pub.error_exit = fatal_error_handler;
-        jerr.pub.output_message = output_message_handler;
+    jerr.pub.output_message = output_message_handler;
 
-        jerr.error = error;
+    jerr.error = error;
 
 
     if (setjmp(jerr.setjmp_buffer))

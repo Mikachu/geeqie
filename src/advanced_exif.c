@@ -130,13 +130,13 @@ static void advanced_exif_update(ExifWin *ew)
 
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
-                EXIF_ADVCOL_ENABLED, advanced_exif_row_enabled(tag_name),
-                EXIF_ADVCOL_TAG, tag,
-                EXIF_ADVCOL_NAME, tag_name,
-                EXIF_ADVCOL_VALUE, utf8_text,
-                EXIF_ADVCOL_FORMAT, format,
-                EXIF_ADVCOL_ELEMENTS, elements,
-                EXIF_ADVCOL_DESCRIPTION, description, -1);
+                           EXIF_ADVCOL_ENABLED, advanced_exif_row_enabled(tag_name),
+                           EXIF_ADVCOL_TAG, tag,
+                           EXIF_ADVCOL_NAME, tag_name,
+                           EXIF_ADVCOL_VALUE, utf8_text,
+                           EXIF_ADVCOL_FORMAT, format,
+                           EXIF_ADVCOL_ELEMENTS, elements,
+                           EXIF_ADVCOL_DESCRIPTION, description, -1);
         g_free(tag);
         g_free(utf8_text);
         g_free(elements);
@@ -180,8 +180,8 @@ static gint n_exif_drag_types = 1;
 
 
 static void advanced_exif_dnd_get(GtkWidget *listview, GdkDragContext *context,
-                  GtkSelectionData *selection_data, guint info,
-                  guint time, gpointer data)
+                                  GtkSelectionData *selection_data, guint info,
+                                  guint time, gpointer data)
 {
     //ExifWin *ew = data;
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
@@ -343,7 +343,7 @@ GtkWidget *advanced_exif_new(void)
 
     g_object_set_data(G_OBJECT(ew->window), "advanced_exif_data", ew);
     g_signal_connect_after(G_OBJECT(ew->window), "destroy",
-                   G_CALLBACK(advanced_exif_destroy), ew);
+                           G_CALLBACK(advanced_exif_destroy), ew);
 
     ew->vbox = gtk_vbox_new(FALSE, PREF_PAD_GAP);
     gtk_container_add(GTK_CONTAINER(ew->window), ew->vbox);
@@ -363,17 +363,17 @@ GtkWidget *advanced_exif_new(void)
 
 
     store = gtk_list_store_new(7, G_TYPE_BOOLEAN,
-                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+                               G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+                               G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 
     /* set up sorting */
     sortable = GTK_TREE_SORTABLE(store);
     for (n = EXIF_ADVCOL_DESCRIPTION; n <= EXIF_ADVCOL_ELEMENTS; n++)
         gtk_tree_sortable_set_sort_func(sortable, n, advanced_exif_sort_cb,
-                        GINT_TO_POINTER(n), NULL);
+                                        GINT_TO_POINTER(n), NULL);
 
     /* set initial sort order */
-        gtk_tree_sortable_set_sort_column_id(sortable, EXIF_ADVCOL_NAME, GTK_SORT_ASCENDING);
+    gtk_tree_sortable_set_sort_column_id(sortable, EXIF_ADVCOL_NAME, GTK_SORT_ASCENDING);
 
     ew->listview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     g_object_unref(store);
@@ -390,23 +390,23 @@ GtkWidget *advanced_exif_new(void)
 
 
     gtk_drag_source_set(ew->listview,
-               GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-               advanced_exif_drag_types, n_exif_drag_types,
-               GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                        GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
+                        advanced_exif_drag_types, n_exif_drag_types,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
 
     g_signal_connect(G_OBJECT(ew->listview), "drag_data_get",
-             G_CALLBACK(advanced_exif_dnd_get), ew);
+                     G_CALLBACK(advanced_exif_dnd_get), ew);
 
     g_signal_connect(G_OBJECT(ew->listview), "drag_begin",
-             G_CALLBACK(advanced_exif_dnd_begin), ew);
+                     G_CALLBACK(advanced_exif_dnd_begin), ew);
 
     g_signal_connect(G_OBJECT(ew->window), "key_press_event",
-             G_CALLBACK(advanced_exif_keypress), ew);
+                     G_CALLBACK(advanced_exif_keypress), ew);
 
     ew->scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(ew->scrolled), GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(ew->scrolled),
-                       GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
     gtk_box_pack_start(GTK_BOX(ew->vbox), ew->scrolled, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(ew->scrolled), ew->listview);
     gtk_widget_show(ew->listview);

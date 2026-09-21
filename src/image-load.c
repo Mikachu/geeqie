@@ -1076,7 +1076,7 @@ static gboolean image_loader_start_thread(ImageLoader *il)
 
     if (!image_loader_setup_source(il)) return FALSE;
 
-        if (!image_loader_thread_pool)
+    if (!image_loader_thread_pool)
     {
         image_loader_thread_pool = g_thread_pool_new(image_loader_thread_run, NULL, -1, FALSE, NULL);
 #if GLIB_CHECK_VERSION(2,32,0)

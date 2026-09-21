@@ -22,10 +22,10 @@
 #ifndef PIXBUF_RENDERER_H
 #define PIXBUF_RENDERER_H
 
-#define TYPE_PIXBUF_RENDERER        (pixbuf_renderer_get_type())
-#define PIXBUF_RENDERER(obj)        (G_TYPE_CHECK_INSTANCE_CAST((obj), TYPE_PIXBUF_RENDERER, PixbufRenderer))
+#define TYPE_PIXBUF_RENDERER            (pixbuf_renderer_get_type())
+#define PIXBUF_RENDERER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TYPE_PIXBUF_RENDERER, PixbufRenderer))
 #define PIXBUF_RENDERER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), TYPE_PIXBUF_RENDERER, PixbufRendererClass))
-#define IS_PIXBUF_RENDERER(obj)     (G_TYPE_CHECK_INSTANCE_TYPE((obj), TYPE_PIXBUF_RENDERER))
+#define IS_PIXBUF_RENDERER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), TYPE_PIXBUF_RENDERER))
 #define IS_PIXBUF_RENDERER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), TYPE_PIXBUF_RENDERER))
 #define PIXBUF_RENDERER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), TYPE_PIXBUF_RENDERER, PixbufRendererClass))
 
@@ -53,12 +53,14 @@ typedef struct _PixbufRendererClass PixbufRendererClass;
 
 
 typedef gint (* PixbufRendererTileRequestFunc)(PixbufRenderer *pr, gint x, gint y,
-                           gint width, gint height, GdkPixbuf *pixbuf, gpointer user_data);
+                                               gint width, gint height,
+                                               GdkPixbuf *pixbuf, gpointer user_data);
 typedef void (* PixbufRendererTileDisposeFunc)(PixbufRenderer *pr, gint x, gint y,
-                           gint width, gint height, GdkPixbuf *pixbuf, gpointer user_data);
+                                               gint width, gint height,
+                                               GdkPixbuf *pixbuf, gpointer user_data);
 
 typedef void (* PixbufRendererPostProcessFunc)(PixbufRenderer *pr, GdkPixbuf **pixbuf, gint x, gint y,
-                           gint width, gint height, gpointer user_data);
+                                               gint width, gint height, gpointer user_data);
 
 typedef enum {
     PR_SCROLL_RESET_TOPLEFT = 0,
@@ -82,8 +84,8 @@ typedef enum {
 struct _RendererFuncs
 {
 //  void (*redraw)(void *renderer, gint x, gint y, gint w, gint h,
-  //                   gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing);
-        void (*area_changed)(void *renderer, gint src_x, gint src_y, gint src_w, gint src_h); /* pixbuf area changed */
+//                 gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing);
+    void (*area_changed)(void *renderer, gint src_x, gint src_y, gint src_w, gint src_h); /* pixbuf area changed */
     void (*invalidate_region)(void *renderer, gint x, gint y, gint w, gint h);
     void (*scroll)(void *renderer, gint x_off, gint y_off); /* scroll */
     void (*update_viewport)(void *renderer); /* window / wiewport / border color has changed */
@@ -259,11 +261,11 @@ void pixbuf_renderer_set_post_process_func(PixbufRenderer *pr, PixbufRendererPos
 /* display an on-request array of pixbuf tiles */
 
 void pixbuf_renderer_set_tiles(PixbufRenderer *pr, gint width, gint height,
-                   gint tile_width, gint tile_height, gint cache_size,
-                   PixbufRendererTileRequestFunc func_request,
-                   PixbufRendererTileDisposeFunc func_dispose,
-                   gpointer user_data,
-                   gdouble zoom);
+                               gint tile_width, gint tile_height, gint cache_size,
+                               PixbufRendererTileRequestFunc func_request,
+                               PixbufRendererTileDisposeFunc func_dispose,
+                               gpointer user_data,
+                               gdouble zoom);
 void pixbuf_renderer_set_tiles_size(PixbufRenderer *pr, gint width, gint height);
 gint pixbuf_renderer_get_tiles(PixbufRenderer *pr);
 
@@ -280,7 +282,7 @@ void pixbuf_renderer_area_changed(PixbufRenderer *pr, gint x, gint y, gint width
 
 void pixbuf_renderer_scroll(PixbufRenderer *pr, gint x, gint y);
 void pixbuf_renderer_scroll_to_point(PixbufRenderer *pr, gint x, gint y,
-                     gdouble x_align, gdouble y_align);
+                                     gdouble x_align, gdouble y_align);
 
 void pixbuf_renderer_get_scroll_center(PixbufRenderer *pr, gdouble *x, gdouble *y);
 void pixbuf_renderer_set_scroll_center(PixbufRenderer *pr, gdouble x, gdouble y);
@@ -314,14 +316,14 @@ void pixbuf_renderer_set_color(PixbufRenderer *pr, GdkColor *color);
 /* overlay */
 
 gint pixbuf_renderer_overlay_add(PixbufRenderer *pr, GdkPixbuf *pixbuf, gint x, gint y,
-                 OverlayRendererFlags flags);
+                                 OverlayRendererFlags flags);
 void pixbuf_renderer_overlay_set(PixbufRenderer *pr, gint id, GdkPixbuf *pixbuf, gint x, gint y);
 void pixbuf_renderer_overlay_remove(PixbufRenderer *pr, gint id);
 
 gboolean pixbuf_renderer_get_mouse_position(PixbufRenderer *pr, gint *x_pixel, gint *y_pixel);
 /* x_pixel and y_pixel are the pixel coordinates \see pixbuf_renderer_get_mouse_position */
 gboolean pixbuf_renderer_get_pixel_colors(PixbufRenderer *pr, gint x_pixel, gint y_pixel,
-                    gint *r_mouse, gint *g_mouse, gint *b_mouse);
+                                          gint *r_mouse, gint *g_mouse, gint *b_mouse);
 
 void pixbuf_renderer_set_size_early(PixbufRenderer *pr, gint width, gint height);
 
@@ -343,27 +345,27 @@ struct _SourceTile
 
 
 gboolean pr_clip_region(gint x, gint y, gint w, gint h,
-                   gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-                   gint *rx, gint *ry, gint *rw, gint *rh);
+                        gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                        gint *rx, gint *ry, gint *rw, gint *rh);
 void pr_render_complete_signal(PixbufRenderer *pr);
 
 void pr_tile_coords_map_orientation(gint orientation,
-                     gdouble tile_x, gdouble tile_y, /* coordinates of the tile */
-                     gdouble image_w, gdouble image_h,
-                     gdouble tile_w, gdouble tile_h,
-                     gdouble *res_x, gdouble *res_y);
+                                    gdouble tile_x, gdouble tile_y, /* coordinates of the tile */
+                                    gdouble image_w, gdouble image_h,
+                                    gdouble tile_w, gdouble tile_h,
+                                    gdouble *res_x, gdouble *res_y);
 void pr_tile_region_map_orientation(gint orientation,
-                     gint area_x, gint area_y, /* coordinates of the area inside tile */
-                     gint tile_w, gint tile_h,
-                     gint area_w, gint area_h,
-                     gint *res_x, gint *res_y,
-                     gint *res_w, gint *res_h);
+                                    gint area_x, gint area_y, /* coordinates of the area inside tile */
+                                    gint tile_w, gint tile_h,
+                                    gint area_w, gint area_h,
+                                    gint *res_x, gint *res_y,
+                                    gint *res_w, gint *res_h);
 void pr_coords_map_orientation_reverse(gint orientation,
-                     gint area_x, gint area_y,
-                     gint tile_w, gint tile_h,
-                     gint area_w, gint area_h,
-                     gint *res_x, gint *res_y,
-                     gint *res_w, gint *res_h);
+                                    gint area_x, gint area_y,
+                                    gint tile_w, gint tile_h,
+                                    gint area_w, gint area_h,
+                                    gint *res_x, gint *res_y,
+                                    gint *res_w, gint *res_h);
 
 GList *pr_source_tile_compute_region(PixbufRenderer *pr, gint x, gint y, gint w, gint h, gboolean request);
 

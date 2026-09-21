@@ -22,7 +22,7 @@
 #ifndef JPEG_PARSER_H
 #define JPEG_PARSER_H
 
-#define JPEG_MARKER     0xFF
+#define JPEG_MARKER         0xFF
 #define JPEG_MARKER_SOI     0xD8
 #define JPEG_MARKER_EOI     0xD9
 #define JPEG_MARKER_APP1    0xE1
@@ -41,8 +41,8 @@
  */
 
 gboolean jpeg_segment_find(const guchar *data, guint size,
-                guchar app_marker, const gchar *magic, guint magic_len,
-                guint *seg_offset, guint *seg_length);
+                           guchar app_marker, const gchar *magic, guint magic_len,
+                           guint *seg_offset, guint *seg_length);
 
 
 typedef struct _MPOData MPOData;
@@ -78,7 +78,7 @@ struct _MPOEntry {
 
 
 struct _MPOData {
-        guint mpo_offset;
+    guint mpo_offset;
 
     guint version;
     guint num_images;

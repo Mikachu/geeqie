@@ -2589,7 +2589,6 @@ static void layout_bar_destroyed(GtkWidget *widget, gpointer data)
     do not call layout_util_sync_views(lw) here
     this is called either when whole layout is destroyed - no need for update
     or when the bar is replaced - sync is called by upper function at the end of whole operation
-
 */
 }
 
@@ -2684,7 +2683,6 @@ static void layout_bar_sort_destroyed(GtkWidget *widget, gpointer data)
     do not call layout_util_sync_views(lw) here
     this is called either when whole layout is destroyed - no need for update
     or when the bar is replaced - sync is called by upper function at the end of whole operation
-
 */
 }
 

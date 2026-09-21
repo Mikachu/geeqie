@@ -287,17 +287,17 @@ static GtkWidget *bar_pane_histogram_new(const gchar *id, const gchar *title, gi
 
     g_object_set_data(G_OBJECT(phd->widget), "pane_data", phd);
     g_signal_connect(G_OBJECT(phd->widget), "destroy",
-             G_CALLBACK(bar_pane_histogram_destroy), phd);
+                     G_CALLBACK(bar_pane_histogram_destroy), phd);
 
 
     gtk_widget_set_size_request(GTK_WIDGET(phd->widget), -1, height);
 
     phd->drawing_area = gtk_drawing_area_new();
     g_signal_connect_after(G_OBJECT(phd->drawing_area), "size_allocate",
-                               G_CALLBACK(bar_pane_histogram_size_cb), phd);
+                           G_CALLBACK(bar_pane_histogram_size_cb), phd);
 
     g_signal_connect(G_OBJECT(phd->drawing_area), "expose_event",
-             G_CALLBACK(bar_pane_histogram_expose_event_cb), phd);
+                     G_CALLBACK(bar_pane_histogram_expose_event_cb), phd);
 
     gtk_box_pack_start(GTK_BOX(phd->widget), phd->drawing_area, TRUE, TRUE, 0);
     gtk_widget_show(phd->drawing_area);

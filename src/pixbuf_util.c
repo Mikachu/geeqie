@@ -105,17 +105,17 @@ static PixbufInline inline_pixbuf_data[] = {
     { PIXBUF_INLINE_FOLDER_CLOSED,  folder_closed },
     { PIXBUF_INLINE_FOLDER_LOCKED,  folder_locked },
     { PIXBUF_INLINE_FOLDER_OPEN,    folder_open },
-    { PIXBUF_INLINE_FOLDER_UP,  folder_up },
-    { PIXBUF_INLINE_SCROLLER,   icon_scroller },
-    { PIXBUF_INLINE_BROKEN,     icon_broken },
-    { PIXBUF_INLINE_ICON,       gqview_icon },
-    { PIXBUF_INLINE_LOGO,       geeqie_logo },
-    { PIXBUF_INLINE_ICON_FLOAT, icon_float },
-    { PIXBUF_INLINE_ICON_THUMB, icon_thumb },
-    { PIXBUF_INLINE_ICON_BOOK,  icon_book },
+    { PIXBUF_INLINE_FOLDER_UP,      folder_up },
+    { PIXBUF_INLINE_SCROLLER,       icon_scroller },
+    { PIXBUF_INLINE_BROKEN,         icon_broken },
+    { PIXBUF_INLINE_ICON,           gqview_icon },
+    { PIXBUF_INLINE_LOGO,           geeqie_logo },
+    { PIXBUF_INLINE_ICON_FLOAT,     icon_float },
+    { PIXBUF_INLINE_ICON_THUMB,     icon_thumb },
+    { PIXBUF_INLINE_ICON_BOOK,      icon_book },
     { PIXBUF_INLINE_ICON_CONFIG,    icon_config },
-    { PIXBUF_INLINE_ICON_TOOLS, icon_tools },
-    { PIXBUF_INLINE_ICON_VIEW,  icon_view },
+    { PIXBUF_INLINE_ICON_TOOLS,     icon_tools },
+    { PIXBUF_INLINE_ICON_VIEW,      icon_view },
     { NULL, NULL }
 };
 
@@ -179,10 +179,10 @@ gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon)
     if (gtk_icon_theme_has_icon(icon_theme, key)) return FALSE;
 
     pixbuf = gtk_icon_theme_load_icon(icon_theme,
-                           icon, /* icon name */
-                           64, /* size */
-                           0,  /* flags */
-                           &error);
+                                      icon, /* icon name */
+                                      64, /* size */
+                                      0,  /* flags */
+                                      &error);
     if (!pixbuf)
     {
         if (error)
@@ -217,8 +217,8 @@ gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon)
 }
 
 gboolean pixbuf_scale_aspect(gint req_w, gint req_h,
-                 gint old_w, gint old_h,
-                 gint *new_w, gint *new_h)
+                             gint old_w, gint old_h,
+                             gint *new_w, gint *new_h)
 {
     if (((gdouble)req_w / old_w) < ((gdouble)req_h / old_h))
     {
@@ -271,8 +271,8 @@ GdkPixbuf *pixbuf_fallback(FileData *fd, gint requested_width, gint requested_he
  */
 
 gboolean util_clip_region(gint x, gint y, gint w, gint h,
-              gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-              gint *rx, gint *ry, gint *rw, gint *rh)
+                          gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                          gint *rx, gint *ry, gint *rw, gint *rh)
 {
     if (clip_x + clip_w <= x ||
         clip_x >= x + w ||
@@ -357,8 +357,8 @@ GdkPixbuf *pixbuf_apply_orientation(GdkPixbuf *pixbuf, gint orientation)
  * applying alpha (a), use a=255 for solid.
  */
 void pixbuf_draw_rect_fill(GdkPixbuf *pb,
-               gint x, gint y, gint w, gint h,
-               gint r, gint g, gint b, gint a)
+                           gint x, gint y, gint w, gint h,
+                           gint r, gint g, gint b, gint a)
 {
     gboolean has_alpha;
     gint pw, ph, prs;
@@ -394,23 +394,19 @@ void pixbuf_draw_rect_fill(GdkPixbuf *pb,
 }
 
 void pixbuf_draw_rect(GdkPixbuf *pb,
-              gint x, gint y, gint w, gint h,
-              gint r, gint g, gint b, gint a,
-              gint left, gint right, gint top, gint bottom)
+                      gint x, gint y, gint w, gint h,
+                      gint r, gint g, gint b, gint a,
+                      gint left, gint right, gint top, gint bottom)
 {
-    pixbuf_draw_rect_fill(pb, x + left, y, w - left - right, top,
-                  r, g, b ,a);
-    pixbuf_draw_rect_fill(pb, x + w - right, y, right, h,
-                  r, g, b ,a);
-    pixbuf_draw_rect_fill(pb, x + left, y + h - bottom, w - left - right, bottom,
-                  r, g, b ,a);
-    pixbuf_draw_rect_fill(pb, x, y, left, h,
-                  r, g, b ,a);
+    pixbuf_draw_rect_fill(pb, x + left,      y,              w - left - right, top,    r, g, b, a);
+    pixbuf_draw_rect_fill(pb, x + w - right, y,              right,            h,      r, g, b, a);
+    pixbuf_draw_rect_fill(pb, x + left,      y + h - bottom, w - left - right, bottom, r, g, b, a);
+    pixbuf_draw_rect_fill(pb, x,             y,              left,             h,      r, g, b, a);
 }
 
 void pixbuf_set_rect_fill(GdkPixbuf *pb,
-              gint x, gint y, gint w, gint h,
-              gint r, gint g, gint b, gint a)
+                          gint x, gint y, gint w, gint h,
+                          gint r, gint g, gint b, gint a)
 {
     gboolean has_alpha;
     gint pw, ph, prs;
@@ -446,18 +442,14 @@ void pixbuf_set_rect_fill(GdkPixbuf *pb,
 }
 
 void pixbuf_set_rect(GdkPixbuf *pb,
-             gint x, gint y, gint w, gint h,
-             gint r, gint g, gint b, gint a,
-             gint left, gint right, gint top, gint bottom)
+                     gint x, gint y, gint w, gint h,
+                     gint r, gint g, gint b, gint a,
+                     gint left, gint right, gint top, gint bottom)
 {
-    pixbuf_set_rect_fill(pb, x + left, y, w - left - right, top,
-                 r, g, b ,a);
-    pixbuf_set_rect_fill(pb, x + w - right, y, right, h,
-                 r, g, b ,a);
-    pixbuf_set_rect_fill(pb, x + left, y + h - bottom, w - left - right, bottom,
-                 r, g, b ,a);
-    pixbuf_set_rect_fill(pb, x, y, left, h,
-                 r, g, b ,a);
+    pixbuf_set_rect_fill(pb, x + left,      y,              w - left - right, top,    r, g, b, a);
+    pixbuf_set_rect_fill(pb, x + w - right, y,              right,            h,      r, g, b, a);
+    pixbuf_set_rect_fill(pb, x + left,      y + h - bottom, w - left - right, bottom, r, g, b, a);
+    pixbuf_set_rect_fill(pb, x,             y,              left,             h,      r, g, b, a);
 }
 
 void pixbuf_pixel_set(GdkPixbuf *pb, gint x, gint y, gint r, gint g, gint b, gint a)
@@ -489,9 +481,9 @@ void pixbuf_pixel_set(GdkPixbuf *pb, gint x, gint y, gint r, gint g, gint b, gin
  */
 
 static void pixbuf_copy_font(GdkPixbuf *src, gint sx, gint sy,
-                 GdkPixbuf *dest, gint dx, gint dy,
-                 gint w, gint h,
-                 guint8 r, guint8 g, guint8 b, guint8 a)
+                             GdkPixbuf *dest, gint dx, gint dy,
+                             gint w, gint h,
+                             guint8 r, guint8 g, guint8 b, guint8 a)
 {
     gint sw, sh, srs;
     gboolean s_alpha;
@@ -565,8 +557,8 @@ static void pixbuf_copy_font(GdkPixbuf *src, gint sx, gint sy,
 }
 
 void pixbuf_draw_layout(GdkPixbuf *pixbuf, PangoLayout *layout, GtkWidget *widget,
-            gint x, gint y,
-            guint8 r, guint8 g, guint8 b, guint8 a)
+                        gint x, gint y,
+                        guint8 r, guint8 g, guint8 b, guint8 a)
 {
     GdkPixbuf *buffer;
     gint w, h;
@@ -635,7 +627,7 @@ void pixbuf_draw_layout(GdkPixbuf *pixbuf, PangoLayout *layout, GtkWidget *widge
  */
 
 void util_clip_triangle(gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
-            gint *rx, gint *ry, gint *rw, gint *rh)
+                        gint *rx, gint *ry, gint *rw, gint *rh)
 {
     gint tx, ty, tw, th;
 
@@ -655,9 +647,9 @@ void util_clip_triangle(gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
 }
 
 void pixbuf_draw_triangle(GdkPixbuf *pb,
-              gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-              gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
-              guint8 r, guint8 g, guint8 b, guint8 a)
+                          gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                          gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
+                          guint8 r, guint8 g, guint8 b, guint8 a)
 {
     gboolean has_alpha;
     gint pw, ph, prs;
@@ -681,15 +673,15 @@ void pixbuf_draw_triangle(GdkPixbuf *pb,
     ph = gdk_pixbuf_get_height(pb);
 
     if (!util_clip_region(0, 0, pw, ph,
-                  clip_x, clip_y, clip_w, clip_h,
-                  &rx, &ry, &rw, &rh)) return;
+                          clip_x, clip_y, clip_w, clip_h,
+                          &rx, &ry, &rw, &rh)) return;
 
     util_clip_triangle(x1, y1, x2, y2, x3, y3,
-               &tx, &ty, &tw, &th);
+                       &tx, &ty, &tw, &th);
 
     if (!util_clip_region(rx, ry, rw, rh,
-                  tx, ty, tw, th,
-                  &fx1, &fy1, &fw, &fh)) return;
+                          tx, ty, tw, th,
+                          &fx1, &fy1, &fw, &fh)) return;
     fx2 = fx1 + fw;
     fy2 = fy1 + fh;
 
@@ -768,8 +760,8 @@ void pixbuf_draw_triangle(GdkPixbuf *pb,
  */
 
 static gboolean util_clip_line(gdouble clip_x, gdouble clip_y, gdouble clip_w, gdouble clip_h,
-                   gdouble x1, gdouble y1, gdouble x2, gdouble y2,
-                   gdouble *rx1, gdouble *ry1, gdouble *rx2, gdouble *ry2)
+                               gdouble x1, gdouble y1, gdouble x2, gdouble y2,
+                               gdouble *rx1, gdouble *ry1, gdouble *rx2, gdouble *ry2)
 {
     gboolean flip = FALSE;
     gdouble d;
@@ -864,9 +856,9 @@ static gboolean util_clip_line(gdouble clip_x, gdouble clip_y, gdouble clip_w, g
 }
 
 void pixbuf_draw_line(GdkPixbuf *pb,
-              gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-              gint x1, gint y1, gint x2, gint y2,
-              guint8 r, guint8 g, guint8 b, guint8 a)
+                      gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                      gint x1, gint y1, gint x2, gint y2,
+                      guint8 r, guint8 g, guint8 b, guint8 a)
 {
     gboolean has_alpha;
     gint pw, ph, prs;
@@ -886,11 +878,11 @@ void pixbuf_draw_line(GdkPixbuf *pb,
     ph = gdk_pixbuf_get_height(pb);
 
     if (!util_clip_region(0, 0, pw, ph,
-                  clip_x, clip_y, clip_w, clip_h,
-                  &rx, &ry, &rw, &rh)) return;
+                          clip_x, clip_y, clip_w, clip_h,
+                          &rx, &ry, &rw, &rh)) return;
     if (!util_clip_line((gdouble)rx, (gdouble)ry, (gdouble)rw, (gdouble)rh,
-                (gdouble)x1, (gdouble)y1, (gdouble)x2, (gdouble)y2,
-                &rx1, &ry1, &rx2, &ry2)) return;
+                        (gdouble)x1, (gdouble)y1, (gdouble)x2, (gdouble)y2,
+                        &rx1, &ry1, &rx2, &ry2)) return;
 
     cx1 = rx;
     cy1 = ry;
@@ -966,9 +958,9 @@ void pixbuf_draw_line(GdkPixbuf *pb,
  */
 
 static void pixbuf_draw_fade_linear(guchar *p_pix, gint prs, gboolean has_alpha,
-                    gint s, gboolean vertical, gint border,
-                    gint x1, gint y1, gint x2, gint y2,
-                    guint8 r, guint8 g, guint8 b, guint8 a)
+                                    gint s, gboolean vertical, gint border,
+                                    gint x1, gint y1, gint x2, gint y2,
+                                    guint8 r, guint8 g, guint8 b, guint8 a)
 {
     guchar *pp;
     gint p_step;
@@ -992,9 +984,9 @@ static void pixbuf_draw_fade_linear(guchar *p_pix, gint prs, gboolean has_alpha,
 }
 
 static void pixbuf_draw_fade_radius(guchar *p_pix, gint prs, gboolean has_alpha,
-                    gint sx, gint sy, gint border,
-                    gint x1, gint y1, gint x2, gint y2,
-                    guint8 r, guint8 g, guint8 b, guint8 a)
+                                    gint sx, gint sy, gint border,
+                                    gint x1, gint y1, gint x2, gint y2,
+                                    guint8 r, guint8 g, guint8 b, guint8 a)
 {
     guchar *pp;
     gint p_step;
@@ -1020,9 +1012,9 @@ static void pixbuf_draw_fade_radius(guchar *p_pix, gint prs, gboolean has_alpha,
 }
 
 void pixbuf_draw_shadow(GdkPixbuf *pb,
-            gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-            gint x, gint y, gint w, gint h, gint border,
-            guint8 r, guint8 g, guint8 b, guint8 a)
+                        gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                        gint x, gint y, gint w, gint h, gint border,
+                        guint8 r, guint8 g, guint8 b, guint8 a)
 {
     gint has_alpha;
     gint pw, ph, prs;
@@ -1036,16 +1028,16 @@ void pixbuf_draw_shadow(GdkPixbuf *pb,
     ph = gdk_pixbuf_get_height(pb);
 
     if (!util_clip_region(0, 0, pw, ph,
-                  clip_x, clip_y, clip_w, clip_h,
-                  &rx, &ry, &rw, &rh)) return;
+                          clip_x, clip_y, clip_w, clip_h,
+                          &rx, &ry, &rw, &rh)) return;
 
     has_alpha = gdk_pixbuf_get_has_alpha(pb);
     prs = gdk_pixbuf_get_rowstride(pb);
     p_pix = gdk_pixbuf_get_pixels(pb);
 
     if (util_clip_region(x + border, y + border, w - border * 2, h - border * 2,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_rect_fill(pb, fx, fy, fw, fh, r, g, b, a);
     }
@@ -1053,76 +1045,76 @@ void pixbuf_draw_shadow(GdkPixbuf *pb,
     if (border < 1) return;
 
     if (util_clip_region(x, y + border, border, h - border * 2,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_linear(p_pix, prs, has_alpha,
-                    x + border, TRUE, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + border, TRUE, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x + w - border, y + border, border, h - border * 2,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_linear(p_pix, prs, has_alpha,
-                    x + w - border, TRUE, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + w - border, TRUE, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x + border, y, w - border * 2, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_linear(p_pix, prs, has_alpha,
-                    y + border, FALSE, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                y + border, FALSE, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x + border, y + h - border, w - border * 2, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_linear(p_pix, prs, has_alpha,
-                    y + h - border, FALSE, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                y + h - border, FALSE, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x, y, border, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_radius(p_pix, prs, has_alpha,
-                    x + border, y + border, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + border, y + border, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x + w - border, y, border, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_radius(p_pix, prs, has_alpha,
-                    x + w - border, y + border, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + w - border, y + border, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x, y + h - border, border, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_radius(p_pix, prs, has_alpha,
-                    x + border, y + h - border, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + border, y + h - border, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
     if (util_clip_region(x + w - border, y + h - border, border, border,
-                 rx, ry, rw, rh,
-                 &fx, &fy, &fw, &fh))
+                         rx, ry, rw, rh,
+                         &fx, &fy, &fw, &fh))
     {
         pixbuf_draw_fade_radius(p_pix, prs, has_alpha,
-                    x + w - border, y + h - border, border,
-                    fx, fy, fx + fw, fy + fh,
-                    r, g, b, a);
+                                x + w - border, y + h - border, border,
+                                fx, fy, fx + fw, fy + fh,
+                                r, g, b, a);
     }
 }
 
@@ -1133,8 +1125,7 @@ void pixbuf_draw_shadow(GdkPixbuf *pb,
  *-----------------------------------------------------------------------------
  */
 
-void pixbuf_desaturate_rect(GdkPixbuf *pb,
-                gint x, gint y, gint w, gint h)
+void pixbuf_desaturate_rect(GdkPixbuf *pb, gint x, gint y, gint w, gint h)
 {
     gboolean has_alpha;
     gint pw, ph, prs;
