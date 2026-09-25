@@ -113,17 +113,12 @@ static void dupe_window_update_count(DupeWindow *dw, gboolean count_only)
     if (dw->add_files_queue_id) return;
 
     if (!dw->list)
-    {
         text = g_strdup(_("Drop files to compare them."));
-    }
     else if (count_only)
-    {
         text = g_strdup_printf(_("%d files"), g_list_length(dw->list));
-    }
     else
-    {
-        text = g_strdup_printf(_("%d matches found in %d files"), g_list_length(dw->dupes), g_list_length(dw->list));
-    }
+        text = g_strdup_printf(_("%d matches found in %d files"),
+                               g_list_length(dw->dupes), g_list_length(dw->list));
 
     if (dw->second_set)
     {
@@ -136,7 +131,7 @@ static void dupe_window_update_count(DupeWindow *dw, gboolean count_only)
     g_free(text);
 }
 
-static guint64 msec_time(void)
+static inline guint64 msec_time(void)
 {
     struct timeval tv;
 
@@ -145,12 +140,13 @@ static guint64 msec_time(void)
     return (guint64)tv.tv_sec * 1000000 + (guint64)tv.tv_usec;
 }
 
-static gint dupe_iterations(gint n)
+static inline gint dupe_iterations(gint n)
 {
     return (n * ((n + 1) / 2));
 }
 
-static void dupe_window_update_progress(DupeWindow *dw, const gchar *status, gdouble value, gboolean force)
+static void dupe_window_update_progress(DupeWindow *dw, const gchar *status,
+                                        gdouble value, gboolean force)
 {
     const gchar *status_text;
 
@@ -159,9 +155,7 @@ static void dupe_window_update_progress(DupeWindow *dw, const gchar *status, gdo
         guint64 new_time = 0;
 
         if (dw->setup_n % 10 == 0)
-        {
             new_time = msec_time() - dw->setup_time;
-        }
 
         if (!force &&
             value != 0.0 &&
@@ -206,10 +200,10 @@ static void dupe_window_update_progress(DupeWindow *dw, const gchar *status, gdo
             return;
         }
         else if (force ||
-             value == 0.0 ||
-             dw->setup_count == 0 ||
-             dw->setup_time_count == 0 ||
-             (new_time > 0 && new_time - dw->setup_time_count >= 250000))
+                 value == 0.0 ||
+                 dw->setup_count == 0 ||
+                 dw->setup_time_count == 0 ||
+                 (new_time > 0 && new_time - dw->setup_time_count >= 250000))
         {
             if (dw->setup_time_count == 0) dw->setup_time_count = 1;
             if (new_time > 0) dw->setup_time_count = new_time;
@@ -227,7 +221,8 @@ static void dupe_window_update_progress(DupeWindow *dw, const gchar *status, gdo
         status_text = " ";
     }
 
-    if (status_text) gtk_progress_bar_set_text(GTK_PROGRESS_BAR(dw->extra_label), status_text);
+    if (status_text)
+        gtk_progress_bar_set_text(GTK_PROGRESS_BAR(dw->extra_label), status_text);
 }
 
 static void widget_set_cursor(GtkWidget *widget, gint icon)
@@ -237,13 +232,9 @@ static void widget_set_cursor(GtkWidget *widget, gint icon)
     if (!gtk_widget_get_window(widget)) return;
 
     if (icon == -1)
-    {
         cursor = NULL;
-    }
     else
-    {
         cursor = gdk_cursor_new(icon);
-    }
 
     gdk_window_set_cursor(gtk_widget_get_window(widget), cursor);
 
@@ -275,7 +266,7 @@ static void dupe_item_free(DupeItem *di)
     file_data_unref(di->fd);
     image_sim_free(di->simd);
     g_free(di->md5sum);
-    if (di->pixbuf) g_object_unref(di->pixbuf);
+    g_clear_object(&di->pixbuf);
 
     g_free(di);
 }
@@ -288,7 +279,8 @@ static inline void dupe_list_free(GList *list)
 static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
 {
     GList *link = g_hash_table_lookup(dw->list_node_map, fd);
-    if (!link && dw->second_set) link = g_hash_table_lookup(dw->second_list_node_map, fd);
+    if (!link && dw->second_set)
+        link = g_hash_table_lookup(dw->second_list_node_map, fd);
     return link ? link->data : NULL;
 }
 
@@ -405,18 +397,19 @@ static void dupe_item_write_cache(DupeItem *di)
         cd = cache_sim_data_new();
         cd->path = cache_get_location(CACHE_TYPE_SIM, di->fd->path, TRUE, NULL);
 
-        if (di->width != 0) cache_sim_data_set_dimensions(cd, di->width, di->height);
+        if (di->width != 0)
+            cache_sim_data_set_dimensions(cd, di->width, di->height);
         if (di->md5sum)
         {
             guchar digest[16];
-            if (md5_digest_from_text(di->md5sum, digest)) cache_sim_data_set_md5sum(cd, digest);
+            if (md5_digest_from_text(di->md5sum, digest))
+                cache_sim_data_set_md5sum(cd, digest);
         }
-        if (di->simd && di->simd->filled) cache_sim_data_set_similarity(cd, di->simd);
-
+        if (di->simd && di->simd->filled)
+            cache_sim_data_set_similarity(cd, di->simd);
         if (cache_sim_data_save(cd))
-        {
             filetime_set(cd->path, filetime(di->fd->path));
-        }
+
         cache_sim_data_free(cd);
     }
     g_free(base);
@@ -464,9 +457,7 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     {
         DupeMatch *dm;
 
-        row = dupe_listview_find_item(dw, parent, &iter);
-
-        row++;
+        row = dupe_listview_find_item(dw, parent, &iter) + 1;
 
         if (child->group)
         {
@@ -488,43 +479,33 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
     di = (child) ? child : parent;
 
     if (!child && dw->second_set)
-    {
         text[DUPE_COLUMN_RANK] = g_strdup("[1]");
-    }
     else if (rank == 0)
-    {
         text[DUPE_COLUMN_RANK] = g_strdup((di->second) ? "(2)" : "");
-    }
     else
-    {
         text[DUPE_COLUMN_RANK] = g_strdup_printf("%d%s", rank, (di->second) ? " (2)" : "");
-    }
 
     text[DUPE_COLUMN_THUMB] = "";
     text[DUPE_COLUMN_NAME] = (gchar *)di->fd->name;
     text[DUPE_COLUMN_SIZE] = text_from_size(di->fd->size);
     text[DUPE_COLUMN_DATE] = text_from_time(di->fd->dat.tv_sec);
     if (di->width > 0 && di->height > 0)
-    {
         text[DUPE_COLUMN_DIMENSIONS] = g_strdup_printf("%d x %d", di->width, di->height);
-    }
     else
-    {
         text[DUPE_COLUMN_DIMENSIONS] = g_strdup("");
-    }
     text[DUPE_COLUMN_PATH] = di->fd->path;
 
     gtk_list_store_insert(store, &iter, row);
     gtk_list_store_set(store, &iter,
-                DUPE_COLUMN_POINTER, di,
-                DUPE_COLUMN_RANK, text[DUPE_COLUMN_RANK],
-                DUPE_COLUMN_THUMB, NULL,
-                DUPE_COLUMN_NAME, text[DUPE_COLUMN_NAME],
-                DUPE_COLUMN_SIZE, text[DUPE_COLUMN_SIZE],
-                DUPE_COLUMN_DATE, text[DUPE_COLUMN_DATE],
-                DUPE_COLUMN_DIMENSIONS, text[DUPE_COLUMN_DIMENSIONS],
-                DUPE_COLUMN_PATH, text[DUPE_COLUMN_PATH],
-                -1);
+                       DUPE_COLUMN_POINTER, di,
+                       DUPE_COLUMN_RANK, text[DUPE_COLUMN_RANK],
+                       DUPE_COLUMN_THUMB, NULL,
+                       DUPE_COLUMN_NAME, text[DUPE_COLUMN_NAME],
+                       DUPE_COLUMN_SIZE, text[DUPE_COLUMN_SIZE],
+                       DUPE_COLUMN_DATE, text[DUPE_COLUMN_DATE],
+                       DUPE_COLUMN_DIMENSIONS, text[DUPE_COLUMN_DIMENSIONS],
+                       DUPE_COLUMN_PATH, text[DUPE_COLUMN_PATH],
+                       -1);
     GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
     g_hash_table_insert(dw->item_to_rowref, di,
                         gtk_tree_row_reference_new(GTK_TREE_MODEL(store), path));
@@ -539,36 +520,25 @@ static void dupe_listview_add(DupeWindow *dw, DupeItem *parent, DupeItem *child)
 static void dupe_listview_populate(DupeWindow *dw)
 {
     GtkListStore *store;
-    GList *work;
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     gtk_list_store_clear(store);
     g_hash_table_remove_all(dw->item_to_rowref);
 
-    work = g_list_last(dw->dupes);
-    while (work)
+    for (GList *work = g_list_last(dw->dupes); work; work = work->prev)
     {
         DupeItem *parent = work->data;
-        GList *temp;
 
         dupe_listview_add(dw, parent, NULL);
 
-        temp = g_list_last(parent->group);
-        while (temp)
+        for (GList *work = g_list_last(parent->group); work; work = work->prev)
         {
-            DupeMatch *dm = temp->data;
-            DupeItem *child;
-
-            child = dm->di;
+            DupeMatch *dm = work->data;
+            DupeItem *child = dm->di;
 
             dupe_listview_add(dw, parent, child);
-
-            temp = temp->prev;
         }
-
-        work = work->prev;
     }
-
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(dw->listview));
 }
 
@@ -618,24 +588,19 @@ static GList *dupe_listview_get_selection(DupeWindow *dw, GtkWidget *listview)
     GtkTreeSelection *selection;
     GList *slist;
     GList *list = NULL;
-    GList *work;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
-    work = slist;
-    while (work)
+
+    for (GList *work = slist; work; work = work->next)
     {
-        GtkTreePath *tpath = work->data;
         DupeItem *di = NULL;
         GtkTreeIter iter;
 
-        gtk_tree_model_get_iter(store, &iter, tpath);
+        gtk_tree_model_get_iter(store, &iter, (GtkTreePath *)work->data);
         gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di, -1);
         if (di)
-        {
             list = g_list_prepend(list, file_data_ref(di->fd));
-        }
-        work = work->next;
     }
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
@@ -643,27 +608,30 @@ static GList *dupe_listview_get_selection(DupeWindow *dw, GtkWidget *listview)
     return g_list_reverse(list);
 }
 
-static gboolean dupe_listview_item_is_selected(DupeWindow *dw, DupeItem *di, GtkWidget *listview)
+static gboolean dupe_listview_item_is_selected(DupeWindow *dw,
+                                               DupeItem *di,
+                                               GtkWidget *listview)
 {
     GtkTreeModel *store;
     GtkTreeSelection *selection;
     GList *slist;
-    GList *work;
     gboolean found = FALSE;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
-    work = slist;
-    while (!found && work)
+
+    for (GList *work = slist; work; work = work->next)
     {
-        GtkTreePath *tpath = work->data;
         DupeItem *di_n;
         GtkTreeIter iter;
 
-        gtk_tree_model_get_iter(store, &iter, tpath);
+        gtk_tree_model_get_iter(store, &iter, (GtkTreePath *)work->data);
         gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di_n, -1);
-        if (di_n == di) found = TRUE;
-        work = work->next;
+        if (di_n == di)
+        {
+            found = TRUE;
+            break;
+        }
     }
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
@@ -688,10 +656,8 @@ static void dupe_listview_select_dupes(DupeWindow *dw, gint parents)
         DupeItem *di;
 
         gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di, -1);
-        if ( (dupe_match_find_parent(dw, di) == di) == (parents) )
-        {
+        if ((dupe_match_find_parent(dw, di) == di) == parents)
             gtk_tree_selection_select_iter(selection, &iter);
-        }
         valid = gtk_tree_model_iter_next(store, &iter);
     }
 }
@@ -704,14 +670,10 @@ static void dupe_listview_select_dupes(DupeWindow *dw, gint parents)
 
 static DupeMatch *dupe_match_find_match(DupeItem *child, DupeItem *parent)
 {
-    GList *work;
-
-    work = parent->group;
-    while (work)
+    for (GList *work = parent->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
         if (dm->di == child) return dm;
-        work = work->next;
     }
     return NULL;
 }
@@ -746,116 +708,83 @@ static void dupe_match_unlink_child(DupeItem *child, DupeItem *parent)
 
 static void dupe_match_link_clear(DupeItem *parent, gboolean unlink_children)
 {
-    GList *work;
-
-    work = parent->group;
-    while (work)
+    for (GList *work = parent->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
-        work = work->next;
 
-        if (unlink_children) dupe_match_unlink_child(parent, dm->di);
+        if (unlink_children)
+            dupe_match_unlink_child(parent, dm->di);
 
         g_free(dm);
     }
 
-    g_list_free(parent->group);
-    parent->group = NULL;
+    g_clear_pointer(&parent->group, g_list_free);
     parent->group_rank = 0.0;
-}
-
-static gint dupe_match_link_exists(DupeItem *child, DupeItem *parent)
-{
-    return (dupe_match_find_match(child, parent) != NULL);
 }
 
 static DupeItem *dupe_match_highest_rank(DupeItem *child)
 {
-    DupeMatch *dr;
-    GList *work;
+    DupeMatch *dr = NULL;
 
-    dr = NULL;
-    work = child->group;
-    while (work)
+    for (GList *work = child->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
         if (!dr || dm->rank > dr->rank) dr = dm;
-        work = work->next;
     }
 
-    return (dr) ? dr->di : NULL;
+    return dr ? dr->di : NULL;
 }
 
 static void dupe_match_rank_update(DupeItem *parent)
 {
-    GList *work;
     gdouble rank = 0.0;
     gint c = 0;
 
-    work = parent->group;
-    while (work)
+    for (GList *work = parent->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
-        work = work->next;
         rank += dm->rank;
         c++;
     }
 
     if (c > 0)
-    {
         parent->group_rank = rank / c;
-    }
     else
-    {
         parent->group_rank = 0.0;
-    }
 }
 
 static DupeItem *dupe_match_find_parent(DupeWindow *dw, DupeItem *child)
 {
-    GList *work;
-
     if (g_hash_table_contains(dw->dupes_set, child)) return child;
 
-    work = child->group;
-
-    while (work)
+    for (GList *work = child->group; work; work = work->next)
     {
-        DupeMatch *dm = work->data;
-        if (g_hash_table_contains(dw->dupes_set, dm->di)) return dm->di;
-        work = work->next;
+        DupeItem *di = ((DupeMatch *)work->data)->di;
+        if (g_hash_table_contains(dw->dupes_set, di)) return di;
     }
 
     return NULL;
 }
 
-static void dupe_match_reset_list(GList *work)
+static void dupe_match_reset_list(GList *list)
 {
-    while (work)
-    {
-        DupeItem *di = work->data;
-        work = work->next;
-
-        dupe_match_link_clear(di, FALSE);
-    }
+    for (GList *work = list; work; work = work->next)
+        dupe_match_link_clear((DupeItem *)work->data, FALSE);
 }
 
 static void dupe_match_reparent(DupeWindow *dw, DupeItem *old, DupeItem *new)
 {
-    GList *work;
-
-    if (!old || !new || !dupe_match_link_exists(old, new)) return;
+    if (!old || !new || !dupe_match_find_match(old, new)) return;
 
     dupe_match_link_clear(new, TRUE);
 
     /* Update back-links in each child's group */
-    work = old->group;
-    while (work)
+    for (GList *work = old->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
-        DupeMatch *back = dupe_match_find_match(old, dm->di); /* find dm->di->group entry pointing to old */
+        /* find dm->di->group entry pointing to old */
+        DupeMatch *back = dupe_match_find_match(old, dm->di);
         if (back) back->di = new;
-        work = work->next;
     }
 
     /* Transfer old->group to new->group (forward links are correct as-is) */
@@ -870,49 +799,21 @@ static void dupe_match_reparent(DupeWindow *dw, DupeItem *old, DupeItem *new)
     }
 }
 
-static void dupe_match_print_group(DupeItem *di)
+static void dupe_match_print_group(DupeItem *di, gpointer user_data)
 {
-    GList *work;
-
     log_printf("+ %f %s\n", di->group_rank, di->fd->name);
 
-    work = di->group;
-    while (work)
+    for (GList *work = di->group; work; work = work->next)
     {
         DupeMatch *dm = work->data;
-        work = work->next;
-
         log_printf("  %f %s\n", dm->rank, dm->di->fd->name);
     }
-
     log_printf("\n");
 }
 
 static void dupe_match_print_list(GList *list)
 {
-    GList *work;
-
-    work = list;
-    while (work)
-    {
-        DupeItem *di = work->data;
-        dupe_match_print_group(di);
-        work = work->next;
-    }
-}
-
-/* Clear a DupeItem's group list without resetting group_rank.
- * Unlike dupe_match_link_clear, does not unlink children. */
-static void dupe_match_group_clear_only(DupeItem *item)
-{
-    GList *work = item->group;
-    while (work)
-    {
-        g_free(work->data);
-        work = work->next;
-    }
-    g_list_free(item->group);
-    item->group = NULL;
+    g_list_foreach(list, (GFunc)dupe_match_print_group, NULL);
 }
 
 /* Group items into connected components of the similarity graph.
@@ -923,13 +824,10 @@ static GList *dupe_match_connected_components(GList *list, DupeWindow *dw)
 {
     GHashTable *visited = g_hash_table_new(NULL, NULL);
     GList *parents = NULL;
-    GList *work;
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         DupeItem *di = work->data;
-        work = work->next;
 
         if (di->second || g_hash_table_contains(visited, di)) continue;
 
@@ -944,15 +842,13 @@ static GList *dupe_match_connected_components(GList *list, DupeWindow *dw)
             DupeItem *cur = g_queue_pop_head(queue);
             component = g_list_prepend(component, cur);
 
-            GList *m = cur->group;
-            while (m)
+            for (GList *m = cur->group; m; m = m->next)
             {
-                DupeMatch *dm = m->data;
-                m = m->next;
-                if (!g_hash_table_contains(visited, dm->di))
+                DupeItem *di = ((DupeMatch *)m->data)->di;
+                if (!g_hash_table_contains(visited, di))
                 {
-                    g_hash_table_add(visited, dm->di);
-                    g_queue_push_tail(queue, dm->di);
+                    g_hash_table_add(visited, di);
+                    g_queue_push_tail(queue, di);
                 }
             }
         }
@@ -960,11 +856,9 @@ static GList *dupe_match_connected_components(GList *list, DupeWindow *dw)
 
         /* Pick the highest group_rank non-second item as parent */
         DupeItem *parent = NULL;
-        GList *c = component;
-        while (c)
+        for (GList *c = component; c; c = c->next)
         {
             DupeItem *item = c->data;
-            c = c->next;
             if (item->second) continue;
             if (!parent || item->group_rank > parent->group_rank)
                 parent = item;
@@ -978,38 +872,32 @@ static GList *dupe_match_connected_components(GList *list, DupeWindow *dw)
 
         /* Record each non-parent item's best direct match rank in group_rank
          * before we clear the group lists. */
-        c = component;
-        while (c)
+        for (GList *c = component; c; c = c->next)
         {
             DupeItem *item = c->data;
-            c = c->next;
             if (item == parent) continue;
 
             gdouble best = 0.0;
-            GList *m = item->group;
-            while (m)
+            for (GList *m = item->group; m; m = m->next)
             {
                 DupeMatch *dm = m->data;
                 if (dm->rank > best) best = dm->rank;
-                m = m->next;
             }
             item->group_rank = best;
         }
 
         /* Clear all group links in the component, preserving group_rank */
-        c = component;
-        while (c)
+        for (GList *c = component; c; c = c->next)
         {
-            dupe_match_group_clear_only(c->data);
-            c = c->next;
+            DupeItem *item = c->data;
+            g_list_free_full(item->group, g_free);
+            item->group = NULL;
         }
 
         /* Rebuild as star topology: parent <-> each child */
-        c = component;
-        while (c)
+        for (GList *c = component; c; c = c->next)
         {
             DupeItem *item = c->data;
-            c = c->next;
             if (item == parent) continue;
             dupe_match_link_child(parent, item, item->group_rank);
             dupe_match_link_child(item, parent, item->group_rank);
@@ -1036,14 +924,10 @@ static gint dupe_match_sort_groups_cb(gconstpointer a, gconstpointer b)
 
 static void dupe_match_sort_groups(GList *list)
 {
-    GList *work;
-
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         DupeItem *di = work->data;
         di->group = g_list_sort(di->group, dupe_match_sort_groups_cb);
-        work = work->next;
     }
 }
 
@@ -1061,22 +945,16 @@ static gint dupe_match_rank_sort_cb(gconstpointer a, gconstpointer b)
 static GList *dupe_match_rank_sort(GList *source_list)
 {
     GList *list = NULL;
-    GList *work;
 
-    work = source_list;
-    while (work)
+    for (GList *work = source_list; work; work = work->next)
     {
         DupeItem *di = work->data;
-
         if (di->group)
         {
             dupe_match_rank_update(di);
             list = g_list_prepend(list, di);
         }
-
-        work = work->next;
     }
-
     return g_list_sort(list, dupe_match_rank_sort_cb);
 }
 
@@ -1114,7 +992,8 @@ static void dupe_match_rank(DupeWindow *dw)
  * ------------------------------------------------------------------
  */
 
-static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *rank, gint fast)
+static gboolean dupe_match(DupeItem *a, DupeItem *b,
+                           DupeWindow *dw, gdouble *rank, gint fast)
 {
     DupeMatchType mask = dw->match_mask;
     *rank = 0.0;
@@ -1123,32 +1002,26 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *ra
 
     /* Ignore pairs whose mtimes are too close (near-duplicate edits) */
     if (dw->duplicates_neartime_threshold &&
-        llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) < 60 * dw->duplicates_neartime_threshold)
+        llabs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) <
+          60 * dw->duplicates_neartime_threshold)
         return FALSE;
 
-
     if (mask & DUPE_MATCH_PATH)
-    {
-        if (utf8_compare(a->fd->path, b->fd->path, TRUE) != 0) return FALSE;
-    }
+        if (utf8_compare(a->fd->path, b->fd->path, TRUE) != 0)
+            return FALSE;
     if (mask & DUPE_MATCH_NAME)
-    {
-        if (strcmp(a->fd->collate_key_name, b->fd->collate_key_name) != 0) return FALSE;
-    }
+        if (strcmp(a->fd->collate_key_name, b->fd->collate_key_name) != 0)
+            return FALSE;
     if (mask & DUPE_MATCH_NAME_CI)
-    {
-        if (strcmp(a->fd->collate_key_name_nocase, b->fd->collate_key_name_nocase) != 0) return FALSE;
-    }
+        if (strcmp(a->fd->collate_key_name_nocase, b->fd->collate_key_name_nocase) != 0)
+            return FALSE;
     if (mask & DUPE_MATCH_SIZE)
-    {
-        if (a->fd->size != b->fd->size) return FALSE;
-    }
+        if (a->fd->size != b->fd->size)
+            return FALSE;
     if (mask & DUPE_MATCH_DATE)
-    {
         if (a->fd->dat.tv_sec != b->fd->dat.tv_sec &&
             a->fd->dat.tv_nsec != b->fd->dat.tv_nsec)
             return FALSE;
-    }
     if (mask & DUPE_MATCH_SUM)
     {
         if (!a->md5sum) a->md5sum = md5_text_from_file_utf8(a->fd->path, "");
@@ -1161,31 +1034,31 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *ra
     {
         if (a->width == 0) image_load_dimensions(a->fd, &a->width, &a->height);
         if (b->width == 0) image_load_dimensions(b->fd, &b->width, &b->height);
-        if (a->width != b->width || a->height != b->height) return FALSE;
+        if (a->width != b->width || a->height != b->height)
+            return FALSE;
     }
-    if (mask & (DUPE_MATCH_SIM_HIGH | DUPE_MATCH_SIM_MED | DUPE_MATCH_SIM_LOW | DUPE_MATCH_SIM_CUSTOM))
+    if (mask & (DUPE_MATCH_SIM_HIGH |
+                DUPE_MATCH_SIM_MED  |
+                DUPE_MATCH_SIM_LOW  |
+                DUPE_MATCH_SIM_CUSTOM))
     {
         gdouble f;
         gdouble m;
-        if (dw->duplicates_days_threshold) {
-            if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) > 86400 * dw->duplicates_days_threshold) {
+        if (dw->duplicates_days_threshold)
+            if (abs(a->fd->dat.tv_sec - b->fd->dat.tv_sec) >
+                  86400 * dw->duplicates_days_threshold)
                 return FALSE;
-            }
-        }
 
         if (mask & DUPE_MATCH_SIM_HIGH) m = 0.95;
         else if (mask & DUPE_MATCH_SIM_MED) m = 0.90;
-        else if (mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
+        else if (mask & DUPE_MATCH_SIM_CUSTOM)
+            m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
         else m = 0.85;
 
         if (fast)
-        {
             f = image_sim_compare_fast(a->simd, b->simd, m);
-        }
         else
-        {
             f = image_sim_compare(a->simd, b->simd);
-        }
 
         *rank = f * 100.0;
 
@@ -1197,11 +1070,13 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b, DupeWindow *dw, gdouble *ra
     if (mask & DUPE_MATCH_SIM_PHASH)
     {
         gint threshold;
-        if (!a->simd || !b->simd || !a->simd->phash_filled || !b->simd->phash_filled)
+        if (!a->simd || !b->simd ||
+            !a->simd->phash_filled || !b->simd->phash_filled)
             return FALSE;
         gint hamming = __builtin_popcountll(a->simd->phash ^ b->simd->phash);
         *rank = (64 - hamming) / 64.0 * 100.0;
-        threshold = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold / 100.0) * 64);
+        threshold = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold
+                            / 100.0) * 64);
         if (hamming > threshold) return FALSE;
     }
 
@@ -1219,7 +1094,9 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
 
     /* Build VP-tree lazily on first call when list is large enough */
     GList *build_list = dw->second_set ? dw->second_list : dw->list;
-    if ((use_sim || use_phash) && !dw->vptree && (use_phash || g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS))
+    if ((use_sim || use_phash) &&
+        !dw->vptree &&
+        (use_phash || g_list_length(build_list) >= DUPE_VPTREE_MIN_ITEMS))
     {
         gint idx = 0;
         if (use_phash)
@@ -1273,7 +1150,8 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         gdouble m;
         if      (dw->match_mask & DUPE_MATCH_SIM_HIGH)   m = 0.95;
         else if (dw->match_mask & DUPE_MATCH_SIM_MED)    m = 0.90;
-        else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM) m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
+        else if (dw->match_mask & DUPE_MATCH_SIM_CUSTOM)
+            m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
         else                                             m = 0.85;
 
         /* Query with needle's identity coarse grid; rotated entries in the
@@ -1292,7 +1170,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
             if (di == needle) continue;
             if (dw->vptree_seen_gen[di->vptree_idx] == dw->vptree_current_gen) continue;
             dw->vptree_seen_gen[di->vptree_idx] = dw->vptree_current_gen;
-            if (!dupe_match_link_exists(needle, di))
+            if (!dupe_match_find_match(needle, di))
             {
                 gdouble rank;
                 if (dupe_match(di, needle, dw, &rank, TRUE))
@@ -1303,7 +1181,8 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         g_list_free(candidates);
         return;
     }
-    if (dw->vptree && use_phash && needle->simd && (needle->simd->filled || needle->simd->phash_filled))
+    if (dw->vptree && use_phash && needle->simd &&
+        (needle->simd->filled || needle->simd->phash_filled))
     {
         gboolean had_phash = needle->simd->phash_filled;
         if (!had_phash) image_sim_calc_phash(needle->simd);
@@ -1313,7 +1192,8 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         {
             SimVPEntry query;
             query.phash = needle->simd->phash;
-            gint radius = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold / 100.0) * 64);
+            gint radius = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold
+                                  / 100.0) * 64);
             query.user_data = needle;
             GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
             for (GList *work = candidates; work; work = work->next)
@@ -1323,7 +1203,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 if (di == needle) continue;
                 if (dw->vptree_seen_gen[di->vptree_idx] == dw->vptree_current_gen) continue;
                 dw->vptree_seen_gen[di->vptree_idx] = dw->vptree_current_gen;
-                if (!dupe_match_link_exists(needle, di))
+                if (!dupe_match_find_match(needle, di))
                 {
                     gdouble rank;
                     if (dupe_match(di, needle, dw, &rank, TRUE))
@@ -1340,17 +1220,11 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         fprintf(stderr,"warning: doing a linear scan!\n");
     /* fallback: original O(n) linear scan */
     if (dw->second_set)
-    {
         work = dw->second_list;
-    }
     else if (start)
-    {
         work = start;
-    }
     else
-    {
         work = g_list_last(dw->list);
-    }
 
     while (work)
     {
@@ -1362,14 +1236,11 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         else
             work = work->prev;
 
-        if (!dupe_match_link_exists(needle, di))
+        if (!dupe_match_find_match(needle, di))
         {
             gdouble rank;
-
             if (dupe_match(di, needle, dw, &rank, TRUE))
-            {
                 dupe_match_link(di, needle, rank);
-            }
         }
     }
 }
@@ -1387,12 +1258,8 @@ static void dupe_listview_set_thumb(DupeWindow *dw, DupeItem *di, GtkTreeIter *i
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(dw->listview)));
     if (!iter)
-    {
         if (dupe_listview_find_item(dw, di, &iter_n) >= 0)
-        {
             iter = &iter_n;
-        }
-    }
 
     if (iter) gtk_list_store_set(store, iter, DUPE_COLUMN_THUMB, di->pixbuf, -1);
 }
@@ -1443,19 +1310,21 @@ static void dupe_thumb_step(DupeWindow *dw)
         GdkPixbuf *pixbuf;
 
         length++;
-        gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER, &di, DUPE_COLUMN_THUMB, &pixbuf, -1);
+        gtk_tree_model_get(store, &iter, DUPE_COLUMN_POINTER,
+                           &di, DUPE_COLUMN_THUMB, &pixbuf, -1);
         if (pixbuf || di->pixbuf)
         {
-            if (!pixbuf) gtk_list_store_set(GTK_LIST_STORE(store), &iter, DUPE_COLUMN_THUMB, di->pixbuf, -1);
+            if (!pixbuf)
+                gtk_list_store_set(GTK_LIST_STORE(store), &iter,
+                                   DUPE_COLUMN_THUMB, di->pixbuf, -1);
             row++;
             di = NULL;
         }
         valid = gtk_tree_model_iter_next(store, &iter);
     }
     if (valid)
-    {
-        while (gtk_tree_model_iter_next(store, &iter)) length++;
-    }
+        while (gtk_tree_model_iter_next(store, &iter))
+            length++;
 
     if (!di)
     {
@@ -1468,17 +1337,17 @@ static void dupe_thumb_step(DupeWindow *dw)
     }
 
     dupe_window_update_progress(dw, _("Loading thumbs..."),
-                    length == 0 ? 0.0 : (gdouble)(row) / length, FALSE);
+                                length == 0 ? 0.0 : (gdouble)(row) / length, FALSE);
 
     dw->thumb_item = di;
     thumb_loader_free(dw->thumb_loader);
-    dw->thumb_loader = thumb_loader_new(options->thumbnails.max_width, options->thumbnails.max_height);
+    dw->thumb_loader = thumb_loader_new(options->thumbnails.max_width,
+                                        options->thumbnails.max_height);
 
     thumb_loader_set_callbacks(dw->thumb_loader,
                    dupe_thumb_done_cb,
                    dupe_thumb_error_cb,
-                   NULL,
-                   dw);
+                   NULL, dw);
 
     /* start it */
     if (!thumb_loader_start(dw->thumb_loader, di->fd))
@@ -1507,20 +1376,15 @@ static void dupe_check_stop(DupeWindow *dw)
 
     if (dw->add_files_queue_id)
     {
-        g_source_remove(dw->add_files_queue_id);
-        dw->add_files_queue_id = 0;
+        g_clear_handle_id(&dw->add_files_queue_id, g_source_remove);
         gtk_widget_set_sensitive(dw->controls_box, TRUE);
-        filelist_free(dw->add_files_queue);
-        dw->add_files_queue = NULL;
+        g_clear_pointer(&dw->add_files_queue, filelist_free);
         dupe_window_update_progress(dw, NULL, 0.0, FALSE);
         widget_set_cursor(dw->listview, -1);
     }
 
-    thumb_loader_free(dw->thumb_loader);
-    dw->thumb_loader = NULL;
-
-    image_loader_free(dw->img_loader);
-    dw->img_loader = NULL;
+    g_clear_pointer(&dw->thumb_loader, thumb_loader_free);
+    g_clear_pointer(&dw->img_loader, image_loader_free);
 }
 
 static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
@@ -1535,23 +1399,17 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
         DupeItem *di = dw->setup_point->data;
 
         if (!di->simd)
-        {
             di->simd = image_sim_new_from_pixbuf(pixbuf);
-        }
         else
-        {
             image_sim_fill_data(di->simd, pixbuf);
-        }
 
         if (di->width == 0 && di->height == 0)
         {
-            di->width = il->original_width;
+            di->width  = il->original_width;
             di->height = il->original_height;
         }
         if (options->thumbnails.enable_sim_caching)
-        {
             dupe_item_write_cache(di);
-        }
 
         image_sim_alternate_processing(di->simd);
 
@@ -1561,8 +1419,7 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
         }
     }
 
-    image_loader_free(dw->img_loader);
-    dw->img_loader = NULL;
+    g_clear_pointer(&dw->img_loader, image_loader_free);
 
     dw->idle_id = g_idle_add(dupe_check_cb, dw);
 }
@@ -1595,7 +1452,7 @@ static gboolean dupe_check_cb(gpointer data)
     if (!dw->setup_done)
     {
         if ((dw->match_mask & DUPE_MATCH_SUM) &&
-            !(dw->setup_mask & DUPE_MATCH_SUM) )
+            !(dw->setup_mask & DUPE_MATCH_SUM))
         {
             if (!dw->setup_point) dw->setup_point = dw->list;
 
@@ -1609,7 +1466,8 @@ static gboolean dupe_check_cb(gpointer data)
                 if (!di->md5sum)
                 {
                     dupe_window_update_progress(dw, _("Reading checksums..."),
-                        dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1) / dw->setup_count, FALSE);
+                        dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1)
+                                                     / dw->setup_count, FALSE);
 
                     if (options->thumbnails.enable_sim_caching)
                     {
@@ -1619,9 +1477,7 @@ static gboolean dupe_check_cb(gpointer data)
 
                     di->md5sum = md5_text_from_file_utf8(di->fd->path, "");
                     if (options->thumbnails.enable_sim_caching)
-                    {
                         dupe_item_write_cache(di);
-                    }
                     return TRUE;
                 }
             }
@@ -1629,7 +1485,7 @@ static gboolean dupe_check_cb(gpointer data)
             dupe_setup_reset(dw);
         }
         if ((dw->match_mask & DUPE_MATCH_DIM) &&
-            !(dw->setup_mask & DUPE_MATCH_DIM) )
+            !(dw->setup_mask & DUPE_MATCH_DIM))
         {
             if (!dw->setup_point) dw->setup_point = dw->list;
 
@@ -1642,7 +1498,8 @@ static gboolean dupe_check_cb(gpointer data)
                 if (di->width == 0 && di->height == 0)
                 {
                     dupe_window_update_progress(dw, _("Reading dimensions..."),
-                        dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1) / dw->setup_count, FALSE);
+                        dw->setup_count == 0 ? 0.0 : (gdouble)(dw->setup_n - 1)
+                                                     / dw->setup_count, FALSE);
 
                     if (options->thumbnails.enable_sim_caching)
                     {
@@ -1652,9 +1509,7 @@ static gboolean dupe_check_cb(gpointer data)
 
                     image_load_dimensions(di->fd, &di->width, &di->height);
                     if (options->thumbnails.enable_sim_caching)
-                    {
                         dupe_item_write_cache(di);
-                    }
                     return TRUE;
                 }
             }
@@ -1666,7 +1521,7 @@ static gboolean dupe_check_cb(gpointer data)
              dw->match_mask & DUPE_MATCH_SIM_LOW ||
              dw->match_mask & DUPE_MATCH_SIM_PHASH ||
              dw->match_mask & DUPE_MATCH_SIM_CUSTOM) &&
-            !(dw->setup_mask & DUPE_MATCH_SIM_MED) )
+            !(dw->setup_mask & DUPE_MATCH_SIM_MED))
         {
             if (!dw->setup_point) dw->setup_point = dw->list;
 
@@ -1677,7 +1532,8 @@ static gboolean dupe_check_cb(gpointer data)
                 if (!di->simd || !di->simd->filled)
                 {
                     dupe_window_update_progress(dw, _("Reading similarity data..."),
-                        dw->setup_count == 0 ? 0.0 : (gdouble)dw->setup_n / dw->setup_count, FALSE);
+                        dw->setup_count == 0 ? 0.0 : (gdouble)dw->setup_n
+                                                     / dw->setup_count, FALSE);
 
                     if (options->thumbnails.enable_sim_caching)
                     {
@@ -1692,15 +1548,16 @@ static gboolean dupe_check_cb(gpointer data)
                     dw->img_loader = image_loader_new(di->fd);
                     image_loader_set_buffer_size(dw->img_loader, 8);
                     image_loader_set_requested_size(dw->img_loader, 32, 32);
-                    g_signal_connect(G_OBJECT(dw->img_loader), "error", (GCallback)dupe_loader_done_cb, dw);
-                    g_signal_connect(G_OBJECT(dw->img_loader), "done", (GCallback)dupe_loader_done_cb, dw);
+                    g_signal_connect(G_OBJECT(dw->img_loader), "error",
+                                     (GCallback)dupe_loader_done_cb, dw);
+                    g_signal_connect(G_OBJECT(dw->img_loader), "done",
+                                     (GCallback)dupe_loader_done_cb, dw);
 
                     if (!image_loader_start(dw->img_loader))
                     {
                         image_sim_free(di->simd);
                         di->simd = image_sim_new();
-                        image_loader_free(dw->img_loader);
-                        dw->img_loader = NULL;
+                        g_clear_pointer(&dw->img_loader, image_loader_free);
                         dw->setup_point = dupe_setup_point_step(dw, dw->setup_point);
                         dw->setup_n++;
                         return TRUE;
@@ -1746,7 +1603,9 @@ static gboolean dupe_check_cb(gpointer data)
     }
 
     dupe_list_check_match(dw, (DupeItem *)dw->working->data, dw->working);
-    dupe_window_update_progress(dw, _("Comparing..."), dw->setup_count == 0 ? 0.0 : (gdouble) dw->setup_n / dw->setup_count, FALSE);
+    dupe_window_update_progress(dw, _("Comparing..."),
+                                dw->setup_count == 0 ? 0.0 : (gdouble) dw->setup_n
+                                                             / dw->setup_count, FALSE);
     dw->setup_n++;
 
     dw->working = dw->working->prev;
@@ -1759,7 +1618,8 @@ static void dupe_check_start(DupeWindow *dw)
     dw->setup_done = FALSE;
 
     dw->setup_count = g_hash_table_size(dw->list_node_map);
-    if (dw->second_set) dw->setup_count += g_hash_table_size(dw->second_list_node_map);
+    if (dw->second_set)
+        dw->setup_count += g_hash_table_size(dw->second_list_node_map);
 
     dw->setup_mask = 0;
     dupe_setup_reset(dw);
@@ -1795,20 +1655,15 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
 
     /* handle things that may be in progress... */
     if (dw->working && dw->working->data == di)
-    {
         dw->working = dw->working->prev;
-    }
     if (dw->thumb_loader && dw->thumb_item == di)
-    {
         dupe_thumb_step(dw);
-    }
     if (dw->setup_point && dw->setup_point->data == di)
     {
         dw->setup_point = dupe_setup_point_step(dw, dw->setup_point);
         if (dw->img_loader)
         {
-            image_loader_free(dw->img_loader);
-            dw->img_loader = NULL;
+            g_clear_pointer(&dw->img_loader, image_loader_free);
             if (!dw->idle_id)
                 dw->idle_id = g_idle_add(dupe_check_cb, dw);
         }
@@ -1834,8 +1689,7 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
                 dupe_listview_remove(dw, parent);
                 GList *link = g_hash_table_lookup(dw->dupes_set, parent);
                 g_hash_table_remove(dw->dupes_set, parent);
-                dw->dupes = g_list_remove_link(dw->dupes, link);
-                g_list_free_1(link);
+                dw->dupes = g_list_delete_link(dw->dupes, link);
             }
             else
             {
@@ -1856,8 +1710,7 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
                 dupe_listview_remove(dw, parent);
                 GList *link = g_hash_table_lookup(dw->dupes_set, parent);
                 g_hash_table_remove(dw->dupes_set, parent);
-                dw->dupes = g_list_remove_link(dw->dupes, link);
-                g_list_free_1(link);
+                dw->dupes = g_list_delete_link(dw->dupes, link);
             }
             dupe_match_link_clear(di, TRUE);
             dupe_listview_remove(dw, di);
@@ -1882,8 +1735,7 @@ static void dupe_item_remove(DupeWindow *dw, DupeItem *di)
         GList *link = g_hash_table_lookup(dw->list_node_map, di->fd);
         if (link) {
             g_hash_table_remove(dw->list_node_map, di->fd);
-            dw->list = g_list_remove_link(dw->list, link);
-            g_list_free_1(link);
+            dw->list = g_list_delete_link(dw->list, link);
         }
     }
     dupe_item_free(di);
@@ -2797,8 +2649,7 @@ static void dupe_second_remove(DupeWindow *dw, DupeItem *di)
     GList *link = g_hash_table_lookup(dw->second_list_node_map, di->fd);
     if (link) {
         g_hash_table_remove(dw->second_list_node_map, di->fd);
-        dw->second_list = g_list_remove_link(dw->second_list, link);
-        g_list_free_1(link);
+        dw->second_list = g_list_delete_link(dw->second_list, link);
     } else {
         return;
     }
@@ -2817,12 +2668,10 @@ static void dupe_second_clear(DupeWindow *dw)
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(dw->second_listview));
 
     g_hash_table_remove_all(dw->dupes_set);
-    g_list_free(dw->dupes);
-    dw->dupes = NULL;
+    g_clear_pointer(&dw->dupes, g_list_free);
 
-    dupe_list_free(dw->second_list);
-    dw->second_list = NULL;
     g_hash_table_remove_all(dw->second_list_node_map);
+    g_clear_pointer(&dw->second_list, dupe_list_free);
 
     dupe_match_reset_list(dw->list);
 
@@ -2885,11 +2734,11 @@ static void dupe_second_menu_clear_cb(GtkWidget *widget, gpointer data)
         return;
     }
 
-    gd = generic_dialog_new(_("Clear second list"), "clear_dupe_second_list", dw->window, TRUE,
-                            dummy_cancel_cb, NULL);
+    gd = generic_dialog_new(_("Clear second list"), "clear_dupe_second_list",
+                            dw->window, TRUE, dummy_cancel_cb, NULL);
     generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION,
-                   _("Clear second list"),
-                   _("This will remove all entries from the list."));
+                               _("Clear second list"),
+                               _("This will remove all entries from the list."));
     generic_dialog_add_button(gd, GTK_STOCK_OK, NULL, dupe_second_menu_clear_ok_cb, TRUE);
     gd->data = dw;
     gtk_widget_show(gd->dialog);
@@ -2903,22 +2752,22 @@ static GtkWidget *dupe_menu_popup_second(DupeWindow *dw, DupeItem *di)
 
     menu = popup_menu_short_lived();
     menu_item_add_sensitive(menu, _("_View"), on_row,
-                G_CALLBACK(dupe_second_menu_view_cb), dw);
+                            G_CALLBACK(dupe_second_menu_view_cb), dw);
     menu_item_add_stock_sensitive(menu, _("View in _new window"), GTK_STOCK_NEW, on_row,
-                G_CALLBACK(dupe_second_menu_viewnew_cb), dw);
+                                  G_CALLBACK(dupe_second_menu_viewnew_cb), dw);
     menu_item_add_divider(menu);
     menu_item_add_sensitive(menu, _("Select all"), notempty,
-                G_CALLBACK(dupe_second_menu_select_all_cb), dw);
+                            G_CALLBACK(dupe_second_menu_select_all_cb), dw);
     menu_item_add_sensitive(menu, _("Select none"), notempty,
-                G_CALLBACK(dupe_second_menu_select_none_cb), dw);
+                            G_CALLBACK(dupe_second_menu_select_none_cb), dw);
     menu_item_add_divider(menu);
     menu_item_add_stock_sensitive(menu, _("Rem_ove"), GTK_STOCK_REMOVE, on_row,
-                      G_CALLBACK(dupe_second_menu_remove_cb), dw);
+                                  G_CALLBACK(dupe_second_menu_remove_cb), dw);
     menu_item_add_stock_sensitive(menu, _("C_lear"), GTK_STOCK_CLEAR, notempty,
-                   G_CALLBACK(dupe_second_menu_clear_cb), dw);
+                                  G_CALLBACK(dupe_second_menu_clear_cb), dw);
     /*menu_item_add_divider(menu);
     menu_item_add_stock(menu, _("Close _window"), GTK_STOCK_CLOSE,
-                G_CALLBACK(dupe_menu_close_cb), dw);*/
+                        G_CALLBACK(dupe_menu_close_cb), dw);*/
 
     return menu;
 }
@@ -2983,7 +2832,7 @@ static void dupe_menu_setup(DupeWindow *dw)
     dw->combo = pref_combo_new_int(dupe_match_items, dw->match_mask);
 
     g_signal_connect(G_OBJECT(dw->combo), "changed",
-             G_CALLBACK(dupe_menu_type_cb), dw);
+                     G_CALLBACK(dupe_menu_type_cb), dw);
 }
 
 /*
@@ -3006,7 +2855,8 @@ void cell_renderer_height_override(GtkCellRenderer *renderer)
         GParamSpecInt *spec_int;
 
         spec_int = G_PARAM_SPEC_INT(spec);
-        if (spec_int->maximum < CELL_HEIGHT_OVERRIDE) spec_int->maximum = CELL_HEIGHT_OVERRIDE;
+        if (spec_int->maximum < CELL_HEIGHT_OVERRIDE)
+            spec_int->maximum = CELL_HEIGHT_OVERRIDE;
     }
 }
 
@@ -3028,8 +2878,9 @@ static GdkColor *dupe_listview_color_shifted(GtkWidget *widget)
     return &color;
 }
 
-static void dupe_listview_color_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell,
-                   GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data)
+static void dupe_listview_color_cb(GtkTreeViewColumn *tree_column,
+                                   GtkCellRenderer *cell, GtkTreeModel *tree_model,
+                                   GtkTreeIter *iter, gpointer data)
 {
     DupeWindow *dw = data;
     DupeItem *di;
@@ -3040,8 +2891,8 @@ static void dupe_listview_color_cb(GtkTreeViewColumn *tree_column, GtkCellRender
     parent = dupe_match_find_parent(dw, di);
     idx = g_list_index(dw->dupes, parent);
     g_object_set(G_OBJECT(cell),
-             "cell-background-gdk", dupe_listview_color_shifted(dw->listview),
-             "cell-background-set", (idx % 2 == 0), NULL);
+                 "cell-background-gdk", dupe_listview_color_shifted(dw->listview),
+                 "cell-background-set", (idx % 2 == 0), NULL);
 }
 
 static void dupe_listview_add_column(DupeWindow *dw, GtkWidget *listview, gint n, const gchar *title, gboolean image, gboolean right_justify)
@@ -3064,9 +2915,7 @@ static void dupe_listview_add_column(DupeWindow *dw, GtkWidget *listview, gint n
         gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
         renderer = gtk_cell_renderer_text_new();
         if (right_justify)
-        {
             g_object_set(G_OBJECT(renderer), "xalign", 1.0, NULL);
-        }
         gtk_tree_view_column_pack_start(column, renderer, TRUE);
         gtk_tree_view_column_add_attribute(column, renderer, "text", n);
     }
@@ -3080,10 +2929,10 @@ static void dupe_listview_add_column(DupeWindow *dw, GtkWidget *listview, gint n
     }
 
     if (listview == dw->listview)
-    {
         /* sets background before rendering */
-        gtk_tree_view_column_set_cell_data_func(column, renderer, dupe_listview_color_cb, dw, NULL);
-    }
+        gtk_tree_view_column_set_cell_data_func(column, renderer,
+                                                dupe_listview_color_cb,
+                                                dw, NULL);
 
     gtk_tree_view_append_column(GTK_TREE_VIEW(listview), column);
 }
@@ -3097,14 +2946,16 @@ static void dupe_listview_set_height(GtkWidget *listview, gboolean thumb)
     column = gtk_tree_view_get_column(GTK_TREE_VIEW(listview), DUPE_COLUMN_THUMB - 1);
     if (!column) return;
 
-    gtk_tree_view_column_set_fixed_width(column, (thumb) ? options->thumbnails.max_width : 4);
+    gtk_tree_view_column_set_fixed_width(column, (thumb) ? options->thumbnails.max_width
+                                                         : 4);
 
     list = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(column));
     if (!list) return;
     cell = list->data;
     g_list_free(list);
 
-    g_object_set(G_OBJECT(cell), "height", (thumb) ? options->thumbnails.max_height : -1, NULL);
+    g_object_set(G_OBJECT(cell), "height", (thumb) ? options->thumbnails.max_height
+                                                   : -1, NULL);
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(listview));
 }
 
@@ -3160,16 +3011,20 @@ static void dupe_window_rotation_invariant_cb(GtkWidget *widget, gpointer data)
 static void dupe_window_custom_neartime_range_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
-    options->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-    dw->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    options->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(
+                                             GTK_SPIN_BUTTON(widget));
+    dw->duplicates_neartime_threshold = gtk_spin_button_get_value_as_int(
+                                        GTK_SPIN_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 
 static void dupe_window_custom_date_range_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
-    options->duplicates_days_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-    dw->duplicates_days_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    options->duplicates_days_threshold = gtk_spin_button_get_value_as_int(
+                                         GTK_SPIN_BUTTON(widget));
+    dw->duplicates_days_threshold = gtk_spin_button_get_value_as_int(
+                                    GTK_SPIN_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 
@@ -3181,8 +3036,10 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
     gboolean valid;
     GtkTreeIter iter;
 
-    options->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
-    dw->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+    options->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(
+                                               GTK_SPIN_BUTTON(widget));
+    dw->duplicates_similarity_threshold = gtk_spin_button_get_value_as_int(
+                                          GTK_SPIN_BUTTON(widget));
     if (dw->match_mask != DUPE_MATCH_SIM_PHASH) {
         dw->match_mask = DUPE_MATCH_SIM_CUSTOM;
 
@@ -3192,9 +3049,7 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
         {
             gtk_tree_model_get(model, &iter, PREF_COMBO_COLUMN_VALUE, &match_type, -1);
             if (match_type == DUPE_MATCH_SIM_CUSTOM)
-            {
                 break;
-            }
             valid = gtk_tree_model_iter_next(model, &iter);
         }
 
@@ -3203,7 +3058,8 @@ static void dupe_window_custom_threshold_cb(GtkWidget *widget, gpointer data)
     dupe_window_recompare(dw);
 }
 
-static void dupe_popup_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+static void dupe_popup_menu_pos_cb(GtkMenu *menu, gint *x, gint *y,
+                                   gboolean *push_in, gpointer data)
 {
     GtkWidget *view = data;
     GtkTreePath *tpath;
@@ -3214,15 +3070,12 @@ static void dupe_popup_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *pu
     if (!tpath) return;
 
     if (gtk_tree_view_get_column(GTK_TREE_VIEW(view), DUPE_COLUMN_NAME - 1) != NULL)
-    {
         column = DUPE_COLUMN_NAME - 1;
-    }
     else
-    {
         /* dw->second_listview */
         column = 0;
-    }
-    tree_view_get_cell_clamped(GTK_TREE_VIEW(view), tpath, column, TRUE, &cx, &cy, &cw, &ch);
+    tree_view_get_cell_clamped(GTK_TREE_VIEW(view), tpath, column,
+                               TRUE, &cx, &cy, &cw, &ch);
     gtk_tree_path_free(tpath);
     cy += ch;
     popup_menu_position_clamp(menu, &cx, &cy, 0);
@@ -3230,7 +3083,8 @@ static void dupe_popup_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *pu
     *y = cy;
 }
 
-static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, gpointer data)
+static gboolean dupe_window_keypress_cb(GtkWidget *widget,
+                                        GdkEventKey *event, gpointer data)
 {
     DupeWindow *dw = data;
     gboolean stop_signal = FALSE;
@@ -3244,13 +3098,9 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
     on_second = gtk_widget_has_focus(dw->second_listview);
 
     if (on_second)
-    {
         listview = dw->second_listview;
-    }
     else
-    {
         listview = dw->listview;
-    }
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
     slist = gtk_tree_selection_get_selected_rows(selection, &model);
@@ -3290,17 +3140,19 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
                     break;
                 case 'C': case 'c':
                     file_util_copy(NULL, dupe_listview_get_selection(dw, listview),
-                               NULL, dw->window);
+                                   NULL, dw->window);
                     break;
                 case 'M': case 'm':
                     file_util_move(NULL, dupe_listview_get_selection(dw, listview),
-                               NULL, dw->window);
+                                   NULL, dw->window);
                     break;
                 case 'R': case 'r':
-                    file_util_rename(NULL, dupe_listview_get_selection(dw, listview), dw->window);
+                    file_util_rename(NULL, dupe_listview_get_selection(dw, listview),
+                                     dw->window);
                     break;
                 case 'D': case 'd':
-                    file_util_delete(NULL, dupe_listview_get_selection(dw, listview), dw->window);
+                    file_util_delete(NULL, dupe_listview_get_selection(dw, listview),
+                                     dw->window);
                     break;
                 default:
                     stop_signal = FALSE;
@@ -3315,13 +3167,9 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
             {
                 case 'A': case 'a':
                     if (event->state & GDK_SHIFT_MASK)
-                    {
                         gtk_tree_selection_unselect_all(selection);
-                    }
                     else
-                    {
                         gtk_tree_selection_select_all(selection);
-                    }
                     break;
                 case GDK_KEY_Delete: case GDK_KEY_KP_Delete:
                     if (on_second)
@@ -3330,9 +3178,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
                         dupe_window_recompare(dw);
                     }
                     else
-                    {
                         dupe_window_clear(dw);
-                    }
                     break;
                 case 'L': case 'l':
                     dupe_window_append_file_list(dw, FALSE);
@@ -3366,9 +3212,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
                 break;
             case 'C': case 'c':
                 if (!on_second)
-                {
                     dupe_window_collection_from_selection(dw);
-                }
                 break;
             case '1':
                 dupe_listview_select_dupes(dw, TRUE);
@@ -3384,7 +3228,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
 
                     menu = dupe_menu_popup_main(dw, di);
                     gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                               dupe_popup_menu_pos_cb, listview, 0, event->time);
+                                   dupe_popup_menu_pos_cb, listview, 0, event->time);
                 }
                 else
                 {
@@ -3392,7 +3236,7 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
 
                     menu = dupe_menu_popup_second(dw, di);
                     gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                               dupe_popup_menu_pos_cb, listview, 0, event->time);
+                                   dupe_popup_menu_pos_cb, listview, 0, event->time);
                 }
                 break;
             default:
@@ -3406,13 +3250,10 @@ static gboolean dupe_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, g
 
 static void dupe_window_clear_vp(DupeWindow *dw)
 {
-    vptree_free(dw->vptree);
-    dw->vptree = NULL;
-    g_list_free_full(dw->vptree_entries, g_free);
-    dw->vptree_entries = NULL;
+    g_clear_pointer(&dw->vptree, vptree_free);
+    g_clear_pointer(&dw->vptree_seen_gen, g_free);
+    g_clear_list(&dw->vptree_entries, g_free);
 
-    g_free(dw->vptree_seen_gen);
-    dw->vptree_seen_gen = NULL;
     dw->vptree_current_gen = 0;
 }
 
@@ -3428,12 +3269,10 @@ void dupe_window_clear(DupeWindow *dw)
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(dw->listview));
 
     g_hash_table_remove_all(dw->dupes_set);
-    g_list_free(dw->dupes);
-    dw->dupes = NULL;
+    g_clear_list(&dw->dupes, NULL);
 
-    dupe_list_free(dw->list);
-    dw->list = NULL;
     g_hash_table_remove_all(dw->list_node_map);
+    g_clear_pointer(&dw->list, dupe_list_free);
 
     dupe_window_clear_vp(dw);
 
@@ -3479,15 +3318,9 @@ static gint dupe_window_delete(GtkWidget *widget, GdkEvent *event, gpointer data
 DupeWindow *dupe_window_new(DupeMatchType match_mask)
 {
     DupeWindow *dw;
-    GtkWidget *vbox;
-    GtkWidget *scrolled;
-    GtkWidget *frame;
-    GtkWidget *status_box;
-    GtkWidget *controls_box;
-    GtkWidget *controls_box_1;
-    GtkWidget *controls_box_2;
-    GtkWidget *label;
-    GtkWidget *button;
+    GtkWidget *vbox, *scrolled, *frame, *status_box,
+              *controls_box, *controls_box_1, *controls_box_2,
+              *label, *button;
     GtkListStore *store;
     GtkTreeSelection *selection;
     GdkGeometry geometry;
@@ -3511,7 +3344,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     geometry.base_width = DUPE_DEF_WIDTH;
     geometry.base_height = DUPE_DEF_HEIGHT;
     gtk_window_set_geometry_hints(GTK_WINDOW(dw->window), NULL, &geometry,
-                      GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
     gtk_window_set_default_size(GTK_WINDOW(dw->window), DUPE_DEF_WIDTH, DUPE_DEF_HEIGHT);
 
@@ -3519,9 +3352,9 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_container_set_border_width(GTK_CONTAINER(dw->window), 0);
 
     g_signal_connect(G_OBJECT(dw->window), "delete_event",
-             G_CALLBACK(dupe_window_delete), dw);
+                     G_CALLBACK(dupe_window_delete), dw);
     g_signal_connect(G_OBJECT(dw->window), "key_press_event",
-             G_CALLBACK(dupe_window_keypress_cb), dw);
+                     G_CALLBACK(dupe_window_keypress_cb), dw);
 
     vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(dw->window), vbox);
@@ -3534,12 +3367,14 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_widget_show(scrolled);
 
-    store = gtk_list_store_new(9, G_TYPE_POINTER, G_TYPE_STRING, GDK_TYPE_PIXBUF,
-                   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
+    store = gtk_list_store_new(9,
+                               G_TYPE_POINTER, G_TYPE_STRING, GDK_TYPE_PIXBUF,
+                               G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+                               G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
     dw->listview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     g_object_unref(store);
 
@@ -3564,13 +3399,12 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_paned_pack2(GTK_PANED(dw->paned), dw->second_vbox, TRUE, FALSE);
 
     if (dw->second_set)
-    {
         gtk_widget_show(dw->second_vbox);
-    }
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_box_pack_start(GTK_BOX(dw->second_vbox), scrolled, TRUE, TRUE, 0);
     gtk_widget_show(scrolled);
 
@@ -3611,8 +3445,9 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     dw->button_thumbs = gtk_check_button_new_with_label(_("Thumbnails"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dw->button_thumbs), dw->show_thumbs);
     g_signal_connect(G_OBJECT(dw->button_thumbs), "toggled",
-             G_CALLBACK(dupe_window_show_thumb_cb), dw);
-    gtk_box_pack_start(GTK_BOX(controls_box_1), dw->button_thumbs, FALSE, FALSE, PREF_PAD_SPACE);
+                     G_CALLBACK(dupe_window_show_thumb_cb), dw);
+    gtk_box_pack_start(GTK_BOX(controls_box_1), dw->button_thumbs,
+                       FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(dw->button_thumbs);
 
     dw->rot_invariant_sim = options->rot_invariant_sim;
@@ -3620,14 +3455,14 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore image orientation");
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), options->rot_invariant_sim);
     g_signal_connect(G_OBJECT(button), "toggled",
-             G_CALLBACK(dupe_window_rotation_invariant_cb), dw);
+                     G_CALLBACK(dupe_window_rotation_invariant_cb), dw);
     gtk_box_pack_start(GTK_BOX(controls_box_1), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
     button = gtk_check_button_new_with_label(_("Compare two file sets"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dw->second_set);
     g_signal_connect(G_OBJECT(button), "toggled",
-             G_CALLBACK(dupe_second_set_toggle_cb), dw);
+                     G_CALLBACK(dupe_second_set_toggle_cb), dw);
     gtk_box_pack_end(GTK_BOX(controls_box_1), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
@@ -3637,9 +3472,10 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_widget_show(label);
     button = gtk_spin_button_new_with_range(1, 100, 1);
     gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom similarity threshold");
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_similarity_threshold);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button),
+                              options->duplicates_similarity_threshold);
     g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_threshold_cb), dw);
+                     G_CALLBACK(dupe_window_custom_threshold_cb), dw);
     gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
@@ -3651,7 +3487,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Custom date threshold in days");
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_days_threshold);
     g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_date_range_cb), dw);
+                     G_CALLBACK(dupe_window_custom_date_range_cb), dw);
     gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
@@ -3660,10 +3496,12 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
     gtk_box_pack_start(GTK_BOX(controls_box_2), label, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(label);
     button = gtk_spin_button_new_with_range(0, 3650, 1);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(button), "Ignore matches with mtime within specified number of minutes");
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button), options->duplicates_neartime_threshold);
+    gtk_widget_set_tooltip_text(GTK_WIDGET(button),
+                                "Ignore matches with mtime within specified number of minutes");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(button),
+                              options->duplicates_neartime_threshold);
     g_signal_connect(G_OBJECT(button), "value_changed",
-                                                    G_CALLBACK(dupe_window_custom_neartime_range_cb), dw);
+                     G_CALLBACK(dupe_window_custom_neartime_range_cb), dw);
     gtk_box_pack_start(GTK_BOX(controls_box_2), button, FALSE, FALSE, PREF_PAD_SPACE);
     gtk_widget_show(button);
 
@@ -3691,13 +3529,13 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask)
      * presses before we possibly handle (and stop) the signal
      */
     g_signal_connect(G_OBJECT(dw->listview), "button_press_event",
-             G_CALLBACK(dupe_listview_press_cb), dw);
+                     G_CALLBACK(dupe_listview_press_cb), dw);
     g_signal_connect(G_OBJECT(dw->listview), "button_release_event",
-             G_CALLBACK(dupe_listview_release_cb), dw);
+                     G_CALLBACK(dupe_listview_release_cb), dw);
     g_signal_connect(G_OBJECT(dw->second_listview), "button_press_event",
-             G_CALLBACK(dupe_listview_press_cb), dw);
+                     G_CALLBACK(dupe_listview_press_cb), dw);
     g_signal_connect(G_OBJECT(dw->second_listview), "button_release_event",
-             G_CALLBACK(dupe_listview_release_cb), dw);
+                     G_CALLBACK(dupe_listview_release_cb), dw);
 
     gtk_widget_show(dw->window);
 
@@ -3730,15 +3568,12 @@ static void confirm_dir_list_cancel(GtkWidget *widget, gpointer data)
 static void confirm_dir_list_add(GtkWidget *widget, gpointer data)
 {
     CDupeConfirmD *d = data;
-    GList *work;
 
     dupe_window_add_files(d->dw, d->list, FALSE);
 
-    work = d->list;
-    while (work)
+    for (GList *work = d->list; work; work = work->next)
     {
         FileData *fd = work->data;
-        work = work->next;
         if (isdir(fd->path))
         {
             GList *list;
@@ -3784,15 +3619,20 @@ static GtkWidget *dupe_confirm_dir_list(DupeWindow *dw, GList *list)
 
     menu = popup_menu_short_lived();
     g_signal_connect(G_OBJECT(menu), "destroy",
-             G_CALLBACK(confirm_dir_list_destroy), d);
+                     G_CALLBACK(confirm_dir_list_destroy), d);
 
-    menu_item_add_stock(menu, _("Dropped list includes folders."), GTK_STOCK_DND_MULTIPLE, NULL, NULL);
+    menu_item_add_stock(menu, _("Dropped list includes folders."),
+                        GTK_STOCK_DND_MULTIPLE, NULL, NULL);
     menu_item_add_divider(menu);
-    menu_item_add_stock(menu, _("_Add contents"), GTK_STOCK_OK, G_CALLBACK(confirm_dir_list_add), d);
-    menu_item_add_stock(menu, _("Add contents _recursive"), GTK_STOCK_ADD, G_CALLBACK(confirm_dir_list_recurse), d);
-    menu_item_add_stock(menu, _("_Skip folders"), GTK_STOCK_REMOVE, G_CALLBACK(confirm_dir_list_skip), d);
+    menu_item_add_stock(menu, _("_Add contents"),
+                        GTK_STOCK_OK, G_CALLBACK(confirm_dir_list_add), d);
+    menu_item_add_stock(menu, _("Add contents _recursive"),
+                        GTK_STOCK_ADD, G_CALLBACK(confirm_dir_list_recurse), d);
+    menu_item_add_stock(menu, _("_Skip folders"),
+                        GTK_STOCK_REMOVE, G_CALLBACK(confirm_dir_list_skip), d);
     menu_item_add_divider(menu);
-    menu_item_add_stock(menu, _("Cancel"), GTK_STOCK_CANCEL, G_CALLBACK(confirm_dir_list_cancel), d);
+    menu_item_add_stock(menu, _("Cancel"),
+                        GTK_STOCK_CANCEL, G_CALLBACK(confirm_dir_list_cancel), d);
 
     return menu;
 }
@@ -3805,7 +3645,7 @@ static GtkWidget *dupe_confirm_dir_list(DupeWindow *dw, GList *list)
 
 static GtkTargetEntry dupe_drag_types[] = {
     { "text/uri-list", 0, TARGET_URI_LIST },
-    { "text/plain", 0, TARGET_TEXT_PLAIN }
+    { "text/plain",    0, TARGET_TEXT_PLAIN }
 };
 static gint n_dupe_drag_types = 2;
 
@@ -3816,8 +3656,8 @@ static GtkTargetEntry dupe_drop_types[] = {
 static gint n_dupe_drop_types = 2;
 
 static void dupe_dnd_data_set(GtkWidget *widget, GdkDragContext *context,
-                  GtkSelectionData *selection_data, guint info,
-                  guint time, gpointer data)
+                              GtkSelectionData *selection_data, guint info,
+                              guint time, gpointer data)
 {
     DupeWindow *dw = data;
     GList *list;
@@ -3837,18 +3677,19 @@ static void dupe_dnd_data_set(GtkWidget *widget, GdkDragContext *context,
 }
 
 static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
-                  gint x, gint y,
-                  GtkSelectionData *selection_data, guint info,
-                  guint time, gpointer data)
+                              gint x, gint y,
+                              GtkSelectionData *selection_data, guint info,
+                              guint time, gpointer data)
 {
     DupeWindow *dw = data;
     GtkWidget *source;
     GList *list = NULL;
-    GList *work;
 
     if (dw->add_files_queue_id > 0)
     {
-        warning_dialog(_("Find duplicates"), _("Please wait for the current file selection to be loaded."), GTK_STOCK_DIALOG_INFO, dw->window);
+        warning_dialog(_("Find duplicates"),
+                       _("Please wait for the current file selection to be loaded."),
+                       GTK_STOCK_DIALOG_INFO, dw->window);
 
         return;
     }
@@ -3861,12 +3702,12 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
     switch (info)
     {
         case TARGET_APP_COLLECTION_MEMBER:
-            collection_from_dnd_data((gchar *)gtk_selection_data_get_data(selection_data), &list, NULL);
+            collection_from_dnd_data((gchar *)gtk_selection_data_get_data(selection_data),
+                                     &list, NULL);
             break;
         case TARGET_URI_LIST:
             list = uri_filelist_from_gtk_selection_data(selection_data);
-            work = list;
-            while (work)
+            for (GList *work = list; work; work = work->next)
             {
                 FileData *fd = work->data;
                 if (isdir(fd->path))
@@ -3874,10 +3715,10 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
                     GtkWidget *menu = dupe_confirm_dir_list(dw, list);
                     GdkEventButton event;
                     widget_coords_to_root(widget, x, y, &event.x_root, &event.y_root);
-                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, &event, 0, time);
+                    gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
+                                   popup_menu_at_event, &event, 0, time);
                     return;
                 }
-                work = work->next;
             }
             break;
         default:
@@ -3895,17 +3736,14 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
 static void dupe_dest_set(GtkWidget *widget, gboolean enable)
 {
     if (enable)
-    {
         gtk_drag_dest_set(widget,
-            GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT | GTK_DEST_DEFAULT_DROP,
-            dupe_drop_types, n_dupe_drop_types,
-            GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_ASK);
-
-    }
+                          GTK_DEST_DEFAULT_MOTION |
+                          GTK_DEST_DEFAULT_HIGHLIGHT |
+                          GTK_DEST_DEFAULT_DROP,
+                          dupe_drop_types, n_dupe_drop_types,
+                          GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_ASK);
     else
-    {
         gtk_drag_dest_unset(widget);
-    }
 }
 
 static void dupe_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer data)
@@ -3958,32 +3796,32 @@ static void dupe_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer da
 static void dupe_dnd_init(DupeWindow *dw)
 {
     gtk_drag_source_set(dw->listview, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-                dupe_drag_types, n_dupe_drag_types,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                        dupe_drag_types, n_dupe_drag_types,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(G_OBJECT(dw->listview), "drag_data_get",
-             G_CALLBACK(dupe_dnd_data_set), dw);
+                     G_CALLBACK(dupe_dnd_data_set), dw);
     g_signal_connect(G_OBJECT(dw->listview), "drag_begin",
-             G_CALLBACK(dupe_dnd_begin), dw);
+                     G_CALLBACK(dupe_dnd_begin), dw);
     g_signal_connect(G_OBJECT(dw->listview), "drag_end",
-             G_CALLBACK(dupe_dnd_end), dw);
+                     G_CALLBACK(dupe_dnd_end), dw);
 
     dupe_dest_set(dw->listview, TRUE);
     g_signal_connect(G_OBJECT(dw->listview), "drag_data_received",
-             G_CALLBACK(dupe_dnd_data_get), dw);
+                     G_CALLBACK(dupe_dnd_data_get), dw);
 
     gtk_drag_source_set(dw->second_listview, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-                dupe_drag_types, n_dupe_drag_types,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                        dupe_drag_types, n_dupe_drag_types,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(G_OBJECT(dw->second_listview), "drag_data_get",
-             G_CALLBACK(dupe_dnd_data_set), dw);
+                     G_CALLBACK(dupe_dnd_data_set), dw);
     g_signal_connect(G_OBJECT(dw->second_listview), "drag_begin",
-             G_CALLBACK(dupe_dnd_begin), dw);
+                     G_CALLBACK(dupe_dnd_begin), dw);
     g_signal_connect(G_OBJECT(dw->second_listview), "drag_end",
-             G_CALLBACK(dupe_dnd_end), dw);
+                     G_CALLBACK(dupe_dnd_end), dw);
 
     dupe_dest_set(dw->second_listview, TRUE);
     g_signal_connect(G_OBJECT(dw->second_listview), "drag_data_received",
-             G_CALLBACK(dupe_dnd_data_get), dw);
+                     G_CALLBACK(dupe_dnd_data_get), dw);
 }
 
 /*
@@ -4015,5 +3853,4 @@ static void dupe_notify_cb(FileData *fd, NotifyType type, gpointer data)
         case FILEDATA_CHANGE_WRITE_METADATA:
             break;
     }
-
 }
