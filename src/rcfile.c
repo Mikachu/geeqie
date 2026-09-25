@@ -338,7 +338,6 @@ static void write_global_attributes(GString *outstr, gint indent)
     WRITE_NL(); WRITE_BOOL(*options, image.limit_autofit_size);
     WRITE_NL(); WRITE_INT(*options, image.max_autofit_size);
     WRITE_NL(); WRITE_UINT(*options, image.scroll_reset_method);
-    WRITE_NL(); WRITE_INT(*options, image.tile_cache_max);
     WRITE_NL(); WRITE_INT(*options, image.image_cache_max);
     WRITE_NL(); WRITE_BOOL(*options, image.enable_read_ahead);
     WRITE_NL(); WRITE_BOOL(*options, image.exif_rotate_enable);
@@ -652,7 +651,6 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_BOOL(*options, image.limit_autofit_size)) continue;
         if (READ_INT(*options, image.max_autofit_size)) continue;
         if (READ_UINT_CLAMP(*options, image.scroll_reset_method, 0, PR_SCROLL_RESET_COUNT - 1)) continue;
-        if (READ_INT(*options, image.tile_cache_max)) continue;
         if (READ_INT(*options, image.image_cache_max)) continue;
         if (READ_INT_CLAMP(*options, image.zoom_quality, GDK_INTERP_NEAREST, GDK_INTERP_HYPER)) continue;
         if (READ_INT(*options, image.zoom_increment)) continue;

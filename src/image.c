@@ -1954,7 +1954,6 @@ static void image_options_set(ImageWindow *imd, ConfOptions *options)
                     "zoom_2pass", options->image.zoom_2pass,
                     "zoom_expand", options->image.zoom_to_fit_allow_expand,
                     "scroll_reset", options->image.scroll_reset_method,
-                    "cache_display", options->image.tile_cache_max,
                     "window_fit", (imd->top_window_sync && options->image.fit_window_to_image),
                     "window_limit", options->image.limit_window_size,
                     "window_limit_value", options->image.max_window_size,
