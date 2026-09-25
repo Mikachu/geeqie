@@ -83,7 +83,6 @@ struct _ConfOptions
         gboolean limit_autofit_size;
         gint max_autofit_size;
 
-        gint tile_cache_max;    /* in megabytes */
         gint image_cache_max;   /* in megabytes */
         gboolean enable_read_ahead;
 
