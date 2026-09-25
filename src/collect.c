@@ -577,10 +577,10 @@ static CollectInfo *collection_info_new_if_not_exists(CollectionData *cd, struct
 {
     CollectInfo *ci;
 
-    if (g_hash_table_lookup(cd->existence, fd->path)) return NULL;
+    if (g_hash_table_contains(cd->existence, fd->path)) return NULL;
 
     ci = collection_info_new(fd, st, NULL);
-    if (ci) g_hash_table_insert(cd->existence, fd->path, "");
+    if (ci) g_hash_table_add(cd->existence, fd->path);
     return ci;
 }
 
