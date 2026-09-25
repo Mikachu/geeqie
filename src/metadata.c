@@ -539,24 +539,18 @@ static gboolean metadata_legacy_read(FileData *fd, GList **keywords, gchar **com
 
 static GList *remove_duplicate_strings_from_list(GList *list)
 {
-    GHashTable *hashtable = g_hash_table_new(g_str_hash, g_str_equal);
-    GList *newlist = NULL;
+    GHashTable *seen = g_hash_table_new(g_str_hash, g_str_equal);
 
-    for (GList *work = list; work; work = work->next)
+    for (GList *work = list, *next; work; work = next)
     {
-        gchar *key = work->data;
+        next = work->next;
 
-        if (!g_hash_table_lookup(hashtable, key))
-        {
-            g_hash_table_insert(hashtable, (gpointer) key, GINT_TO_POINTER(1));
-            newlist = g_list_prepend(newlist, key);
-        }
+        if (!g_hash_table_add(seen, work->data))
+            list = g_list_delete_link(list, work); /* dup, drop node */
     }
 
-    g_hash_table_destroy(hashtable);
-    g_list_free(list);
-
-    return g_list_reverse(newlist);
+    g_hash_table_destroy(seen);
+    return list;
 }
 
 GList *metadata_read_list(FileData *fd, const gchar *key, MetadataFormat format)
