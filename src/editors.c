@@ -170,7 +170,7 @@ gboolean editor_read_desktop_file(const gchar *path)
     GtkTreeIter iter;
     gboolean category_geeqie = FALSE;
 
-    if (g_hash_table_lookup(editors, key)) return FALSE; /* the file found earlier wins */
+    if (g_hash_table_contains(editors, key)) return FALSE; /* the file found earlier wins */
 
     key_file = g_key_file_new();
     if (!g_key_file_load_from_file(key_file, path, 0, NULL))
@@ -1254,7 +1254,7 @@ static EditorFlags editor_command_start(const EditorDescription *editor, const g
 gboolean is_valid_editor_command(const gchar *key)
 {
     if (!key) return FALSE;
-    return g_hash_table_lookup(editors, key) != NULL;
+    return g_hash_table_contains(editors, key);
 }
 
 EditorFlags start_editor_from_filelist_full(const gchar *key, GList *list, const gchar *working_directory, EditorCallback cb, gpointer data)
