@@ -815,14 +815,14 @@ static DupeItem *dupe_match_find_parent(DupeWindow *dw, DupeItem *child)
 {
     GList *work;
 
-    if (g_hash_table_lookup(dw->dupes_set, child)) return child;
+    if (g_hash_table_contains(dw->dupes_set, child)) return child;
 
     work = child->group;
 
     while (work)
     {
         DupeMatch *dm = work->data;
-        if (g_hash_table_lookup(dw->dupes_set, dm->di)) return dm->di;
+        if (g_hash_table_contains(dw->dupes_set, dm->di)) return dm->di;
         work = work->next;
     }
 
@@ -1896,7 +1896,7 @@ static void dupe_add_item(DupeWindow *dw, DupeItem *di)
     GHashTable *table[] = { dw->list_node_map, dw->second_list_node_map };
 
     /* Already in the target list, nothing to do */
-    if (g_hash_table_lookup(table[dw->second_drop], di->fd))
+    if (g_hash_table_contains(table[dw->second_drop], di->fd))
     {
         dupe_item_free(di);
         return;
