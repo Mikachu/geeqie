@@ -303,10 +303,10 @@ struct _PrintWindow
     /* job printing */
 
     GenericDialog   *job_dialog;
-    GtkWidget   *job_progress;
-    GtkWidget   *job_progress_label;
+    GtkWidget       *job_progress;
+    GtkWidget       *job_progress_label;
 
-    RenderFormat     job_format;
+    RenderFormat job_format;
     PrintOutput  job_output;
 
     FILE        *job_file;
@@ -329,8 +329,8 @@ static void print_window_close(PrintWindow *pw);
 /* misc utils */
 
 static gboolean clip_region(gdouble x1, gdouble y1, gdouble w1, gdouble h1,
-                gdouble x2, gdouble y2, gdouble w2, gdouble h2,
-                gdouble *rx, gdouble *ry, gdouble *rw, gdouble *rh)
+                            gdouble x2, gdouble y2, gdouble w2, gdouble h2,
+                            gdouble *rx, gdouble *ry, gdouble *rw, gdouble *rh)
 {
     if (x2 + w2 <= x1 || x2 >= x1 + w1 ||
         y2 + h2 <= y1 || y2 >= y1 + h1)
@@ -386,30 +386,30 @@ const gchar *print_paper_orientation[] = {
 };
 
 PaperSize print_paper_sizes[] = {
-    { N_("Custom"),     360,    720,    PAPER_ORIENTATION_PORTRAIT },
-    { N_("Letter"),     612,    792,    PAPER_ORIENTATION_PORTRAIT },   /* in 8.5 x 11 */
-    { N_("Legal"),      612,    1008,   PAPER_ORIENTATION_PORTRAIT },   /* in 8.5 x 14 */
-    { N_("Executive"),  522,    756,    PAPER_ORIENTATION_PORTRAIT },   /* in 7.25x 10.5 */
-    { "A0",         2384,   3370,   PAPER_ORIENTATION_PORTRAIT },   /* mm 841 x 1189 */
-    { "A1",         1684,   2384,   PAPER_ORIENTATION_PORTRAIT },   /* mm 594 x 841 */
-    { "A2",         1191,   1684,   PAPER_ORIENTATION_PORTRAIT },   /* mm 420 x 594 */
-    { "A3",         842,    1191,   PAPER_ORIENTATION_PORTRAIT },   /* mm 297 x 420 */
-    { "A4",         595,    842,    PAPER_ORIENTATION_PORTRAIT },   /* mm 210 x 297 */
-    { "A5",         420,    595,    PAPER_ORIENTATION_PORTRAIT },   /* mm 148 x 210 */
-    { "A6",         298,    420,    PAPER_ORIENTATION_PORTRAIT },   /* mm 105 x 148 */
-    { "B3",         1001,   1417,   PAPER_ORIENTATION_PORTRAIT },   /* mm 353 x 500 */
-    { "B4",         709,    1001,   PAPER_ORIENTATION_PORTRAIT },   /* mm 250 x 353 */
-    { "B5",         499,    709,    PAPER_ORIENTATION_PORTRAIT },   /* mm 176 x 250 */
-    { "B6",         354,    499,    PAPER_ORIENTATION_PORTRAIT },   /* mm 125 x 176 */
-    { N_("Envelope #10"),   297,    684,    PAPER_ORIENTATION_LANDSCAPE },  /* in 4.125 x 9.5 */
-    { N_("Envelope #9"),    279,    639,    PAPER_ORIENTATION_LANDSCAPE },  /* in 3.875 x 8.875 */
-    { N_("Envelope C4"),    649,    918,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 229 x 324 */
-    { N_("Envelope C5"),    459,    649,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 162 x 229 */
-    { N_("Envelope C6"),    323,    459,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 114 x 162 */
-    { N_("Photo 6x4"),  432,    288,    PAPER_ORIENTATION_PORTRAIT },   /* in 6   x 4 */
-    { N_("Photo 8x10"), 576,    720,    PAPER_ORIENTATION_PORTRAIT },   /* in 8   x 10 */
-    { N_("Postcard"),   284,    419,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 100 x 148 */
-    { N_("Tabloid"),    792,    1224,   PAPER_ORIENTATION_PORTRAIT },   /* in 11  x 17 */
+    { N_("Custom"),       360,    720,    PAPER_ORIENTATION_PORTRAIT },
+    { N_("Letter"),       612,    792,    PAPER_ORIENTATION_PORTRAIT },   /* in 8.5 x 11 */
+    { N_("Legal"),        612,    1008,   PAPER_ORIENTATION_PORTRAIT },   /* in 8.5 x 14 */
+    { N_("Executive"),    522,    756,    PAPER_ORIENTATION_PORTRAIT },   /* in 7.25x 10.5 */
+    { "A0",               2384,   3370,   PAPER_ORIENTATION_PORTRAIT },   /* mm 841 x 1189 */
+    { "A1",               1684,   2384,   PAPER_ORIENTATION_PORTRAIT },   /* mm 594 x 841 */
+    { "A2",               1191,   1684,   PAPER_ORIENTATION_PORTRAIT },   /* mm 420 x 594 */
+    { "A3",               842,    1191,   PAPER_ORIENTATION_PORTRAIT },   /* mm 297 x 420 */
+    { "A4",               595,    842,    PAPER_ORIENTATION_PORTRAIT },   /* mm 210 x 297 */
+    { "A5",               420,    595,    PAPER_ORIENTATION_PORTRAIT },   /* mm 148 x 210 */
+    { "A6",               298,    420,    PAPER_ORIENTATION_PORTRAIT },   /* mm 105 x 148 */
+    { "B3",               1001,   1417,   PAPER_ORIENTATION_PORTRAIT },   /* mm 353 x 500 */
+    { "B4",               709,    1001,   PAPER_ORIENTATION_PORTRAIT },   /* mm 250 x 353 */
+    { "B5",               499,    709,    PAPER_ORIENTATION_PORTRAIT },   /* mm 176 x 250 */
+    { "B6",               354,    499,    PAPER_ORIENTATION_PORTRAIT },   /* mm 125 x 176 */
+    { N_("Envelope #10"), 297,    684,    PAPER_ORIENTATION_LANDSCAPE },  /* in 4.125 x 9.5 */
+    { N_("Envelope #9"),  279,    639,    PAPER_ORIENTATION_LANDSCAPE },  /* in 3.875 x 8.875 */
+    { N_("Envelope C4"),  649,    918,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 229 x 324 */
+    { N_("Envelope C5"),  459,    649,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 162 x 229 */
+    { N_("Envelope C6"),  323,    459,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 114 x 162 */
+    { N_("Photo 6x4"),    432,    288,    PAPER_ORIENTATION_PORTRAIT },   /* in 6   x 4 */
+    { N_("Photo 8x10"),   576,    720,    PAPER_ORIENTATION_PORTRAIT },   /* in 8   x 10 */
+    { N_("Postcard"),     284,    419,    PAPER_ORIENTATION_LANDSCAPE },  /* mm 100 x 148 */
+    { N_("Tabloid"),      792,    1224,   PAPER_ORIENTATION_PORTRAIT },   /* in 11  x 17 */
     { NULL, 0, 0, 0 }
 };
 
@@ -417,13 +417,9 @@ PaperSize print_paper_sizes[] = {
 static PaperSize *print_paper_size_nth(gint n)
 {
     PaperSize *ps = NULL;
-    gint i = 0;
 
-    while (i <= n && print_paper_sizes[i].description)
-    {
+    for (gint i = 0; i <= n && print_paper_sizes[i].description; i++)
         ps = &print_paper_sizes[i];
-        i++;
-    }
 
     return ps;
 }
@@ -443,11 +439,11 @@ static gint print_paper_size_lookup(gint n, gdouble *width, gdouble *height)
     }
     else
     {
-        h = ps->width;
         w = ps->height;
+        h = ps->width;
     }
 
-    if (width) *width = w;
+    if (width)  *width = w;
     if (height) *height = h;
 
     return TRUE;
@@ -461,41 +457,20 @@ static gdouble print_paper_size_convert_units(gdouble value, PaperUnits src, Pap
 
     switch (src)
     {
-        case PAPER_UNIT_MM:
-            ret = value / 25.4 * 72.0;
-            break;
-        case PAPER_UNIT_CM:
-            ret = value / 2.54 * 72.0;
-            break;
-        case PAPER_UNIT_INCH:
-            ret = value * 72.0;
-            break;
-        case PAPER_UNIT_PICAS:
-            ret = value * 12.0;
-            break;
-        case PAPER_UNIT_POINTS:
-        default:
-            ret = value;
-            break;
+        case PAPER_UNIT_MM:              ret = value / 25.4 * 72.0; break;
+        case PAPER_UNIT_CM:              ret = value / 2.54 * 72.0; break;
+        case PAPER_UNIT_INCH:            ret = value * 72.0; break;
+        case PAPER_UNIT_PICAS:           ret = value * 12.0; break;
+        case PAPER_UNIT_POINTS: default: ret = value; break;
     }
 
     switch (dst)
     {
-        case PAPER_UNIT_MM:
-            ret = ret / 72.0 * 25.4;
-            break;
-        case PAPER_UNIT_CM:
-            ret = ret / 72.0 * 2.54;
-            break;
-        case PAPER_UNIT_INCH:
-            ret = ret / 72.0;
-            break;
-        case PAPER_UNIT_PICAS:
-            ret = ret / 12.0;
-            break;
-        case PAPER_UNIT_POINTS:
-        default:
-            break;
+        case PAPER_UNIT_MM:    ret = ret / 72.0 * 25.4; break;
+        case PAPER_UNIT_CM:    ret = ret / 72.0 * 2.54; break;
+        case PAPER_UNIT_INCH:  ret = ret / 72.0; break;
+        case PAPER_UNIT_PICAS: ret = ret / 12.0; break;
+        case PAPER_UNIT_POINTS: default: break;
     }
 
     return ret;
@@ -548,11 +523,11 @@ static void print_proof_size(PrintWindow *pw, gdouble *width, gdouble *height)
         gdouble h;
 
         h = pw->proof_height + PRINT_PROOF_MARGIN * 2;
-        if (pw->text_fields != 0) h += PRINT_TEXT_PADDING;
-        if (pw->text_fields & TEXT_INFO_FILENAME) h+= (gdouble)pw->text_points * 1.25;
-        if (pw->text_fields & TEXT_INFO_DIMENSIONS) h+= (gdouble)pw->text_points * 1.25;
-        if (pw->text_fields & TEXT_INFO_FILEDATE) h+= (gdouble)pw->text_points * 1.25;
-        if (pw->text_fields & TEXT_INFO_FILESIZE) h+= (gdouble)pw->text_points * 1.25;
+        if (pw->text_fields != 0)                   h += PRINT_TEXT_PADDING;
+        if (pw->text_fields & TEXT_INFO_FILENAME)   h += (gdouble)pw->text_points * 1.25;
+        if (pw->text_fields & TEXT_INFO_DIMENSIONS) h += (gdouble)pw->text_points * 1.25;
+        if (pw->text_fields & TEXT_INFO_FILEDATE)   h += (gdouble)pw->text_points * 1.25;
+        if (pw->text_fields & TEXT_INFO_FILESIZE)   h += (gdouble)pw->text_points * 1.25;
         *height = h;
     }
 }
@@ -598,15 +573,13 @@ static void print_window_layout_render(PrintWindow *pw)
     gdouble proof_w, proof_h;
 
     print_proof_size(pw, &proof_w, &proof_h);
-    pw->proof_columns = (pw->layout_width - pw->margin_left - pw->margin_right) / proof_w;
-    pw->proof_rows = (pw->layout_height - pw->margin_top - pw->margin_bottom) / proof_h;
+    pw->proof_columns = (pw->layout_width  - pw->margin_left - pw->margin_right) / proof_w;
+    pw->proof_rows =    (pw->layout_height - pw->margin_top - pw->margin_bottom) / proof_h;
 
     print_window_layout_status(pw);
 
     if (!pw->layout_idle_id)
-    {
         pw->layout_idle_id = g_idle_add(print_window_layout_render_idle, pw);
-    }
 }
 
 static void print_window_layout_size(PrintWindow *pw)
@@ -636,7 +609,7 @@ static void print_window_layout_size(PrintWindow *pw)
     sh = print_preview_unit(height);
     pixbuf = image_get_pixbuf(pw->layout_image);
     if (!pixbuf ||
-        gdk_pixbuf_get_width(pixbuf) != sw ||
+        gdk_pixbuf_get_width (pixbuf) != sw ||
         gdk_pixbuf_get_height(pixbuf) != sh)
     {
         pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, sw, sh);
@@ -654,7 +627,7 @@ static gint print_layout_page_count(PrintWindow *pw)
     gint images_per_page;
     gint pages;
 
-    if (pw->layout_width - pw->margin_left - pw->margin_right <= 0.0 ||
+    if (pw->layout_width  - pw->margin_left - pw->margin_right <= 0.0 ||
         pw->layout_height - pw->margin_top - pw->margin_bottom <= 0.0)
     {
         return 0;
@@ -662,27 +635,16 @@ static gint print_layout_page_count(PrintWindow *pw)
 
     switch (pw->source)
     {
-        case PRINT_SOURCE_ALL:
-            images = g_list_length(pw->source_list);
-            break;
-        case PRINT_SOURCE_SELECTION:
-            images = g_list_length(pw->source_selection);
-            break;
-        case PRINT_SOURCE_IMAGE:
-        default:
-            images = (pw->source_fd) ? 1 : 0;
-            break;
+        case PRINT_SOURCE_ALL:            images = g_list_length(pw->source_list); break;
+        case PRINT_SOURCE_SELECTION:      images = g_list_length(pw->source_selection); break;
+        case PRINT_SOURCE_IMAGE: default: images = (pw->source_fd) ? 1 : 0; break;
     }
 
     switch (pw->layout)
     {
-        case PRINT_LAYOUT_PROOF:
-            images_per_page = pw->proof_columns * pw->proof_rows;
-            break;
+        case PRINT_LAYOUT_PROOF: images_per_page = pw->proof_columns * pw->proof_rows; break;
         case PRINT_LAYOUT_IMAGE:
-        default:
-            images_per_page = 1;
-            break;
+        default:                 images_per_page = 1; break;
     }
 
     if (images < 1 || images_per_page < 1) return 0;
@@ -747,10 +709,7 @@ static void print_layout_zoom_original_cb(GtkWidget *widget, gpointer data)
 
 static GtkWidget *print_window_layout_setup(PrintWindow *pw, GtkWidget *box)
 {
-    GtkWidget *vbox;
-    GtkWidget *hbox;
-    GtkWidget *group;
-    GtkWidget *button;
+    GtkWidget *vbox, *hbox, *group, *button;
 
     vbox = pref_box_new(box, TRUE, GTK_ORIENTATION_VERTICAL, PREF_PAD_GAP);
     group = pref_frame_new(vbox, TRUE, _("Preview"), GTK_ORIENTATION_VERTICAL, PREF_PAD_GAP);
@@ -758,28 +717,29 @@ static GtkWidget *print_window_layout_setup(PrintWindow *pw, GtkWidget *box)
     pw->layout_idle_id = 0;
 
     pw->layout_image = image_new(FALSE);
-    gtk_widget_set_size_request(pw->layout_image->widget, PRINT_DLG_PREVIEW_WIDTH, PRINT_DLG_PREVIEW_HEIGHT);
+    gtk_widget_set_size_request(pw->layout_image->widget,
+                                PRINT_DLG_PREVIEW_WIDTH, PRINT_DLG_PREVIEW_HEIGHT);
 
     gtk_box_pack_start(GTK_BOX(group), pw->layout_image->widget, TRUE, TRUE, 0);
     gtk_widget_show(pw->layout_image->widget);
 
     hbox = pref_box_new(group, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_GAP);
     pw->button_back = pref_button_new(hbox, GTK_STOCK_GO_BACK, NULL, TRUE,
-                      G_CALLBACK(print_layout_page_back_cb), pw);
+                                      G_CALLBACK(print_layout_page_back_cb), pw);
     pw->button_next = pref_button_new(hbox, GTK_STOCK_GO_FORWARD, NULL, TRUE,
-                      G_CALLBACK(print_layout_page_next_cb), pw);
+                                      G_CALLBACK(print_layout_page_next_cb), pw);
     pw->page_label = pref_label_new(hbox, "");
 
     button = pref_button_new(NULL, GTK_STOCK_ZOOM_OUT, NULL, TRUE,
-                 G_CALLBACK(print_layout_zoom_out_cb), pw);
+                             G_CALLBACK(print_layout_zoom_out_cb), pw);
     gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
     button = pref_button_new(NULL, GTK_STOCK_ZOOM_IN, NULL, TRUE,
-                 G_CALLBACK(print_layout_zoom_in_cb), pw);
+                             G_CALLBACK(print_layout_zoom_in_cb), pw);
     gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
     button = pref_button_new(NULL, GTK_STOCK_ZOOM_100, NULL, TRUE,
-                 G_CALLBACK(print_layout_zoom_original_cb), pw);
+                             G_CALLBACK(print_layout_zoom_original_cb), pw);
     gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 0);
     gtk_widget_show(button);
 
@@ -789,119 +749,100 @@ static GtkWidget *print_window_layout_setup(PrintWindow *pw, GtkWidget *box)
 }
 
 static void print_window_spin_set(GtkSpinButton *spin, gpointer block_data,
-                  gdouble value, gdouble min, gdouble max,
-                  gdouble step, gdouble page, gint digits)
+                                  gdouble value, gdouble min, gdouble max,
+                                  gdouble step, gdouble page, gint digits)
 {
     if (block_data) g_signal_handlers_block_matched(G_OBJECT(spin), G_SIGNAL_MATCH_DATA,
-                            0, 0, NULL, NULL, block_data);
+                                                    0, 0, NULL, NULL, block_data);
     gtk_spin_button_set_digits(spin, digits);
     gtk_spin_button_set_increments(spin, step, page);
     gtk_spin_button_set_range(spin, min, max);
     gtk_spin_button_set_value(spin, value);
 
     if (block_data) g_signal_handlers_unblock_matched(G_OBJECT(spin), G_SIGNAL_MATCH_DATA,
-                              0, 0, NULL, NULL, block_data);
+                                                      0, 0, NULL, NULL, block_data);
 }
 
 static void print_window_layout_sync_layout(PrintWindow *pw)
 {
     gtk_widget_set_sensitive(pw->image_scale_spin, (pw->layout == PRINT_LAYOUT_IMAGE));
-    gtk_widget_set_sensitive(pw->proof_group, (pw->layout == PRINT_LAYOUT_PROOF));
+    gtk_widget_set_sensitive(pw->proof_group,      (pw->layout == PRINT_LAYOUT_PROOF));
 }
 
 static void print_window_layout_sync_paper(PrintWindow *pw)
 {
     gdouble width, height;
     gint digits;
-    gdouble step;
-    gdouble page;
+    gdouble step, page;
 
-    gtk_widget_set_sensitive(pw->paper_width_spin, (pw->paper_size == 0));
+    gtk_widget_set_sensitive(pw->paper_width_spin,  (pw->paper_size == 0));
     gtk_widget_set_sensitive(pw->paper_height_spin, (pw->paper_size == 0));
 
-    width = print_paper_size_convert_units((gdouble)pw->paper_width, PAPER_UNIT_POINTS, pw->paper_units);
-    height = print_paper_size_convert_units((gdouble)pw->paper_height, PAPER_UNIT_POINTS, pw->paper_units);
+    width = print_paper_size_convert_units((gdouble)pw->paper_width,
+                                           PAPER_UNIT_POINTS, pw->paper_units);
+    height = print_paper_size_convert_units((gdouble)pw->paper_height,
+                                            PAPER_UNIT_POINTS, pw->paper_units);
 
     switch (pw->paper_units)
     {
-        case PAPER_UNIT_MM:
-            digits = 1;
-            step = 1.0;
-            page = 10.0;
-            break;
-        case PAPER_UNIT_CM:
-            digits = 2;
-            step = 0.5;
-            page = 1.0;
-            break;
-        case PAPER_UNIT_INCH:
-            digits = 3;
-            step = 0.25;
-            page = 1.0;
-            break;
-        case PAPER_UNIT_PICAS:
-            digits = 2;
-            step = 1.0;
-            page = 6.0;
-            break;
+        case PAPER_UNIT_MM:    digits = 1; step = 1.0;  page = 10.0; break;
+        case PAPER_UNIT_CM:    digits = 2; step = 0.5;  page = 1.0; break;
+        case PAPER_UNIT_INCH:  digits = 3; step = 0.25; page = 1.0; break;
+        case PAPER_UNIT_PICAS: digits = 2; step = 1.0;  page = 6.0; break;
         case PAPER_UNIT_POINTS:
-        default:
-            digits = 1;
-            step = 1.0;
-            page = 10.0;
-            break;
+        default:               digits = 1; step = 1.0; page = 10.0; break;
     }
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->paper_width_spin), pw, width,
-                  print_paper_size_convert_units(PRINT_MIN_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(PRINT_MIN_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->paper_height_spin), pw, height,
-                  print_paper_size_convert_units(PRINT_MIN_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(PRINT_MIN_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->margin_left_spin), pw,
-                  print_paper_size_convert_units(pw->margin_left, PAPER_UNIT_POINTS, pw->paper_units),
-                  0.0,
-                  print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->margin_left, PAPER_UNIT_POINTS, pw->paper_units),
+                          0.0,
+                          print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->margin_right_spin), pw,
-                  print_paper_size_convert_units(pw->margin_right, PAPER_UNIT_POINTS, pw->paper_units),
-                  0.0,
-                  print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->margin_right, PAPER_UNIT_POINTS, pw->paper_units),
+                          0.0,
+                          print_paper_size_convert_units(PRINT_MAX_WIDTH, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->margin_top_spin), pw,
-                  print_paper_size_convert_units(pw->margin_top, PAPER_UNIT_POINTS, pw->paper_units),
-                  0.0,
-                  print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->margin_top, PAPER_UNIT_POINTS, pw->paper_units),
+                          0.0,
+                          print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->margin_bottom_spin), pw,
-                  print_paper_size_convert_units(pw->margin_bottom, PAPER_UNIT_POINTS, pw->paper_units),
-                  0.0,
-                  print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->margin_bottom, PAPER_UNIT_POINTS, pw->paper_units),
+                          0.0,
+                          print_paper_size_convert_units(PRINT_MAX_HEIGHT, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->proof_width_spin), pw,
-                  print_paper_size_convert_units(pw->proof_width, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_PROOF_MIN_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_PROOF_MAX_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->proof_width, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_PROOF_MIN_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_PROOF_MAX_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 
     print_window_spin_set(GTK_SPIN_BUTTON(pw->proof_height_spin), pw,
-                  print_paper_size_convert_units(pw->proof_height, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_PROOF_MIN_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
-                  print_paper_size_convert_units(PRINT_PROOF_MAX_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
-                  step, page, digits);
+                          print_paper_size_convert_units(pw->proof_height, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_PROOF_MIN_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
+                          print_paper_size_convert_units(PRINT_PROOF_MAX_SIZE, PAPER_UNIT_POINTS, pw->paper_units),
+                          step, page, digits);
 }
 
 static void print_window_layout_set_size(PrintWindow *pw, gdouble width, gdouble height)
 {
-    pw->paper_width = width;
+    pw->paper_width  = width;
     pw->paper_height = height;
 
     print_window_layout_sync_paper(pw);
@@ -914,7 +855,6 @@ static void print_window_layout_set_orientation(PrintWindow *pw, PaperOrientatio
     if (pw->paper_orientation == o) return;
 
     pw->paper_orientation = o;
-
     print_window_layout_size(pw);
 }
 
@@ -942,8 +882,7 @@ static GList *print_window_list_printers(void)
         if (strncmp(ptr, "printer ", 8) != 0) continue;
         if (strstr(ptr, "enabled") == NULL) continue;
         ptr += 8;
-        end = ptr;
-        while (*end != '\0' && *end != '\n' && *end != ' ' && *end != '\t') end++;
+        end = ptr + strcspn(ptr, " \t\n");
         *end = '\0';
         list = g_list_append(list, g_strdup(ptr));
         DEBUG_1("adding printer: %s", ptr);
@@ -1240,8 +1179,8 @@ static void print_job_ps_page_image_pixel(FILE *f, const guchar *pix)
     g_fprintf(f, "%s", text);
 }
 static gboolean print_job_ps_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
-                        gdouble x, gdouble y, gdouble w, gdouble h,
-                        gdouble offx, gdouble offy)
+                                        gdouble x, gdouble y, gdouble w, gdouble h,
+                                        gdouble offx, gdouble offy)
 {
     FILE *f;
     PipeError *pe;
@@ -1267,9 +1206,9 @@ static gboolean print_job_ps_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
         sw / pw->max_dpi > w / 72.0)
     {
         pixbuf = gdk_pixbuf_scale_simple(pixbuf,
-                        (gint)(w / 72.0 * pw->max_dpi),
-                        (gint)(h / 72.0 * pw->max_dpi),
-                        PRINT_PS_MAX_INTERP);
+                                         (gint)(w / 72.0 * pw->max_dpi),
+                                         (gint)(h / 72.0 * pw->max_dpi),
+                                         PRINT_PS_MAX_INTERP);
         sw = gdk_pixbuf_get_width(pixbuf);
         sh = gdk_pixbuf_get_height(pixbuf);
     }
@@ -1343,8 +1282,8 @@ static gboolean print_job_ps_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
 static gdouble convert_pango_dpi(gdouble points);
 
 static gboolean print_job_ps_page_text(PrintWindow *pw, const gchar *text, gdouble point_size,
-                       gdouble x, gdouble y, gdouble width,
-                       guint8 r, guint8 g, guint8 b)
+                                       gdouble x, gdouble y, gdouble width,
+                                       guint8 r, guint8 g, guint8 b)
 {
     PangoLayout *layout;
     PangoFontDescription *desc;
@@ -1372,7 +1311,7 @@ static gboolean print_job_ps_page_text(PrintWindow *pw, const gchar *text, gdoub
     g_object_unref(G_OBJECT(layout));
 
     ret = print_job_ps_page_image(pw, pixbuf, x, y,
-                       /* do not allow rescaling of the pixbuf due to rounding errors */
+                                  /* do not allow rescaling of the pixbuf due to rounding errors */
                                   ((gdouble)lw + 0.01) / scale_to_max_dpi,
                                   ((gdouble)lh + 0.01) / scale_to_max_dpi,
                                   0, 0);
@@ -1426,9 +1365,9 @@ static gboolean print_job_rgb_page_new(PrintWindow *pw, gint page)
     if (pw->job_pixbuf)
     {
         pixbuf_set_rect_fill(pw->job_pixbuf, 0, 0,
-                     gdk_pixbuf_get_width(pw->job_pixbuf),
-                     gdk_pixbuf_get_height(pw->job_pixbuf),
-                     255, 255, 255, 255);
+                             gdk_pixbuf_get_width(pw->job_pixbuf),
+                             gdk_pixbuf_get_height(pw->job_pixbuf),
+                             255, 255, 255, 255);
     }
 
     g_free(pw->job_path);
@@ -1497,23 +1436,15 @@ static gboolean print_job_rgb_page_done(PrintWindow *pw)
 
         switch (pw->output_format)
         {
-            case PRINT_FILE_JPG_LOW:
-                quality = 65;
-                break;
-            case PRINT_FILE_JPG_NORMAL:
-                quality = 80;
-                break;
-            case PRINT_FILE_JPG_HIGH:
-                quality = 95;
-                break;
+            case PRINT_FILE_JPG_LOW:    quality = 65; break;
+            case PRINT_FILE_JPG_NORMAL: quality = 80; break;
+            case PRINT_FILE_JPG_HIGH:   quality = 95; break;
             default:
                 break;
         }
 
         if (quality > 0)
-        {
             ret = pixbuf_to_file_as_jpg(pw->job_pixbuf, pathl, quality);
-        }
     }
 
     g_free(pathl);
@@ -1531,8 +1462,8 @@ static gboolean print_job_rgb_page_done(PrintWindow *pw)
 }
 
 static gboolean print_job_rgb_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
-                         gdouble x, gdouble y, gdouble w, gdouble h,
-                         gdouble offx, gdouble offy)
+                                         gdouble x, gdouble y, gdouble w, gdouble h,
+                                         gdouble offx, gdouble offy)
 {
     gdouble sw, sh;
     gdouble dw, dh;
@@ -1548,13 +1479,15 @@ static gboolean print_job_rgb_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
     dh = (gdouble)gdk_pixbuf_get_height(pw->job_pixbuf);
 
     if (clip_region(x, y, w, h,
-            0.0, 0.0, dw, dh,
-            &rx, &ry, &rw, &rh))
+                    0.0, 0.0, dw, dh,
+                    &rx, &ry, &rw, &rh))
     {
         gdk_pixbuf_composite(pixbuf, pw->job_pixbuf, rx, ry, rw, rh,
-                     x + offx, y + offy,
-                     w / sw, h / sh,
-                     (w / sw < 0.01 || h / sh < 0.01) ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR, 255);
+                             x + offx, y + offy,
+                             w / sw, h / sh,
+                             (w / sw < 0.01 || h / sh < 0.01) ? GDK_INTERP_NEAREST
+                                                              : GDK_INTERP_BILINEAR,
+                             255);
     }
 
     return TRUE;
@@ -1586,13 +1519,9 @@ static gdouble convert_pango_dpi(gdouble points)
             if (!warned)
             {
                 if (dpi == 0.0)
-                {
                     log_printf("pango dpi unknown, assuming %.0f\n", fallback_dpi);
-                }
                 else
-                {
                     log_printf("pango dpi reported as %.0f ignored, assuming %.0f\n", dpi, fallback_dpi);
-                }
                 warned = TRUE;
             }
 
@@ -1605,8 +1534,8 @@ static gdouble convert_pango_dpi(gdouble points)
 }
 
 static gboolean print_job_rgb_page_text(PrintWindow *pw, const gchar *text, gdouble point_size,
-                        gdouble x, gdouble y, gdouble width,
-                        guint8 r, guint8 g, guint8 b)
+                                        gdouble x, gdouble y, gdouble width,
+                                        guint8 r, guint8 g, guint8 b)
 {
     PangoLayout *layout;
     PangoFontDescription *desc;
@@ -1637,7 +1566,7 @@ static gboolean print_job_rgb_init(PrintWindow *pw)
 {
     if (pw->job_pixbuf) g_object_unref(pw->job_pixbuf);
     pw->job_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8,
-                    (gint)pw->layout_width, (gint)pw->layout_height);
+                                    (gint)pw->layout_width, (gint)pw->layout_height);
 
     return print_job_rgb_page_new(pw, pw->job_page);
 }
@@ -1676,17 +1605,13 @@ static gboolean print_job_preview_page_new(PrintWindow *pw, gint page)
         PaperUnits units;
 
         units = (pw->paper_units == PAPER_UNIT_MM ||
-             pw->paper_units == PAPER_UNIT_CM) ? PAPER_UNIT_CM : PAPER_UNIT_INCH;
+                 pw->paper_units == PAPER_UNIT_CM) ? PAPER_UNIT_CM : PAPER_UNIT_INCH;
 
         grid = print_paper_size_convert_units(1.0, units, PAPER_UNIT_POINTS);
         for (i = grid ; i < pw->layout_width; i += grid)
-        {
             pixbuf_draw_rect_fill(pixbuf, print_preview_unit(i), 0, 1, h, 0, 0, 0, 16);
-        }
         for (i = grid; i < pw->layout_height; i += grid)
-        {
             pixbuf_draw_rect_fill(pixbuf, 0, print_preview_unit(i), w, 1, 0, 0, 0, 16);
-        }
     }
 
     /* proof sheet grid */
@@ -1705,31 +1630,32 @@ static gboolean print_job_preview_page_new(PrintWindow *pw, gint page)
         {
             gint x, y;
 
-            x = pw->margin_left + (pw->layout_width - pw->margin_left - pw->margin_right - (pw->proof_columns * proof_w)) / 2 + i * proof_w;
+            x = pw->margin_left + (pw->layout_width - pw->margin_left - pw->margin_right -
+                                   (pw->proof_columns * proof_w)) / 2 + i * proof_w;
             y = pw->margin_top + j * proof_h;
 
             pixbuf_draw_rect(pixbuf, print_preview_unit(x), print_preview_unit(y), uw, uh,
-                     255, 0, 0, 64, 1, 1, 1, 1);
+                             255, 0, 0, 64, 1, 1, 1, 1);
         }
     }
 
     /* non-printable region (margins) */
     pixbuf_draw_rect(pixbuf, 0, 0, w, h,
-             0, 0, 0, 16,
-             l, r, t, b);
+                     0, 0, 0, 16,
+                     l, r, t, b);
 
     /* margin lines */
     pixbuf_draw_rect(pixbuf, l, 0, w - l - r, h,
-             0, 0, 255, 128,
-             1, 1, 0, 0);
+                     0, 0, 255, 128,
+                     1, 1, 0, 0);
     pixbuf_draw_rect(pixbuf, 0, t, w, h - t - b,
-             0, 0, 255, 128,
-             0, 0, 1, 1);
+                     0, 0, 255, 128,
+                     0, 0, 1, 1);
 
     /* border */
     pixbuf_draw_rect(pixbuf, 0, 0, w, h,
-             0, 0, 0, 255,
-             1, 1, 1, 1);
+                     0, 0, 0, 255,
+                     1, 1, 1, 1);
 
     image_area_changed(pw->layout_image, 0, 0, w, h);
 
@@ -1742,8 +1668,8 @@ static gboolean print_job_preview_page_done(PrintWindow *pw)
 }
 
 static gboolean print_job_preview_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
-                         gdouble x, gdouble y, gdouble w, gdouble h,
-                         gdouble offx, gdouble offy)
+                                             gdouble x, gdouble y, gdouble w, gdouble h,
+                                             gdouble offx, gdouble offy)
 {
     gdouble sw, sh;
     gdouble dw, dh;
@@ -1766,13 +1692,13 @@ static gboolean print_job_preview_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
     offy = print_preview_unit(offy);
 
     if (clip_region(x, y, w, h,
-            0.0, 0.0, dw, dh,
-            &rx, &ry, &rw, &rh))
+                    0.0, 0.0, dw, dh,
+                    &rx, &ry, &rw, &rh))
     {
         gdk_pixbuf_composite(pixbuf, pw->job_pixbuf, rx, ry, rw, rh,
-                     x + offx, y + offy,
-                     w / sw, h / sh,
-                     (w / sw < 0.01 || h / sh < 0.01) ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR, 255);
+                             x + offx, y + offy,
+                             w / sw, h / sh,
+                             (w / sw < 0.01 || h / sh < 0.01) ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR, 255);
 
         image_area_changed(pw->layout_image, rx, ry, rw, rh);
     }
@@ -1781,8 +1707,8 @@ static gboolean print_job_preview_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
 }
 
 static gboolean print_job_preview_page_text(PrintWindow *pw, const gchar *text, gdouble point_size,
-                        gdouble x, gdouble y, gdouble width,
-                        guint8 r, guint8 g, guint8 b)
+                                            gdouble x, gdouble y, gdouble width,
+                                            guint8 r, guint8 g, guint8 b)
 {
     PangoLayout *layout;
     PangoFontDescription *desc;
@@ -1834,12 +1760,9 @@ static gboolean print_job_page_new(PrintWindow *pw)
 {
     switch (pw->job_format)
     {
-        case RENDER_FORMAT_RGB:
-            return print_job_rgb_page_new(pw, pw->job_page);
-        case RENDER_FORMAT_PS:
-            return print_job_ps_page_new(pw, pw->job_page);
-        case RENDER_FORMAT_PREVIEW:
-            return print_job_preview_page_new(pw, pw->job_page);
+        case RENDER_FORMAT_RGB:     return print_job_rgb_page_new(pw, pw->job_page);
+        case RENDER_FORMAT_PS:      return print_job_ps_page_new(pw, pw->job_page);
+        case RENDER_FORMAT_PREVIEW: return print_job_preview_page_new(pw, pw->job_page);
     }
 
     return FALSE;
@@ -1849,20 +1772,17 @@ static gboolean print_job_page_done(PrintWindow *pw)
 {
     switch (pw->job_format)
     {
-        case RENDER_FORMAT_RGB:
-            return print_job_rgb_page_done(pw);
-        case RENDER_FORMAT_PS:
-            return print_job_ps_page_done(pw);
-        case RENDER_FORMAT_PREVIEW:
-            return print_job_preview_page_done(pw);
+        case RENDER_FORMAT_RGB:     return print_job_rgb_page_done(pw);
+        case RENDER_FORMAT_PS:      return print_job_ps_page_done(pw);
+        case RENDER_FORMAT_PREVIEW: return print_job_preview_page_done(pw);
     }
 
     return FALSE;
 }
 
 static gboolean print_job_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
-                     gdouble x, gdouble y, gdouble w, gdouble h,
-                     gdouble offx, gdouble offy)
+                                     gdouble x, gdouble y, gdouble w, gdouble h,
+                                     gdouble offx, gdouble offy)
 {
     gboolean success = FALSE;
 
@@ -1870,23 +1790,17 @@ static gboolean print_job_page_image(PrintWindow *pw, GdkPixbuf *pixbuf,
 
     switch (pw->job_format)
     {
-        case RENDER_FORMAT_RGB:
-            success = print_job_rgb_page_image(pw, pixbuf, x, y, w, h, offx, offy);
-            break;
-        case RENDER_FORMAT_PS:
-            success = print_job_ps_page_image(pw, pixbuf, x, y, w, h, offx, offy);
-            break;
-        case RENDER_FORMAT_PREVIEW:
-            success = print_job_preview_page_image(pw, pixbuf, x, y, w, h, offx, offy);
-            break;
+        case RENDER_FORMAT_RGB:     success = print_job_rgb_page_image(pw, pixbuf, x, y, w, h, offx, offy); break;
+        case RENDER_FORMAT_PS:      success = print_job_ps_page_image(pw, pixbuf, x, y, w, h, offx, offy); break;
+        case RENDER_FORMAT_PREVIEW: success = print_job_preview_page_image(pw, pixbuf, x, y, w, h, offx, offy); break;
     }
 
     return success;
 }
 
 static gboolean print_job_page_text(PrintWindow *pw, const gchar *text, gdouble point_size,
-                    gdouble x, gdouble y, gdouble width,
-                    guint8 r, guint8 g, guint8 b)
+                                    gdouble x, gdouble y, gdouble width,
+                                    guint8 r, guint8 g, guint8 b)
 {
     gboolean success = TRUE;
 
@@ -1894,15 +1808,9 @@ static gboolean print_job_page_text(PrintWindow *pw, const gchar *text, gdouble 
 
     switch (pw->job_format)
     {
-        case RENDER_FORMAT_RGB:
-            success = print_job_rgb_page_text(pw, text, point_size, x, y, width, r, g, b);
-            break;
-        case RENDER_FORMAT_PS:
-            success = print_job_ps_page_text(pw, text, point_size, x, y, width, r, g, b);
-            break;
-        case RENDER_FORMAT_PREVIEW:
-            success = print_job_preview_page_text(pw, text, point_size, x, y, width, r, g, b);
-            break;
+        case RENDER_FORMAT_RGB:     success = print_job_rgb_page_text(pw, text, point_size, x, y, width, r, g, b); break;
+        case RENDER_FORMAT_PS:      success = print_job_ps_page_text(pw, text, point_size, x, y, width, r, g, b); break;
+        case RENDER_FORMAT_PREVIEW: success = print_job_preview_page_text(pw, text, point_size, x, y, width, r, g, b); break;
     }
 
     return success;
@@ -1947,9 +1855,7 @@ static void print_job_status(PrintWindow *pw)
     g_free(buf);
 
     if (pw->job_path && pw->job_progress_label)
-    {
         gtk_label_set_text(GTK_LABEL(pw->job_progress_label), pw->job_path);
-    }
 
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(pw->job_progress), value);
 }
@@ -1965,7 +1871,7 @@ static void print_job_throw_error(PrintWindow *pw, const gchar *message)
     if (gtk_widget_get_visible(pw->dialog->dialog)) parent = pw->dialog->dialog;
 
     gd = generic_dialog_new(_("Printing error"), "print_warning",
-                parent, TRUE, NULL, NULL);
+                            parent, TRUE, NULL, NULL);
     generic_dialog_add_button(gd, GTK_STOCK_OK, NULL, NULL, TRUE);
 
     buf = g_strdup_printf(_("An error occured printing to %s."), print_output_name(pw->output));
@@ -1985,8 +1891,8 @@ static void print_job_done(PrintWindow *pw)
 }
 
 static gboolean print_job_text_image(PrintWindow *pw, const gchar *path,
-                     gdouble x, gdouble y, gdouble width,
-                     gint sw, gint sh, gint proof)
+                                     gdouble x, gdouble y, gdouble width,
+                                     gint sw, gint sh, gint proof)
 {
     GString *string;
     gboolean space = FALSE;
@@ -2043,7 +1949,7 @@ static gboolean print_job_text_image(PrintWindow *pw, const gchar *path,
     }
 
     ret = print_job_page_text(pw, string->str, pw->text_points, x, y, width,
-                  pw->text_r, pw->text_g, pw->text_b);
+                              pw->text_r, pw->text_g, pw->text_b);
 
     g_string_free(string, TRUE);
 
@@ -2115,7 +2021,8 @@ static void print_job_render_image_loader_done(ImageLoader *il, gpointer data)
         y = y + h + PRINT_TEXT_PADDING;
 
         success = (success &&
-               print_job_text_image(pw, image_loader_get_fd(pw->job_loader)->path, x, y, dw, sw, sh, FALSE));
+                   print_job_text_image(pw, image_loader_get_fd(pw->job_loader)->path,
+                                        x, y, dw, sw, sh, FALSE));
     }
 
     image_loader_free(pw->job_loader);
@@ -2139,7 +2046,8 @@ static void print_job_render_image_loader_done(ImageLoader *il, gpointer data)
 
     if (print_job_render_image(pw))
     {
-        if (!print_job_page_new(pw)) print_job_close(pw, TRUE);
+        if (!print_job_page_new(pw))
+            print_job_close(pw, TRUE);
     }
     else
     {
@@ -2153,12 +2061,8 @@ static gboolean print_job_render_image(PrintWindow *pw)
 
     switch (pw->source)
     {
-        case PRINT_SOURCE_SELECTION:
-            fd = g_list_nth_data(pw->source_selection, pw->job_page);
-            break;
-        case PRINT_SOURCE_ALL:
-            fd = g_list_nth_data(pw->source_list, pw->job_page);
-            break;
+        case PRINT_SOURCE_SELECTION: fd = g_list_nth_data(pw->source_selection, pw->job_page); break;
+        case PRINT_SOURCE_ALL:       fd = g_list_nth_data(pw->source_list,      pw->job_page); break;
         case PRINT_SOURCE_IMAGE:
         default:
             if (pw->job_page == 0) fd = pw->source_fd;
@@ -2171,7 +2075,8 @@ static gboolean print_job_render_image(PrintWindow *pw)
     if (!fd) return FALSE;
 
     pw->job_loader = image_loader_new(fd);
-    g_signal_connect(G_OBJECT(pw->job_loader), "done", (GCallback)print_job_render_image_loader_done, pw);
+    g_signal_connect(G_OBJECT(pw->job_loader), "done",
+                     G_CALLBACK(print_job_render_image_loader_done), pw);
     if (!image_loader_start(pw->job_loader))
     {
         image_loader_free(pw->job_loader);
@@ -2203,9 +2108,8 @@ static void print_job_render_proof_loader_done(ImageLoader *il, gpointer data)
 
     pixbuf = image_loader_get_pixbuf(il);
 
-    if (options->image.exif_proof_rotate_enable == TRUE) {
+    if (options->image.exif_proof_rotate_enable == TRUE)
         pixbuf = pixbuf_apply_orientation(pixbuf, il->fd->exif_orientation);
-    }
 
     w = gdk_pixbuf_get_width(pixbuf);
     h = gdk_pixbuf_get_height(pixbuf);
@@ -2228,7 +2132,8 @@ static void print_job_render_proof_loader_done(ImageLoader *il, gpointer data)
 
     x *= proof_w;
     y *= proof_h;
-    x += pw->margin_left + (pw->layout_width - pw->margin_left - pw->margin_right - (pw->proof_columns * proof_w)) / 2 + (proof_w - icon_w) / 2;
+    x += pw->margin_left + (pw->layout_width - pw->margin_left - pw->margin_right -
+                            (pw->proof_columns * proof_w)) / 2 + (proof_w - icon_w) / 2;
     y += pw->margin_top + PRINT_PROOF_MARGIN + (pw->proof_height - icon_h) / 2;
 
     success = (success &&
@@ -2238,7 +2143,8 @@ static void print_job_render_proof_loader_done(ImageLoader *il, gpointer data)
     y = y + icon_h + (pw->proof_height - icon_h) / 2 + PRINT_TEXT_PADDING;
 
     success = (success &&
-           print_job_text_image(pw, image_loader_get_fd(pw->job_loader)->path, x, y, icon_w + PRINT_PROOF_MARGIN * 2, w, h, TRUE));
+               print_job_text_image(pw, image_loader_get_fd(pw->job_loader)->path,
+                                    x, y, icon_w + PRINT_PROOF_MARGIN * 2, w, h, TRUE));
 
     if (!success)
     {
@@ -2288,13 +2194,9 @@ static void print_job_render_proof_loader_done(ImageLoader *il, gpointer data)
         else
         {
             if (print_job_page_done(pw))
-            {
                 print_job_done(pw);
-            }
             else
-            {
                 print_job_close(pw, TRUE);
-            }
         }
     }
 }
@@ -2305,21 +2207,17 @@ static gboolean print_job_render_proof(PrintWindow *pw)
 
     if (pw->proof_columns < 1 || pw->proof_rows < 1) return FALSE;
 
-    if (!pw->proof_point && pw->proof_position == 0 && pw->source == PRINT_SOURCE_IMAGE)
-    {
+    if     (!pw->proof_point && pw->proof_position == 0 && pw->source == PRINT_SOURCE_IMAGE)
         fd = pw->source_fd;
-    }
-    else if (pw->proof_point &&
-         pw->proof_position < pw->proof_columns * pw->proof_rows)
-    {
+    else if (pw->proof_point && pw->proof_position < pw->proof_columns * pw->proof_rows)
         fd = pw->proof_point->data;
-    }
 
     if (!fd) return FALSE;
 
     image_loader_free(pw->job_loader);
     pw->job_loader = image_loader_new(fd);
-    g_signal_connect(G_OBJECT(pw->job_loader), "done", (GCallback)print_job_render_proof_loader_done, pw);
+    g_signal_connect(G_OBJECT(pw->job_loader), "done",
+                     G_CALLBACK(print_job_render_proof_loader_done), pw);
     if (!image_loader_start(pw->job_loader))
     {
         image_loader_free(pw->job_loader);
@@ -2338,16 +2236,10 @@ static void print_job_render(PrintWindow *pw)
 
     switch (pw->source)
     {
-        case PRINT_SOURCE_SELECTION:
-            pw->proof_point = pw->source_selection;
-            break;
-        case PRINT_SOURCE_ALL:
-            pw->proof_point = pw->source_list;
-            break;
+        case PRINT_SOURCE_SELECTION: pw->proof_point = pw->source_selection; break;
+        case PRINT_SOURCE_ALL:       pw->proof_point = pw->source_list; break;
         case PRINT_SOURCE_IMAGE:
-        default:
-            pw->proof_point = NULL;
-            break;
+        default:                     pw->proof_point = NULL; break;
     }
 
     print_proof_size(pw, &proof_w, &proof_h);
@@ -2366,9 +2258,7 @@ static void print_job_render(PrintWindow *pw)
         }
 
         if (pw->proof_point && pw->job_page > 0)
-        {
             pw->proof_point = g_list_nth(pw->proof_point, pw->job_page * pw->proof_columns * pw->proof_rows);
-        }
     }
 
     if (!print_job_page_new(pw))
@@ -2378,13 +2268,9 @@ static void print_job_render(PrintWindow *pw)
     }
 
     if (pw->layout == PRINT_LAYOUT_IMAGE)
-    {
         finished = !print_job_render_image(pw);
-    }
     else
-    {
         finished = !print_job_render_proof(pw);
-    }
 
     if (finished) print_job_done(pw);
 }
@@ -2419,14 +2305,8 @@ static gboolean print_job_finish(PrintWindow *pw)
     switch (pw->job_format)
     {
         case RENDER_FORMAT_RGB:
-            success = TRUE;
-            break;
-        case RENDER_FORMAT_PS:
-            print_job_ps_end(pw);
-            break;
-        case RENDER_FORMAT_PREVIEW:
-            success = TRUE;
-            break;
+        case RENDER_FORMAT_PREVIEW: success = TRUE; break;
+        case RENDER_FORMAT_PS:      success = print_job_ps_end(pw); break;
     }
 
     return success;
@@ -2465,8 +2345,7 @@ static void print_job_close(PrintWindow *pw, gint error)
     if (!error) print_job_finish(pw);
 
     print_job_close_file(pw);
-    g_free(pw->job_path);
-    pw->job_path = NULL;
+    g_clear_pointer(&pw->job_path, g_free);
 
     if (pw->job_dialog)
     {
@@ -2475,19 +2354,11 @@ static void print_job_close(PrintWindow *pw, gint error)
         pw->job_progress = NULL;
     }
 
-    image_loader_free(pw->job_loader);
-    pw->job_loader = NULL;
-
-    if (pw->job_pixbuf)
-    {
-        g_object_unref(pw->job_pixbuf);
-        pw->job_pixbuf = NULL;
-    }
+    g_clear_pointer(&pw->job_loader, image_loader_free);
+    g_clear_object(&pw->job_pixbuf);
 
     if (pw->dialog && !gtk_widget_get_visible(pw->dialog->dialog))
-    {
         g_idle_add_full(G_PRIORITY_HIGH_IDLE, print_job_close_finish_cb, pw, NULL);
-    }
 }
 
 static void print_job_cancel_cb(GenericDialog *gd, gpointer data)
@@ -2509,14 +2380,10 @@ static void print_pref_store(PrintWindow *pw)
     pref_list_int_set(PRINT_PREF_GROUP, PRINT_PREF_OUTPUT, pw->output);
 
     if (pw->output == PRINT_OUTPUT_RGB_FILE)
-    {
         pref_list_int_set(PRINT_PREF_GROUP, PRINT_PREF_FORMAT, pw->output_format);
-    }
 
     if (pw->job_format == RENDER_FORMAT_PS)
-    {
         pref_list_double_set(PRINT_PREF_GROUP, PRINT_PREF_DPI, pw->max_dpi);
-    }
 
     pref_list_int_set(PRINT_PREF_GROUP, PRINT_PREF_UNITS, pw->paper_units);
     pref_list_int_set(PRINT_PREF_GROUP, PRINT_PREF_SIZE, pw->paper_size);
@@ -2540,9 +2407,7 @@ static void print_pref_store(PrintWindow *pw)
     }
 
     if (pw->output == PRINT_OUTPUT_PS_CUSTOM)
-    {
         pref_list_string_set(PRINT_PREF_GROUP, PRINT_PREF_PRINTERC, pw->output_custom);
-    }
 
     if (pw->output == PRINT_OUTPUT_RGB_FILE ||
         pw->output == PRINT_OUTPUT_PS_FILE)
@@ -2590,17 +2455,20 @@ static gboolean print_job_start(PrintWindow *pw, RenderFormat format, PrintOutpu
     gtk_widget_hide(pw->dialog->dialog);
 
     pw->job_dialog = file_util_gen_dlg(_("Print"), "print_job_dialog",
-                       (GtkWidget *)gtk_window_get_transient_for(GTK_WINDOW(pw->dialog->dialog)), FALSE,
-                       print_job_cancel_cb, pw);
+                                       GTK_WIDGET(gtk_window_get_transient_for(GTK_WINDOW(pw->dialog->dialog))),
+                                       FALSE, print_job_cancel_cb, pw);
 
-    msg = g_strdup_printf(_("Printing %d pages to %s."), print_layout_page_count(pw), print_output_name(pw->output));
+    msg = g_strdup_printf(_("Printing %d pages to %s."),
+                          print_layout_page_count(pw),
+                          print_output_name(pw->output));
     generic_dialog_add_message(pw->job_dialog, NULL, msg, NULL);
     g_free(msg);
 
     if (pw->job_output == PRINT_OUTPUT_PS_FILE ||
         pw->job_output == PRINT_OUTPUT_RGB_FILE)
     {
-        hbox = pref_box_new(pw->job_dialog->vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
+        hbox = pref_box_new(pw->job_dialog->vbox, FALSE,
+                            GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
         pref_label_new(hbox, _("Filename:"));
 
         pw->job_progress_label = pref_label_new(hbox, "");
@@ -2658,22 +2526,17 @@ static void print_window_print_start(PrintWindow *pw)
  */
 
 static GtkWidget *print_combo_menu(const gchar *text[], gint count, gint preferred,
-                   GCallback func, gpointer data)
+                                   GCallback func, gpointer data)
 {
     GtkWidget *combo;
-    gint i;
 
     combo = gtk_combo_box_text_new();
 
-    for (i = 0 ; i < count; i++)
-    {
+    for (gint i = 0 ; i < count; i++)
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _(text[i]));
-    }
 
     if (preferred >= 0 && preferred < count)
-    {
         gtk_combo_box_set_active(GTK_COMBO_BOX(combo), preferred);
-    }
 
     if (func) g_signal_connect(G_OBJECT(combo), "changed", func, data);
 
@@ -2688,27 +2551,22 @@ static GtkWidget *print_combo_menu(const gchar *text[], gint count, gint preferr
  */
 
 static GtkWidget *print_paper_menu(GtkWidget *table, gint column, gint row,
-                   PaperOrientation preferred, GCallback func, gpointer data)
+                                   PaperOrientation preferred, GCallback func, gpointer data)
 {
     GtkWidget *combo;
-    gint i;
 
     pref_table_label(table, column, row, (_("Format:")), 1.0);
 
     combo = gtk_combo_box_text_new();
 
-    i = 0;
-    while (print_paper_sizes[i].description)
-    {
+    for (gint i = 0; print_paper_sizes[i].description; i++)
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _(print_paper_sizes[i].description));
-        i++;
-    }
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), preferred);
     if (func) g_signal_connect(G_OBJECT(combo), "changed", func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -2734,13 +2592,9 @@ static void print_paper_select_cb(GtkWidget *combo, gpointer data)
     }
 
     if (ps->orientation == PAPER_ORIENTATION_PORTRAIT)
-    {
         print_window_layout_set_size(pw, ps->width, ps->height);
-    }
     else
-    {
         print_window_layout_set_size(pw, ps->height, ps->width);
-    }
 }
 
 static void print_paper_size_cb(GtkWidget *spin, gpointer data)
@@ -2749,16 +2603,12 @@ static void print_paper_size_cb(GtkWidget *spin, gpointer data)
     gdouble value;
 
     value = print_paper_size_convert_units(gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin)),
-                           pw->paper_units, PAPER_UNIT_POINTS);
+                                           pw->paper_units, PAPER_UNIT_POINTS);
 
     if (spin == pw->paper_width_spin)
-    {
         pw->paper_width = value;
-    }
     else
-    {
         pw->paper_height = value;
-    }
 
     print_window_layout_set_size(pw, pw->paper_width, pw->paper_height);
 }
@@ -2773,7 +2623,7 @@ static GtkWidget *print_paper_units_menu(GtkWidget *table, gint column, gint row
     combo = print_combo_menu(print_paper_units, PAPER_UNIT_COUNT, units, func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -2807,8 +2657,8 @@ static void print_paper_units_cb(GtkWidget *combo, gpointer data)
 }
 
 static GtkWidget *print_paper_orientation_menu(GtkWidget *table, gint column, gint row,
-                           PaperOrientation preferred,
-                           GCallback func, gpointer data)
+                                               PaperOrientation preferred,
+                                               GCallback func, gpointer data)
 {
     GtkWidget *combo;
 
@@ -2817,7 +2667,7 @@ static GtkWidget *print_paper_orientation_menu(GtkWidget *table, gint column, gi
     combo = print_combo_menu(print_paper_orientation, PAPER_ORIENTATION_COUNT, preferred, func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -2839,32 +2689,24 @@ static void print_paper_margin_cb(GtkWidget *spin, gpointer data)
     gdouble value;
 
     value = print_paper_size_convert_units(gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin)),
-                           pw->paper_units, PAPER_UNIT_POINTS);
+                                           pw->paper_units, PAPER_UNIT_POINTS);
 
     if (spin == pw->margin_left_spin)
-    {
         pw->margin_left = CLAMP(value, 0.0, pw->paper_width);
-    }
     else if (spin == pw->margin_right_spin)
-    {
         pw->margin_right = CLAMP(value, 0.0, pw->paper_width);
-    }
     else if (spin == pw->margin_top_spin)
-    {
         pw->margin_top = CLAMP(value, 0.0, pw->paper_height);
-    }
     else if (spin == pw->margin_bottom_spin)
-    {
         pw->margin_bottom = CLAMP(value, 0.0, pw->paper_height);
-    }
 
     print_window_layout_set_size(pw, pw->paper_width, pw->paper_height);
 }
 
 static GtkWidget *print_misc_menu(GtkWidget *parent_box, gint preferred,
-                  const gchar *title, const gchar *key,
-                  gint count, const gchar **text,
-                  GCallback func, gpointer data)
+                                  const gchar *title, const gchar *key,
+                                  gint count, const gchar **text,
+                                  GCallback func, gpointer data)
 {
     GtkWidget *box;
     GtkWidget *button = NULL;
@@ -2876,11 +2718,10 @@ static GtkWidget *print_misc_menu(GtkWidget *parent_box, gint preferred,
     {
         button = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(button), _(text[i]));
         if (i == preferred)
-        {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
-        }
         g_object_set_data(G_OBJECT(button), key, GINT_TO_POINTER(i));
-        if (func) g_signal_connect(G_OBJECT(button), "clicked", func, data);
+        if (func)
+            g_signal_connect(G_OBJECT(button), "clicked", func, data);
         gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 0);
         gtk_widget_show(button);
     }
@@ -2925,22 +2766,18 @@ static void print_proof_size_cb(GtkWidget *spin, gpointer data)
     gdouble value;
 
     value = print_paper_size_convert_units(gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin)),
-                           pw->paper_units, PAPER_UNIT_POINTS);
+                                           pw->paper_units, PAPER_UNIT_POINTS);
 
     if (spin == pw->proof_width_spin)
-    {
         pw->proof_width = value;
-    }
     else
-    {
         pw->proof_height = value;
-    }
 
     print_window_layout_render(pw);
 }
 
 static GtkWidget *print_output_menu(GtkWidget *table, gint column, gint row,
-                    PrintOutput preferred, GCallback func, gpointer data)
+                                    PrintOutput preferred, GCallback func, gpointer data)
 {
     GtkWidget *combo;
 
@@ -2949,7 +2786,7 @@ static GtkWidget *print_output_menu(GtkWidget *table, gint column, gint row,
     combo = print_combo_menu(print_output_text, PRINT_OUTPUT_COUNT, preferred, func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column + 1, column + 2, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -3041,14 +2878,14 @@ static void print_output_cb(GtkWidget *combo, gpointer data)
 }
 
 static GtkWidget *print_output_format_menu(GtkWidget * table, gint column, gint row,
-                       PrintFileFormat preferred, GCallback func, gpointer data)
+                                           PrintFileFormat preferred, GCallback func, gpointer data)
 {
     GtkWidget *combo;
 
     combo = print_combo_menu(print_file_format_text, PRINT_FILE_COUNT, preferred, func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column, column + 1, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -3083,7 +2920,7 @@ static GtkWidget *print_output_dpi_menu(GtkWidget * table, gint column, gint row
     if (func) g_signal_connect(G_OBJECT(combo), "changed", func, data);
 
     gtk_table_attach(GTK_TABLE(table), combo, column, column + 1, row, row + 1,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     return combo;
@@ -3092,13 +2929,9 @@ static GtkWidget *print_output_dpi_menu(GtkWidget * table, gint column, gint row
 static void print_text_field_set(PrintWindow *pw, TextInfo field, gboolean active)
 {
     if (active)
-    {
         pw->text_fields |= field;
-    }
     else
-    {
         pw->text_fields &= ~field;
-    }
 
     print_window_layout_render(pw);
 }
@@ -3163,21 +2996,21 @@ static void print_text_menu(GtkWidget *box, PrintWindow *pw)
     group = pref_group_new(box, FALSE, _("Show"), GTK_ORIENTATION_VERTICAL);
 
     pref_checkbox_new(group, _("Name"), (pw->text_fields & TEXT_INFO_FILENAME),
-              G_CALLBACK(print_text_cb_name), pw);
+                      G_CALLBACK(print_text_cb_name), pw);
     pref_checkbox_new(group, _("Path"), (pw->text_fields & TEXT_INFO_FILEPATH),
-              G_CALLBACK(print_text_cb_path), pw);
+                      G_CALLBACK(print_text_cb_path), pw);
     pref_checkbox_new(group, _("Date"), (pw->text_fields & TEXT_INFO_FILEDATE),
-              G_CALLBACK(print_text_cb_date), pw);
+                      G_CALLBACK(print_text_cb_date), pw);
     pref_checkbox_new(group, _("Size"), (pw->text_fields & TEXT_INFO_FILESIZE),
-              G_CALLBACK(print_text_cb_size), pw);
+                      G_CALLBACK(print_text_cb_size), pw);
     pref_checkbox_new(group, _("Dimensions"), (pw->text_fields & TEXT_INFO_DIMENSIONS),
-              G_CALLBACK(print_text_cb_dims), pw);
+                      G_CALLBACK(print_text_cb_dims), pw);
 
     group = pref_group_new(box, FALSE, _("Font"), GTK_ORIENTATION_VERTICAL);
 
     pref_spin_new(group, _("Size:"), _("points"),
-              8.0, 100.0, 1.0, 0, pw->text_points,
-              G_CALLBACK(print_text_cb_points), pw);
+                  8.0, 100.0, 1.0, 0, pw->text_points,
+                  G_CALLBACK(print_text_cb_points), pw);
 }
 
 /*
@@ -3305,15 +3138,15 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     pw->save_settings = print_pref_int(PRINT_PREF_SAVE, TRUE);
 
     pw->dialog = file_util_gen_dlg(_("Print"), "print_dialog",
-                       parent, FALSE,
-                       print_window_cancel_cb, pw);
+                                   parent, FALSE,
+                                   print_window_cancel_cb, pw);
 
     geometry.min_width = DEFAULT_MINIMAL_WINDOW_SIZE;
     geometry.min_height = DEFAULT_MINIMAL_WINDOW_SIZE;
     geometry.base_width = PRINT_DLG_WIDTH;
     geometry.base_height = PRINT_DLG_HEIGHT;
     gtk_window_set_geometry_hints(GTK_WINDOW(pw->dialog->dialog), NULL, &geometry,
-                      GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
     pw->print_button = generic_dialog_add_button(pw->dialog, GTK_STOCK_PRINT, NULL, print_window_print_cb, TRUE);
 
@@ -3332,31 +3165,31 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     gtk_notebook_append_page(GTK_NOTEBOOK(pw->notebook), vbox, label);
 
     print_misc_menu(vbox, pw->source, _("Source"), "print_source",
-            PRINT_SOURCE_COUNT, print_source_text,
-            G_CALLBACK(print_source_select_cb), pw);
+                    PRINT_SOURCE_COUNT, print_source_text,
+                    G_CALLBACK(print_source_select_cb), pw);
 
     box = print_misc_menu(vbox, pw->layout, _("Layout"), "print_layout",
-                  PRINT_LAYOUT_COUNT, print_layout_text,
-                  G_CALLBACK(print_layout_select_cb), pw);
+                          PRINT_LAYOUT_COUNT, print_layout_text,
+                          G_CALLBACK(print_layout_select_cb), pw);
 
     pref_spacer(box, PREF_PAD_GROUP);
 
     table = pref_table_new(box, 2, 2, FALSE, FALSE);
 
     pw->image_scale_spin = pref_table_spin(table, 0, 0, _("Image size:"), "%",
-                           5.0, 100.0, 1.0, 0, pw->image_scale,
-                           G_CALLBACK(print_image_scale_cb), pw);
+                                           5.0, 100.0, 1.0, 0, pw->image_scale,
+                                           G_CALLBACK(print_image_scale_cb), pw);
 
     label = pref_table_label(table, 0, 1, _("Proof size:"), 1.0);
     pw->proof_group = pref_table_box(table, 1, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
     pref_link_sensitivity(label, pw->proof_group);
 
     pw->proof_width_spin = pref_spin_new(pw->proof_group, NULL, NULL,
-                         0.0, 50.0, 0.1, 3, 0.0,
-                         G_CALLBACK(print_proof_size_cb), pw);
+                                         0.0, 50.0, 0.1, 3, 0.0,
+                                         G_CALLBACK(print_proof_size_cb), pw);
     pw->proof_height_spin = pref_spin_new(pw->proof_group, "x", NULL,
-                          0.0, 50.0, 0.1, 3, 0.0,
-                          G_CALLBACK(print_proof_size_cb), pw);
+                                          0.0, 50.0, 0.1, 3, 0.0,
+                                          G_CALLBACK(print_proof_size_cb), pw);
 
     /* text tab */
 
@@ -3383,11 +3216,11 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     label = pref_table_label(table, 0, 1, (_("Size:")), 1.0);
     box = pref_table_box(table, 1, 1, GTK_ORIENTATION_HORIZONTAL, NULL);
     pw->paper_width_spin = pref_spin_new(box, NULL, NULL,
-                         1.0, 10000.0, 1.0, 2, 66,
-                         G_CALLBACK(print_paper_size_cb), pw);
+                                         1.0, 10000.0, 1.0, 2, 66,
+                                         G_CALLBACK(print_paper_size_cb), pw);
     pw->paper_height_spin = pref_spin_new(box, "x", NULL,
-                          1.0, 10000.0, 1.0, 2, 66,
-                          G_CALLBACK(print_paper_size_cb), pw);
+                                          1.0, 10000.0, 1.0, 2, 66,
+                                          G_CALLBACK(print_paper_size_cb), pw);
     pref_link_sensitivity(label, pw->paper_width_spin);
 
     pw->paper_units_menu = print_paper_units_menu(table, 0, 2, pw->paper_units,
@@ -3399,17 +3232,17 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     box = pref_group_new(vbox, FALSE, _("Margins"), GTK_ORIENTATION_VERTICAL);
     table = pref_table_new(box, 4, 2, FALSE, FALSE);
     pw->margin_left_spin = pref_table_spin(table, 0, 0, _("Left:"), NULL,
-                    0.0, 50.0, 0.1, 3, 0.0,
-                    G_CALLBACK(print_paper_margin_cb), pw);
+                                           0.0, 50.0, 0.1, 3, 0.0,
+                                           G_CALLBACK(print_paper_margin_cb), pw);
     pw->margin_right_spin = pref_table_spin(table, 2, 0, _("Right:"), NULL,
-                    0.0, 50.0, 0.1, 3, 0.0,
-                    G_CALLBACK(print_paper_margin_cb), pw);
+                                            0.0, 50.0, 0.1, 3, 0.0,
+                                            G_CALLBACK(print_paper_margin_cb), pw);
     pw->margin_top_spin = pref_table_spin(table, 0, 1, _("Top:"), NULL,
-                    0.0, 50.0, 0.1, 3, 0.0,
-                    G_CALLBACK(print_paper_margin_cb), pw);
+                                          0.0, 50.0, 0.1, 3, 0.0,
+                                          G_CALLBACK(print_paper_margin_cb), pw);
     pw->margin_bottom_spin = pref_table_spin(table, 2, 1, _("Bottom:"), NULL,
-                    0.0, 50.0, 0.1, 3, 0.0,
-                    G_CALLBACK(print_paper_margin_cb), pw);
+                                             0.0, 50.0, 0.1, 3, 0.0,
+                                             G_CALLBACK(print_paper_margin_cb), pw);
 
     /* printer tab */
 
@@ -3426,7 +3259,7 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     combo = history_combo_new(&pw->custom_entry, NULL, "print_custom", -1);
     print_custom_entry_set(pw, combo);
     gtk_table_attach(GTK_TABLE(table), combo, 1, 2, 1, 2,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     pref_link_sensitivity(label, combo);
@@ -3435,19 +3268,19 @@ void print_window_new(FileData *fd, GList *selection, GList *list, GtkWidget *pa
     combo = tab_completion_new_with_history(&pw->path_entry, NULL, "print_path", -1, NULL, pw);
     tab_completion_add_select_button(pw->path_entry, NULL, FALSE);
     gtk_table_attach(GTK_TABLE(table), combo, 1, 2, 2, 3,
-             GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+                     GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
     gtk_widget_show(combo);
 
     pref_link_sensitivity(label, combo);
 
     label = pref_table_label(table, 0, 3, _("File format:"), 1.0);
     pw->path_format_menu = print_output_format_menu(table, 1, 3, pw->output_format,
-                            G_CALLBACK(print_output_format_cb), pw);
+                                                    G_CALLBACK(print_output_format_cb), pw);
     pref_link_sensitivity(label, pw->path_format_menu);
 
     label = pref_table_label(table, 0, 4, _("DPI:"), 1.0);
     pw->max_dpi_menu = print_output_dpi_menu(table, 1, 4, pw->max_dpi,
-                         G_CALLBACK(print_output_dpi_cb), pw);
+                                             G_CALLBACK(print_output_dpi_cb), pw);
     pref_link_sensitivity(label, pw->max_dpi_menu);
 
     print_output_set(pw, pw->output);
