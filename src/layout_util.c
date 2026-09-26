@@ -28,7 +28,6 @@
 #include "cache_maint.h"
 #include "collect.h"
 #include "collect-dlg.h"
-#include "compat.h"
 #include "color-man.h"
 #include "dupe.h"
 #include "editors.h"
@@ -49,7 +48,6 @@
 #include "ui_fileops.h"
 #include "ui_menu.h"
 #include "ui_misc.h"
-#include "ui_tabcomp.h"
 #include "utilops.h"
 #include "view_dir.h"
 #include "view_dir_tree.h"
@@ -75,18 +73,14 @@ static void layout_util_sync_views(LayoutWindow *lw);
 static guint tree_key_overrides[] = {
     GDK_KEY_Page_Up,    GDK_KEY_KP_Page_Up,
     GDK_KEY_Page_Down,  GDK_KEY_KP_Page_Down,
-    GDK_KEY_Home,   GDK_KEY_KP_Home,
-    GDK_KEY_End,    GDK_KEY_KP_End
+    GDK_KEY_Home,       GDK_KEY_KP_Home,
+    GDK_KEY_End,        GDK_KEY_KP_End
 };
 
 static gboolean layout_key_match(guint keyval)
 {
-    guint i;
-
-    for (i = 0; i < G_N_ELEMENTS(tree_key_overrides); i++)
-    {
+    for (gint i = 0; i < G_N_ELEMENTS(tree_key_overrides); i++)
         if (keyval == tree_key_overrides[i]) return TRUE;
-    }
 
     return FALSE;
 }
@@ -102,49 +96,36 @@ gboolean layout_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
     if (lw->path_entry && gtk_widget_has_focus(lw->path_entry))
     {
         if (event->keyval == GDK_KEY_Escape && lw->dir_fd)
-        {
             gtk_entry_set_text(GTK_ENTRY(lw->path_entry), lw->dir_fd->path);
-        }
 
         /* the gtkaccelgroup of the window is stealing presses before they get to the entry (and more),
          * so when the some widgets have focus, give them priority (HACK)
          */
         if (gtk_widget_event(lw->path_entry, (GdkEvent *)event))
-        {
             return TRUE;
-        }
     }
-    if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE && gtk_widget_has_focus(lw->vd->view) &&
+    if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE &&
+        gtk_widget_has_focus(lw->vd->view) &&
         !layout_key_match(event->keyval) &&
         gtk_widget_event(lw->vd->view, (GdkEvent *)event))
     {
         return TRUE;
     }
-    if (lw->bar &&
-        bar_event(lw->bar, (GdkEvent *)event))
-    {
+    if (lw->bar && bar_event(lw->bar, (GdkEvent *)event))
         return TRUE;
-    }
 
     focused = gtk_container_get_focus_child(GTK_CONTAINER(lw->image->widget));
-    if (lw->image &&
-        ((focused && gtk_widget_has_focus(focused)) || (lw->tools && widget == lw->window) || lw->full_screen) )
+    if (lw->image && ((focused && gtk_widget_has_focus(focused)) ||
+                      (lw->tools && widget == lw->window) ||
+                      lw->full_screen))
     {
         stop_signal = TRUE;
         switch (event->keyval)
         {
-            case GDK_KEY_Left: case GDK_KEY_KP_Left:
-                x -= 1;
-                break;
-            case GDK_KEY_Right: case GDK_KEY_KP_Right:
-                x += 1;
-                break;
-            case GDK_KEY_Up: case GDK_KEY_KP_Up:
-                y -= 1;
-                break;
-            case GDK_KEY_Down: case GDK_KEY_KP_Down:
-                y += 1;
-                break;
+            case GDK_KEY_Left:  case GDK_KEY_KP_Left:  x -= 1; break;
+            case GDK_KEY_Right: case GDK_KEY_KP_Right: x += 1; break;
+            case GDK_KEY_Up:    case GDK_KEY_KP_Up:    y -= 1; break;
+            case GDK_KEY_Down:  case GDK_KEY_KP_Down:  y += 1; break;
             default:
                 stop_signal = FALSE;
                 break;
@@ -157,7 +138,7 @@ gboolean layout_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
             switch (event->keyval)
             {
                 case GDK_KEY_Menu:
-                    layout_image_menu_popup(lw, event);
+                    layout_image_menu_popup(lw, (GdkEvent *)event);
                     break;
                 default:
                     stop_signal = FALSE;
@@ -178,7 +159,7 @@ gboolean layout_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
 void layout_keyboard_init(LayoutWindow *lw, GtkWidget *window)
 {
     g_signal_connect(G_OBJECT(window), "key_press_event",
-             G_CALLBACK(layout_key_press_cb), lw);
+                     G_CALLBACK(layout_key_press_cb), lw);
 }
 
 /*
@@ -214,130 +195,99 @@ static void layout_menu_new_window_cb(GtkAction *action, gpointer data)
     layout_sync_options_with_current_state(lw);
     lop = lw->options; /* we can copy it directly, no strings are modified */
 
-    lop.id = NULL; /* get a new id */
+    /* get a new id */
+    lop.id = NULL;
     nw = layout_new(NULL, &lop);
+    /* for some reason this is separate from the layout options */
     layout_sort_set(nw, options->file_sort.method, options->file_sort.ascending);
     layout_set_fd(nw, lw->dir_fd);
     options->save_window_positions = tmp;
 }
 
-static void layout_menu_new_cb(GtkAction *action, gpointer data)
+static void layout_menu_new_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     collection_window_new(NULL);
 }
 
-static void layout_menu_open_cb(GtkAction *action, gpointer data)
+static void layout_menu_open_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     collection_dialog_load(NULL);
 }
 
-static void layout_menu_search_cb(GtkAction *action, gpointer data)
+static void layout_menu_search_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     search_new(lw->dir_fd, layout_image_get_fd(lw));
 }
 
-static void layout_menu_dupes_cb(GtkAction *action, gpointer data)
+static void layout_menu_dupes_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     dupe_window_new(DUPE_MATCH_NAME);
 }
 
-static void layout_menu_pan_cb(GtkAction *action, gpointer data)
+static void layout_menu_pan_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     pan_window_new(lw->dir_fd);
 }
 
-static void layout_menu_print_cb(GtkAction *action, gpointer data)
+static void layout_menu_print_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
-    print_window_new(layout_image_get_fd(lw), layout_selection_list(lw), layout_list(lw), layout_window(lw));
+    print_window_new(layout_image_get_fd(lw), layout_selection_list(lw),
+                     layout_list(lw), layout_window(lw));
 }
 
-static void layout_menu_dir_cb(GtkAction *action, gpointer data)
+static void layout_menu_dir_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->vd) vd_new_folder(lw->vd, lw->dir_fd);
 }
 
-static void layout_menu_copy_cb(GtkAction *action, gpointer data)
+static void layout_menu_copy_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_copy(NULL, layout_selection_list(lw), NULL, layout_window(lw));
 }
 
-static void layout_menu_copy_path_cb(GtkAction *action, gpointer data)
+static void layout_menu_copy_path_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_copy_path_list_to_clipboard(layout_selection_list(lw));
 }
 
-static void layout_menu_move_cb(GtkAction *action, gpointer data)
+static void layout_menu_move_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_move(NULL, layout_selection_list(lw), NULL, layout_window(lw));
 }
 
-static void layout_menu_rename_cb(GtkAction *action, gpointer data)
+static void layout_menu_rename_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_rename(NULL, layout_selection_list(lw), layout_window(lw));
 }
 
-static void layout_menu_delete_cb(GtkAction *action, gpointer data)
+static void layout_menu_delete_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_delete(NULL, layout_selection_list(lw), layout_window(lw));
 }
 
-static void layout_menu_delete_key_cb(GtkAction *action, gpointer data)
+static void layout_menu_delete_key_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (options->file_ops.enable_delete_key)
-    {
         file_util_delete(NULL, layout_selection_list(lw), layout_window(lw));
-    }
 }
 
-static void layout_menu_disable_grouping_cb(GtkAction *action, gpointer data)
+static void layout_menu_disable_grouping_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_data_disable_grouping_list(layout_selection_list(lw), TRUE);
 }
 
-static void layout_menu_enable_grouping_cb(GtkAction *action, gpointer data)
+static void layout_menu_enable_grouping_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_data_disable_grouping_list(layout_selection_list(lw), FALSE);
 }
 
-static void layout_menu_close_cb(GtkAction *action, gpointer data)
+static void layout_menu_close_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_close(lw);
 }
@@ -347,273 +297,198 @@ static void layout_menu_exit_cb(GtkAction *action, gpointer data)
     exit_program();
 }
 
-static void layout_menu_alter_90_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_90_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_ROTATE_90);
 }
 
-static void layout_menu_alter_90cc_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_90cc_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_ROTATE_90_CC);
 }
 
-static void layout_menu_alter_180_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_180_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_ROTATE_180);
 }
 
-static void layout_menu_alter_mirror_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_mirror_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_MIRROR);
 }
 
-static void layout_menu_alter_flip_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_flip_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_FLIP);
 }
 
-static void layout_menu_alter_desaturate_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_alter_desaturate_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_set_desaturate(lw, gtk_toggle_action_get_active(action));
 }
 
-static void layout_menu_alter_none_cb(GtkAction *action, gpointer data)
+static void layout_menu_alter_none_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_alter_orientation(lw, ALTER_NONE);
 }
 
-static void layout_menu_config_cb(GtkAction *action, gpointer data)
+static void layout_menu_config_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     show_config_window();
 }
 
-static void layout_menu_editors_cb(GtkAction *action, gpointer data)
+static void layout_menu_editors_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     show_editor_list_window();
 }
 
-static void layout_menu_layout_config_cb(GtkAction *action, gpointer data)
+static void layout_menu_layout_config_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_show_config_window(lw);
 }
 
-static void layout_menu_remove_thumb_cb(GtkAction *action, gpointer data)
+static void layout_menu_remove_thumb_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     cache_manager_show();
 }
 
-static void layout_menu_wallpaper_cb(GtkAction *action, gpointer data)
+static void layout_menu_wallpaper_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_to_root(lw);
 }
 
 /* single window zoom */
-static void layout_menu_zoom_in_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_in_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_adjust(lw, get_zoom_increment(), FALSE);
 }
 
-static void layout_menu_zoom_out_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_out_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_adjust(lw, -get_zoom_increment(), FALSE);
 }
 
-static void layout_menu_zoom_1_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_1_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 1.0, FALSE);
 }
 
-static void layout_menu_zoom_fit_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_fit_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 0.0, FALSE);
 }
 
-static void layout_menu_zoom_fit_hor_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_fit_hor_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set_fill_geometry(lw, FALSE, FALSE);
 }
 
-static void layout_menu_zoom_fit_vert_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_fit_vert_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set_fill_geometry(lw, TRUE, FALSE);
 }
 
-static void layout_menu_zoom_to_rectangle_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_to_rectangle_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     image_start_rectangle_zoom(lw->image);
 }
 
-static void layout_menu_zoom_2_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_2_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 2.0, FALSE);
 }
 
-static void layout_menu_zoom_3_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_3_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 3.0, FALSE);
 }
-static void layout_menu_zoom_4_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_4_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 4.0, FALSE);
 }
 
-static void layout_menu_zoom_1_2_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_1_2_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -2.0, FALSE);
 }
 
-static void layout_menu_zoom_1_3_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_1_3_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -3.0, FALSE);
 }
 
-static void layout_menu_zoom_1_4_cb(GtkAction *action, gpointer data)
+static void layout_menu_zoom_1_4_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -4.0, FALSE);
 }
 
 /* connected zoom */
-static void layout_menu_connect_zoom_in_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_in_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_adjust(lw, get_zoom_increment(), TRUE);
 }
 
-static void layout_menu_connect_zoom_out_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_out_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_adjust(lw, -get_zoom_increment(), TRUE);
 }
 
-static void layout_menu_connect_zoom_1_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_1_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 1.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_fit_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_fit_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 0.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_fit_hor_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_fit_hor_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set_fill_geometry(lw, FALSE, TRUE);
 }
 
-static void layout_menu_connect_zoom_fit_vert_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_fit_vert_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set_fill_geometry(lw, TRUE, TRUE);
 }
 
-static void layout_menu_connect_zoom_2_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_2_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 2.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_3_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_3_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 3.0, TRUE);
 }
-static void layout_menu_connect_zoom_4_1_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_4_1_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 4.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_1_2_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_1_2_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -2.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_1_3_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_1_3_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -3.0, TRUE);
 }
 
-static void layout_menu_connect_zoom_1_4_cb(GtkAction *action, gpointer data)
+static void layout_menu_connect_zoom_1_4_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, -4.0, TRUE);
 }
 
 
-static void layout_menu_split_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_split_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     ImageSplitMode mode;
 
     layout_exit_fullscreen(lw);
@@ -622,65 +497,49 @@ static void layout_menu_split_cb(GtkRadioAction *action, GtkRadioAction *current
 }
 
 
-static void layout_menu_thumb_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_thumb_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_thumb_set(lw, gtk_toggle_action_get_active(action));
 }
 
 
-static void layout_menu_list_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_list_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_views_set(lw, lw->options.dir_view_type, (FileViewType) gtk_radio_action_get_current_value(action));
 }
 
-static void layout_menu_view_dir_as_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_view_dir_as_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_views_set(lw, (DirViewType) gtk_radio_action_get_current_value(action), lw->options.file_view_type);
 }
 
-static void layout_menu_view_in_new_window_cb(GtkAction *action, gpointer data)
+static void layout_menu_view_in_new_window_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     view_window_new(layout_image_get_fd(lw));
 }
 
-static void layout_menu_fullscreen_cb(GtkAction *action, gpointer data)
+static void layout_menu_fullscreen_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_full_screen_toggle(lw);
 }
 
-static void layout_menu_escape_cb(GtkAction *action, gpointer data)
+static void layout_menu_escape_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
 }
 
-static void layout_menu_overlay_toggle_cb(GtkAction *action, gpointer data)
+static void layout_menu_overlay_toggle_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     image_osd_toggle(lw->image);
     layout_util_sync_views(lw);
 }
 
 
-static void layout_menu_overlay_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_overlay_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (gtk_toggle_action_get_active(action))
     {
         OsdShowFlags flags = image_osd_get(lw->image);
@@ -690,17 +549,16 @@ static void layout_menu_overlay_cb(GtkToggleAction *action, gpointer data)
     }
     else
     {
-        GtkToggleAction *histogram_action = GTK_TOGGLE_ACTION(gtk_action_group_get_action(lw->action_group, "ImageHistogram"));
+        GtkToggleAction *histogram_action = 
+            GTK_TOGGLE_ACTION(gtk_action_group_get_action(lw->action_group, "ImageHistogram"));
 
         image_osd_set(lw->image, OSD_SHOW_NOTHING);
         gtk_toggle_action_set_active(histogram_action, FALSE); /* this calls layout_menu_histogram_cb */
     }
 }
 
-static void layout_menu_histogram_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_histogram_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (gtk_toggle_action_get_active(action))
     {
         image_osd_set(lw->image, OSD_SHOW_INFO | OSD_SHOW_STATUS | OSD_SHOW_HISTOGRAM);
@@ -714,27 +572,23 @@ static void layout_menu_histogram_cb(GtkToggleAction *action, gpointer data)
     }
 }
 
-static void layout_menu_histogram_toggle_channel_cb(GtkAction *action, gpointer data)
+static void layout_menu_histogram_toggle_channel_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     image_osd_histogram_toggle_channel(lw->image);
     layout_util_sync_views(lw);
 }
 
-static void layout_menu_histogram_toggle_mode_cb(GtkAction *action, gpointer data)
+static void layout_menu_histogram_toggle_mode_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     image_osd_histogram_toggle_mode(lw->image);
     layout_util_sync_views(lw);
 }
 
-static void layout_menu_histogram_channel_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_histogram_channel_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint channel = gtk_radio_action_get_current_value(action);
-    GtkToggleAction *histogram_action = GTK_TOGGLE_ACTION(gtk_action_group_get_action(lw->action_group, "ImageHistogram"));
+    GtkToggleAction *histogram_action =
+        GTK_TOGGLE_ACTION(gtk_action_group_get_action(lw->action_group, "ImageHistogram"));
 
     if (channel < 0 || channel >= HCHAN_COUNT) return;
 
@@ -742,9 +596,8 @@ static void layout_menu_histogram_channel_cb(GtkRadioAction *action, GtkRadioAct
     image_osd_histogram_set_channel(lw->image, channel);
 }
 
-static void layout_menu_histogram_mode_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_histogram_mode_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mode = gtk_radio_action_get_current_value(action);
     GtkToggleAction *histogram_action = GTK_TOGGLE_ACTION(gtk_action_group_get_action(lw->action_group, "ImageHistogram"));
 
@@ -754,53 +607,41 @@ static void layout_menu_histogram_mode_cb(GtkRadioAction *action, GtkRadioAction
     image_osd_histogram_set_mode(lw->image, mode);
 }
 
-static void layout_menu_refresh_cb(GtkAction *action, gpointer data)
+static void layout_menu_refresh_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_refresh(lw);
 }
 
-static void layout_menu_bar_exif_cb(GtkAction *action, gpointer data)
+static void layout_menu_bar_exif_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_exif_window_new(lw);
 }
 
-static void layout_menu_float_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_float_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->options.tools_float == gtk_toggle_action_get_active(action)) return;
 
     layout_exit_fullscreen(lw);
     layout_tools_float_toggle(lw);
 }
 
-static void layout_menu_hide_cb(GtkAction *action, gpointer data)
+static void layout_menu_hide_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     layout_tools_hide_toggle(lw);
 }
 
-static void layout_menu_toolbar_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_toolbar_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->options.toolbar_hidden == gtk_toggle_action_get_active(action)) return;
 
     layout_exit_fullscreen(lw);
     layout_toolbar_toggle(lw);
 }
 
-static void layout_menu_info_pixel_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_info_pixel_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->options.show_info_pixel == gtk_toggle_action_get_active(action)) return;
 
     layout_exit_fullscreen(lw);
@@ -808,45 +649,35 @@ static void layout_menu_info_pixel_cb(GtkToggleAction *action, gpointer data)
 }
 
 /* NOTE: these callbacks are called also from layout_util_sync_views */
-static void layout_menu_bar_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_bar_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (layout_bar_enabled(lw) == gtk_toggle_action_get_active(action)) return;
 
     layout_exit_fullscreen(lw);
     layout_bar_toggle(lw);
 }
 
-static void layout_menu_bar_sort_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_bar_sort_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (layout_bar_sort_enabled(lw) == gtk_toggle_action_get_active(action)) return;
 
     layout_exit_fullscreen(lw);
     layout_bar_sort_toggle(lw);
 }
 
-static void layout_menu_slideshow_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_slideshow_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (layout_image_slideshow_active(lw) == gtk_toggle_action_get_active(action)) return;
     layout_image_slideshow_toggle(lw);
 }
 
-static void layout_menu_slideshow_pause_cb(GtkAction *action, gpointer data)
+static void layout_menu_slideshow_pause_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_slideshow_pause_toggle(lw);
 }
 
-
-static void layout_menu_stereo_mode_next_cb(GtkAction *action, gpointer data)
+static void layout_menu_stereo_mode_next_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mode = layout_image_stereo_pixbuf_get(lw);
 
     /* 0->1, 1->2, 2->3, 3->1 - disable auto, then cycle */
@@ -862,78 +693,70 @@ static void layout_menu_stereo_mode_next_cb(GtkAction *action, gpointer data)
 
 }
 
-static void layout_menu_stereo_mode_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_menu_stereo_mode_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mode = gtk_radio_action_get_current_value(action);
     layout_image_stereo_pixbuf_set(lw, mode);
 }
 
-static void layout_menu_help_cb(GtkAction *action, gpointer data)
+static void layout_menu_help_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     help_window_show("html_contents");
 }
 
-static void layout_menu_help_keys_cb(GtkAction *action, gpointer data)
+static void layout_menu_help_keys_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     help_window_show("documentation");
 }
 
-static void layout_menu_notes_cb(GtkAction *action, gpointer data)
+static void layout_menu_notes_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     help_window_show("release_notes");
 }
 
 static char *keyboard_map_hardcoded[][2] = {
-    {"Scroll","Left"},
-    {"FastScroll", "&lt;Shift&gt;Left"},
-    {"Left Border", "&lt;Primary&gt;Left"},
-    {"Left Border", "&lt;Primary&gt;&lt;Shift&gt;Left"},
-    {"Scroll", "Right"},
-    {"FastScroll", "&lt;Shift&gt;Right"},
+    {"Scroll",       "Left"},
+    {"FastScroll",   "&lt;Shift&gt;Left"},
+    {"Left Border",  "&lt;Primary&gt;Left"},
+    {"Left Border",  "&lt;Primary&gt;&lt;Shift&gt;Left"},
+    {"Scroll",       "Right"},
+    {"FastScroll",   "&lt;Shift&gt;Right"},
     {"Right Border", "&lt;Primary&gt;Right"},
     {"Right Border", "&lt;Primary&gt;&lt;Shift&gt;Right"},
-    {"Scroll", "Up"},
-    {"FastScroll", "&lt;Shift&gt;Up"},
+    {"Scroll",       "Up"},
+    {"FastScroll",   "&lt;Shift&gt;Up"},
     {"Upper Border", "&lt;Primary&gt;Up"},
     {"Upper Border", "&lt;Primary&gt;&lt;Shift&gt;Up"},
-    {"Scroll", "Down"},
-    {"FastScroll", "&lt;Shift&gt;Down"},
+    {"Scroll",       "Down"},
+    {"FastScroll",   "&lt;Shift&gt;Down"},
     {"Lower Border", "&lt;Primary&gt;Down"},
     {"Lower Border", "&lt;Primary&gt;&lt;Shift&gt;Down"},
-    {"Next/Drag", "M1"},
-    {"FastDrag", "&lt;Shift&gt;M1"},
-    {"DnD Start", "M2"},
-    {"Menu", "M3"},
-    {"PrevImage", "MW4"},
-    {"NextImage", "MW5"},
-    {"ScrollUp", "&lt;Shift&gt;MW4"},
-    {"ScrollDown", "&lt;Shift&gt;MW5"},
-    {"ZoomIn", "&lt;Primary&gt;MW4"},
-    {"ZoomOut", "&lt;Primary&gt;MW5"},
-    {NULL, NULL}
+    {"Next/Drag",    "M1"},
+    {"FastDrag",     "&lt;Shift&gt;M1"},
+    {"DnD Start",    "M2"},
+    {"Menu",         "M3"},
+    {"PrevImage",    "MW4"},
+    {"NextImage",    "MW5"},
+    {"ScrollUp",     "&lt;Shift&gt;MW4"},
+    {"ScrollDown",   "&lt;Shift&gt;MW5"},
+    {"ZoomIn",       "&lt;Primary&gt;MW4"},
+    {"ZoomOut",      "&lt;Primary&gt;MW5"},
+    {NULL,           NULL}
 };
 
-static void layout_menu_foreach_func(
-                    gpointer data,
-                    const gchar *accel_path,
-                    guint accel_key,
-                    GdkModifierType accel_mods,
-                    gboolean changed)
+static void layout_menu_foreach_func(gpointer data,
+                                     const gchar *accel_path,
+                                     guint accel_key,
+                                     GdkModifierType accel_mods,
+                                     gboolean changed)
 {
     gchar *path, *name;
     gchar *key_name, *menu_name;
-    gchar **subset_lt_arr, **subset_gt_arr;
     gchar *subset_lt, *converted_name;
+    gchar **subset_lt_arr, **subset_gt_arr;
     GPtrArray *array = data;
 
     path = g_strescape(accel_path, NULL);
@@ -943,11 +766,11 @@ static void layout_menu_foreach_func(
 
     if (g_strrstr(name, ">"))
     {
-        subset_lt_arr = g_strsplit_set(name,"<", 4);
-        subset_lt = g_strjoinv("&lt;", subset_lt_arr);
-        subset_gt_arr = g_strsplit_set(subset_lt,">", 4);
+        subset_lt_arr  = g_strsplit_set(name,"<", 4);
+        subset_lt      = g_strjoinv("&lt;", subset_lt_arr);
+        subset_gt_arr  = g_strsplit_set(subset_lt,">", 4);
         converted_name = g_strjoinv("&gt;", subset_gt_arr);
-        key_name = g_strdup(converted_name);
+        key_name       = g_strdup(converted_name);
 
         g_free(converted_name);
         g_free(subset_lt);
@@ -955,7 +778,9 @@ static void layout_menu_foreach_func(
         g_strfreev(subset_gt_arr);
     }
     else
+    {
         key_name = g_strdup(name);
+    }
 
     g_ptr_array_add(array, (gpointer)menu_name);
     g_ptr_array_add(array, (gpointer)key_name);
@@ -969,29 +794,25 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
     LayoutWindow *lw = data;
     gint fd = -1;
     GPtrArray *array;
-    char * tmp_file;
+    gchar *tmp_file;
     GError *error = NULL;
     GIOChannel *channel;
-    char **pre_key, **post_key;
-    char *key_name, *converted_line;
-    int keymap_index, index;
+    gchar **pre_key, **post_key;
+    gchar *key_name, *converted_line;
 
     fd = g_file_open_tmp("geeqie_keymap_XXXXXX.svg", &tmp_file, &error);
     if (error)
     {
-        DEBUG_0("Keyboard Map - cannot create file:%s\n", error->message);
+        DEBUG_0("Keyboard Map - cannot create file: %s\n", error->message);
         g_error_free(error);
     }
     else
     {
         array = g_ptr_array_new_with_free_func(g_free);
-
         gtk_accel_map_foreach(array, layout_menu_foreach_func);
-
         channel = g_io_channel_unix_new(fd);
 
-        keymap_index = 0;
-        while (keymap_template[keymap_index])
+        for (gint keymap_index = 0; keymap_template[keymap_index]; keymap_index++)
         {
             if (g_strrstr(keymap_template[keymap_index], ">key:"))
             {
@@ -999,7 +820,7 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
                 post_key = g_strsplit(pre_key[1], "<", 2);
 
                 key_name = " ";
-                for (index = 0; index < array->len - 1; index += 2)
+                for (gint index = 0; index < array->len - 1; index += 2)
                 {
                     if (!(g_ascii_strcasecmp(g_ptr_array_index(array,index+1), post_key[0])))
                     {
@@ -1008,15 +829,13 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
                     }
                 }
 
-                index=0;
-                while (keyboard_map_hardcoded[index][0])
+                for (gint index = 0; keyboard_map_hardcoded[index][0]; index++)
                 {
                     if (!(g_strcmp0(keyboard_map_hardcoded[index][1], post_key[0])))
                     {
                         key_name = keyboard_map_hardcoded[index][0];
                         break;
                     }
-                    index++;
                 }
 
                 converted_line = g_strconcat(pre_key[0], ">", key_name, "<", post_key[1], "\n", NULL);
@@ -1034,7 +853,6 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
                 g_io_channel_write_chars(channel, "\n", -1, NULL, &error);
                 if (error) {DEBUG_0("Keyboard Map:%s\n",error->message); g_error_free(error);}
             }
-            keymap_index++;
         }
 
         g_io_channel_flush(channel, &error);
@@ -1048,18 +866,14 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
     }
 }
 
-static void layout_menu_about_cb(GtkAction *action, gpointer data)
+static void layout_menu_about_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     show_about_window();
 }
 
-static void layout_menu_log_window_cb(GtkAction *action, gpointer data)
+static void layout_menu_log_window_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_exit_fullscreen(lw);
     log_window_new();
 }
@@ -1071,101 +885,85 @@ static void layout_menu_log_window_cb(GtkAction *action, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-static void layout_menu_select_all_cb(GtkAction *action, gpointer data)
+static void layout_menu_select_all_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_select_all(lw);
 }
 
-static void layout_menu_unselect_all_cb(GtkAction *action, gpointer data)
+static void layout_menu_unselect_all_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_select_none(lw);
 }
 
-static void layout_menu_invert_selection_cb(GtkAction *action, gpointer data)
+static void layout_menu_invert_selection_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_select_invert(lw);
 }
 
-static void layout_menu_marks_cb(GtkToggleAction *action, gpointer data)
+static void layout_menu_marks_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_marks_set(lw, gtk_toggle_action_get_active(action));
 }
 
 
-static void layout_menu_set_mark_sel_cb(GtkAction *action, gpointer data)
+static void layout_menu_set_mark_sel_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_selection_to_mark(lw, mark, STM_MODE_SET);
 }
 
-static void layout_menu_res_mark_sel_cb(GtkAction *action, gpointer data)
+static void layout_menu_res_mark_sel_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_selection_to_mark(lw, mark, STM_MODE_RESET);
 }
 
-static void layout_menu_toggle_mark_sel_cb(GtkAction *action, gpointer data)
+static void layout_menu_toggle_mark_sel_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_selection_to_mark(lw, mark, STM_MODE_TOGGLE);
 }
 
-static void layout_menu_sel_mark_cb(GtkAction *action, gpointer data)
+static void layout_menu_sel_mark_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_mark_to_selection(lw, mark, MTS_MODE_SET);
 }
 
-static void layout_menu_sel_mark_or_cb(GtkAction *action, gpointer data)
+static void layout_menu_sel_mark_or_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_mark_to_selection(lw, mark, MTS_MODE_OR);
 }
 
-static void layout_menu_sel_mark_and_cb(GtkAction *action, gpointer data)
+static void layout_menu_sel_mark_and_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_mark_to_selection(lw, mark, MTS_MODE_AND);
 }
 
-static void layout_menu_sel_mark_minus_cb(GtkAction *action, gpointer data)
+static void layout_menu_sel_mark_minus_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
     layout_mark_to_selection(lw, mark, MTS_MODE_MINUS);
 }
 
-static void layout_menu_mark_filter_toggle_cb(GtkAction *action, gpointer data)
+static void layout_menu_mark_filter_toggle_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint mark = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(action), "mark_num"));
     g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
 
@@ -1180,45 +978,38 @@ static void layout_menu_mark_filter_toggle_cb(GtkAction *action, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-static void layout_menu_image_first_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_first_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_first(lw);
 }
 
-static void layout_menu_image_prev_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_prev_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_prev(lw);
 }
 
-static void layout_menu_image_next_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_next_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_next(lw);
 }
 
-static void layout_menu_image_last_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_last_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_last(lw);
 }
 
-static void layout_menu_page_next_cb(GtkAction *action, gpointer data)
+static void layout_menu_page_next_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_page_next(lw);
 }
 
-static void layout_menu_page_prev_cb(GtkAction *action, gpointer data)
+static void layout_menu_page_prev_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_page_prev(lw);
 }
 
-static void layout_menu_image_random_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_random_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     guint count = layout_list_count(lw, NULL);
     guint index;
 
@@ -1226,47 +1017,38 @@ static void layout_menu_image_random_cb(GtkAction *action, gpointer data)
     layout_image_set_index(lw, rand() % count);
 }
 
-static void layout_menu_image_forward_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_forward_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_set_path(lw, image_chain_forward());
 }
 
-static void layout_menu_image_back_cb(GtkAction *action, gpointer data)
+static void layout_menu_image_back_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_set_path(lw, image_chain_back());
 }
 
-static void layout_menu_back_cb(GtkAction *action, gpointer data)
+static void layout_menu_back_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-    FileData *dir_fd;
-
     /* Obtain previous path */
     const gchar *path = history_chain_back();
     if (!path) return;
-    dir_fd = file_data_new_dir(path);
+    FileData *dir_fd = file_data_new_dir(path);
     layout_set_fd(lw, dir_fd);
     file_data_unref(dir_fd);
 }
 
-static void layout_menu_forward_cb(GtkAction *action, gpointer data)
+static void layout_menu_forward_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-    FileData *dir_fd;
-
     /* Obtain next path */
     const gchar *path = history_chain_forward();
     if (!path) return;
-    dir_fd = file_data_new_dir(path);
+    FileData *dir_fd = file_data_new_dir(path);
     layout_set_fd(lw, dir_fd);
     file_data_unref(dir_fd);
 }
 
-static void layout_menu_home_cb(GtkAction *action, gpointer data)
+static void layout_menu_home_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     const gchar *path;
 
     if (lw->options.home_path && *lw->options.home_path)
@@ -1282,14 +1064,12 @@ static void layout_menu_home_cb(GtkAction *action, gpointer data)
     }
 }
 
-static void layout_menu_up_cb(GtkAction *action, gpointer data)
+static void layout_menu_up_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     ViewDir *vd = lw->vd;
-    gchar *path;
 
     if (!vd->dir_fd || strcmp(vd->dir_fd->path, G_DIR_SEPARATOR_S) == 0) return;
-    path = remove_level_from_path(vd->dir_fd->path);
+    gchar *path = remove_level_from_path(vd->dir_fd->path);
 
     if (vd->select_func)
     {
@@ -1301,18 +1081,14 @@ static void layout_menu_up_cb(GtkAction *action, gpointer data)
     g_free(path);
 }
 
-static void layout_menu_dir_prev_cb(GtkAction *action, gpointer data)
+static void layout_menu_dir_prev_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE)
         vdtree_select_prev(lw->vd);
 }
 
-static void layout_menu_dir_next_cb(GtkAction *action, gpointer data)
+static void layout_menu_dir_next_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     if (lw->vd && lw->options.dir_view_type == DIRVIEW_TREE)
         vdtree_select_next(lw->vd);
 }
@@ -1323,9 +1099,8 @@ static void layout_menu_dir_next_cb(GtkAction *action, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-static void layout_menu_edit_cb(GtkAction *action, gpointer data)
+static void layout_menu_edit_cb(GtkAction *action, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     const gchar *key = gtk_action_get_name(action);
 
     if (!editor_window_flag_set(key))
@@ -1347,12 +1122,11 @@ static void layout_menu_metadata_write_cb(GtkAction *action, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-static void layout_color_menu_enable_cb(GtkToggleAction *action, gpointer data)
+static void layout_color_menu_enable_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
 #ifdef HAVE_LCMS
-    LayoutWindow *lw = data;
-
-    if (layout_image_color_profile_get_use(lw) == gtk_toggle_action_get_active(action)) return;
+    if (layout_image_color_profile_get_use(lw) == gtk_toggle_action_get_active(action))
+        return;
 
     layout_image_color_profile_set_use(lw, gtk_toggle_action_get_active(action));
     layout_util_sync_color(lw);
@@ -1360,34 +1134,38 @@ static void layout_color_menu_enable_cb(GtkToggleAction *action, gpointer data)
 #endif
 }
 
-static void layout_color_menu_use_image_cb(GtkToggleAction *action, gpointer data)
+static void layout_color_menu_use_image_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
 #ifdef HAVE_LCMS
-    LayoutWindow *lw = data;
     gint input;
     gboolean use_image;
 
-    if (!layout_image_color_profile_get(lw, &input, &use_image)) return;
-    if (use_image == gtk_toggle_action_get_active(action)) return;
+    if (!layout_image_color_profile_get(lw, &input, &use_image))
+        return;
+    if (use_image == gtk_toggle_action_get_active(action))
+        return;
     layout_image_color_profile_set(lw, input, gtk_toggle_action_get_active(action));
     layout_util_sync_color(lw);
     layout_image_refresh(lw);
 #endif
 }
 
-static void layout_color_menu_input_cb(GtkRadioAction *action, GtkRadioAction *current, gpointer data)
+static void layout_color_menu_input_cb(GtkRadioAction *action,
+                                       GtkRadioAction *current, LayoutWindow *lw)
 {
 #ifdef HAVE_LCMS
-    LayoutWindow *lw = data;
     gint type;
     gint input;
     gboolean use_image;
 
     type = gtk_radio_action_get_current_value(action);
-    if (type < 0 || type >= COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS) return;
+    if (type < 0 || type >= COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS)
+        return;
 
-    if (!layout_image_color_profile_get(lw, &input, &use_image)) return;
-    if (type == input) return;
+    if (!layout_image_color_profile_get(lw, &input, &use_image))
+        return;
+    if (type == input)
+        return;
 
     layout_image_color_profile_set(lw, type, use_image);
     layout_image_refresh(lw);
@@ -1420,22 +1198,15 @@ static void layout_menu_recent_cb(GtkWidget *widget, gpointer data)
 
 static void layout_menu_recent_update(LayoutWindow *lw)
 {
-    GtkWidget *menu;
-    GtkWidget *recent;
-    GtkWidget *item;
-    GList *list;
-    gint n;
-
     if (!lw->ui_manager) return;
 
-    list = history_list_get_by_key("recent");
-    n = 0;
+    GtkWidget *menu = gtk_menu_new(),
+              *recent, *item;
 
-    menu = gtk_menu_new();
-
-    while (list)
+    gint n = 0;
+    for (GList *work = history_list_get_by_key("recent"); work; work = work->next)
     {
-        const gchar *filename = filename_from_path((gchar *)list->data);
+        const gchar *filename = filename_from_path((gchar *)work->data);
         gchar *name;
         gboolean free_name = FALSE;
 
@@ -1452,14 +1223,11 @@ static void layout_menu_recent_update(LayoutWindow *lw)
         item = menu_item_add_simple(menu, name, G_CALLBACK(layout_menu_recent_cb), lw);
         if (free_name) g_free(name);
         g_object_set_data(G_OBJECT(item), "recent_index", GINT_TO_POINTER(n));
-        list = list->next;
         n++;
     }
 
     if (n == 0)
-    {
         menu_item_add(menu, _("Empty"), NULL, NULL);
-    }
 
     recent = gtk_ui_manager_get_widget(lw->ui_manager, "/MainMenu/FileMenu/OpenRecent");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(recent), menu);
@@ -1468,16 +1236,8 @@ static void layout_menu_recent_update(LayoutWindow *lw)
 
 void layout_recent_update_all(void)
 {
-    GList *work;
-
-    work = layout_window_list;
-    while (work)
-    {
-        LayoutWindow *lw = work->data;
-        work = work->next;
-
-        layout_menu_recent_update(lw);
-    }
+    for (GList *work = layout_window_list; work; work = work->next)
+        layout_menu_recent_update((LayoutWindow *)work->data);
 }
 
 void layout_recent_add_path(const gchar *path)
@@ -1485,7 +1245,6 @@ void layout_recent_add_path(const gchar *path)
     if (!path) return;
 
     history_list_add_to_key("recent", path, options->open_recent_list_maxsize);
-
     layout_recent_update_all();
 }
 
@@ -1498,194 +1257,194 @@ void layout_recent_add_path(const gchar *path)
 #define CB G_CALLBACK
 
 static GtkActionEntry menu_entries[] = {
-  { "FileMenu",     NULL,           N_("_File"),                NULL,           NULL,                   NULL },
-  { "GoMenu",       NULL,           N_("_Go"),              NULL,           NULL,                   NULL },
-  { "EditMenu",     NULL,           N_("_Edit"),                NULL,           NULL,                   NULL },
-  { "SelectMenu",   NULL,           N_("_Select"),              NULL,           NULL,                   NULL },
-  { "OrientationMenu",  NULL,           N_("_Orientation"),         NULL,           NULL,                   NULL },
-  { "ExternalMenu", NULL,           N_("E_xternal Editors"),        NULL,           NULL,                   NULL },
-  { "PreferencesMenu",  NULL,           N_("Other config"),         NULL,           NULL,                   NULL },
-  { "ViewMenu",     NULL,           N_("_View"),                NULL,           NULL,                   NULL },
-  { "FileDirMenu",  NULL,           N_("_Files and Folders"),       NULL,           NULL,                   NULL },
-  { "ZoomMenu",     NULL,           N_("_Zoom"),                NULL,           NULL,                   NULL },
-  { "ColorMenu",    NULL,           N_("_Color Management"),        NULL,           NULL,                   NULL },
-  { "ConnectZoomMenu",  NULL,           N_("_Connected Zoom"),          NULL,           NULL,                   NULL },
-  { "SplitMenu",    NULL,           N_("Spli_t"),               NULL,           NULL,                   NULL },
-  { "StereoMenu",   NULL,           N_("Stere_o"),              NULL,           NULL,                   NULL },
-  { "OverlayMenu",  NULL,           N_("Image _Overlay"),           NULL,           NULL,                   NULL },
-  { "HelpMenu",     NULL,           N_("_Help"),                NULL,           NULL,                   NULL },
+  { "FileMenu",           NULL,                      N_("_File"),                            NULL,                    NULL,                                    NULL },
+  { "GoMenu",             NULL,                      N_("_Go"),                              NULL,                    NULL,                                    NULL },
+  { "EditMenu",           NULL,                      N_("_Edit"),                            NULL,                    NULL,                                    NULL },
+  { "SelectMenu",         NULL,                      N_("_Select"),                          NULL,                    NULL,                                    NULL },
+  { "OrientationMenu",    NULL,                      N_("_Orientation"),                     NULL,                    NULL,                                    NULL },
+  { "ExternalMenu",       NULL,                      N_("E_xternal Editors"),                NULL,                    NULL,                                    NULL },
+  { "PreferencesMenu",    NULL,                      N_("Other config"),                     NULL,                    NULL,                                    NULL },
+  { "ViewMenu",           NULL,                      N_("_View"),                            NULL,                    NULL,                                    NULL },
+  { "FileDirMenu",        NULL,                      N_("_Files and Folders"),               NULL,                    NULL,                                    NULL },
+  { "ZoomMenu",           NULL,                      N_("_Zoom"),                            NULL,                    NULL,                                    NULL },
+  { "ColorMenu",          NULL,                      N_("_Color Management"),                NULL,                    NULL,                                    NULL },
+  { "ConnectZoomMenu",    NULL,                      N_("_Connected Zoom"),                  NULL,                    NULL,                                    NULL },
+  { "SplitMenu",          NULL,                      N_("Spli_t"),                           NULL,                    NULL,                                    NULL },
+  { "StereoMenu",         NULL,                      N_("Stere_o"),                          NULL,                    NULL,                                    NULL },
+  { "OverlayMenu",        NULL,                      N_("Image _Overlay"),                   NULL,                    NULL,                                    NULL },
+  { "HelpMenu",           NULL,                      N_("_Help"),                            NULL,                    NULL,                                    NULL },
 
-  { "FirstImage",   GTK_STOCK_GOTO_TOP, N_("_First Image"),         "Home",         N_("First Image"),          CB(layout_menu_image_first_cb) },
-  { "PrevImage",    GTK_STOCK_GO_UP,    N_("_Previous Image"),          "BackSpace",        N_("Previous Image"),           CB(layout_menu_image_prev_cb) },
-  { "PrevImageAlt1",    GTK_STOCK_GO_UP,    N_("_Previous Image"),          "Page_Up",      N_("Previous Image"),           CB(layout_menu_image_prev_cb) },
-  { "PrevImageAlt2",    GTK_STOCK_GO_UP,    N_("_Previous Image"),          "KP_Page_Up",       N_("Previous Image"),           CB(layout_menu_image_prev_cb) },
-  { "NextImage",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "space",        N_("Next Image"),           CB(layout_menu_image_next_cb) },
-  { "NextImageAlt1",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "Page_Down",        N_("Next Image"),           CB(layout_menu_image_next_cb) },
-  { "NextImageAlt2",    GTK_STOCK_GO_DOWN,  N_("_Next Image"),          "KP_Page_Down",     N_("Next Image"),           CB(layout_menu_image_next_cb) },
-  { "LastImage",    GTK_STOCK_GOTO_BOTTOM,  N_("_Last Image"),          "End",          N_("Last Image"),           CB(layout_menu_image_last_cb) },
-  { "RandomImage",  NULL,           N_("_Random Image"),        "S",        N_("Random Image"),     CB(layout_menu_image_random_cb) },
-  { "NextPage",     GTK_STOCK_GO_DOWN,  N_("Next _Page"),           "<control>Page_Down",  N_("Next Page (multi-image files)"),    CB(layout_menu_page_next_cb) },
-  { "PrevPage",     GTK_STOCK_GO_UP,    N_("Previous Pa_ge"),           "<control>Page_Up",    N_("Previous Page (multi-image files)"),    CB(layout_menu_page_prev_cb) },
-  { "ImageForward", GTK_STOCK_GOTO_LAST, N_("Image Forward"), NULL, N_("Image Forward"), CB(layout_menu_image_forward_cb) },
-  { "ImageBack",    GTK_STOCK_GOTO_FIRST, N_("Image Back"),   NULL, N_("Image Back"),    CB(layout_menu_image_back_cb) },
-  { "Back",     GTK_STOCK_GO_BACK,  N_("_Back"),                NULL,           N_("Back"),             CB(layout_menu_back_cb) },
-  { "Forward",  GTK_STOCK_GO_FORWARD,   N_("_Forward"),         NULL,           N_("Forward"),              CB(layout_menu_forward_cb) },
-  { "Home",     GTK_STOCK_HOME,     N_("_Home"),                NULL,           N_("Home"),             CB(layout_menu_home_cb) },
-  { "Up",       GTK_STOCK_GO_UP,    N_("_Up"),              NULL,           N_("Up"),               CB(layout_menu_up_cb) },
-  { "PrevFolder",   GTK_STOCK_GO_UP,    N_("_Previous Folder"), "<control><shift>space",    N_("Previous Folder"),  CB(layout_menu_dir_prev_cb) },
-  { "NextFolder",   GTK_STOCK_GO_DOWN,  N_("_Next Folder"), "<control>space",   N_("Next Folder"),  CB(layout_menu_dir_next_cb) },
+  { "FirstImage",         GTK_STOCK_GOTO_TOP,        N_("_First Image"),                     "Home",                  N_("First Image"),                       CB(layout_menu_image_first_cb) },
+  { "PrevImage",          GTK_STOCK_GO_UP,           N_("_Previous Image"),                  "BackSpace",             N_("Previous Image"),                    CB(layout_menu_image_prev_cb) },
+  { "PrevImageAlt1",      GTK_STOCK_GO_UP,           N_("_Previous Image"),                  "Page_Up",               N_("Previous Image"),                    CB(layout_menu_image_prev_cb) },
+  { "PrevImageAlt2",      GTK_STOCK_GO_UP,           N_("_Previous Image"),                  "KP_Page_Up",            N_("Previous Image"),                    CB(layout_menu_image_prev_cb) },
+  { "NextImage",          GTK_STOCK_GO_DOWN,         N_("_Next Image"),                      "space",                 N_("Next Image"),                        CB(layout_menu_image_next_cb) },
+  { "NextImageAlt1",      GTK_STOCK_GO_DOWN,         N_("_Next Image"),                      "Page_Down",             N_("Next Image"),                        CB(layout_menu_image_next_cb) },
+  { "NextImageAlt2",      GTK_STOCK_GO_DOWN,         N_("_Next Image"),                      "KP_Page_Down",          N_("Next Image"),                        CB(layout_menu_image_next_cb) },
+  { "LastImage",          GTK_STOCK_GOTO_BOTTOM,     N_("_Last Image"),                      "End",                   N_("Last Image"),                        CB(layout_menu_image_last_cb) },
+  { "RandomImage",        NULL,                      N_("_Random Image"),                    "S",                     N_("Random Image"),                      CB(layout_menu_image_random_cb) },
+  { "NextPage",           GTK_STOCK_GO_DOWN,         N_("Next _Page"),                       "<control>Page_Down",    N_("Next Page (multi-image files)"),     CB(layout_menu_page_next_cb) },
+  { "PrevPage",           GTK_STOCK_GO_UP,           N_("Previous Pa_ge"),                   "<control>Page_Up",      N_("Previous Page (multi-image files)"), CB(layout_menu_page_prev_cb) },
+  { "ImageForward",       GTK_STOCK_GOTO_LAST,       N_("Image Forward"),                    NULL,                    N_("Image Forward"),                     CB(layout_menu_image_forward_cb) },
+  { "ImageBack",          GTK_STOCK_GOTO_FIRST,      N_("Image Back"),                       NULL,                    N_("Image Back"),                        CB(layout_menu_image_back_cb) },
+  { "Back",               GTK_STOCK_GO_BACK,         N_("_Back"),                            NULL,                    N_("Back"),                              CB(layout_menu_back_cb) },
+  { "Forward",            GTK_STOCK_GO_FORWARD,      N_("_Forward"),                         NULL,                    N_("Forward"),                           CB(layout_menu_forward_cb) },
+  { "Home",               GTK_STOCK_HOME,            N_("_Home"),                            NULL,                    N_("Home"),                              CB(layout_menu_home_cb) },
+  { "Up",                 GTK_STOCK_GO_UP,           N_("_Up"),                              NULL,                    N_("Up"),                                CB(layout_menu_up_cb) },
+  { "PrevFolder",         GTK_STOCK_GO_UP,           N_("_Previous Folder"),                 "<control><shift>space", N_("Previous Folder"),                   CB(layout_menu_dir_prev_cb) },
+  { "NextFolder",         GTK_STOCK_GO_DOWN,         N_("_Next Folder"),                     "<control>space",        N_("Next Folder"),                       CB(layout_menu_dir_next_cb) },
 
-  { "NewWindow",    GTK_STOCK_NEW,      N_("New _window"),          "<control>N",       N_("New window"),           CB(layout_menu_new_window_cb) },
-  { "NewCollection",    GTK_STOCK_INDEX,    N_("_New collection"),          "C",            N_("New collection"),           CB(layout_menu_new_cb) },
-  { "OpenCollection",   GTK_STOCK_OPEN,     N_("_Open collection..."),      "O",            N_("Open collection..."),       CB(layout_menu_open_cb) },
-  { "OpenRecent",   NULL,           N_("Open recen_t"),         NULL,           N_("Open recent"),          NULL },
-  { "Search",       GTK_STOCK_FIND,     N_("_Search..."),           "F3",           N_("Search..."),            CB(layout_menu_search_cb) },
-  { "FindDupes",    GTK_STOCK_FIND,     N_("_Find duplicates..."),      "D",            N_("Find duplicates..."),       CB(layout_menu_dupes_cb) },
-  { "PanView",      NULL,           N_("Pa_n view"),            "<control>J",       N_("Pan view"),             CB(layout_menu_pan_cb) },
-  { "Print",        GTK_STOCK_PRINT,    N_("_Print..."),            "<shift>P",     N_("Print..."),             CB(layout_menu_print_cb) },
-  { "NewFolder",    GTK_STOCK_DIRECTORY,    N_("N_ew folder..."),           "<control>F",       N_("New folder..."),            CB(layout_menu_dir_cb) },
-  { "Copy",     GTK_STOCK_COPY,     N_("_Copy..."),             "<control>C",       N_("Copy..."),              CB(layout_menu_copy_cb) },
-  { "Move",     NULL,           N_("_Move..."),             "<control>M",       N_("Move..."),              CB(layout_menu_move_cb) },
-  { "Rename",       NULL,           N_("_Rename..."),           "<control>R",       N_("Rename..."),            CB(layout_menu_rename_cb) },
-  { "Delete",       GTK_STOCK_DELETE,   N_("_Delete..."),           "<control>D",       N_("Delete..."),            CB(layout_menu_delete_cb) },
-  { "DeleteAlt1",   GTK_STOCK_DELETE,   N_("_Delete..."),           "Delete",       N_("Delete..."),            CB(layout_menu_delete_key_cb) },
-  { "DeleteAlt2",   GTK_STOCK_DELETE,   N_("_Delete..."),           "KP_Delete",        N_("Delete..."),            CB(layout_menu_delete_key_cb) },
-  { "EnableGrouping",   NULL,           N_("Enable file _grouping"),        NULL,           N_("Enable file grouping"),     CB(layout_menu_enable_grouping_cb) },
-  { "DisableGrouping",  NULL,           N_("Disable file groupi_ng"),       NULL,           N_("Disable file grouping"),        CB(layout_menu_disable_grouping_cb) },
-  { "CopyPath",     NULL,           N_("_Copy path to clipboard"),      NULL,           N_("Copy path to clipboard"),       CB(layout_menu_copy_path_cb) },
-  { "CloseWindow",  GTK_STOCK_CLOSE,    N_("C_lose window"),            "<control>W",       N_("Close window"),         CB(layout_menu_close_cb) },
-  { "Quit",     GTK_STOCK_QUIT,     N_("_Quit"),                "<control>Q",       N_("Quit"),             CB(layout_menu_exit_cb) },
-  { "RotateCW",     NULL,           N_("_Rotate clockwise"),        "bracketright",     N_("Rotate clockwise"),         CB(layout_menu_alter_90_cb) },
-  { "RotateCCW",    NULL,           N_("Rotate _counterclockwise"),     "bracketleft",      N_("Rotate counterclockwise"),      CB(layout_menu_alter_90cc_cb) },
-  { "Rotate180",    NULL,           N_("Rotate 1_80"),          "<shift>R",     N_("Rotate 180"),           CB(layout_menu_alter_180_cb) },
-  { "Mirror",       NULL,           N_("_Mirror"),              "<shift>M",     N_("Mirror"),               CB(layout_menu_alter_mirror_cb) },
-  { "Flip",     NULL,           N_("_Flip"),                "<shift>F",     N_("Flip"),             CB(layout_menu_alter_flip_cb) },
-  { "AlterNone",    NULL,           N_("_Original state"),          "<shift>O",     N_("Original state"),           CB(layout_menu_alter_none_cb) },
-  { "SelectAll",    NULL,           N_("Select _all"),          "<control>A",       N_("Select all"),           CB(layout_menu_select_all_cb) },
-  { "SelectNone",   NULL,           N_("Select _none"),         "<control><shift>A",    N_("Select none"),          CB(layout_menu_unselect_all_cb) },
-  { "SelectInvert", NULL,           N_("_Invert Selection"),        "<control><shift>I",    N_("Invert Selection"),         CB(layout_menu_invert_selection_cb) },
-  { "Preferences",  GTK_STOCK_PREFERENCES,  N_("P_references..."),          "<control>O",       N_("Preferences..."),           CB(layout_menu_config_cb) },
-  { "Editors",      GTK_STOCK_PREFERENCES,  N_("Configure _Editors..."),        NULL,           N_("Configure Editors..."),     CB(layout_menu_editors_cb) },
-  { "LayoutConfig", GTK_STOCK_PREFERENCES,  N_("_Configure this window..."),    NULL,           N_("Configure this window..."),     CB(layout_menu_layout_config_cb) },
-  { "Maintenance",  NULL,           N_("_Thumbnail maintenance..."),    NULL,           N_("Thumbnail maintenance..."),     CB(layout_menu_remove_thumb_cb) },
-  { "Wallpaper",    NULL,           N_("Set as _wallpaper"),        NULL,           N_("Set as wallpaper"),         CB(layout_menu_wallpaper_cb) },
-  { "SaveMetadata", GTK_STOCK_SAVE,     N_("_Save metadata"),           "<control>S",       N_("Save metadata"),            CB(layout_menu_metadata_write_cb) },
-  { "ZoomIn",       GTK_STOCK_ZOOM_IN,  N_("Zoom _in"),             "equal",        N_("Zoom in"),              CB(layout_menu_zoom_in_cb) },
-  { "ZoomInAlt1",   GTK_STOCK_ZOOM_IN,  N_("Zoom _in"),             "KP_Add",       N_("Zoom in"),              CB(layout_menu_zoom_in_cb) },
-  { "ZoomOut",      GTK_STOCK_ZOOM_OUT, N_("Zoom _out"),            "minus",        N_("Zoom out"),             CB(layout_menu_zoom_out_cb) },
-  { "ZoomOutAlt1",  GTK_STOCK_ZOOM_OUT, N_("Zoom _out"),            "KP_Subtract",      N_("Zoom out"),             CB(layout_menu_zoom_out_cb) },
-  { "Zoom100",      GTK_STOCK_ZOOM_100, N_("Zoom _1:1"),            "Z",            N_("Zoom 1:1"),             CB(layout_menu_zoom_1_1_cb) },
-  { "Zoom100Alt1",  GTK_STOCK_ZOOM_100, N_("Zoom _1:1"),            "KP_Divide",        N_("Zoom 1:1"),             CB(layout_menu_zoom_1_1_cb) },
-  { "ZoomFit",      GTK_STOCK_ZOOM_FIT, N_("_Zoom to fit"),         "X",            N_("Zoom to fit"),          CB(layout_menu_zoom_fit_cb) },
-  { "ZoomFitAlt1",  GTK_STOCK_ZOOM_FIT, N_("_Zoom to fit"),         "KP_Multiply",      N_("Zoom to fit"),          CB(layout_menu_zoom_fit_cb) },
-  { "ZoomFillHor",  NULL,           N_("Fit _Horizontally"),        "H",            N_("Fit Horizontally"),         CB(layout_menu_zoom_fit_hor_cb) },
-  { "ZoomFillVert", NULL,           N_("Fit _Vertically"),          "W",            N_("Fit Vertically"),           CB(layout_menu_zoom_fit_vert_cb) },
-  { "ZoomToRectangle",  NULL,           N_("Zoom to _Rectangle"),   NULL,       N_("Zoom to Rectangle"),    CB(layout_menu_zoom_to_rectangle_cb) },
-  { "Zoom200",          NULL,           N_("Zoom _2:1"),            NULL,           N_("Zoom 2:1"),             CB(layout_menu_zoom_2_1_cb) },
-  { "Zoom300",          NULL,           N_("Zoom _3:1"),            NULL,           N_("Zoom 3:1"),             CB(layout_menu_zoom_3_1_cb) },
-  { "Zoom400",      NULL,           N_("Zoom _4:1"),            NULL,           N_("Zoom 4:1"),             CB(layout_menu_zoom_4_1_cb) },
-  { "Zoom50",       NULL,           N_("Zoom 1:2"),             NULL,           N_("Zoom 1:2"),             CB(layout_menu_zoom_1_2_cb) },
-  { "Zoom33",       NULL,           N_("Zoom 1:3"),             NULL,           N_("Zoom 1:3"),             CB(layout_menu_zoom_1_3_cb) },
-  { "Zoom25",       NULL,           N_("Zoom 1:4"),             NULL,           N_("Zoom 1:4"),             CB(layout_menu_zoom_1_4_cb) },
-  { "ConnectZoomIn",    GTK_STOCK_ZOOM_IN,  N_("Zoom _in"),             "plus",         N_("Connected Zoom in"),        CB(layout_menu_connect_zoom_in_cb) },
-  { "ConnectZoomInAlt1",GTK_STOCK_ZOOM_IN,  N_("Zoom _in"),             "<shift>KP_Add",    N_("Connected Zoom in"),        CB(layout_menu_connect_zoom_in_cb) },
-  { "ConnectZoomOut",   GTK_STOCK_ZOOM_OUT, N_("Zoom _out"),            "underscore",       N_("Connected Zoom out"),       CB(layout_menu_connect_zoom_out_cb) },
-  { "ConnectZoomOutAlt1",GTK_STOCK_ZOOM_OUT,    N_("Zoom _out"),            "<shift>KP_Subtract",   N_("Connected Zoom out"),       CB(layout_menu_connect_zoom_out_cb) },
-  { "ConnectZoom100",   GTK_STOCK_ZOOM_100, N_("Zoom _1:1"),            "<shift>Z",     N_("Connected Zoom 1:1"),       CB(layout_menu_connect_zoom_1_1_cb) },
-  { "ConnectZoom100Alt1",GTK_STOCK_ZOOM_100,    N_("Zoom _1:1"),            "<shift>KP_Divide", N_("Connected Zoom 1:1"),       CB(layout_menu_connect_zoom_1_1_cb) },
-  { "ConnectZoomFit",   GTK_STOCK_ZOOM_FIT, N_("_Zoom to fit"),         "<shift>X",     N_("Connected Zoom to fit"),        CB(layout_menu_connect_zoom_fit_cb) },
-  { "ConnectZoomFitAlt1",GTK_STOCK_ZOOM_FIT,    N_("_Zoom to fit"),         "<shift>KP_Multiply",   N_("Connected Zoom to fit"),        CB(layout_menu_connect_zoom_fit_cb) },
-  { "ConnectZoomFillHor",NULL,          N_("Fit _Horizontally"),        "<shift>H",     N_("Connected Fit Horizontally"),   CB(layout_menu_connect_zoom_fit_hor_cb) },
-  { "ConnectZoomFillVert",NULL,         N_("Fit _Vertically"),          "<shift>W",     N_("Connected Fit Vertically"),     CB(layout_menu_connect_zoom_fit_vert_cb) },
-  { "ConnectZoom200",   NULL,           N_("Zoom _2:1"),            NULL,           N_("Connected Zoom 2:1"),       CB(layout_menu_connect_zoom_2_1_cb) },
-  { "ConnectZoom300",   NULL,           N_("Zoom _3:1"),            NULL,           N_("Connected Zoom 3:1"),       CB(layout_menu_connect_zoom_3_1_cb) },
-  { "ConnectZoom400",   NULL,           N_("Zoom _4:1"),            NULL,           N_("Connected Zoom 4:1"),       CB(layout_menu_connect_zoom_4_1_cb) },
-  { "ConnectZoom50",    NULL,           N_("Zoom 1:2"),             NULL,           N_("Connected Zoom 1:2"),       CB(layout_menu_connect_zoom_1_2_cb) },
-  { "ConnectZoom33",    NULL,           N_("Zoom 1:3"),             NULL,           N_("Connected Zoom 1:3"),       CB(layout_menu_connect_zoom_1_3_cb) },
-  { "ConnectZoom25",    NULL,           N_("Zoom 1:4"),             NULL,           N_("Connected Zoom 1:4"),       CB(layout_menu_connect_zoom_1_4_cb) },
-  { "ViewInNewWindow",  NULL,           N_("_View in new window"),      "<control>V",       N_("View in new window"),       CB(layout_menu_view_in_new_window_cb) },
-  { "FullScreen",   GTK_STOCK_FULLSCREEN,   N_("F_ull screen"),         "F",            N_("Full screen"),          CB(layout_menu_fullscreen_cb) },
-  { "FullScreenAlt1",   GTK_STOCK_FULLSCREEN,   N_("F_ull screen"),         "V",            N_("Full screen"),          CB(layout_menu_fullscreen_cb) },
-  { "FullScreenAlt2",   GTK_STOCK_FULLSCREEN,   N_("F_ull screen"),         "F11",          N_("Full screen"),          CB(layout_menu_fullscreen_cb) },
-  { "Escape",       GTK_STOCK_LEAVE_FULLSCREEN,N_("_Leave full screen"),        "Escape",       N_("Leave full screen"),        CB(layout_menu_escape_cb) },
-  { "EscapeAlt1",   GTK_STOCK_LEAVE_FULLSCREEN,N_("_Leave full screen"),        "Q",            N_("Leave full screen"),        CB(layout_menu_escape_cb) },
-  { "ImageOverlayCycle",NULL,           N_("_Cycle through overlay modes"), "I",            N_("Cycle through Overlay modes"),  CB(layout_menu_overlay_toggle_cb) },
-  { "HistogramChanCycle",NULL,          N_("Cycle through histogram ch_annels"),"K",            N_("Cycle through histogram channels"), CB(layout_menu_histogram_toggle_channel_cb) },
-  { "HistogramModeCycle",NULL,          N_("Cycle through histogram mo_des"),   "J",            N_("Cycle through histogram modes"),    CB(layout_menu_histogram_toggle_mode_cb) },
-  { "HideTools",    NULL,           N_("_Hide file list"),          "<control>H",       N_("Hide file list"),           CB(layout_menu_hide_cb) },
-  { "SlideShowPause",   GTK_STOCK_MEDIA_PAUSE,  N_("_Pause slideshow"),         "P",            N_("Pause slideshow"),          CB(layout_menu_slideshow_pause_cb) },
-  { "Refresh",      GTK_STOCK_REFRESH,  N_("_Refresh"),             "R",            N_("Refresh"),              CB(layout_menu_refresh_cb) },
-  { "HelpContents", GTK_STOCK_HELP,     N_("_Contents"),            "F1",           N_("Contents"),             CB(layout_menu_help_cb) },
-  { "HelpShortcuts",    NULL,           N_("_Keyboard shortcuts"),      NULL,           N_("Keyboard shortcuts"),       CB(layout_menu_help_keys_cb) },
-  { "HelpKbd",      NULL,           N_("_Keyboard map"),            NULL,           N_("Keyboard map"),         CB(layout_menu_kbd_map_cb) },
-  { "HelpNotes",    NULL,           N_("_Release notes"),           NULL,           N_("Release notes"),            CB(layout_menu_notes_cb) },
-  { "About",        GTK_STOCK_ABOUT,    N_("_About"),               NULL,           N_("About"),                CB(layout_menu_about_cb) },
-  { "LogWindow",    NULL,           N_("_Log Window"),          NULL,           N_("Log Window"),           CB(layout_menu_log_window_cb) },
-  { "ExifWin",      NULL,           N_("_Exif window"),         "<control>E",       N_("Exif window"),          CB(layout_menu_bar_exif_cb) },
-  { "StereoCycle",  NULL,           N_("_Cycle through stereo modes"),  NULL,           N_("Cycle through stereo modes"),   CB(layout_menu_stereo_mode_next_cb) },
+  { "NewWindow",          GTK_STOCK_NEW,             N_("New _window"),                      "<control>N",            N_("New window"),                        CB(layout_menu_new_window_cb) },
+  { "NewCollection",      GTK_STOCK_INDEX,           N_("_New collection"),                  "C",                     N_("New collection"),                    CB(layout_menu_new_cb) },
+  { "OpenCollection",     GTK_STOCK_OPEN,            N_("_Open collection..."),              "O",                     N_("Open collection..."),                CB(layout_menu_open_cb) },
+  { "OpenRecent",         NULL,                      N_("Open recen_t"),                     NULL,                    N_("Open recent"),                       NULL },
+  { "Search",             GTK_STOCK_FIND,            N_("_Search..."),                       "F3",                    N_("Search..."),                         CB(layout_menu_search_cb) },
+  { "FindDupes",          GTK_STOCK_FIND,            N_("_Find duplicates..."),              "D",                     N_("Find duplicates..."),                CB(layout_menu_dupes_cb) },
+  { "PanView",            NULL,                      N_("Pa_n view"),                        "<control>J",            N_("Pan view"),                          CB(layout_menu_pan_cb) },
+  { "Print",              GTK_STOCK_PRINT,           N_("_Print..."),                        "<shift>P",              N_("Print..."),                          CB(layout_menu_print_cb) },
+  { "NewFolder",          GTK_STOCK_DIRECTORY,       N_("N_ew folder..."),                   "<control>F",            N_("New folder..."),                     CB(layout_menu_dir_cb) },
+  { "Copy",               GTK_STOCK_COPY,            N_("_Copy..."),                         "<control>C",            N_("Copy..."),                           CB(layout_menu_copy_cb) },
+  { "Move",               NULL,                      N_("_Move..."),                         "<control>M",            N_("Move..."),                           CB(layout_menu_move_cb) },
+  { "Rename",             NULL,                      N_("_Rename..."),                       "<control>R",            N_("Rename..."),                         CB(layout_menu_rename_cb) },
+  { "Delete",             GTK_STOCK_DELETE,          N_("_Delete..."),                       "<control>D",            N_("Delete..."),                         CB(layout_menu_delete_cb) },
+  { "DeleteAlt1",         GTK_STOCK_DELETE,          N_("_Delete..."),                       "Delete",                N_("Delete..."),                         CB(layout_menu_delete_key_cb) },
+  { "DeleteAlt2",         GTK_STOCK_DELETE,          N_("_Delete..."),                       "KP_Delete",             N_("Delete..."),                         CB(layout_menu_delete_key_cb) },
+  { "EnableGrouping",     NULL,                      N_("Enable file _grouping"),            NULL,                    N_("Enable file grouping"),              CB(layout_menu_enable_grouping_cb) },
+  { "DisableGrouping",    NULL,                      N_("Disable file groupi_ng"),           NULL,                    N_("Disable file grouping"),             CB(layout_menu_disable_grouping_cb) },
+  { "CopyPath",           NULL,                      N_("_Copy path to clipboard"),          NULL,                    N_("Copy path to clipboard"),            CB(layout_menu_copy_path_cb) },
+  { "CloseWindow",        GTK_STOCK_CLOSE,           N_("C_lose window"),                    "<control>W",            N_("Close window"),                      CB(layout_menu_close_cb) },
+  { "Quit",               GTK_STOCK_QUIT,            N_("_Quit"),                            "<control>Q",            N_("Quit"),                              CB(layout_menu_exit_cb) },
+  { "RotateCW",           NULL,                      N_("_Rotate clockwise"),                "bracketright",          N_("Rotate clockwise"),                  CB(layout_menu_alter_90_cb) },
+  { "RotateCCW",          NULL,                      N_("Rotate _counterclockwise"),         "bracketleft",           N_("Rotate counterclockwise"),           CB(layout_menu_alter_90cc_cb) },
+  { "Rotate180",          NULL,                      N_("Rotate 1_80"),                      "<shift>R",              N_("Rotate 180"),                        CB(layout_menu_alter_180_cb) },
+  { "Mirror",             NULL,                      N_("_Mirror"),                          "<shift>M",              N_("Mirror"),                            CB(layout_menu_alter_mirror_cb) },
+  { "Flip",               NULL,                      N_("_Flip"),                            "<shift>F",              N_("Flip"),                              CB(layout_menu_alter_flip_cb) },
+  { "AlterNone",          NULL,                      N_("_Original state"),                  "<shift>O",              N_("Original state"),                    CB(layout_menu_alter_none_cb) },
+  { "SelectAll",          NULL,                      N_("Select _all"),                      "<control>A",            N_("Select all"),                        CB(layout_menu_select_all_cb) },
+  { "SelectNone",         NULL,                      N_("Select _none"),                     "<control><shift>A",     N_("Select none"),                       CB(layout_menu_unselect_all_cb) },
+  { "SelectInvert",       NULL,                      N_("_Invert Selection"),                "<control><shift>I",     N_("Invert Selection"),                  CB(layout_menu_invert_selection_cb) },
+  { "Preferences",        GTK_STOCK_PREFERENCES,     N_("P_references..."),                  "<control>O",            N_("Preferences..."),                    CB(layout_menu_config_cb) },
+  { "Editors",            GTK_STOCK_PREFERENCES,     N_("Configure _Editors..."),            NULL,                    N_("Configure Editors..."),              CB(layout_menu_editors_cb) },
+  { "LayoutConfig",       GTK_STOCK_PREFERENCES,     N_("_Configure this window..."),        NULL,                    N_("Configure this window..."),          CB(layout_menu_layout_config_cb) },
+  { "Maintenance",        NULL,                      N_("_Thumbnail maintenance..."),        NULL,                    N_("Thumbnail maintenance..."),          CB(layout_menu_remove_thumb_cb) },
+  { "Wallpaper",          NULL,                      N_("Set as _wallpaper"),                NULL,                    N_("Set as wallpaper"),                  CB(layout_menu_wallpaper_cb) },
+  { "SaveMetadata",       GTK_STOCK_SAVE,            N_("_Save metadata"),                   "<control>S",            N_("Save metadata"),                     CB(layout_menu_metadata_write_cb) },
+  { "ZoomIn",             GTK_STOCK_ZOOM_IN,         N_("Zoom _in"),                         "equal",                 N_("Zoom in"),                           CB(layout_menu_zoom_in_cb) },
+  { "ZoomInAlt1",         GTK_STOCK_ZOOM_IN,         N_("Zoom _in"),                         "KP_Add",                N_("Zoom in"),                           CB(layout_menu_zoom_in_cb) },
+  { "ZoomOut",            GTK_STOCK_ZOOM_OUT,        N_("Zoom _out"),                        "minus",                 N_("Zoom out"),                          CB(layout_menu_zoom_out_cb) },
+  { "ZoomOutAlt1",        GTK_STOCK_ZOOM_OUT,        N_("Zoom _out"),                        "KP_Subtract",           N_("Zoom out"),                          CB(layout_menu_zoom_out_cb) },
+  { "Zoom100",            GTK_STOCK_ZOOM_100,        N_("Zoom _1:1"),                        "Z",                     N_("Zoom 1:1"),                          CB(layout_menu_zoom_1_1_cb) },
+  { "Zoom100Alt1",        GTK_STOCK_ZOOM_100,        N_("Zoom _1:1"),                        "KP_Divide",             N_("Zoom 1:1"),                          CB(layout_menu_zoom_1_1_cb) },
+  { "ZoomFit",            GTK_STOCK_ZOOM_FIT,        N_("_Zoom to fit"),                     "X",                     N_("Zoom to fit"),                       CB(layout_menu_zoom_fit_cb) },
+  { "ZoomFitAlt1",        GTK_STOCK_ZOOM_FIT,        N_("_Zoom to fit"),                     "KP_Multiply",           N_("Zoom to fit"),                       CB(layout_menu_zoom_fit_cb) },
+  { "ZoomFillHor",        NULL,                      N_("Fit _Horizontally"),                "H",                     N_("Fit Horizontally"),                  CB(layout_menu_zoom_fit_hor_cb) },
+  { "ZoomFillVert",       NULL,                      N_("Fit _Vertically"),                  "W",                     N_("Fit Vertically"),                    CB(layout_menu_zoom_fit_vert_cb) },
+  { "ZoomToRectangle",    NULL,                      N_("Zoom to _Rectangle"),               NULL,                    N_("Zoom to Rectangle"),                 CB(layout_menu_zoom_to_rectangle_cb) },
+  { "Zoom200",            NULL,                      N_("Zoom _2:1"),                        NULL,                    N_("Zoom 2:1"),                          CB(layout_menu_zoom_2_1_cb) },
+  { "Zoom300",            NULL,                      N_("Zoom _3:1"),                        NULL,                    N_("Zoom 3:1"),                          CB(layout_menu_zoom_3_1_cb) },
+  { "Zoom400",            NULL,                      N_("Zoom _4:1"),                        NULL,                    N_("Zoom 4:1"),                          CB(layout_menu_zoom_4_1_cb) },
+  { "Zoom50",             NULL,                      N_("Zoom 1:2"),                         NULL,                    N_("Zoom 1:2"),                          CB(layout_menu_zoom_1_2_cb) },
+  { "Zoom33",             NULL,                      N_("Zoom 1:3"),                         NULL,                    N_("Zoom 1:3"),                          CB(layout_menu_zoom_1_3_cb) },
+  { "Zoom25",             NULL,                      N_("Zoom 1:4"),                         NULL,                    N_("Zoom 1:4"),                          CB(layout_menu_zoom_1_4_cb) },
+  { "ConnectZoomIn",      GTK_STOCK_ZOOM_IN,         N_("Zoom _in"),                         "plus",                  N_("Connected Zoom in"),                 CB(layout_menu_connect_zoom_in_cb) },
+  { "ConnectZoomInAlt1",  GTK_STOCK_ZOOM_IN,         N_("Zoom _in"),                         "<shift>KP_Add",         N_("Connected Zoom in"),                 CB(layout_menu_connect_zoom_in_cb) },
+  { "ConnectZoomOut",     GTK_STOCK_ZOOM_OUT,        N_("Zoom _out"),                        "underscore",            N_("Connected Zoom out"),                CB(layout_menu_connect_zoom_out_cb) },
+  { "ConnectZoomOutAlt1", GTK_STOCK_ZOOM_OUT,        N_("Zoom _out"),                        "<shift>KP_Subtract",    N_("Connected Zoom out"),                CB(layout_menu_connect_zoom_out_cb) },
+  { "ConnectZoom100",     GTK_STOCK_ZOOM_100,        N_("Zoom _1:1"),                        "<shift>Z",              N_("Connected Zoom 1:1"),                CB(layout_menu_connect_zoom_1_1_cb) },
+  { "ConnectZoom100Alt1", GTK_STOCK_ZOOM_100,        N_("Zoom _1:1"),                        "<shift>KP_Divide",      N_("Connected Zoom 1:1"),                CB(layout_menu_connect_zoom_1_1_cb) },
+  { "ConnectZoomFit",     GTK_STOCK_ZOOM_FIT,        N_("_Zoom to fit"),                     "<shift>X",              N_("Connected Zoom to fit"),             CB(layout_menu_connect_zoom_fit_cb) },
+  { "ConnectZoomFitAlt1", GTK_STOCK_ZOOM_FIT,        N_("_Zoom to fit"),                     "<shift>KP_Multiply",    N_("Connected Zoom to fit"),             CB(layout_menu_connect_zoom_fit_cb) },
+  { "ConnectZoomFillHor", NULL,                      N_("Fit _Horizontally"),                "<shift>H",              N_("Connected Fit Horizontally"),        CB(layout_menu_connect_zoom_fit_hor_cb) },
+  { "ConnectZoomFillVert",NULL,                      N_("Fit _Vertically"),                  "<shift>W",              N_("Connected Fit Vertically"),          CB(layout_menu_connect_zoom_fit_vert_cb) },
+  { "ConnectZoom200",     NULL,                      N_("Zoom _2:1"),                        NULL,                    N_("Connected Zoom 2:1"),                CB(layout_menu_connect_zoom_2_1_cb) },
+  { "ConnectZoom300",     NULL,                      N_("Zoom _3:1"),                        NULL,                    N_("Connected Zoom 3:1"),                CB(layout_menu_connect_zoom_3_1_cb) },
+  { "ConnectZoom400",     NULL,                      N_("Zoom _4:1"),                        NULL,                    N_("Connected Zoom 4:1"),                CB(layout_menu_connect_zoom_4_1_cb) },
+  { "ConnectZoom50",      NULL,                      N_("Zoom 1:2"),                         NULL,                    N_("Connected Zoom 1:2"),                CB(layout_menu_connect_zoom_1_2_cb) },
+  { "ConnectZoom33",      NULL,                      N_("Zoom 1:3"),                         NULL,                    N_("Connected Zoom 1:3"),                CB(layout_menu_connect_zoom_1_3_cb) },
+  { "ConnectZoom25",      NULL,                      N_("Zoom 1:4"),                         NULL,                    N_("Connected Zoom 1:4"),                CB(layout_menu_connect_zoom_1_4_cb) },
+  { "ViewInNewWindow",    NULL,                      N_("_View in new window"),              "<control>V",            N_("View in new window"),                CB(layout_menu_view_in_new_window_cb) },
+  { "FullScreen",         GTK_STOCK_FULLSCREEN,      N_("F_ull screen"),                     "F",                     N_("Full screen"),                       CB(layout_menu_fullscreen_cb) },
+  { "FullScreenAlt1",     GTK_STOCK_FULLSCREEN,      N_("F_ull screen"),                     "V",                     N_("Full screen"),                       CB(layout_menu_fullscreen_cb) },
+  { "FullScreenAlt2",     GTK_STOCK_FULLSCREEN,      N_("F_ull screen"),                     "F11",                   N_("Full screen"),                       CB(layout_menu_fullscreen_cb) },
+  { "Escape",             GTK_STOCK_LEAVE_FULLSCREEN,N_("_Leave full screen"),               "Escape",                N_("Leave full screen"),                 CB(layout_menu_escape_cb) },
+  { "EscapeAlt1",         GTK_STOCK_LEAVE_FULLSCREEN,N_("_Leave full screen"),               "Q",                     N_("Leave full screen"),                 CB(layout_menu_escape_cb) },
+  { "ImageOverlayCycle",  NULL,                      N_("_Cycle through overlay modes"),     "I",                     N_("Cycle through Overlay modes"),       CB(layout_menu_overlay_toggle_cb) },
+  { "HistogramChanCycle", NULL,                      N_("Cycle through histogram ch_annels"),"K",                     N_("Cycle through histogram channels"),  CB(layout_menu_histogram_toggle_channel_cb) },
+  { "HistogramModeCycle", NULL,                      N_("Cycle through histogram mo_des"),   "J",                     N_("Cycle through histogram modes"),     CB(layout_menu_histogram_toggle_mode_cb) },
+  { "HideTools",          NULL,                      N_("_Hide file list"),                  "<control>H",            N_("Hide file list"),                    CB(layout_menu_hide_cb) },
+  { "SlideShowPause",     GTK_STOCK_MEDIA_PAUSE,     N_("_Pause slideshow"),                 "P",                     N_("Pause slideshow"),                   CB(layout_menu_slideshow_pause_cb) },
+  { "Refresh",            GTK_STOCK_REFRESH,         N_("_Refresh"),                         "R",                     N_("Refresh"),                           CB(layout_menu_refresh_cb) },
+  { "HelpContents",       GTK_STOCK_HELP,            N_("_Contents"),                        "F1",                    N_("Contents"),                          CB(layout_menu_help_cb) },
+  { "HelpShortcuts",      NULL,                      N_("_Keyboard shortcuts"),              NULL,                    N_("Keyboard shortcuts"),                CB(layout_menu_help_keys_cb) },
+  { "HelpKbd",            NULL,                      N_("_Keyboard map"),                    NULL,                    N_("Keyboard map"),                      CB(layout_menu_kbd_map_cb) },
+  { "HelpNotes",          NULL,                      N_("_Release notes"),                   NULL,                    N_("Release notes"),                     CB(layout_menu_notes_cb) },
+  { "About",              GTK_STOCK_ABOUT,           N_("_About"),                           NULL,                    N_("About"),                             CB(layout_menu_about_cb) },
+  { "LogWindow",          NULL,                      N_("_Log Window"),                      NULL,                    N_("Log Window"),                        CB(layout_menu_log_window_cb) },
+  { "ExifWin",            NULL,                      N_("_Exif window"),                     "<control>E",            N_("Exif window"),                       CB(layout_menu_bar_exif_cb) },
+  { "StereoCycle",        NULL,                      N_("_Cycle through stereo modes"),      NULL,                    N_("Cycle through stereo modes"),        CB(layout_menu_stereo_mode_next_cb) },
 
 };
 
 static GtkToggleActionEntry menu_toggle_entries[] = {
-  { "Thumbnails",   PIXBUF_INLINE_ICON_THUMB,N_("Show _Thumbnails"),        "T",            N_("Show Thumbnails"),          CB(layout_menu_thumb_cb),    FALSE },
-  { "ShowMarks",        NULL,           N_("Show _Marks"),          "M",            N_("Show Marks"),           CB(layout_menu_marks_cb),    FALSE  },
-  { "ShowInfoPixel",    GTK_STOCK_COLOR_PICKER, N_("Pi_xel Info"),          NULL,           N_("Show Pixel Info"),          CB(layout_menu_info_pixel_cb),   FALSE  },
-  { "FloatTools",   PIXBUF_INLINE_ICON_FLOAT,N_("_Float file list"),        "L",            N_("Float file list"),          CB(layout_menu_float_cb),    FALSE  },
-  { "HideToolbar",  NULL,           N_("Hide tool_bar"),            NULL,           N_("Hide toolbar"),         CB(layout_menu_toolbar_cb),  FALSE  },
-  { "SBar",     NULL,           N_("_Info sidebar"),            "<control>K",       N_("Info sidebar"),         CB(layout_menu_bar_cb),      FALSE  },
-  { "SBarSort",     NULL,           N_("Sort _manager"),            NULL,       N_("Sort manager"),         CB(layout_menu_bar_sort_cb),     FALSE  },
-  { "SlideShow",    GTK_STOCK_MEDIA_PLAY,   N_("Toggle _slideshow"),        "<shift>S",         N_("Toggle slideshow"),         CB(layout_menu_slideshow_cb),    FALSE  },
-  { "UseColorProfiles", GTK_STOCK_SELECT_COLOR, N_("Use _color profiles"),      NULL,           N_("Use color profiles"),       CB(layout_color_menu_enable_cb), FALSE},
-  { "UseImageProfile",  NULL,           N_("Use profile from _image"),      NULL,           N_("Use profile from image"),       CB(layout_color_menu_use_image_cb), FALSE},
-  { "Grayscale",    NULL,           N_("Toggle _grayscale"),        "<shift>G",     N_("Toggle grayscale"),         CB(layout_menu_alter_desaturate_cb), FALSE},
-  { "ImageOverlay", NULL,           N_("Image _Overlay"),           NULL,           N_("Image Overlay"),            CB(layout_menu_overlay_cb),  FALSE },
-  { "ImageHistogram",   NULL,           N_("_Show Histogram"),          NULL,           N_("Show Histogram"),           CB(layout_menu_histogram_cb),    FALSE },
+  { "Thumbnails",       PIXBUF_INLINE_ICON_THUMB,N_("Show _Thumbnails"),        "T",          N_("Show Thumbnails"),        CB(layout_menu_thumb_cb),            FALSE },
+  { "ShowMarks",        NULL,                    N_("Show _Marks"),             "M",          N_("Show Marks"),             CB(layout_menu_marks_cb),            FALSE },
+  { "ShowInfoPixel",    GTK_STOCK_COLOR_PICKER,  N_("Pi_xel Info"),             NULL,         N_("Show Pixel Info"),        CB(layout_menu_info_pixel_cb),       FALSE },
+  { "FloatTools",       PIXBUF_INLINE_ICON_FLOAT,N_("_Float file list"),        "L",          N_("Float file list"),        CB(layout_menu_float_cb),            FALSE },
+  { "HideToolbar",      NULL,                    N_("Hide tool_bar"),           NULL,         N_("Hide toolbar"),           CB(layout_menu_toolbar_cb),          FALSE },
+  { "SBar",             NULL,                    N_("_Info sidebar"),           "<control>K", N_("Info sidebar"),           CB(layout_menu_bar_cb),              FALSE },
+  { "SBarSort",         NULL,                    N_("Sort _manager"),           NULL,         N_("Sort manager"),           CB(layout_menu_bar_sort_cb),         FALSE },
+  { "SlideShow",        GTK_STOCK_MEDIA_PLAY,    N_("Toggle _slideshow"),       "<shift>S",   N_("Toggle slideshow"),       CB(layout_menu_slideshow_cb),        FALSE },
+  { "UseColorProfiles", GTK_STOCK_SELECT_COLOR,  N_("Use _color profiles"),     NULL,         N_("Use color profiles"),     CB(layout_color_menu_enable_cb),     FALSE },
+  { "UseImageProfile",  NULL,                    N_("Use profile from _image"), NULL,         N_("Use profile from image"), CB(layout_color_menu_use_image_cb),  FALSE },
+  { "Grayscale",        NULL,                    N_("Toggle _grayscale"),       "<shift>G",   N_("Toggle grayscale"),       CB(layout_menu_alter_desaturate_cb), FALSE },
+  { "ImageOverlay",     NULL,                    N_("Image _Overlay"),          NULL,         N_("Image Overlay"),          CB(layout_menu_overlay_cb),          FALSE },
+  { "ImageHistogram",   NULL,                    N_("_Show Histogram"),         NULL,         N_("Show Histogram"),         CB(layout_menu_histogram_cb),        FALSE },
 };
 
 static GtkRadioActionEntry menu_radio_entries[] = {
-  { "ViewList",     NULL,           N_("Image _List"),          "<control>L",       N_("View Images as List"),      FILEVIEW_LIST },
-  { "ViewIcons",    NULL,           N_("I_cons"),               "<control>I",       N_("View Images as Icons"),     FILEVIEW_ICON }
+  { "ViewList",  NULL, N_("Image _List"), "<control>L", N_("View Images as List"),  FILEVIEW_LIST },
+  { "ViewIcons", NULL, N_("I_cons"),      "<control>I", N_("View Images as Icons"), FILEVIEW_ICON }
 };
 
 static GtkRadioActionEntry menu_view_dir_radio_entries[] = {
-  { "FolderList",   NULL,           N_("Folder Li_st"),         "<meta>L",      N_("View Folders as List"),         DIRVIEW_LIST },
-  { "FolderTree",   NULL,           N_("Folder T_ree"),         "<control>T",       N_("View Folders as Tree"),         DIRVIEW_TREE },
+  { "FolderList", NULL, N_("Folder Li_st"), "<meta>L",    N_("View Folders as List"), DIRVIEW_LIST },
+  { "FolderTree", NULL, N_("Folder T_ree"), "<control>T", N_("View Folders as Tree"), DIRVIEW_TREE },
 };
 
 static GtkRadioActionEntry menu_split_radio_entries[] = {
-  { "SplitHorizontal",  NULL,           N_("_Horizontal"),          "E",            N_("Split Horizontal"),         SPLIT_HOR },
-  { "SplitVertical",    NULL,           N_("_Vertical"),            "U",            N_("Split Vertical"),               SPLIT_VERT },
-  { "SplitQuad",    NULL,           N_("_Quad"),                NULL,           N_("Split Quad"),               SPLIT_QUAD },
-  { "SplitSingle",  NULL,           N_("_Single"),              "Y",            N_("Split Single"),             SPLIT_NONE }
+  { "SplitHorizontal", NULL, N_("_Horizontal"), "E",  N_("Split Horizontal"), SPLIT_HOR },
+  { "SplitVertical",   NULL, N_("_Vertical"),   "U",  N_("Split Vertical"),   SPLIT_VERT },
+  { "SplitQuad",       NULL, N_("_Quad"),       NULL, N_("Split Quad"),       SPLIT_QUAD },
+  { "SplitSingle",     NULL, N_("_Single"),     "Y",  N_("Split Single"),     SPLIT_NONE }
 };
 
 static GtkRadioActionEntry menu_color_radio_entries[] = {
-  { "ColorProfile0",    NULL,           N_("sRGB"),           NULL,           N_("Input 0: sRGB"),            COLOR_PROFILE_SRGB },
-  { "ColorProfile1",    NULL,           N_("AdobeRGB compatible"),    NULL,           N_("Input 1: AdobeRGB compatible"), COLOR_PROFILE_ADOBERGB },
-  { "ColorProfile2",    NULL,           N_("External profile _1"),             NULL,           N_("External profile 1"),              COLOR_PROFILE_FILE },
-  { "ColorProfile3",    NULL,           N_("External profile _2"),             NULL,           N_("External profile 2"),              COLOR_PROFILE_FILE + 1 },
-  { "ColorProfile4",    NULL,           N_("External profile _3"),             NULL,           N_("External profile 3"),              COLOR_PROFILE_FILE + 2 },
-  { "ColorProfile5",    NULL,           N_("External profile _4"),             NULL,           N_("External profile 4"),              COLOR_PROFILE_FILE + 3 }
+  { "ColorProfile0", NULL, N_("sRGB"),                NULL, N_("Input 0: sRGB"),                COLOR_PROFILE_SRGB },
+  { "ColorProfile1", NULL, N_("AdobeRGB compatible"), NULL, N_("Input 1: AdobeRGB compatible"), COLOR_PROFILE_ADOBERGB },
+  { "ColorProfile2", NULL, N_("External profile _1"), NULL, N_("External profile 1"),           COLOR_PROFILE_FILE },
+  { "ColorProfile3", NULL, N_("External profile _2"), NULL, N_("External profile 2"),           COLOR_PROFILE_FILE + 1 },
+  { "ColorProfile4", NULL, N_("External profile _3"), NULL, N_("External profile 3"),           COLOR_PROFILE_FILE + 2 },
+  { "ColorProfile5", NULL, N_("External profile _4"), NULL, N_("External profile 4"),           COLOR_PROFILE_FILE + 3 }
 };
 
 static GtkRadioActionEntry menu_histogram_channel[] = {
-  { "HistogramChanR",   NULL,           N_("Histogram on _Red"),        NULL,           N_("Histogram on Red"),     HCHAN_R },
-  { "HistogramChanG",   NULL,           N_("Histogram on _Green"),      NULL,           N_("Histogram on Green"),   HCHAN_G },
-  { "HistogramChanB",   NULL,           N_("Histogram on _Blue"),       NULL,           N_("Histogram on Blue"),    HCHAN_B },
-  { "HistogramChanRGB", NULL,           N_("_Histogram on RGB"),            NULL,           N_("Histogram on RGB"),     HCHAN_RGB },
-  { "HistogramChanV",   NULL,           N_("Histogram on _Value"),      NULL,           N_("Histogram on Value"),   HCHAN_MAX }
+  { "HistogramChanR",   NULL, N_("Histogram on _Red"),   NULL, N_("Histogram on Red"),   HCHAN_R },
+  { "HistogramChanG",   NULL, N_("Histogram on _Green"), NULL, N_("Histogram on Green"), HCHAN_G },
+  { "HistogramChanB",   NULL, N_("Histogram on _Blue"),  NULL, N_("Histogram on Blue"),  HCHAN_B },
+  { "HistogramChanRGB", NULL, N_("_Histogram on RGB"),   NULL, N_("Histogram on RGB"),   HCHAN_RGB },
+  { "HistogramChanV",   NULL, N_("Histogram on _Value"), NULL, N_("Histogram on Value"), HCHAN_MAX }
 };
 
 static GtkRadioActionEntry menu_histogram_mode[] = {
-  { "HistogramModeLin", NULL,           N_("Li_near Histogram"),        NULL,           N_("Linear Histogram"),     0 },
-  { "HistogramModeLog", NULL,           N_("_Log Histogram"),           NULL,           N_("Log Histogram"),        1 },
+  { "HistogramModeLin", NULL, N_("Li_near Histogram"), NULL, N_("Linear Histogram"), 0 },
+  { "HistogramModeLog", NULL, N_("_Log Histogram"),    NULL, N_("Log Histogram"),    1 },
 };
 
 static GtkRadioActionEntry menu_stereo_mode_entries[] = {
-  { "StereoAuto",   NULL,           N_("_Auto"),                NULL,           N_("Stereo Auto"),      STEREO_PIXBUF_DEFAULT },
-  { "StereoSBS",    NULL,           N_("_Side by Side"),            NULL,           N_("Stereo Side by Side"),  STEREO_PIXBUF_SBS },
-  { "StereoCross",  NULL,           N_("_Cross"),               NULL,           N_("Stereo Cross"),     STEREO_PIXBUF_CROSS },
-  { "StereoOff",    NULL,           N_("_Off"),             NULL,           N_("Stereo Off"),       STEREO_PIXBUF_NONE }
+  { "StereoAuto",  NULL, N_("_Auto"),         NULL, N_("Stereo Auto"),         STEREO_PIXBUF_DEFAULT },
+  { "StereoSBS",   NULL, N_("_Side by Side"), NULL, N_("Stereo Side by Side"), STEREO_PIXBUF_SBS },
+  { "StereoCross", NULL, N_("_Cross"),        NULL, N_("Stereo Cross"),        STEREO_PIXBUF_CROSS },
+  { "StereoOff",   NULL, N_("_Off"),          NULL, N_("Stereo Off"),          STEREO_PIXBUF_NONE }
 };
 
 
@@ -1943,11 +1702,13 @@ static const gchar *menu_ui_description =
 
 static gchar *menu_translate(const gchar *path, gpointer data)
 {
-    return (gchar *)(_(path));
+    return (gchar *)_(path);
 }
 
-static void layout_actions_setup_mark(LayoutWindow *lw, gint mark, gchar *name_tmpl,
-                      gchar *label_tmpl, gchar *accel_tmpl, gchar *tooltip_tmpl, GCallback cb)
+static void layout_actions_setup_mark(LayoutWindow *lw, gint mark,
+                                      gchar *name_tmpl, gchar *label_tmpl,
+                                      gchar *accel_tmpl, gchar *tooltip_tmpl,
+                                      GCallback cb)
 {
     gchar name[50];
     gchar label[100];
@@ -1956,7 +1717,7 @@ static void layout_actions_setup_mark(LayoutWindow *lw, gint mark, gchar *name_t
     GtkActionEntry entry = { name, NULL, label, accel, tooltip, cb };
     GtkAction *action;
 
-    g_snprintf(name, sizeof(name), name_tmpl, mark);
+    g_snprintf(name,  sizeof(name),  name_tmpl,  mark);
     g_snprintf(label, sizeof(label), label_tmpl, mark);
 
     if (accel_tmpl)
@@ -1985,43 +1746,43 @@ static void layout_actions_setup_marks(LayoutWindow *lw)
 
     for (mark = 1; mark <= FILEDATA_MARKS_SIZE; mark++)
     {
-        layout_actions_setup_mark(lw, mark, "Mark%d",       _("Mark _%d"), NULL, NULL, NULL);
-        layout_actions_setup_mark(lw, mark, "SetMark%d",    _("_Set mark %d"),          NULL,       _("Set mark %d"), G_CALLBACK(layout_menu_set_mark_sel_cb));
-        layout_actions_setup_mark(lw, mark, "ResetMark%d",  _("_Reset mark %d"),            NULL,       _("Reset mark %d"), G_CALLBACK(layout_menu_res_mark_sel_cb));
-        layout_actions_setup_mark(lw, mark, "ToggleMark%d", _("_Toggle mark %d"),           "%d",       _("Toggle mark %d"), G_CALLBACK(layout_menu_toggle_mark_sel_cb));
-        layout_actions_setup_mark(lw, mark, "ToggleMark%dAlt1", _("_Toggle mark %d"),           "KP_%d",    _("Toggle mark %d"), G_CALLBACK(layout_menu_toggle_mark_sel_cb));
-        layout_actions_setup_mark(lw, mark, "SelectMark%d", _("Se_lect mark %d"),           "<control>%d",  _("Select mark %d"), G_CALLBACK(layout_menu_sel_mark_cb));
-        layout_actions_setup_mark(lw, mark, "SelectMark%dAlt1", _("_Select mark %d"),           "<control>KP_%d", _("Select mark %d"), G_CALLBACK(layout_menu_sel_mark_cb));
-        layout_actions_setup_mark(lw, mark, "AddMark%d",    _("_Add mark %d"),          NULL,       _("Add mark %d"), G_CALLBACK(layout_menu_sel_mark_or_cb));
-        layout_actions_setup_mark(lw, mark, "IntMark%d",    _("_Intersection with mark %d"),    NULL,       _("Intersection with mark %d"), G_CALLBACK(layout_menu_sel_mark_and_cb));
-        layout_actions_setup_mark(lw, mark, "UnselMark%d",  _("_Unselect mark %d"),         NULL,       _("Unselect mark %d"), G_CALLBACK(layout_menu_sel_mark_minus_cb));
-        layout_actions_setup_mark(lw, mark, "FilterMark%d", _("_Filter mark %d"),           NULL,       _("Filter mark %d"), G_CALLBACK(layout_menu_mark_filter_toggle_cb));
+        layout_actions_setup_mark(lw, mark, "Mark%d",           _("Mark _%d"),                   NULL,             NULL,                           NULL);
+        layout_actions_setup_mark(lw, mark, "SetMark%d",        _("_Set mark %d"),               NULL,             _("Set mark %d"),               G_CALLBACK(layout_menu_set_mark_sel_cb));
+        layout_actions_setup_mark(lw, mark, "ResetMark%d",      _("_Reset mark %d"),             NULL,             _("Reset mark %d"),             G_CALLBACK(layout_menu_res_mark_sel_cb));
+        layout_actions_setup_mark(lw, mark, "ToggleMark%d",     _("_Toggle mark %d"),            "%d",             _("Toggle mark %d"),            G_CALLBACK(layout_menu_toggle_mark_sel_cb));
+        layout_actions_setup_mark(lw, mark, "ToggleMark%dAlt1", _("_Toggle mark %d"),            "KP_%d",          _("Toggle mark %d"),            G_CALLBACK(layout_menu_toggle_mark_sel_cb));
+        layout_actions_setup_mark(lw, mark, "SelectMark%d",     _("Se_lect mark %d"),            "<control>%d",    _("Select mark %d"),            G_CALLBACK(layout_menu_sel_mark_cb));
+        layout_actions_setup_mark(lw, mark, "SelectMark%dAlt1", _("_Select mark %d"),            "<control>KP_%d", _("Select mark %d"),            G_CALLBACK(layout_menu_sel_mark_cb));
+        layout_actions_setup_mark(lw, mark, "AddMark%d",        _("_Add mark %d"),               NULL,             _("Add mark %d"),               G_CALLBACK(layout_menu_sel_mark_or_cb));
+        layout_actions_setup_mark(lw, mark, "IntMark%d",        _("_Intersection with mark %d"), NULL,             _("Intersection with mark %d"), G_CALLBACK(layout_menu_sel_mark_and_cb));
+        layout_actions_setup_mark(lw, mark, "UnselMark%d",      _("_Unselect mark %d"),          NULL,             _("Unselect mark %d"),          G_CALLBACK(layout_menu_sel_mark_minus_cb));
+        layout_actions_setup_mark(lw, mark, "FilterMark%d",     _("_Filter mark %d"),            NULL,             _("Filter mark %d"),            G_CALLBACK(layout_menu_mark_filter_toggle_cb));
 
         g_string_append_printf(desc,
-                "      <menu action='Mark%d'>"
-                "        <menuitem action='ToggleMark%d'/>"
-                "        <menuitem action='SetMark%d'/>"
-                "        <menuitem action='ResetMark%d'/>"
-                "        <separator/>"
-                "        <menuitem action='SelectMark%d'/>"
-                "        <menuitem action='AddMark%d'/>"
-                "        <menuitem action='IntMark%d'/>"
-                "        <menuitem action='UnselMark%d'/>"
-                "        <separator/>"
-                "        <menuitem action='FilterMark%d'/>"
-                "      </menu>",
-                mark, mark, mark, mark, mark, mark, mark, mark, mark);
+                               "      <menu action='Mark%d'>"
+                               "        <menuitem action='ToggleMark%d'/>"
+                               "        <menuitem action='SetMark%d'/>"
+                               "        <menuitem action='ResetMark%d'/>"
+                               "        <separator/>"
+                               "        <menuitem action='SelectMark%d'/>"
+                               "        <menuitem action='AddMark%d'/>"
+                               "        <menuitem action='IntMark%d'/>"
+                               "        <menuitem action='UnselMark%d'/>"
+                               "        <separator/>"
+                               "        <menuitem action='FilterMark%d'/>"
+                               "      </menu>",
+                               mark, mark, mark, mark, mark, mark, mark, mark, mark);
     }
 
     g_string_append(desc,
-                "    </menu>"
-                "  </menubar>");
+                    "    </menu>"
+                    "  </menubar>");
     for (mark = 1; mark <= FILEDATA_MARKS_SIZE; mark++)
     {
         g_string_append_printf(desc,
-                "<accelerator action='ToggleMark%dAlt1'/>"
-                "<accelerator action='SelectMark%dAlt1'/>",
-                mark, mark);
+                               "<accelerator action='ToggleMark%dAlt1'/>"
+                               "<accelerator action='SelectMark%dAlt1'/>",
+                               mark, mark);
     }
     g_string_append(desc,   "</ui>" );
 
@@ -2038,7 +1799,6 @@ static void layout_actions_setup_marks(LayoutWindow *lw)
 static GList *layout_actions_editor_menu_path(EditorDescription *editor)
 {
     gchar **split = g_strsplit(editor->menu_path, "/", 0);
-    gint i = 0;
     GList *ret = NULL;
 
     if (split[0] == NULL)
@@ -2047,16 +1807,12 @@ static GList *layout_actions_editor_menu_path(EditorDescription *editor)
         return NULL;
     }
 
-    while (split[i])
-    {
+    for (gint i = 0; split[i]; i++)
         ret = g_list_prepend(ret, g_strdup(split[i]));
-        i++;
-    }
 
     g_strfreev(split);
 
     ret = g_list_prepend(ret, g_strdup(editor->key));
-
     return g_list_reverse(ret);
 }
 
@@ -2081,17 +1837,11 @@ static void layout_actions_editor_add(GString *desc, GList *path, GList *old_pat
     {
         gchar *name = old_path->data;
         if (g_str_has_suffix(name, "Section"))
-        {
-            g_string_append(desc,   "      </placeholder>");
-        }
+            g_string_append(desc, "      </placeholder>");
         else if (g_str_has_suffix(name, "Menu"))
-        {
-            g_string_append(desc,   "    </menu>");
-        }
+            g_string_append(desc, "    </menu>");
         else
-        {
             g_warning("invalid menu path item %s", name);
-        }
         old_path = old_path->prev;
     }
 
@@ -2099,36 +1849,27 @@ static void layout_actions_editor_add(GString *desc, GList *path, GList *old_pat
     {
         gchar *name = path->data;
         if (g_str_has_suffix(name, "Section"))
-        {
-            g_string_append_printf(desc,    "      <placeholder name='%s'>", name);
-        }
+            g_string_append_printf(desc, "      <placeholder name='%s'>", name);
         else if (g_str_has_suffix(name, "Menu"))
-        {
-            g_string_append_printf(desc,    "    <menu action='%s'>", name);
-        }
+            g_string_append_printf(desc, "    <menu action='%s'>", name);
         else
-        {
             g_warning("invalid menu path item %s", name);
-        }
         path = path->next;
     }
 
     if (path)
-        g_string_append_printf(desc, "      <menuitem action='%s'/>", (gchar *)path->data);
+        g_string_append_printf(desc, "      <menuitem action='%s'/>",
+                               (gchar *)path->data);
 }
 
 static void layout_actions_setup_editors(LayoutWindow *lw)
 {
     GError *error;
     GList *editors_list;
-    GList *work;
-    GList *old_path;
     GString *desc;
 
     if (lw->ui_editors_id)
-    {
         gtk_ui_manager_remove_ui(lw->ui_manager, lw->ui_editors_id);
-    }
 
     if (lw->action_group_editors)
     {
@@ -2145,9 +1886,8 @@ static void layout_actions_setup_editors(LayoutWindow *lw)
 
     editors_list = editor_list_get();
 
-    old_path = NULL;
-    work = editors_list;
-    while (work)
+    GList *old_path = NULL;
+    for (GList *work = editors_list; work; work = work->next)
     {
         GList *path;
         EditorDescription *editor = work->data;
@@ -2159,9 +1899,7 @@ static void layout_actions_setup_editors(LayoutWindow *lw)
                                  G_CALLBACK(layout_menu_edit_cb) };
 
         if (editor->icon)
-        {
             entry.stock_id = editor->key;
-        }
         gtk_action_group_add_actions(lw->action_group_editors, &entry, 1, lw);
 
         path = layout_actions_editor_menu_path(editor);
@@ -2169,18 +1907,19 @@ static void layout_actions_setup_editors(LayoutWindow *lw)
 
         string_list_free(old_path);
         old_path = path;
-        work = work->next;
     }
 
     layout_actions_editor_add(desc, NULL, old_path);
     string_list_free(old_path);
 
-    g_string_append(desc,   "  </menubar>"
-                "</ui>" );
+    g_string_append(desc,
+                    "  </menubar>"
+                    "</ui>");
 
     error = NULL;
 
-    lw->ui_editors_id = gtk_ui_manager_add_ui_from_string(lw->ui_manager, desc->str, -1, &error);
+    lw->ui_editors_id = gtk_ui_manager_add_ui_from_string(lw->ui_manager, desc->str,
+                                                          -1, &error);
     if (!lw->ui_editors_id)
     {
         g_message("building menus failed: %s", error->message);
@@ -2203,30 +1942,30 @@ void layout_actions_setup(LayoutWindow *lw)
     gtk_action_group_set_translate_func(lw->action_group, menu_translate, NULL, NULL);
 
     gtk_action_group_add_actions(lw->action_group,
-                     menu_entries, G_N_ELEMENTS(menu_entries), lw);
-    gtk_action_group_add_toggle_actions(lw->action_group,
-                        menu_toggle_entries, G_N_ELEMENTS(menu_toggle_entries), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_radio_entries, G_N_ELEMENTS(menu_radio_entries),
-                       0, G_CALLBACK(layout_menu_list_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_split_radio_entries, G_N_ELEMENTS(menu_split_radio_entries),
-                       0, G_CALLBACK(layout_menu_split_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_view_dir_radio_entries, VIEW_DIR_TYPES_COUNT,
-                       0, G_CALLBACK(layout_menu_view_dir_as_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_color_radio_entries, COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS,
-                       0, G_CALLBACK(layout_color_menu_input_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_histogram_channel, G_N_ELEMENTS(menu_histogram_channel),
-                       0, G_CALLBACK(layout_menu_histogram_channel_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_histogram_mode, G_N_ELEMENTS(menu_histogram_mode),
-                       0, G_CALLBACK(layout_menu_histogram_mode_cb), lw);
-    gtk_action_group_add_radio_actions(lw->action_group,
-                       menu_stereo_mode_entries, G_N_ELEMENTS(menu_stereo_mode_entries),
-                       0, G_CALLBACK(layout_menu_stereo_mode_cb), lw);
+                                 menu_entries, G_N_ELEMENTS(menu_entries), lw);
+    gtk_action_group_add_toggle_actions(lw->action_group, menu_toggle_entries,
+                                        G_N_ELEMENTS(menu_toggle_entries), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_radio_entries,
+                                       G_N_ELEMENTS(menu_radio_entries), 0,
+                                       G_CALLBACK(layout_menu_list_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_split_radio_entries,
+                                       G_N_ELEMENTS(menu_split_radio_entries), 0,
+                                       G_CALLBACK(layout_menu_split_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_view_dir_radio_entries,
+                                       VIEW_DIR_TYPES_COUNT, 0,
+                                       G_CALLBACK(layout_menu_view_dir_as_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_color_radio_entries,
+                                       COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS, 0,
+                                       G_CALLBACK(layout_color_menu_input_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_histogram_channel,
+                                       G_N_ELEMENTS(menu_histogram_channel), 0,
+                                       G_CALLBACK(layout_menu_histogram_channel_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_histogram_mode,
+                                       G_N_ELEMENTS(menu_histogram_mode), 0,
+                                       G_CALLBACK(layout_menu_histogram_mode_cb), lw);
+    gtk_action_group_add_radio_actions(lw->action_group, menu_stereo_mode_entries,
+                                       G_N_ELEMENTS(menu_stereo_mode_entries), 0,
+                                       G_CALLBACK(layout_menu_stereo_mode_cb), lw);
 
 
     lw->ui_manager = gtk_ui_manager_new();
@@ -2256,8 +1995,8 @@ void layout_actions_setup(LayoutWindow *lw)
     DEBUG_1("%s layout_actions_setup: end", get_exec_time());
 }
 
-static gint layout_editors_reload_idle_id = -1;
-static GList *layout_editors_desktop_files = NULL;
+static gint layout_editors_reload_idle_id;
+static GList *layout_editors_desktop_files;
 
 static gboolean layout_editors_reload_idle_cb(gpointer data)
 {
@@ -2265,31 +2004,27 @@ static gboolean layout_editors_reload_idle_cb(gpointer data)
     {
         DEBUG_1("%s layout_editors_reload_idle_cb: get_desktop_files", get_exec_time());
         layout_editors_desktop_files = editor_get_desktop_files();
-        return TRUE;
     }
 
-    editor_read_desktop_file(layout_editors_desktop_files->data);
-    g_free(layout_editors_desktop_files->data);
-    layout_editors_desktop_files = g_list_delete_link(layout_editors_desktop_files, layout_editors_desktop_files);
-
+    if (layout_editors_desktop_files)
+    {
+        editor_read_desktop_file(layout_editors_desktop_files->data);
+        g_free(layout_editors_desktop_files->data);
+        layout_editors_desktop_files = g_list_delete_link(layout_editors_desktop_files,
+                                                          layout_editors_desktop_files);
+    }
 
     if (!layout_editors_desktop_files)
     {
-        GList *work;
         DEBUG_1("%s layout_editors_reload_idle_cb: setup_editors", get_exec_time());
         editor_table_finish();
 
-        work = layout_window_list;
-        while (work)
-        {
-            LayoutWindow *lw = work->data;
-            work = work->next;
-            layout_actions_setup_editors(lw);
-        }
+        for (GList *work = layout_window_list; work; work = work->next)
+            layout_actions_setup_editors((LayoutWindow *)work->data);
 
         DEBUG_1("%s layout_editors_reload_idle_cb: setup_editors done", get_exec_time());
 
-        layout_editors_reload_idle_id = -1;
+        layout_editors_reload_idle_id = 0;
         return FALSE;
     }
     return TRUE;
@@ -2299,11 +2034,8 @@ void layout_editors_reload_start(void)
 {
     DEBUG_1("%s layout_editors_reload_start", get_exec_time());
 
-    if (layout_editors_reload_idle_id != -1)
-    {
-        g_source_remove(layout_editors_reload_idle_id);
-        string_list_free(layout_editors_desktop_files);
-    }
+    g_clear_handle_id(&layout_editors_reload_idle_id, g_source_remove);
+    g_clear_pointer(&layout_editors_desktop_files, string_list_free);
 
     editor_table_clear();
     layout_editors_reload_idle_id = g_idle_add(layout_editors_reload_idle_cb, NULL);
@@ -2311,14 +2043,12 @@ void layout_editors_reload_start(void)
 
 void layout_editors_reload_finish(void)
 {
-    if (layout_editors_reload_idle_id != -1)
+    if (layout_editors_reload_idle_id)
     {
         DEBUG_1("%s layout_editors_reload_finish", get_exec_time());
         g_source_remove(layout_editors_reload_idle_id);
-        while (layout_editors_reload_idle_id != -1)
-        {
+        while (layout_editors_reload_idle_id)
             layout_editors_reload_idle_cb(NULL);
-        }
     }
 }
 
@@ -2387,16 +2117,8 @@ void layout_util_status_update_write(LayoutWindow *lw)
 
 void layout_util_status_update_write_all(void)
 {
-    GList *work;
-
-    work = layout_window_list;
-    while (work)
-    {
-        LayoutWindow *lw = work->data;
-        work = work->next;
-
-        layout_util_status_update_write(lw);
-    }
+    for (GList *work = layout_window_list; work; work = work->next)
+        layout_util_status_update_write((LayoutWindow *)work->data);
 }
 
 static gchar *layout_color_name_parse(const gchar *name)
@@ -2428,7 +2150,8 @@ void layout_util_sync_color(LayoutWindow *lw)
     if (layout_image_color_profile_get_status(lw, &image_profile, &screen_profile))
     {
         gchar *buf;
-        buf = g_strdup_printf(_("Image profile: %s\nScreen profile: %s"), image_profile, screen_profile);
+        buf = g_strdup_printf(_("Image profile: %s\nScreen profile: %s"),
+                              image_profile, screen_profile);
         g_object_set(G_OBJECT(action), "tooltip", buf, NULL);
         g_free(image_profile);
         g_free(screen_profile);
@@ -2436,12 +2159,16 @@ void layout_util_sync_color(LayoutWindow *lw)
     }
     else
     {
-        g_object_set(G_OBJECT(action), "tooltip", _("Click to enable color management"), NULL);
+        g_object_set(G_OBJECT(action),
+                     "tooltip", _("Click to enable color management"),
+                     NULL);
     }
 #else
     gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), FALSE);
     gtk_action_set_sensitive(action, FALSE);
-    g_object_set(G_OBJECT(action), "tooltip", _("Color profiles not supported"), NULL);
+    g_object_set(G_OBJECT(action),
+                 "tooltip", _("Color profiles not supported"),
+                 NULL);
 #endif
 
     action = gtk_action_group_get_action(lw->action_group, "UseImageProfile");
@@ -2457,10 +2184,10 @@ void layout_util_sync_color(LayoutWindow *lw)
         {
             const gchar *name = options->color_profile.input_name[i - COLOR_PROFILE_FILE];
             const gchar *file = options->color_profile.input_file[i - COLOR_PROFILE_FILE];
-            gchar *end;
-            gchar *buf;
+            gchar *end, *buf;
 
-            if (!name || !name[0]) name = filename_from_path(file);
+            if (!name || !*name)
+                name = filename_from_path(file);
 
             end = layout_color_name_parse(name);
             buf = g_strdup_printf(_("Input _%d: %s"), i, end);
@@ -2482,11 +2209,9 @@ void layout_util_sync_color(LayoutWindow *lw)
 
 void layout_util_sync_marks(LayoutWindow *lw)
 {
-    GtkAction *action;
-
     if (!lw->action_group) return;
 
-    action = gtk_action_group_get_action(lw->action_group, "ShowMarks");
+    GtkAction *action = gtk_action_group_get_action(lw->action_group, "ShowMarks");
     gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), lw->options.show_marks);
 }
 
@@ -2533,17 +2258,20 @@ static void layout_util_sync_views(LayoutWindow *lw)
     if (osd_flags & OSD_SHOW_HISTOGRAM)
     {
         action = gtk_action_group_get_action(lw->action_group, "HistogramChanR");
-        gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action), image_osd_histogram_get_channel(lw->image));
+        gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action),
+                                           image_osd_histogram_get_channel(lw->image));
 
         action = gtk_action_group_get_action(lw->action_group, "HistogramModeLin");
-        gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action), image_osd_histogram_get_mode(lw->image));
+        gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action),
+                                           image_osd_histogram_get_mode(lw->image));
     }
 
     action = gtk_action_group_get_action(lw->action_group, "ConnectZoomMenu");
     gtk_action_set_sensitive(action, lw->split_mode != SPLIT_NONE);
 
     action = gtk_action_group_get_action(lw->action_group, "StereoAuto");
-    gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action), layout_image_stereo_pixbuf_get(lw));
+    gtk_radio_action_set_current_value(GTK_RADIO_ACTION(action),
+                                       layout_image_stereo_pixbuf_get(lw));
 
     layout_util_sync_marks(lw);
     layout_util_sync_color(lw);
@@ -2557,7 +2285,9 @@ void layout_util_sync_thumb(LayoutWindow *lw)
 
     action = gtk_action_group_get_action(lw->action_group, "Thumbnails");
     gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), lw->options.show_thumbnails);
-    g_object_set(action, "sensitive", (lw->options.file_view_type == FILEVIEW_LIST), NULL);
+    g_object_set(action,
+                 "sensitive", (lw->options.file_view_type == FILEVIEW_LIST),
+                 NULL);
 }
 
 void layout_util_sync(LayoutWindow *lw)
@@ -2594,24 +2324,18 @@ static void layout_bar_destroyed(GtkWidget *widget, gpointer data)
 
 static void layout_bar_set_default(LayoutWindow *lw)
 {
-    GtkWidget *bar;
-
     if (!lw->utility_box) return;
 
-    bar = bar_new(lw);
+    GtkWidget *bar = bar_new(lw);
 
     layout_bar_set(lw, bar);
-
     bar_populate_default(bar);
 }
 
 static void layout_bar_close(LayoutWindow *lw)
 {
     if (lw->bar)
-    {
-        bar_close(lw->bar);
-        lw->bar = NULL;
-    }
+        g_clear_pointer(&lw->bar, bar_close);
 }
 
 
@@ -2625,7 +2349,7 @@ void layout_bar_set(LayoutWindow *lw, GtkWidget *bar)
     lw->bar = bar;
 
     g_signal_connect(G_OBJECT(lw->bar), "destroy",
-             G_CALLBACK(layout_bar_destroyed), lw);
+                     G_CALLBACK(layout_bar_destroyed), lw);
 
 
 //  gtk_box_pack_start(GTK_BOX(lw->utility_box), lw->bar, FALSE, FALSE, 0);
@@ -2644,9 +2368,7 @@ void layout_bar_toggle(LayoutWindow *lw)
     else
     {
         if (!lw->bar)
-        {
             layout_bar_set_default(lw);
-        }
         gtk_widget_show(lw->bar);
         bar_set_fd(lw->bar, layout_image_get_fd(lw));
     }
@@ -2678,7 +2400,6 @@ static void layout_bar_sort_destroyed(GtkWidget *widget, gpointer data)
     LayoutWindow *lw = data;
 
     lw->bar_sort = NULL;
-
 /*
     do not call layout_util_sync_views(lw) here
     this is called either when whole layout is destroyed - no need for update
@@ -2688,11 +2409,9 @@ static void layout_bar_sort_destroyed(GtkWidget *widget, gpointer data)
 
 static void layout_bar_sort_set_default(LayoutWindow *lw)
 {
-    GtkWidget *bar;
-
     if (!lw->utility_box) return;
 
-    bar = bar_sort_new_default(lw);
+    GtkWidget *bar = bar_sort_new_default(lw);
 
     layout_bar_sort_set(lw, bar);
 }
@@ -2700,10 +2419,7 @@ static void layout_bar_sort_set_default(LayoutWindow *lw)
 static void layout_bar_sort_close(LayoutWindow *lw)
 {
     if (lw->bar_sort)
-    {
-        bar_sort_close(lw->bar_sort);
-        lw->bar_sort = NULL;
-    }
+        g_clear_pointer(&lw->bar_sort, bar_sort_close);
 }
 
 void layout_bar_sort_set(LayoutWindow *lw, GtkWidget *bar)
@@ -2716,7 +2432,7 @@ void layout_bar_sort_set(LayoutWindow *lw, GtkWidget *bar)
     lw->bar_sort = bar;
 
     g_signal_connect(G_OBJECT(lw->bar_sort), "destroy",
-             G_CALLBACK(layout_bar_sort_destroyed), lw);
+                     G_CALLBACK(layout_bar_sort_destroyed), lw);
 
     gtk_box_pack_end(GTK_BOX(lw->utility_box), lw->bar_sort, FALSE, FALSE, 0);
 }
@@ -2730,9 +2446,7 @@ void layout_bar_sort_toggle(LayoutWindow *lw)
     else
     {
         if (!lw->bar_sort)
-        {
             layout_bar_sort_set_default(lw);
-        }
         gtk_widget_show(lw->bar_sort);
     }
     layout_util_sync_views(lw);
@@ -2742,7 +2456,8 @@ void layout_bars_new_image(LayoutWindow *lw)
 {
     layout_bar_new_image(lw);
 
-    if (lw->exif_window) advanced_exif_set_fd(lw->exif_window, layout_image_get_fd(lw));
+    if (lw->exif_window)
+        advanced_exif_set_fd(lw->exif_window, layout_image_get_fd(lw));
 
     /* this should be called here to handle the metadata edited in bars */
     if (options->metadata.confirm_on_image_change)
@@ -2756,7 +2471,9 @@ void layout_bars_new_selection(LayoutWindow *lw, gint count)
 
 GtkWidget *layout_bars_prepare(LayoutWindow *lw, GtkWidget *image)
 {
-    if (lw->utility_box) return lw->utility_box;
+    if (lw->utility_box)
+        return lw->utility_box;
+
     lw->utility_box = gtk_hbox_new(FALSE, PREF_PAD_GAP);
     lw->utility_paned = gtk_hpaned_new();
     gtk_box_pack_start(GTK_BOX(lw->utility_box), lw->utility_paned, TRUE, TRUE, 0);
@@ -2787,8 +2504,9 @@ void layout_exif_window_new(LayoutWindow *lw)
 
     lw->exif_window = advanced_exif_new();
     if (!lw->exif_window) return;
+
     g_signal_connect(G_OBJECT(lw->exif_window), "destroy",
-             G_CALLBACK(layout_exif_window_destroy), lw);
+                     G_CALLBACK(layout_exif_window_destroy), lw);
     advanced_exif_set_fd(lw->exif_window, layout_image_get_fd(lw));
 }
 
