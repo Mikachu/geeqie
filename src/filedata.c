@@ -2431,7 +2431,8 @@ static gint file_data_notify_sort(gconstpointer a, gconstpointer b)
     return 0;
 }
 
-gboolean file_data_register_notify_func(FileDataNotifyFunc func, gpointer data, NotifyPriority priority)
+gboolean file_data_register_notify_func(FileDataNotifyFunc func, gpointer data,
+                                        NotifyPriority priority)
 {
     NotifyData *nd;
 
