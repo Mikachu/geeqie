@@ -60,8 +60,8 @@ static void layout_image_set_buttons(LayoutWindow *lw);
 
 void layout_image_overlay_toggle(LayoutWindow *lw)
 {
-    if (!lw) return;
-    image_osd_toggle(lw->image);
+    if (lw)
+        image_osd_toggle(lw->image);
 }
 
 /*
@@ -102,8 +102,8 @@ void layout_image_full_screen_start(LayoutWindow *lw, gboolean force_same_region
     }
 
     lw->full_screen = fullscreen_start(lw->window, lw->image,
-                       lw->fs_page, force_same_region,
-                       layout_image_full_screen_stop_func, lw);
+                                       lw->fs_page, force_same_region,
+                                       layout_image_full_screen_stop_func, lw);
 
     if (lw->full_screen->same_region)
     {
@@ -125,15 +125,15 @@ void layout_image_full_screen_start(LayoutWindow *lw, gboolean force_same_region
     {
         /* multi-monitor: new window was created, wire up key handling as before */
         g_signal_connect(G_OBJECT(lw->full_screen->window), "key_press_event",
-                 G_CALLBACK(layout_key_press_cb), lw);
+                         G_CALLBACK(layout_key_press_cb), lw);
         layout_actions_add_window(lw, lw->full_screen->window);
     }
 }
 
 void layout_image_full_screen_stop(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return;
-    if (!lw->full_screen) return;
+    if (!layout_valid(&lw) ||
+        !lw->full_screen) return;
 
     if (lw->image == lw->full_screen->imd)
         image_osd_copy_status(lw->image, lw->full_screen->normal_imd);
@@ -144,21 +144,16 @@ void layout_image_full_screen_stop(LayoutWindow *lw)
 void layout_image_full_screen_toggle(LayoutWindow *lw)
 {
     if (!layout_valid(&lw)) return;
+
     if (lw->full_screen)
-    {
         layout_image_full_screen_stop(lw);
-    }
     else
-    {
         layout_image_full_screen_start(lw, FALSE);
-    }
 }
 
 gboolean layout_image_full_screen_active(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return (lw->full_screen != NULL);
+    return layout_valid(&lw) && lw->full_screen;
 }
 
 /*
@@ -181,6 +176,8 @@ static void layout_image_slideshow_stop_func(SlideShowData *ss, gpointer data)
 {
     LayoutWindow *lw = data;
 
+    /* if slideshow.c ends the slideshow behind our back, we NULL the pointer here,
+     * it's actually freed in slideshow_free */
     lw->slideshow = NULL;
     layout_status_update_info(lw, NULL);
     if (lw->action_group)
@@ -203,13 +200,13 @@ void layout_image_slideshow_start(LayoutWindow *lw)
     if (cd && info)
     {
         lw->slideshow = slideshow_start_from_collection(lw, NULL, cd,
-                layout_image_slideshow_stop_func, lw, info);
+                        layout_image_slideshow_stop_func, lw, info);
     }
     else
     {
         lw->slideshow = slideshow_start(lw,
-                layout_list_get_index(lw, layout_image_get_fd(lw)),
-                layout_image_slideshow_stop_func, lw);
+                        layout_list_get_index(lw, layout_image_get_fd(lw)),
+                        layout_image_slideshow_stop_func, lw);
     }
 
     layout_status_update_info(lw, NULL);
@@ -227,19 +224,17 @@ void layout_image_slideshow_start_from_list(LayoutWindow *lw, GList *list)
     }
 
     lw->slideshow = slideshow_start_from_filelist(lw, NULL, list,
-                               layout_image_slideshow_stop_func, lw);
+                    layout_image_slideshow_stop_func, lw);
 
     layout_status_update_info(lw, NULL);
 }
 
 void layout_image_slideshow_stop(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return;
+    if (!layout_valid(&lw) ||
+        !lw->slideshow) return;
 
-    if (!lw->slideshow) return;
-
-    slideshow_free(lw->slideshow);
-    /* the stop_func sets lw->slideshow to NULL for us */
+    g_clear_pointer(&lw->slideshow, slideshow_free);
 }
 
 void layout_image_slideshow_toggle(LayoutWindow *lw)
@@ -247,20 +242,14 @@ void layout_image_slideshow_toggle(LayoutWindow *lw)
     if (!layout_valid(&lw)) return;
 
     if (lw->slideshow)
-    {
         layout_image_slideshow_stop(lw);
-    }
     else
-    {
         layout_image_slideshow_start(lw);
-    }
 }
 
 gboolean layout_image_slideshow_active(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return (lw->slideshow != NULL);
+    return layout_valid(&lw) && lw->slideshow;
 }
 
 void layout_image_slideshow_pause_toggle(LayoutWindow *lw)
@@ -268,15 +257,12 @@ void layout_image_slideshow_pause_toggle(LayoutWindow *lw)
     if (!layout_valid(&lw)) return;
 
     slideshow_pause_toggle(lw->slideshow);
-
     layout_status_update_info(lw, NULL);
 }
 
 gboolean layout_image_slideshow_paused(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return (slideshow_paused(lw->slideshow));
+    return layout_valid(&lw) && slideshow_paused(lw->slideshow);
 }
 
 static gboolean layout_image_slideshow_continue_check(LayoutWindow *lw)
@@ -298,76 +284,56 @@ static gboolean layout_image_slideshow_continue_check(LayoutWindow *lw)
  *----------------------------------------------------------------------------
  */
 
-static void li_pop_menu_zoom_in_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_zoom_in_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_adjust(lw, get_zoom_increment(), FALSE);
 }
 
-static void li_pop_menu_zoom_out_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_zoom_out_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     layout_image_zoom_adjust(lw, -get_zoom_increment(), FALSE);
 }
 
-static void li_pop_menu_zoom_1_1_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_zoom_1_1_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 1.0, FALSE);
 }
 
-static void li_pop_menu_zoom_fit_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_zoom_fit_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_zoom_set(lw, 0.0, FALSE);
 }
 
-static void li_pop_menu_zoom_rect_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_zoom_rect_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     image_start_rectangle_zoom(lw->image);
 }
 
-static void li_pop_menu_edit_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_edit_cb(GtkWidget *widget, const gchar *key)
 {
-    LayoutWindow *lw;
-    const gchar *key = data;
-
-    lw = submenu_item_get_data(widget);
+    LayoutWindow *lw = submenu_item_get_data(widget);
 
     if (!editor_window_flag_set(key))
-    {
         layout_image_full_screen_stop(lw);
-    }
     file_util_start_editor_from_file(key, layout_image_get_fd(lw), lw->window);
 }
 
-static void li_pop_menu_wallpaper_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_wallpaper_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_to_root(lw);
 }
 
 static void li_pop_menu_alter_cb(GtkWidget *widget, gpointer data)
 {
-    LayoutWindow *lw = data;
     AlterType type;
-
-    lw = submenu_item_get_data(widget);
+    LayoutWindow *lw = submenu_item_get_data(widget);
     type = (AlterType)GPOINTER_TO_INT(data);
 
     image_alter_orientation(lw->image, type);
 }
 
-static void li_pop_menu_new_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_new_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     view_window_new(layout_image_get_fd(lw));
 }
 
@@ -382,126 +348,93 @@ static GtkWidget *li_pop_menu_click_parent(GtkWidget *widget, LayoutWindow *lw)
     parent = g_object_get_data(G_OBJECT(menu), "click_parent");
 
     if (!parent && lw->full_screen)
-    {
         parent = lw->full_screen->imd->widget;
-    }
 
     return parent;
 }
 
-static void li_pop_menu_copy_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_copy_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_copy(layout_image_get_fd(lw), NULL, NULL,
-               li_pop_menu_click_parent(widget, lw));
+                   li_pop_menu_click_parent(widget, lw));
 }
 
-static void li_pop_menu_copy_path_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_copy_path_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_copy_path_to_clipboard(layout_image_get_fd(lw));
 }
 
-static void li_pop_menu_copy_image_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_copy_image_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-    ImageWindow *imd = lw->image;
-
-    GdkPixbuf *pixbuf;
-    pixbuf = image_get_pixbuf(imd);
+    GdkPixbuf *pixbuf = image_get_pixbuf(lw->image);
     if (!pixbuf) return;
+
     gtk_clipboard_set_image(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), pixbuf);
 }
 
-static void li_pop_menu_move_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_move_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_move(layout_image_get_fd(lw), NULL, NULL,
-               li_pop_menu_click_parent(widget, lw));
+                   li_pop_menu_click_parent(widget, lw));
 }
 
-static void li_pop_menu_rename_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_rename_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_rename(layout_image_get_fd(lw), NULL,
-             li_pop_menu_click_parent(widget, lw));
+                     li_pop_menu_click_parent(widget, lw));
 }
 
-static void li_pop_menu_delete_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_delete_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     file_util_delete(layout_image_get_fd(lw), NULL,
-             li_pop_menu_click_parent(widget, lw));
+                     li_pop_menu_click_parent(widget, lw));
 }
 
-static void li_pop_menu_slide_start_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_slide_start_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_slideshow_start(lw);
 }
 
-static void li_pop_menu_slide_stop_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_slide_stop_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_slideshow_stop(lw);
 }
 
-static void li_pop_menu_slide_pause_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_slide_pause_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_slideshow_pause_toggle(lw);
 }
 
-static void li_pop_menu_full_screen_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_full_screen_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_image_full_screen_toggle(lw);
 }
 
-static void li_pop_menu_hide_cb(GtkWidget *widget, gpointer data)
+static void li_pop_menu_hide_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-
     layout_tools_hide_toggle(lw);
 }
 
-static void li_set_layout_path_cb(GtkWidget *widget, gpointer data)
+static void li_set_layout_path_cb(GtkWidget *widget, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
-    FileData *fd;
-
     if (!layout_valid(&lw)) return;
 
-    fd = layout_image_get_fd(lw);
+    FileData *fd = layout_image_get_fd(lw);
     if (fd) layout_set_fd(lw, fd);
 }
 
 static gboolean li_check_if_current_path(LayoutWindow *lw, const gchar *path)
 {
-    gchar *dirname;
-    gboolean ret;
-
     if (!path || !layout_valid(&lw) || !lw->dir_fd) return FALSE;
 
-    dirname = g_path_get_dirname(path);
-    ret = (strcmp(lw->dir_fd->path, dirname) == 0);
+    gchar *dirname = g_path_get_dirname(path);
+    gboolean ret = (strcmp(lw->dir_fd->path, dirname) == 0);
     g_free(dirname);
     return ret;
 }
 
-static void layout_image_popup_menu_destroy_cb(GtkWidget *widget, gpointer data)
+static void layout_image_popup_menu_destroy_cb(GtkWidget *widget, GList *editmenu_fd_list)
 {
-    GList *editmenu_fd_list = data;
-
     filelist_free(editmenu_fd_list);
 }
 
@@ -536,87 +469,101 @@ static GtkWidget *layout_image_pop_menu(LayoutWindow *lw)
 
     menu = popup_menu_short_lived();
 
-    menu_item_add_stock(menu, _("Zoom _in"), GTK_STOCK_ZOOM_IN, G_CALLBACK(li_pop_menu_zoom_in_cb), lw);
-    menu_item_add_stock(menu, _("Zoom _out"), GTK_STOCK_ZOOM_OUT, G_CALLBACK(li_pop_menu_zoom_out_cb), lw);
-    menu_item_add_stock(menu, _("Zoom _1:1"), GTK_STOCK_ZOOM_100, G_CALLBACK(li_pop_menu_zoom_1_1_cb), lw);
-    menu_item_add_stock(menu, _("Zoom to Rectangle"), GTK_STOCK_ZOOM_IN, G_CALLBACK(li_pop_menu_zoom_rect_cb), lw);
-    menu_item_add_stock(menu, _("Fit image to _window"), GTK_STOCK_ZOOM_FIT, G_CALLBACK(li_pop_menu_zoom_fit_cb), lw);
+    menu_item_add_stock(menu, _("Zoom _in"), GTK_STOCK_ZOOM_IN,
+                        G_CALLBACK(li_pop_menu_zoom_in_cb), lw);
+    menu_item_add_stock(menu, _("Zoom _out"), GTK_STOCK_ZOOM_OUT,
+                        G_CALLBACK(li_pop_menu_zoom_out_cb), lw);
+    menu_item_add_stock(menu, _("Zoom _1:1"), GTK_STOCK_ZOOM_100,
+                        G_CALLBACK(li_pop_menu_zoom_1_1_cb), lw);
+    menu_item_add_stock(menu, _("Zoom to Rectangle"), GTK_STOCK_ZOOM_IN,
+                        G_CALLBACK(li_pop_menu_zoom_rect_cb), lw);
+    menu_item_add_stock(menu, _("Fit image to _window"), GTK_STOCK_ZOOM_FIT,
+                        G_CALLBACK(li_pop_menu_zoom_fit_cb), lw);
     menu_item_add_divider(menu);
 
     editmenu_fd_list = layout_image_get_fd_list(lw);
     g_signal_connect(G_OBJECT(menu), "destroy",
-             G_CALLBACK(layout_image_popup_menu_destroy_cb), editmenu_fd_list);
-    submenu = submenu_add_edit(menu, &item, G_CALLBACK(li_pop_menu_edit_cb), lw, editmenu_fd_list);
+                     G_CALLBACK(layout_image_popup_menu_destroy_cb), editmenu_fd_list);
+    submenu = submenu_add_edit(menu, &item,
+                               G_CALLBACK(li_pop_menu_edit_cb), lw, editmenu_fd_list);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
     menu_item_add_divider(submenu);
-    menu_item_add(submenu, _("Set as _wallpaper"), G_CALLBACK(li_pop_menu_wallpaper_cb), lw);
+    menu_item_add(submenu, _("Set as _wallpaper"),
+                  G_CALLBACK(li_pop_menu_wallpaper_cb), lw);
 
     item = submenu_add_alter(menu, G_CALLBACK(li_pop_menu_alter_cb), lw);
 
-    item = menu_item_add_stock(menu, _("View in _new window"), GTK_STOCK_NEW, G_CALLBACK(li_pop_menu_new_cb), lw);
+    item = menu_item_add_stock(menu, _("View in _new window"), GTK_STOCK_NEW,
+                               G_CALLBACK(li_pop_menu_new_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
 
-    item = menu_item_add(menu, _("_Go to directory view"), G_CALLBACK(li_set_layout_path_cb), lw);
+    item = menu_item_add(menu, _("_Go to directory view"),
+                         G_CALLBACK(li_set_layout_path_cb), lw);
     if (!path || li_check_if_current_path(lw, path)) gtk_widget_set_sensitive(item, FALSE);
 
     menu_item_add_divider(menu);
 
-    item = menu_item_add_stock(menu, _("_Copy..."), GTK_STOCK_COPY, G_CALLBACK(li_pop_menu_copy_cb), lw);
+    item = menu_item_add_stock(menu, _("_Copy..."), GTK_STOCK_COPY,
+                               G_CALLBACK(li_pop_menu_copy_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
-    item = menu_item_add(menu, _("_Move..."), G_CALLBACK(li_pop_menu_move_cb), lw);
+    item = menu_item_add(menu, _("_Move..."),
+                         G_CALLBACK(li_pop_menu_move_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
-    item = menu_item_add(menu, _("_Rename..."), G_CALLBACK(li_pop_menu_rename_cb), lw);
+    item = menu_item_add(menu, _("_Rename..."),
+                         G_CALLBACK(li_pop_menu_rename_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
-    item = menu_item_add_stock(menu, _("_Delete..."), GTK_STOCK_DELETE, G_CALLBACK(li_pop_menu_delete_cb), lw);
+    item = menu_item_add_stock(menu, _("_Delete..."), GTK_STOCK_DELETE,
+                               G_CALLBACK(li_pop_menu_delete_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
 
-    item = menu_item_add(menu, _("Copy _image"), G_CALLBACK(li_pop_menu_copy_image_cb), lw);
+    item = menu_item_add(menu, _("Copy _image"),
+                         G_CALLBACK(li_pop_menu_copy_image_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
-    item = menu_item_add(menu, _("_Copy path"), G_CALLBACK(li_pop_menu_copy_path_cb), lw);
+    item = menu_item_add(menu, _("_Copy path"),
+                         G_CALLBACK(li_pop_menu_copy_path_cb), lw);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
 
     menu_item_add_divider(menu);
 
     if (layout_image_slideshow_active(lw))
     {
-        menu_item_add(menu, _("_Stop slideshow"), G_CALLBACK(li_pop_menu_slide_stop_cb), lw);
+        menu_item_add(menu, _("_Stop slideshow"),
+                      G_CALLBACK(li_pop_menu_slide_stop_cb), lw);
         if (layout_image_slideshow_paused(lw))
-        {
             item = menu_item_add(menu, _("Continue slides_how"),
-                         G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
-        }
+                                 G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
         else
-        {
             item = menu_item_add(menu, _("Pause slides_how"),
-                         G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
-        }
+                                 G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
     }
     else
     {
-        menu_item_add(menu, _("_Start slideshow"), G_CALLBACK(li_pop_menu_slide_start_cb), lw);
-        item = menu_item_add(menu, _("Pause slides_how"), G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
+        menu_item_add(menu, _("_Start slideshow"),
+                      G_CALLBACK(li_pop_menu_slide_start_cb), lw);
+        item = menu_item_add(menu, _("Pause slides_how"),
+                             G_CALLBACK(li_pop_menu_slide_pause_cb), lw);
         gtk_widget_set_sensitive(item, FALSE);
     }
 
     if (!fullscreen)
-    {
-        menu_item_add(menu, _("_Full screen"), G_CALLBACK(li_pop_menu_full_screen_cb), lw);
-    }
+        menu_item_add(menu, _("_Full screen"),
+                      G_CALLBACK(li_pop_menu_full_screen_cb), lw);
     else
-    {
-        menu_item_add(menu, _("Exit _full screen"), G_CALLBACK(li_pop_menu_full_screen_cb), lw);
-    }
+        menu_item_add(menu, _("Exit _full screen"),
+                      G_CALLBACK(li_pop_menu_full_screen_cb), lw);
 
     menu_item_add_divider(menu);
 
     item = menu_item_add_check(menu, _("Hide file _list"), lw->options.tools_hidden,
-                   G_CALLBACK(li_pop_menu_hide_cb), lw);
-    if (fullscreen) gtk_widget_set_sensitive(item, FALSE);
+                               G_CALLBACK(li_pop_menu_hide_cb), lw);
+    if (fullscreen)
+        gtk_widget_set_sensitive(item, FALSE);
 
     return menu;
 }
 
-static void layout_image_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+static void layout_image_menu_pos_cb(GtkMenu *menu, gint *x, gint *y,
+                                     gboolean *push_in, gpointer data)
 {
     LayoutWindow *lw = data;
 
@@ -629,7 +576,8 @@ void layout_image_menu_popup(LayoutWindow *lw, GdkEvent *event)
     GtkWidget *menu;
 
     menu = layout_image_pop_menu(lw);
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, layout_image_menu_pos_cb, lw, 0, event->key.time);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, layout_image_menu_pos_cb,
+                   lw, 0, event->key.time);
 }
 
 /*
@@ -639,25 +587,20 @@ void layout_image_menu_popup(LayoutWindow *lw, GdkEvent *event)
  */
 
 static void layout_image_dnd_receive(GtkWidget *widget, GdkDragContext *context,
-                     gint x, gint y,
-                     GtkSelectionData *selection_data, guint info,
-                     guint time, gpointer data)
+                                     gint x, gint y,
+                                     GtkSelectionData *selection_data, guint info,
+                                     guint time, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     gint i;
 
-
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i]->pr == widget)
             break;
-    }
     if (i < MAX_SPLIT_IMAGES)
     {
         DEBUG_1("dnd image activate %d", i);
         layout_image_activate(lw, i, FALSE);
     }
-
 
     if (info == TARGET_URI_LIST || info == TARGET_APP_COLLECTION_MEMBER)
     {
@@ -673,7 +616,9 @@ static void layout_image_dnd_receive(GtkWidget *widget, GdkDragContext *context,
         }
         else
         {
-            source = collection_from_dnd_data((gchar *)gtk_selection_data_get_data(selection_data), &list, &info_list);
+            source = collection_from_dnd_data(
+                     (gchar *)gtk_selection_data_get_data(selection_data),
+                     &list, &info_list);
         }
 
         if (list)
@@ -689,25 +634,17 @@ static void layout_image_dnd_receive(GtkWidget *widget, GdkDragContext *context,
                 base = remove_level_from_path(fd->path);
                 dir_fd = file_data_new_dir(base);
                 if (dir_fd != lw->dir_fd)
-                {
                     layout_set_fd(lw, dir_fd);
-                }
                 file_data_unref(dir_fd);
                 g_free(base);
 
                 row = layout_list_get_index(lw, fd);
                 if (source && info_list)
-                {
                     layout_image_set_collection(lw, source, info_list->data);
-                }
                 else if (row == -1)
-                {
                     layout_image_set_fd(lw, fd);
-                }
                 else
-                {
                     layout_image_set_index(lw, row);
-                }
             }
             else if (isdir(fd->path))
             {
@@ -722,19 +659,15 @@ static void layout_image_dnd_receive(GtkWidget *widget, GdkDragContext *context,
 }
 
 static void layout_image_dnd_get(GtkWidget *widget, GdkDragContext *context,
-                 GtkSelectionData *selection_data, guint info,
-                 guint time, gpointer data)
+                                 GtkSelectionData *selection_data, guint info,
+                                 guint time, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     FileData *fd;
     gint i;
 
-
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i]->pr == widget)
             break;
-    }
     if (i < MAX_SPLIT_IMAGES)
     {
         DEBUG_1("dnd get from %d", i);
@@ -745,22 +678,19 @@ static void layout_image_dnd_get(GtkWidget *widget, GdkDragContext *context,
 
     if (fd)
     {
-        GList *list;
-
-        list = g_list_append(NULL, fd);
+        GList *list = g_list_append(NULL, fd);
         uri_selection_data_set_uris_from_filelist(selection_data, list);
         g_list_free(list);
     }
     else
     {
         gtk_selection_data_set(selection_data, gtk_selection_data_get_target(selection_data),
-                       8, NULL, 0);
+                               8, NULL, 0);
     }
 }
 
-static void layout_image_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer data)
+static void layout_image_dnd_end(GtkWidget *widget, GdkDragContext *context, LayoutWindow *lw)
 {
-    LayoutWindow *lw = data;
     if (gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE)
     {
         FileData *fd;
@@ -773,13 +703,9 @@ static void layout_image_dnd_end(GtkWidget *widget, GdkDragContext *context, gpo
         if (!isfile(fd->path))
         {
             if ((guint) row < layout_list_count(lw, NULL) - 1)
-            {
                 layout_image_next(lw);
-            }
             else
-            {
                 layout_image_prev(lw);
-            }
         }
         layout_refresh(lw);
     }
@@ -790,19 +716,19 @@ static void layout_image_dnd_init(LayoutWindow *lw, gint i)
     ImageWindow *imd = lw->split_images[i];
 
     gtk_drag_source_set(imd->pr, GDK_BUTTON2_MASK,
-                dnd_file_drag_types, dnd_file_drag_types_count,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                        dnd_file_drag_types, dnd_file_drag_types_count,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(G_OBJECT(imd->pr), "drag_data_get",
-             G_CALLBACK(layout_image_dnd_get), lw);
+                     G_CALLBACK(layout_image_dnd_get), lw);
     g_signal_connect(G_OBJECT(imd->pr), "drag_end",
-             G_CALLBACK(layout_image_dnd_end), lw);
+                     G_CALLBACK(layout_image_dnd_end), lw);
 
     gtk_drag_dest_set(imd->pr,
-              GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP,
-              dnd_file_drop_types, dnd_file_drop_types_count,
-              GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                      GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP,
+                      dnd_file_drop_types, dnd_file_drop_types_count,
+                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(G_OBJECT(imd->pr), "drag_data_received",
-             G_CALLBACK(layout_image_dnd_receive), lw);
+                     G_CALLBACK(layout_image_dnd_receive), lw);
 }
 
 
@@ -832,9 +758,7 @@ void layout_image_scroll(LayoutWindow *lw, gint x, gint y, gboolean connect_scro
     image_scroll(lw->image, x, y);
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_scroll(lw->full_screen->imd, x, y);
-    }
 
     if (!connect_scroll) return;
 
@@ -848,8 +772,7 @@ void layout_image_scroll(LayoutWindow *lw, gint x, gint y, gboolean connect_scro
         {
             gdouble sx, sy;
             image_get_scroll_center(lw->split_images[i], &sx, &sy);
-            sx += dx;
-            sy += dy;
+            sx += dx; sy += dy;
             image_set_scroll_center(lw->split_images[i], sx, sy);
         }
     }
@@ -864,20 +787,17 @@ void layout_image_zoom_adjust(LayoutWindow *lw, gdouble increment, gboolean conn
     image_zoom_adjust(lw->image, increment);
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_zoom_adjust(lw->full_screen->imd, increment);
-    }
 
     if (!connect_zoom) return;
 
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i] != lw->image)
-            image_zoom_adjust(lw->split_images[i], increment); ;
-    }
+            image_zoom_adjust(lw->split_images[i], increment);
 }
 
-void layout_image_zoom_adjust_at_point(LayoutWindow *lw, gdouble increment, gint x, gint y, gboolean connect_zoom)
+void layout_image_zoom_adjust_at_point(LayoutWindow *lw, gdouble increment,
+                                       gint x, gint y, gboolean connect_zoom)
 {
     gint i;
     if (!layout_valid(&lw)) return;
@@ -885,17 +805,13 @@ void layout_image_zoom_adjust_at_point(LayoutWindow *lw, gdouble increment, gint
     image_zoom_adjust_at_point(lw->image, increment, x, y);
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_zoom_adjust_at_point(lw->full_screen->imd, increment, x, y);
-    }
 
     if (!connect_zoom) return;
 
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i] != lw->image)
             image_zoom_adjust_at_point(lw->split_images[i], increment, x, y);
-    }
 }
 
 void layout_image_zoom_set(LayoutWindow *lw, gdouble zoom, gboolean connect_zoom)
@@ -906,20 +822,17 @@ void layout_image_zoom_set(LayoutWindow *lw, gdouble zoom, gboolean connect_zoom
     image_zoom_set(lw->image, zoom);
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_zoom_set(lw->full_screen->imd, zoom);
-    }
 
     if (!connect_zoom) return;
 
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i] != lw->image)
             image_zoom_set(lw->split_images[i], zoom);
-    }
 }
 
-void layout_image_zoom_set_fill_geometry(LayoutWindow *lw, gboolean vertical, gboolean connect_zoom)
+void layout_image_zoom_set_fill_geometry(LayoutWindow *lw,
+                                         gboolean vertical, gboolean connect_zoom)
 {
     gint i;
     if (!layout_valid(&lw)) return;
@@ -927,109 +840,90 @@ void layout_image_zoom_set_fill_geometry(LayoutWindow *lw, gboolean vertical, gb
     image_zoom_set_fill_geometry(lw->image, vertical);
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-    {
         image_zoom_set_fill_geometry(lw->full_screen->imd, vertical);
-    }
 
     if (!connect_zoom) return;
 
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] && lw->split_images[i] != lw->image)
             image_zoom_set_fill_geometry(lw->split_images[i], vertical);
-    }
 }
 
 void layout_image_alter_orientation(LayoutWindow *lw, AlterType type)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_alter_orientation(lw->image, type);
+    if (layout_valid(&lw))
+        image_alter_orientation(lw->image, type);
 }
 
 void layout_image_set_desaturate(LayoutWindow *lw, gboolean desaturate)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_set_desaturate(lw->image, desaturate);
+    if (layout_valid(&lw))
+        image_set_desaturate(lw->image, desaturate);
 }
 
 gboolean layout_image_get_desaturate(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return image_get_desaturate(lw->image);
+    return layout_valid(&lw) && image_get_desaturate(lw->image);
 }
 
 /* stereo */
 /*
 gint layout_image_stereo_get(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return 0;
-
-    return image_stereo_get(lw->image);
+    return layout_valid(&lw) ? image_stereo_get(lw->image) : 0;
 }
 
 void layout_image_stereo_set(LayoutWindow *lw, gint stereo_mode)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_stereo_set(lw->image, stereo_mode);
+    if (layout_valid(&lw))
+        image_stereo_set(lw->image, stereo_mode);
 }
 void layout_image_stereo_swap(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_stereo_swap(lw->image);
+    if (layout_valid(&lw))
+        image_stereo_swap(lw->image);
 }
 */
 
 gint layout_image_stereo_pixbuf_get(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return 0;
-
-    return image_stereo_pixbuf_get(lw->image);
+    return layout_valid(&lw) ? image_stereo_pixbuf_get(lw->image) : 0;
 }
 
 void layout_image_stereo_pixbuf_set(LayoutWindow *lw, gint stereo_mode)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_stereo_pixbuf_set(lw->image, stereo_mode);
+    if (layout_valid(&lw))
+        image_stereo_pixbuf_set(lw->image, stereo_mode);
 }
 
 const gchar *layout_image_get_path(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return NULL;
-
-    return image_get_path(lw->image);
+    return layout_valid(&lw) ? image_get_path(lw->image) : NULL;
 }
 
 const gchar *layout_image_get_name(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return NULL;
-
-    return image_get_name(lw->image);
+    return layout_valid(&lw) ? image_get_name(lw->image) : NULL;
 }
 
 FileData *layout_image_get_fd(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return NULL;
-
-    return image_get_fd(lw->image);
+    return layout_valid(&lw) ? image_get_fd(lw->image) : NULL;
 }
 
 CollectionData *layout_image_get_collection(LayoutWindow *lw, CollectInfo **info)
 {
-    if (!layout_valid(&lw)) return NULL;
-
-    return image_get_collection(lw->image, info);
+    return layout_valid(&lw) ? image_get_collection(lw->image, info) : NULL;
 }
 
 gint layout_image_get_index(LayoutWindow *lw)
 {
-    FileData *fd = lw->image_pending_fd ? lw->image_pending_fd : image_get_fd(lw->image);
-    return layout_list_get_index(lw, fd);
+    if (layout_valid(&lw))
+    {
+        FileData *fd = lw->image_pending_fd ? lw->image_pending_fd : image_get_fd(lw->image);
+        return layout_list_get_index(lw, fd);
+    }
+    return -1;
 }
 
 /*
@@ -1041,16 +935,18 @@ gint layout_image_get_index(LayoutWindow *lw)
 static gboolean layout_image_load_idle_cb(LayoutWindow *lw)
 {
     FileData *fd = g_steal_pointer(&lw->image_pending_fd);
-
     lw->image_pending_idle_id = 0;
+
     image_chain_nav_done();
 
     image_change_fd(lw->image, fd, image_zoom_get_default(lw->image));
 
     if (lw->full_screen && lw->image != lw->full_screen->imd)
-        image_change_fd(lw->full_screen->imd, fd, image_zoom_get_default(lw->full_screen->imd));
+        image_change_fd(lw->full_screen->imd, fd,
+                        image_zoom_get_default(lw->full_screen->imd));
 
     file_data_unref(fd);
+
     return FALSE;
 }
 
@@ -1064,8 +960,8 @@ void layout_image_set_fd(LayoutWindow *lw, FileData *fd)
     layout_list_sync_fd(lw, fd);
 
     g_clear_handle_id(&lw->image_pending_idle_id, g_source_remove);
-    lw->image_pending_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
-    //lw->image_pending_idle_id = g_timeout_add_full(G_PRIORITY_HIGH_IDLE, 50, (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
+    lw->image_pending_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
+                                (GSourceFunc)layout_image_load_idle_cb, lw, NULL);
 
     if (fd)
         image_chain_append_end(fd->path);
@@ -1089,7 +985,8 @@ This should be handled at the caller: in vflist_select_image
     }
 */
     layout_image_set_fd(lw, fd);
-    if (options->image.enable_read_ahead) image_prebuffer_set(lw->image, read_ahead_fd);
+    if (options->image.enable_read_ahead)
+        image_prebuffer_set(lw->image, read_ahead_fd);
 }
 
 void layout_image_set_index(LayoutWindow *lw, gint index)
@@ -1103,32 +1000,26 @@ void layout_image_set_index(LayoutWindow *lw, gint index)
     old = layout_list_get_index(lw, layout_image_get_fd(lw));
     fd = layout_list_get_fd(lw, index);
 
-    if (old > index)
-    {
-        read_ahead_fd = layout_list_get_fd(lw, index - 1);
-    }
-    else
-    {
-        read_ahead_fd = layout_list_get_fd(lw, index + 1);
-    }
+    read_ahead_fd = layout_list_get_fd(lw, index + (old <= index ? 1 : -1));
 
     if (layout_selection_count(lw, 0) > 1)
     {
         GList *x = layout_selection_list_by_index(lw);
         GList *y;
-        GList *last;
 
-        for (last = y = x; y; y = y->next)
-            last = y;
         for (y = x; y && (GPOINTER_TO_INT(y->data)) != index; y = y->next)
             ;
 
         if (y)
         {
             gint newindex;
+            GList *last = g_list_last(x);
 
-            if ((index > old && (index != GPOINTER_TO_INT(last->data) || old != GPOINTER_TO_INT(x->data)))
-                || (old == GPOINTER_TO_INT(last->data) && index == GPOINTER_TO_INT(x->data)))
+            if ((index > old &&
+                 (index != GPOINTER_TO_INT(last->data) ||
+                  old != GPOINTER_TO_INT(x->data))) ||
+                (old == GPOINTER_TO_INT(last->data) &&
+                 index == GPOINTER_TO_INT(x->data)))
             {
                 if (y->next)
                     newindex = GPOINTER_TO_INT(y->next->data);
@@ -1145,19 +1036,21 @@ void layout_image_set_index(LayoutWindow *lw, gint index)
 
             read_ahead_fd = layout_list_get_fd(lw, newindex);
         }
-
-        while (x)
-            x = g_list_remove(x, x->data);
+        g_list_free(x);
     }
 
     layout_image_set_with_ahead(lw, fd, read_ahead_fd);
 }
 
-static void layout_image_set_collection_real(LayoutWindow *lw, CollectionData *cd, CollectInfo *info, gboolean forward)
+static void layout_image_set_collection_real(LayoutWindow *lw,
+                                             CollectionData *cd,
+                                             CollectInfo *info,
+                                             gboolean forward)
 {
     if (!layout_valid(&lw)) return;
 
-    image_change_from_collection(lw->image, cd, info, image_zoom_get_default(lw->image));
+    image_change_from_collection(lw->image, cd, info,
+                                 image_zoom_get_default(lw->image));
     if (options->image.enable_read_ahead)
     {
         CollectInfo *r_info;
@@ -1198,42 +1091,38 @@ void layout_image_refresh(LayoutWindow *lw)
 }
 
 void layout_image_color_profile_set(LayoutWindow *lw,
-                    gint input_type,
-                    gboolean use_image)
+                                    gint input_type,
+                                    gboolean use_image)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_color_profile_set(lw->image, input_type, use_image);
+    if (layout_valid(&lw))
+        image_color_profile_set(lw->image, input_type, use_image);
 }
 
 gboolean layout_image_color_profile_get(LayoutWindow *lw,
-                        gint *input_type,
-                        gboolean *use_image)
+                                        gint *input_type,
+                                        gboolean *use_image)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return image_color_profile_get(lw->image, input_type, use_image);
+    return layout_valid(&lw) &&
+           image_color_profile_get(lw->image, input_type, use_image);
 }
 
 void layout_image_color_profile_set_use(LayoutWindow *lw, gboolean enable)
 {
-    if (!layout_valid(&lw)) return;
-
-    image_color_profile_set_use(lw->image, enable);
+    if (layout_valid(&lw))
+        image_color_profile_set_use(lw->image, enable);
 }
 
 gboolean layout_image_color_profile_get_use(LayoutWindow *lw)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return image_color_profile_get_use(lw->image);
+    return layout_valid(&lw) && image_color_profile_get_use(lw->image);
 }
 
-gboolean layout_image_color_profile_get_status(LayoutWindow *lw, gchar **image_profile, gchar **screen_profile)
+gboolean layout_image_color_profile_get_status(LayoutWindow *lw,
+                                               gchar **image_profile,
+                                               gchar **screen_profile)
 {
-    if (!layout_valid(&lw)) return FALSE;
-
-    return image_color_profile_get_status(lw->image, image_profile, screen_profile);
+    return layout_valid(&lw) &&
+           image_color_profile_get_status(lw->image, image_profile, screen_profile);
 }
 
 /*
@@ -1271,8 +1160,7 @@ void layout_image_next(LayoutWindow *lw)
             else
                 layout_image_set_index(lw, GPOINTER_TO_INT(x->data));
         }
-        while (x)
-            x = g_list_remove(x, x->data);
+        g_list_free(x);
         if (y) /* not dereferenced */
             return;
     }
@@ -1283,13 +1171,9 @@ void layout_image_next(LayoutWindow *lw)
     {
         info = collection_next_by_info(cd, info);
         if (info)
-        {
             layout_image_set_collection_real(lw, cd, info, TRUE);
-        }
         else
-        {
             image_osd_icon(lw->image, IMAGE_OSD_LAST, -1);
-        }
         return;
     }
 
@@ -1298,13 +1182,9 @@ void layout_image_next(LayoutWindow *lw)
     if (current >= 0)
     {
         if ((guint) current < layout_list_count(lw, NULL) - 1)
-        {
             layout_image_set_index(lw, current + 1);
-        }
         else
-        {
             image_osd_icon(lw->image, IMAGE_OSD_LAST, -1);
-        }
     }
     else
     {
@@ -1331,10 +1211,7 @@ void layout_image_prev(LayoutWindow *lw)
         GList *x = layout_selection_list_by_index(lw);
         gint old = layout_list_get_index(lw, layout_image_get_fd(lw));
         GList *y;
-        GList *last;
 
-        for (last = y = x; y; y = y->next)
-            last = y;
         for (y = x; y && (GPOINTER_TO_INT(y->data)) != old; y = y->next)
             ;
         if (y)
@@ -1342,7 +1219,10 @@ void layout_image_prev(LayoutWindow *lw)
             if (y->prev)
                 layout_image_set_index(lw, GPOINTER_TO_INT(y->prev->data));
             else
+            {
+                GList *last = g_list_last(x);
                 layout_image_set_index(lw, GPOINTER_TO_INT(last->data));
+            }
         }
         while (x)
             x = g_list_remove(x, x->data);
@@ -1356,13 +1236,9 @@ void layout_image_prev(LayoutWindow *lw)
     {
         info = collection_prev_by_info(cd, info);
         if (info)
-        {
             layout_image_set_collection_real(lw, cd, info, FALSE);
-        }
         else
-        {
             image_osd_icon(lw->image, IMAGE_OSD_FIRST, -1);
-        }
         return;
     }
 
@@ -1371,13 +1247,9 @@ void layout_image_prev(LayoutWindow *lw)
     if (current >= 0)
     {
         if (current > 0)
-        {
             layout_image_set_index(lw, current - 1);
-        }
         else
-        {
             image_osd_icon(lw->image, IMAGE_OSD_FIRST, -1);
-        }
     }
     else
     {
@@ -1405,9 +1277,7 @@ void layout_image_first(LayoutWindow *lw)
 
     current = layout_image_get_index(lw);
     if (current != 0 && layout_list_count(lw, NULL) > 0)
-    {
         layout_image_set_index(lw, 0);
-    }
 }
 
 void layout_image_last(LayoutWindow *lw)
@@ -1432,9 +1302,7 @@ void layout_image_last(LayoutWindow *lw)
     current = layout_image_get_index(lw);
     count = layout_list_count(lw, NULL);
     if (current != count - 1 && count > 0)
-    {
         layout_image_set_index(lw, count - 1);
-    }
 }
 
 /* multi-image / page navigation */
@@ -1484,14 +1352,10 @@ static gint image_idx(LayoutWindow *lw, ImageWindow *imd)
     gint i;
 
     for (i = 0; i < MAX_SPLIT_IMAGES; i++)
-    {
         if (lw->split_images[i] == imd)
             break;
-    }
     if (i < MAX_SPLIT_IMAGES)
-    {
         return i;
-    }
     return -1;
 }
 
@@ -1508,13 +1372,13 @@ static void layout_image_focus_in_cb(ImageWindow *imd, gpointer data)
     }
 }
 
-static gboolean layout_image_mouse_binding_activate(LayoutWindow *lw, guint button, GdkModifierType state)
+static gboolean layout_image_mouse_binding_activate(LayoutWindow *lw,
+                                                    guint button,
+                                                    GdkModifierType state)
 {
-    GList *work;
-
     if (!lw->action_group) return FALSE;
 
-    for (work = options->mouse_bindings; work; work = work->next)
+    for (GList *work = options->mouse_bindings; work; work = work->next)
     {
         MouseBinding *mb = work->data;
         GtkAction *action;
@@ -1540,7 +1404,6 @@ static gboolean layout_image_mouse_binding_dispatch(LayoutWindow *lw, GdkEventBu
 static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
 {
     LayoutWindow *lw = data;
-    GtkWidget *menu;
 
     if (layout_image_mouse_binding_dispatch(lw, event)) return;
 
@@ -1555,13 +1418,14 @@ static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpoi
                 layout_image_prev(lw);
             break;
         case MOUSE_BUTTON_RIGHT:
-            menu = layout_image_pop_menu(lw);
+        {
+            GtkWidget *menu = layout_image_pop_menu(lw);
             if (imd == lw->image)
-            {
                 g_object_set_data(G_OBJECT(menu), "click_parent", imd->widget);
-            }
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event,
+                           event, event->button, event->time);
             break;
+        }
         default:
             break;
     }
@@ -1571,14 +1435,10 @@ static guint layout_image_scroll_direction_to_button(GdkScrollDirection directio
 {
     switch (direction)
     {
-        case GDK_SCROLL_UP:
-            return MOUSE_BUTTON_WHEEL_UP;
-        case GDK_SCROLL_DOWN:
-            return MOUSE_BUTTON_WHEEL_DOWN;
-        case GDK_SCROLL_LEFT:
-            return MOUSE_BUTTON_WHEEL_LEFT;
-        case GDK_SCROLL_RIGHT:
-            return MOUSE_BUTTON_WHEEL_RIGHT;
+        case GDK_SCROLL_UP:    return MOUSE_BUTTON_WHEEL_UP;
+        case GDK_SCROLL_DOWN:  return MOUSE_BUTTON_WHEEL_DOWN;
+        case GDK_SCROLL_LEFT:  return MOUSE_BUTTON_WHEEL_LEFT;
+        case GDK_SCROLL_RIGHT: return MOUSE_BUTTON_WHEEL_RIGHT;
         default:
             return 0;
     }
@@ -1596,7 +1456,8 @@ static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpoi
         layout_image_activate(lw, i, FALSE);
     }
 
-    if (layout_image_mouse_binding_activate(lw, layout_image_scroll_direction_to_button(event->direction), event->state))
+    guint button = layout_image_scroll_direction_to_button(event->direction);
+    if (layout_image_mouse_binding_activate(lw, button, event->state))
         return;
 
     if (event->state & GDK_CONTROL_MASK)
@@ -1604,10 +1465,14 @@ static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpoi
         switch (event->direction)
         {
             case GDK_SCROLL_UP:
-                layout_image_zoom_adjust_at_point(lw, get_zoom_increment(), event->x, event->y, event->state & GDK_SHIFT_MASK);
+                layout_image_zoom_adjust_at_point(lw, get_zoom_increment(),
+                                                  event->x, event->y,
+                                                  event->state & GDK_SHIFT_MASK);
                 break;
             case GDK_SCROLL_DOWN:
-                layout_image_zoom_adjust_at_point(lw, -get_zoom_increment(), event->x, event->y, event->state & GDK_SHIFT_MASK);
+                layout_image_zoom_adjust_at_point(lw, -get_zoom_increment(),
+                                                  event->x, event->y,
+                                                  event->state & GDK_SHIFT_MASK);
                 break;
             default:
                 break;
@@ -1617,18 +1482,10 @@ static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpoi
     {
         switch (event->direction)
         {
-            case GDK_SCROLL_UP:
-                image_scroll(imd, 0, -MOUSEWHEEL_SCROLL_SIZE);
-                break;
-            case GDK_SCROLL_DOWN:
-                image_scroll(imd, 0, MOUSEWHEEL_SCROLL_SIZE);
-                break;
-            case GDK_SCROLL_LEFT:
-                image_scroll(imd, -MOUSEWHEEL_SCROLL_SIZE, 0);
-                break;
-            case GDK_SCROLL_RIGHT:
-                image_scroll(imd, MOUSEWHEEL_SCROLL_SIZE, 0);
-                break;
+            case GDK_SCROLL_UP:    image_scroll(imd, 0, -MOUSEWHEEL_SCROLL_SIZE); break;
+            case GDK_SCROLL_DOWN:  image_scroll(imd, 0,  MOUSEWHEEL_SCROLL_SIZE); break;
+            case GDK_SCROLL_LEFT:  image_scroll(imd, -MOUSEWHEEL_SCROLL_SIZE, 0); break;
+            case GDK_SCROLL_RIGHT: image_scroll(imd,  MOUSEWHEEL_SCROLL_SIZE, 0); break;
             default:
                 break;
         }
@@ -1637,25 +1494,22 @@ static void layout_image_scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpoi
     {
         switch (event->direction)
         {
-            case GDK_SCROLL_UP:
-                layout_image_prev(lw);
-                break;
-            case GDK_SCROLL_DOWN:
-                layout_image_next(lw);
-                break;
+            case GDK_SCROLL_UP:   layout_image_prev(lw); break;
+            case GDK_SCROLL_DOWN: layout_image_next(lw); break;
             default:
                 break;
         }
     }
 }
 
-static void layout_image_drag_cb(ImageWindow *imd, GdkEventMotion *event, gdouble dx, gdouble dy, gpointer data)
+static void layout_image_drag_cb(ImageWindow *imd, GdkEventMotion *event,
+                                 gdouble dx, gdouble dy, gpointer data)
 {
-    gint i;
     LayoutWindow *lw = data;
     gdouble sx, sy;
 
-    if (lw->full_screen && lw->image != lw->full_screen->imd &&
+    if (lw->full_screen &&
+        lw->image != lw->full_screen->imd &&
         imd != lw->full_screen->imd)
     {
         if (event->state & GDK_CONTROL_MASK)
@@ -1665,19 +1519,17 @@ static void layout_image_drag_cb(ImageWindow *imd, GdkEventMotion *event, gdoubl
         else
         {
             image_get_scroll_center(lw->full_screen->imd, &sx, &sy);
-            sx += dx;
-            sy += dy;
+            sx += dx; sy += dy;
         }
         image_set_scroll_center(lw->full_screen->imd, sx, sy);
     }
 
     if (!(event->state & GDK_SHIFT_MASK)) return;
 
-    for (i = 0; i < MAX_SPLIT_IMAGES; i++)
+    for (gint i = 0; i < MAX_SPLIT_IMAGES; i++)
     {
         if (lw->split_images[i] && lw->split_images[i] != imd)
         {
-
             if (event->state & GDK_CONTROL_MASK)
             {
                 image_get_scroll_center(imd, &sx, &sy);
@@ -1685,18 +1537,18 @@ static void layout_image_drag_cb(ImageWindow *imd, GdkEventMotion *event, gdoubl
             else
             {
                 image_get_scroll_center(lw->split_images[i], &sx, &sy);
-                sx += dx;
-                sy += dy;
+                sx += dx; sy += dy;
             }
             image_set_scroll_center(lw->split_images[i], sx, sy);
         }
     }
 }
 
-static void layout_image_button_inactive_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
+static void layout_image_button_inactive_cb(ImageWindow *imd,
+                                            GdkEventButton *event,
+                                            gpointer data)
 {
     LayoutWindow *lw = data;
-    GtkWidget *menu;
     gint i = image_idx(lw, imd);
 
     if (i != -1)
@@ -1707,12 +1559,12 @@ static void layout_image_button_inactive_cb(ImageWindow *imd, GdkEventButton *ev
     switch (event->button)
     {
         case MOUSE_BUTTON_RIGHT:
-            menu = layout_image_pop_menu(lw);
+            GtkWidget *menu = layout_image_pop_menu(lw);
             if (imd == lw->image)
-            {
-                g_object_set_data(G_OBJECT(menu), "click_parent", imd->widget);
-            }
-            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, event, event->button, event->time);
+                g_object_set_data(G_OBJECT(menu),
+                                  "click_parent", imd->widget);
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event,
+                           event, event->button, event->time);
             break;
         default:
             break;
@@ -1720,15 +1572,14 @@ static void layout_image_button_inactive_cb(ImageWindow *imd, GdkEventButton *ev
 
 }
 
-static void layout_image_drag_inactive_cb(ImageWindow *imd, GdkEventMotion *event, gdouble dx, gdouble dy, gpointer data)
+static void layout_image_drag_inactive_cb(ImageWindow *imd, GdkEventMotion *event,
+                                          gdouble dx, gdouble dy, gpointer data)
 {
     LayoutWindow *lw = data;
     gint i = image_idx(lw, imd);
 
     if (i != -1)
-    {
         layout_image_activate(lw, i, FALSE);
-    }
 
     /* continue as with active image */
     layout_image_drag_cb(imd, event, dx, dy, data);
@@ -1750,14 +1601,7 @@ static void layout_image_set_buttons_inactive(LayoutWindow *lw, gint i)
 /* Returns the length of an integer */
 static gint num_length(gint num)
 {
-    gint len = 0;
-    if (num < 0) num = -num;
-    while (num)
-    {
-        num /= 10;
-        len++;
-    }
-    return len;
+    return snprintf(NULL, 0, "%d", num);
 }
 
 void layout_status_update_pixel_cb(PixbufRenderer *pr, gpointer data)
@@ -1768,32 +1612,31 @@ void layout_status_update_pixel_cb(PixbufRenderer *pr, gpointer data)
     gchar *text;
     PangoAttrList *attrs;
 
-    if (!data || !layout_valid(&lw) || !lw->image
-        || !lw->options.show_info_pixel || lw->image->unknown) return;
+    if (!data || !layout_valid(&lw) || !lw->image ||
+        !lw->options.show_info_pixel || lw->image->unknown) return;
 
     pixbuf_renderer_get_image_size(pr, &width, &height);
     if (width < 1 || height < 1) return;
 
     pixbuf_renderer_get_mouse_position(pr, &x_pixel, &y_pixel);
 
-    if(x_pixel >= 0 && y_pixel >= 0)
+    if (x_pixel >= 0 && y_pixel >= 0)
     {
         gint r_mouse, g_mouse, b_mouse;
 
         pixbuf_renderer_get_pixel_colors(pr, x_pixel, y_pixel,
-                         &r_mouse, &g_mouse, &b_mouse);
+                                         &r_mouse, &g_mouse, &b_mouse);
 
         text = g_strdup_printf(_("[%*d,%*d]: RGB(%3d,%3d,%3d)"),
-                     num_length(width - 1), x_pixel,
-                     num_length(height - 1), y_pixel,
-                     r_mouse, g_mouse, b_mouse);
-
+                               num_length(width - 1), x_pixel,
+                               num_length(height - 1), y_pixel,
+                               r_mouse, g_mouse, b_mouse);
     }
     else
     {
         text = g_strdup_printf(_("[%*s,%*s]: RGB(---,---,---)"),
-                     num_length(width - 1), " ",
-                     num_length(height - 1), " ");
+                               num_length(width - 1), " ",
+                               num_length(height - 1), " ");
     }
 
     attrs = pango_attr_list_new();
@@ -1819,7 +1662,8 @@ static void layout_image_update_cb(ImageWindow *imd, gpointer data)
 
 GtkWidget *layout_image_new(LayoutWindow *lw, gint i)
 {
-    if (!lw->split_image_sizegroup) lw->split_image_sizegroup = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
+    if (!lw->split_image_sizegroup)
+        lw->split_image_sizegroup = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
 
     if (!lw->split_images[i])
     {
@@ -1828,7 +1672,7 @@ GtkWidget *layout_image_new(LayoutWindow *lw, gint i)
         g_object_ref(lw->split_images[i]->widget);
 
         g_signal_connect(G_OBJECT(lw->split_images[i]->pr), "update-pixel",
-                 G_CALLBACK(layout_status_update_pixel_cb), lw);
+                         G_CALLBACK(layout_status_update_pixel_cb), lw);
 
         image_background_set_color_from_options(lw->split_images[i], FALSE);
 
@@ -1836,23 +1680,22 @@ GtkWidget *layout_image_new(LayoutWindow *lw, gint i)
 
         layout_image_dnd_init(lw, i);
         image_color_profile_set(lw->split_images[i],
-                    options->color_profile.input_type,
-                    options->color_profile.use_image);
+                                options->color_profile.input_type,
+                                options->color_profile.use_image);
         image_color_profile_set_use(lw->split_images[i], options->color_profile.enabled);
 
         gtk_size_group_add_widget(lw->split_image_sizegroup, lw->split_images[i]->widget);
         gtk_widget_set_size_request(lw->split_images[i]->widget, IMAGE_MIN_WIDTH, -1);
 
         image_set_focus_in_func(lw->split_images[i], layout_image_focus_in_cb, lw);
-
     }
-
     return lw->split_images[i]->widget;
 }
 
 void layout_image_deactivate(LayoutWindow *lw, gint i)
 {
     if (!lw->split_images[i]) return;
+
     image_set_update_func(lw->split_images[i], NULL, NULL);
     layout_image_set_buttons_inactive(lw, i);
     image_set_drag_func(lw->split_images[i], layout_image_drag_inactive_cb, lw);
@@ -1864,8 +1707,6 @@ void layout_image_deactivate(LayoutWindow *lw, gint i)
 /* force should be set after change of lw->split_mode */
 void layout_image_activate(LayoutWindow *lw, gint i, gboolean force)
 {
-    FileData *fd;
-
     if (!lw->split_images[i]) return;
     if (!force && lw->active_split_image == i) return;
 
@@ -1887,7 +1728,7 @@ void layout_image_activate(LayoutWindow *lw, gint i, gboolean force)
        another image option */
     image_select(lw->split_images[i], lw->split_mode != SPLIT_NONE);
 
-    fd = image_get_fd(lw->image);
+    FileData *fd = image_get_fd(lw->image);
 
     if (fd)
     {
@@ -1900,10 +1741,10 @@ void layout_image_activate(LayoutWindow *lw, gint i, gboolean force)
 
 static void layout_image_setup_split_common(LayoutWindow *lw, gint n)
 {
-    gboolean frame = (n > 1) || (!lw->options.tools_float && !lw->options.tools_hidden);
-    gint i;
-
-    for (i = 0; i < n; i++)
+    gboolean frame = (n > 1) ||
+                     (!lw->options.tools_float &&
+                      !lw->options.tools_hidden);
+    for (gint i = 0; i < n; i++)
         if (!lw->split_images[i])
         {
             FileData *img_fd = NULL;
@@ -1914,26 +1755,21 @@ static void layout_image_setup_split_common(LayoutWindow *lw, gint n)
             image_set_selectable(lw->split_images[i], (n > 1));
 
             if (lw->image)
-            {
                 image_osd_copy_status(lw->image, lw->split_images[i]);
-            }
 
             if (layout_selection_count(lw, 0) > 1)
             {
                 GList *work = g_list_last(layout_selection_list(lw));
                 gint j = 0;
 
-                if (work) work = work->prev;
+                if (work)
+                    for (work = work->prev; work && j < i; work = work->prev, j++)
+                    {
+                        FileData *fd = work->data;
 
-                while (work && j < i)
-                {
-                    FileData *fd = work->data;
-                    work = work->prev;
-
-                    j++;
-                    if (!fd || !*fd->path) continue;
-                    img_fd = fd;
-                }
+                        if (!fd || !*fd->path) continue;
+                        img_fd = fd;
+                    }
             }
 
             if (!img_fd && lw->image)
@@ -1957,52 +1793,39 @@ static void layout_image_setup_split_common(LayoutWindow *lw, gint n)
             image_set_selectable(lw->split_images[i], (n > 1));
         }
 
-    for (i = n; i < MAX_SPLIT_IMAGES; i++)
-    {
+    for (gint i = n; i < MAX_SPLIT_IMAGES; i++)
         if (lw->split_images[i])
         {
             g_object_unref(lw->split_images[i]->widget);
             lw->split_images[i] = NULL;
         }
-    }
 
     if (!lw->image || lw->active_split_image < 0 || lw->active_split_image >= n)
-    {
         layout_image_activate(lw, 0, TRUE);
-    }
     else
-    {
         /* this will draw the frame around selected image (image_select)
            on switch from single to split images */
         layout_image_activate(lw, lw->active_split_image, TRUE);
-    }
 }
 
 GtkWidget *layout_image_setup_split_none(LayoutWindow *lw)
 {
     lw->split_mode = SPLIT_NONE;
-
     layout_image_setup_split_common(lw, 1);
-
     lw->split_image_widget = lw->split_images[0]->widget;
 
     return lw->split_image_widget;
 }
 
-
 GtkWidget *layout_image_setup_split_hv(LayoutWindow *lw, gboolean horizontal)
 {
     GtkWidget *paned;
 
-    lw->split_mode = horizontal ? SPLIT_HOR : SPLIT_VERT;
+    lw->split_mode = horizontal ? SPLIT_HORZ : SPLIT_VERT;
 
     layout_image_setup_split_common(lw, 2);
 
-    /* horizontal split means vpaned and vice versa */
-    if (horizontal)
-        paned = gtk_vpaned_new();
-    else
-        paned = gtk_hpaned_new();
+    paned = horizontal ? gtk_vpaned_new() : gtk_hpaned_new();
 
     gtk_paned_pack1(GTK_PANED(paned), lw->split_images[0]->widget, TRUE, TRUE);
     gtk_paned_pack2(GTK_PANED(paned), lw->split_images[1]->widget, TRUE, TRUE);
@@ -2013,7 +1836,6 @@ GtkWidget *layout_image_setup_split_hv(LayoutWindow *lw, gboolean horizontal)
     lw->split_image_widget = paned;
 
     return lw->split_image_widget;
-
 }
 
 GtkWidget *layout_image_setup_split_quad(LayoutWindow *lw)
@@ -2049,22 +1871,17 @@ GtkWidget *layout_image_setup_split_quad(LayoutWindow *lw)
     lw->split_image_widget = hpaned;
 
     return lw->split_image_widget;
-
 }
 
 GtkWidget *layout_image_setup_split(LayoutWindow *lw, ImageSplitMode mode)
 {
     switch (mode)
     {
-        case SPLIT_HOR:
-            return layout_image_setup_split_hv(lw, TRUE);
-        case SPLIT_VERT:
-            return layout_image_setup_split_hv(lw, FALSE);
-        case SPLIT_QUAD:
-            return layout_image_setup_split_quad(lw);
+        case SPLIT_HORZ: return layout_image_setup_split_hv(lw, TRUE);
+        case SPLIT_VERT: return layout_image_setup_split_hv(lw, FALSE);
+        case SPLIT_QUAD: return layout_image_setup_split_quad(lw);
         case SPLIT_NONE:
-        default:
-            return layout_image_setup_split_none(lw);
+        default:         return layout_image_setup_split_none(lw);
     }
 }
 
@@ -2078,9 +1895,7 @@ GtkWidget *layout_image_setup_split(LayoutWindow *lw, ImageSplitMode mode)
 static void layout_image_maint_renamed(LayoutWindow *lw, FileData *fd)
 {
     if (fd == layout_image_get_fd(lw))
-    {
         image_set_fd(lw->image, fd);
-    }
 }
 
 static void layout_image_maint_removed(LayoutWindow *lw, FileData *fd)
@@ -2105,12 +1920,10 @@ static void layout_image_maint_removed(LayoutWindow *lw, FileData *fd)
             }
             layout_image_set_fd(lw, NULL);
         }
-
         /* the image will be set to the next image from the list soon,
            setting it to NULL here is not necessary*/
     }
 }
-
 
 void layout_image_notify_cb(FileData *fd, NotifyType type, gpointer data)
 {

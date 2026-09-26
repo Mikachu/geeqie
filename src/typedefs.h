@@ -99,7 +99,7 @@ typedef enum {
 typedef enum {
     SPLIT_NONE = 0,
     SPLIT_VERT,
-    SPLIT_HOR,
+    SPLIT_HORZ,
     SPLIT_QUAD,
 } ImageSplitMode;
 
