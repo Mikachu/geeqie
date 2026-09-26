@@ -138,29 +138,29 @@ struct _SearchData
     GtkWidget *menu_comment;
     GtkWidget *entry_comment;
 
-    FileData *search_dir_fd;
+    FileData  *search_dir_fd;
     gboolean   search_path_recurse;
-    gchar *search_name;
-    GRegex *search_name_regex;
+    gchar     *search_name;
+    GRegex    *search_name_regex;
     gboolean   search_name_match_case;
-    gint64 search_size;
-    gint64 search_size_end;
-    gint   search_date_y;
-    gint   search_date_m;
-    gint   search_date_d;
-    gint   search_date_end_y;
-    gint   search_date_end_m;
-    gint   search_date_end_d;
-    gint   search_width;
-    gint   search_height;
-    gint   search_width_end;
-    gint   search_height_end;
-    gint   search_similarity;
-    gchar *search_similarity_path;
+    gint64     search_size;
+    gint64     search_size_end;
+    gint       search_date_y;
+    gint       search_date_m;
+    gint       search_date_d;
+    gint       search_date_end_y;
+    gint       search_date_end_m;
+    gint       search_date_end_d;
+    gint       search_width;
+    gint       search_height;
+    gint       search_width_end;
+    gint       search_height_end;
+    gint       search_similarity;
+    gchar     *search_similarity_path;
     CacheData *search_similarity_cd;
-    GList *search_keyword_list;
-    gchar *search_comment;
-    GRegex *search_comment_regex;
+    GList     *search_keyword_list;
+    gchar     *search_comment;
+    GRegex    *search_comment_regex;
     gboolean   search_comment_match_case;
 
     MatchType search_type;
@@ -198,8 +198,8 @@ struct _SearchData
     FileData *click_fd;
 
     ThumbLoader *thumb_loader;
-    gboolean thumb_enable;
-    FileData *thumb_fd;
+    gboolean     thumb_enable;
+    FileData    *thumb_fd;
 };
 
 typedef struct _MatchFileData MatchFileData;
@@ -220,15 +220,15 @@ static const PrefComboItem text_search_menu_path[] = {
 
 static const PrefComboItem text_search_menu_name[] = {
     { N_("contains"),   SEARCH_MATCH_CONTAINS },
-    { N_("is"),     SEARCH_MATCH_EQUAL },
+    { N_("is"),         SEARCH_MATCH_EQUAL },
     { NULL, 0 }
 };
 
 static const PrefComboItem text_search_menu_size[] = {
-    { N_("equal to"),   SEARCH_MATCH_EQUAL },
-    { N_("less than"),  SEARCH_MATCH_UNDER },
+    { N_("equal to"),       SEARCH_MATCH_EQUAL },
+    { N_("less than"),      SEARCH_MATCH_UNDER },
     { N_("greater than"),   SEARCH_MATCH_OVER },
-    { N_("between"),    SEARCH_MATCH_BETWEEN },
+    { N_("between"),        SEARCH_MATCH_BETWEEN },
     { NULL, 0 }
 };
 
@@ -261,8 +261,8 @@ static gint search_result_count(SearchData *sd, gint64 *bytes);
 
 static void search_window_close(SearchData *sd);
 
-static void search_notify_cb(FileData *fd, NotifyType type, gpointer data);
-static void search_start_cb(GtkWidget *widget, gpointer data);
+static void search_notify_cb(FileData *fd, NotifyType type, SearchData *sd);
+static void search_start_cb(GtkWidget *widget, SearchData *sd);
 
 /*
  *-------------------------------------------------------------------
@@ -274,12 +274,12 @@ static time_t convert_dmy_to_time(gint day, gint month, gint year)
 {
     struct tm lt;
 
-    lt.tm_sec = 0;
-    lt.tm_min = 0;
-    lt.tm_hour = 0;
-    lt.tm_mday = day;
-    lt.tm_mon = month - 1;
-    lt.tm_year = year - 1900;
+    lt.tm_sec   = 0;
+    lt.tm_min   = 0;
+    lt.tm_hour  = 0;
+    lt.tm_mday  = day;
+    lt.tm_mon   = month - 1;
+    lt.tm_year  = year - 1900;
     lt.tm_isdst = 0;
 
     return mktime(&lt);
@@ -334,7 +334,7 @@ static void search_progress_update(SearchData *sd, gboolean search, gdouble thum
         buf = g_strdup_printf("%s(%d / %d)", message, sd->search_count, sd->search_total);
         gtk_progress_bar_set_text(GTK_PROGRESS_BAR(sd->label_progress), buf);
         gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(sd->label_progress),
-                          (thumbs >= 0.0) ? thumbs : 0.0);
+                                      (thumbs >= 0.0) ? thumbs : 0.0);
         g_free(buf);
     }
     else
@@ -376,13 +376,12 @@ static gboolean search_result_row_selected(SearchData *sd, FileData *fd)
     GtkTreeModel *store;
     GtkTreeSelection *selection;
     GList *slist;
-    GList *work;
     gboolean found = FALSE;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->result_view));
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
-    work = slist;
-    while (!found && work)
+
+    for (GList *work = slist; work; work = work->next)
     {
         GtkTreePath *tpath = work->data;
         MatchFileData *mfd_n;
@@ -390,8 +389,11 @@ static gboolean search_result_row_selected(SearchData *sd, FileData *fd)
 
         gtk_tree_model_get_iter(store, &iter, tpath);
         gtk_tree_model_get(store, &iter, SEARCH_COLUMN_POINTER, &mfd_n, -1);
-        if (mfd_n->fd == fd) found = TRUE;
-        work = work->next;
+        if (mfd_n->fd == fd)
+        {
+            found = TRUE;
+            break;
+        }
     }
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
@@ -404,7 +406,6 @@ static gint search_result_selection_util(SearchData *sd, gint64 *bytes, GList **
     GtkTreeModel *store;
     GtkTreeSelection *selection;
     GList *slist;
-    GList *work;
     gint n = 0;
     gint64 total = 0;
     GList *plist = NULL;
@@ -412,8 +413,8 @@ static gint search_result_selection_util(SearchData *sd, gint64 *bytes, GList **
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(sd->result_view));
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->result_view));
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
-    work = slist;
-    while (work)
+
+    for (GList *work = slist; work; work = work->next)
     {
         n++;
 
@@ -429,8 +430,6 @@ static gint search_result_selection_util(SearchData *sd, gint64 *bytes, GList **
 
             if (list) plist = g_list_prepend(plist, file_data_ref(mfd->fd));
         }
-
-        work = work->next;
     }
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
@@ -514,21 +513,22 @@ static void search_result_append(SearchData *sd, MatchFileData *mfd)
     if (!fd) return;
 
     text_size = text_from_size(fd->size);
-    if (mfd->width > 0 && mfd->height > 0) text_dim = g_strdup_printf("%d x %d", mfd->width, mfd->height);
+    if (mfd->width > 0 && mfd->height > 0)
+        text_dim = g_strdup_printf("%d x %d", mfd->width, mfd->height);
     text_time = text_from_time(fd->dat.tv_sec);
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(sd->result_view)));
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
-                SEARCH_COLUMN_POINTER, mfd,
-                SEARCH_COLUMN_RANK, mfd->rank,
-                SEARCH_COLUMN_THUMB, fd->thumb_pixbuf,
-                SEARCH_COLUMN_NAME, fd->name,
-                SEARCH_COLUMN_SIZE, text_size,
-                SEARCH_COLUMN_DATE, text_time,
-                SEARCH_COLUMN_DIMENSIONS, text_dim,
-                SEARCH_COLUMN_PATH, fd->path,
-                -1);
+                       SEARCH_COLUMN_POINTER,    mfd,
+                       SEARCH_COLUMN_RANK,       mfd->rank,
+                       SEARCH_COLUMN_THUMB,      fd->thumb_pixbuf,
+                       SEARCH_COLUMN_NAME,       fd->name,
+                       SEARCH_COLUMN_SIZE,       text_size,
+                       SEARCH_COLUMN_DATE,       text_time,
+                       SEARCH_COLUMN_DIMENSIONS, text_dim,
+                       SEARCH_COLUMN_PATH,       fd->path,
+                       -1);
 
     g_free(text_time);
     g_free(text_size);
@@ -562,7 +562,7 @@ static GList *search_result_refine_list(SearchData *sd)
 }
 
 static gboolean search_result_free_node(GtkTreeModel *store, GtkTreePath *tpath,
-                    GtkTreeIter *iter, gpointer data)
+                                        GtkTreeIter *iter, gpointer data)
 {
     MatchFileData *mfd;
 
@@ -583,10 +583,8 @@ static void search_result_clear(SearchData *sd)
     gtk_list_store_clear(store);
 
     sd->click_fd = NULL;
-
-    thumb_loader_free(sd->thumb_loader);
-    sd->thumb_loader = NULL;
     sd->thumb_fd = NULL;
+    g_clear_pointer(&sd->thumb_loader, thumb_loader_free);
 
     search_status_update(sd);
 }
@@ -637,33 +635,25 @@ static void search_result_remove_selection(SearchData *sd)
     GtkTreeModel *store;
     GList *slist;
     GList *flist = NULL;
-    GList *work;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->result_view));
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
-    work = slist;
-    while (work)
+
+    for (GList *work = slist; work; work = work->next)
     {
-        GtkTreePath *tpath = work->data;
         GtkTreeIter iter;
         MatchFileData *mfd;
 
-        gtk_tree_model_get_iter(store, &iter, tpath);
+        gtk_tree_model_get_iter(store, &iter, (GtkTreePath *)work->data);
         gtk_tree_model_get(store, &iter, SEARCH_COLUMN_POINTER, &mfd, -1);
         flist = g_list_prepend(flist, mfd->fd);
-        work = work->next;
     }
     g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
     g_list_free(slist);
 
-    work = flist;
-    while (work)
-    {
-        FileData *fd = work->data;
-        work = work->next;
+    for (GList *work = flist; work; work = work->next)
+        search_result_remove(sd, (FileData *)work->data);
 
-        search_result_remove(sd, fd);
-    }
     g_list_free(flist);
 
     search_status_update(sd);
@@ -671,7 +661,8 @@ static void search_result_remove_selection(SearchData *sd)
 
 static void search_result_edit_selected(SearchData *sd, const gchar *key)
 {
-    file_util_start_editor_from_filelist(key, search_result_selection_list(sd), NULL, sd->window);
+    file_util_start_editor_from_filelist(key, search_result_selection_list(sd),
+                                         NULL, sd->window);
 }
 
 static void search_result_collection_from_selection(SearchData *sd)
@@ -700,15 +691,15 @@ static void search_result_update_idle_cancel(SearchData *sd)
     g_clear_handle_id(&sd->update_idle_id, g_source_remove);
 }
 
-static gboolean search_result_select_cb(GtkTreeSelection *selection, GtkTreeModel *store,
-                    GtkTreePath *tpath, gboolean selected, gpointer data)
+static gboolean search_result_select_cb(GtkTreeSelection *selection,
+                                        GtkTreeModel *store,
+                                        GtkTreePath *tpath,
+                                        gboolean selected, gpointer data)
 {
     SearchData *sd = data;
 
     if (!sd->update_idle_id)
-    {
         sd->update_idle_id = g_idle_add(search_result_update_idle_cb, sd);
-    }
 
     return TRUE;
 }
@@ -729,11 +720,11 @@ static void search_result_thumb_set(SearchData *sd, FileData *fd, GtkTreeIter *i
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(sd->result_view)));
     if (!iter)
-    {
-        if (search_result_find_row(sd, fd, &iter_n) >= 0) iter = &iter_n;
-    }
+        if (search_result_find_row(sd, fd, &iter_n) >= 0)
+            iter = &iter_n;
 
-    if (iter) gtk_list_store_set(store, iter, SEARCH_COLUMN_THUMB, fd->thumb_pixbuf, -1);
+    if (iter)
+        gtk_list_store_set(store, iter, SEARCH_COLUMN_THUMB, fd->thumb_pixbuf, -1);
 }
 
 static void search_result_thumb_do(SearchData *sd)
@@ -769,7 +760,9 @@ static void search_result_thumb_step(SearchData *sd)
     {
         while (valid)
         {
-            gtk_list_store_set(GTK_LIST_STORE(store), &iter, SEARCH_COLUMN_THUMB, NULL, -1);
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter,
+                               SEARCH_COLUMN_THUMB, NULL,
+                               -1);
             valid = gtk_tree_model_iter_next(store, &iter);
         }
         return;
@@ -780,25 +773,29 @@ static void search_result_thumb_step(SearchData *sd)
         GdkPixbuf *pixbuf;
 
         length++;
-        gtk_tree_model_get(store, &iter, SEARCH_COLUMN_POINTER, &mfd, SEARCH_COLUMN_THUMB, &pixbuf, -1);
+        gtk_tree_model_get(store, &iter,
+                           SEARCH_COLUMN_POINTER, &mfd,
+                           SEARCH_COLUMN_THUMB, &pixbuf,
+                           -1);
         if (pixbuf || mfd->fd->thumb_pixbuf)
         {
-            if (!pixbuf) gtk_list_store_set(GTK_LIST_STORE(store), &iter, SEARCH_COLUMN_THUMB, mfd->fd->thumb_pixbuf, -1);
+            if (!pixbuf)
+                gtk_list_store_set(GTK_LIST_STORE(store), &iter,
+                                   SEARCH_COLUMN_THUMB, mfd->fd->thumb_pixbuf,
+                                   -1);
             row++;
             mfd = NULL;
         }
         valid = gtk_tree_model_iter_next(store, &iter);
     }
     if (valid)
-    {
-        while (gtk_tree_model_iter_next(store, &iter)) length++;
-    }
+        while (gtk_tree_model_iter_next(store, &iter))
+            length++;
 
     if (!mfd)
     {
         sd->thumb_fd = NULL;
-        thumb_loader_free(sd->thumb_loader);
-        sd->thumb_loader = NULL;
+        g_clear_pointer(&sd->thumb_loader, thumb_loader_free);
 
         search_progress_update(sd, TRUE, -1.0);
         return;
@@ -808,13 +805,13 @@ static void search_result_thumb_step(SearchData *sd)
 
     sd->thumb_fd = mfd->fd;
     thumb_loader_free(sd->thumb_loader);
-    sd->thumb_loader = thumb_loader_new(options->thumbnails.max_width, options->thumbnails.max_height);
+    sd->thumb_loader = thumb_loader_new(options->thumbnails.max_width,
+                                        options->thumbnails.max_height);
 
     thumb_loader_set_callbacks(sd->thumb_loader,
-                   search_result_thumb_done_cb,
-                   search_result_thumb_done_cb,
-                   NULL,
-                   sd);
+                               search_result_thumb_done_cb,
+                               search_result_thumb_done_cb,
+                               NULL, sd);
     if (!thumb_loader_start(sd->thumb_loader, mfd->fd))
     {
         search_result_thumb_do(sd);
@@ -828,17 +825,22 @@ static void search_result_thumb_height(SearchData *sd)
     GtkCellRenderer *cell;
     GList *list;
 
-    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view), SEARCH_COLUMN_THUMB - 1);
+    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view),
+                                      SEARCH_COLUMN_THUMB - 1);
     if (!column) return;
 
-    gtk_tree_view_column_set_fixed_width(column, (sd->thumb_enable) ? options->thumbnails.max_width : 4);
+    gtk_tree_view_column_set_fixed_width(column, sd->thumb_enable
+                                                 ? options->thumbnails.max_width : 4);
 
     list = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(column));
     if (!list) return;
     cell = list->data;
     g_list_free(list);
 
-    g_object_set(G_OBJECT(cell), "height", (sd->thumb_enable) ? options->thumbnails.max_height : -1, NULL);
+    g_object_set(G_OBJECT(cell),
+                 "height", sd->thumb_enable
+                           ? options->thumbnails.max_height : -1,
+                 NULL);
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(sd->result_view));
 }
 
@@ -859,7 +861,9 @@ static void search_result_thumb_enable(SearchData *sd, gboolean enable)
         valid = gtk_tree_model_get_iter_first(store, &iter);
         while (valid)
         {
-            gtk_list_store_set(GTK_LIST_STORE(store), &iter, SEARCH_COLUMN_THUMB, NULL, -1);
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter,
+                               SEARCH_COLUMN_THUMB, NULL,
+                               -1);
             valid = gtk_tree_model_iter_next(store, &iter);
         }
         search_progress_update(sd, TRUE, -1.0);
@@ -868,7 +872,11 @@ static void search_result_thumb_enable(SearchData *sd, gboolean enable)
     sd->thumb_enable = enable;
 
     search_result_thumb_height(sd);
-    if (!sd->search_folder_list && !sd->search_file_list) search_result_thumb_step(sd);
+    if (!sd->search_folder_list &&
+        !sd->search_file_list)
+    {
+        search_result_thumb_step(sd);
+    }
 }
 
 /*
@@ -877,35 +885,29 @@ static void search_result_thumb_enable(SearchData *sd, gboolean enable)
  *-------------------------------------------------------------------
  */
 
-static void sr_menu_view_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_view_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
-    if (sd->click_fd) layout_set_fd(NULL, sd->click_fd);
+    if (sd->click_fd)
+        layout_set_fd(NULL, sd->click_fd);
 }
 
-static void sr_menu_viewnew_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_viewnew_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-    GList *list;
-
-    list = search_result_selection_list(sd);
+    GList *list = search_result_selection_list(sd);
     view_window_new_from_list(list);
     filelist_free(list);
 }
 
-static void sr_menu_select_all_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_select_all_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
     GtkTreeSelection *selection;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->result_view));
     gtk_tree_selection_select_all(selection);
 }
 
-static void sr_menu_select_none_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_select_none_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
     GtkTreeSelection *selection;
 
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->result_view));
@@ -923,67 +925,49 @@ static void sr_menu_edit_cb(GtkWidget *widget, gpointer data)
     search_result_edit_selected(sd, key);
 }
 
-static void sr_menu_collection_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_collection_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_result_collection_from_selection(sd);
 }
 
-static void sr_menu_print_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_print_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     print_window_new(sd->click_fd, search_result_selection_list(sd),
-             search_result_get_filelist(sd), sd->window);
+                     search_result_get_filelist(sd), sd->window);
 }
 
-static void sr_menu_copy_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_copy_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     file_util_copy(NULL, search_result_selection_list(sd), NULL, sd->window);
 }
 
-static void sr_menu_move_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_move_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     file_util_move(NULL, search_result_selection_list(sd), NULL, sd->window);
 }
 
-static void sr_menu_rename_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_rename_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     file_util_rename(NULL, search_result_selection_list(sd), sd->window);
 }
 
-static void sr_menu_delete_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_delete_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     file_util_delete(NULL, search_result_selection_list(sd), sd->window);
 }
 
-static void sr_menu_copy_path_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_copy_path_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     file_util_copy_path_list_to_clipboard(search_result_selection_list(sd));
 }
 
-static void sr_menu_remove_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_remove_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_result_remove_selection(sd);
 }
 
-static void sr_menu_clear_cb(GtkWidget *widget, gpointer data)
+static void sr_menu_clear_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_result_clear(sd);
 }
 
@@ -994,55 +978,62 @@ static void search_result_menu_destroy_cb(GtkWidget *widget, gpointer data)
     filelist_free(editmenu_fd_list);
 }
 
-static GtkWidget *search_result_menu(SearchData *sd, gboolean on_row, gboolean empty)
+static GtkWidget *search_result_menu(SearchData *sd, gboolean on_row)
 {
     GtkWidget *menu;
     GtkWidget *item;
     GList *editmenu_fd_list;
+    GtkTreeModel *store = gtk_tree_view_get_model(GTK_TREE_VIEW(sd->result_view));
+    GtkTreeIter iter;
+    gboolean nonempty = gtk_tree_model_get_iter_first(store, &iter);
 
     menu = popup_menu_short_lived();
 
     menu_item_add_sensitive(menu, _("_View"), on_row,
-                G_CALLBACK(sr_menu_view_cb), sd);
+                            G_CALLBACK(sr_menu_view_cb), sd);
     menu_item_add_stock_sensitive(menu, _("View in _new window"), GTK_STOCK_NEW, on_row,
-                      G_CALLBACK(sr_menu_viewnew_cb), sd);
+                                  G_CALLBACK(sr_menu_viewnew_cb), sd);
     menu_item_add_divider(menu);
-    menu_item_add_sensitive(menu, _("Select all"), !empty,
-                G_CALLBACK(sr_menu_select_all_cb), sd);
-    menu_item_add_sensitive(menu, _("Select none"), !empty,
-                G_CALLBACK(sr_menu_select_none_cb), sd);
+
+    menu_item_add_sensitive(menu, _("Select all"), nonempty,
+                            G_CALLBACK(sr_menu_select_all_cb), sd);
+    menu_item_add_sensitive(menu, _("Select none"), nonempty,
+                            G_CALLBACK(sr_menu_select_none_cb), sd);
     menu_item_add_divider(menu);
 
     editmenu_fd_list = search_result_selection_list(sd);
     g_signal_connect(G_OBJECT(menu), "destroy",
-             G_CALLBACK(search_result_menu_destroy_cb), editmenu_fd_list);
+                     G_CALLBACK(search_result_menu_destroy_cb), editmenu_fd_list);
     submenu_add_edit(menu, &item, G_CALLBACK(sr_menu_edit_cb), sd, editmenu_fd_list);
     if (!on_row) gtk_widget_set_sensitive(item, FALSE);
     menu_item_add_stock_sensitive(menu, _("Add to new collection"), GTK_STOCK_INDEX, on_row,
-                      G_CALLBACK(sr_menu_collection_cb), sd);
+                                  G_CALLBACK(sr_menu_collection_cb), sd);
     menu_item_add_stock_sensitive(menu, _("Print..."), GTK_STOCK_PRINT, on_row,
-                      G_CALLBACK(sr_menu_print_cb), sd);
+                                  G_CALLBACK(sr_menu_print_cb), sd);
     menu_item_add_divider(menu);
+
     menu_item_add_stock_sensitive(menu, _("_Copy..."), GTK_STOCK_COPY, on_row,
-                      G_CALLBACK(sr_menu_copy_cb), sd);
+                                  G_CALLBACK(sr_menu_copy_cb), sd);
     menu_item_add_sensitive(menu, _("_Move..."), on_row,
-                G_CALLBACK(sr_menu_move_cb), sd);
+                            G_CALLBACK(sr_menu_move_cb), sd);
     menu_item_add_sensitive(menu, _("_Rename..."), on_row,
-                G_CALLBACK(sr_menu_rename_cb), sd);
+                            G_CALLBACK(sr_menu_rename_cb), sd);
     menu_item_add_stock_sensitive(menu, _("_Delete..."), GTK_STOCK_DELETE, on_row,
-                      G_CALLBACK(sr_menu_delete_cb), sd);
+                                  G_CALLBACK(sr_menu_delete_cb), sd);
     menu_item_add_sensitive(menu, _("_Copy path"), on_row,
-                G_CALLBACK(sr_menu_copy_path_cb), sd);
+                            G_CALLBACK(sr_menu_copy_path_cb), sd);
     menu_item_add_divider(menu);
+
     menu_item_add_stock_sensitive(menu, _("Rem_ove"), GTK_STOCK_REMOVE, on_row,
-                      G_CALLBACK(sr_menu_remove_cb), sd);
-    menu_item_add_stock_sensitive(menu, _("C_lear"), GTK_STOCK_CLEAR, !empty,
-                      G_CALLBACK(sr_menu_clear_cb), sd);
+                                  G_CALLBACK(sr_menu_remove_cb), sd);
+    menu_item_add_stock_sensitive(menu, _("C_lear"), GTK_STOCK_CLEAR, nonempty,
+                                  G_CALLBACK(sr_menu_clear_cb), sd);
 
     return menu;
 }
 
-static void search_result_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+static void search_result_menu_pos_cb(GtkMenu *menu, gint *x, gint *y,
+                                      gboolean *push_in, gpointer data)
 {
     SearchData *sd = data;
     GtkTreePath *tpath;
@@ -1052,7 +1043,7 @@ static void search_result_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean 
     if (!tpath) return;
 
     tree_view_get_cell_clamped(GTK_TREE_VIEW(sd->result_view), tpath,
-                   SEARCH_COLUMN_NAME - 1, TRUE, &cx, &cy, &cw, &ch);
+                               SEARCH_COLUMN_NAME - 1, TRUE, &cx, &cy, &cw, &ch);
     gtk_tree_path_free(tpath);
     cy += ch;
     popup_menu_position_clamp(menu, &cx, &cy, 0);
@@ -1066,9 +1057,9 @@ static void search_result_menu_pos_cb(GtkMenu *menu, gint *x, gint *y, gboolean 
  *-------------------------------------------------------------------
  */
 
-static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
+static gboolean search_result_press_cb(GtkWidget *widget,
+                                       GdkEventButton *bevent, SearchData *sd)
 {
-    SearchData *sd = data;
     GtkTreeModel *store;
     GtkTreePath *tpath;
     GtkTreeIter iter;
@@ -1077,7 +1068,7 @@ static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 
     if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), bevent->x, bevent->y,
-                      &tpath, NULL, NULL, NULL))
+                                      &tpath, NULL, NULL, NULL))
     {
         gtk_tree_model_get_iter(store, &iter, tpath);
         gtk_tree_model_get(store, &iter, SEARCH_COLUMN_POINTER, &mfd, -1);
@@ -1090,18 +1081,21 @@ static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent
     {
         GtkWidget *menu;
 
-        menu = search_result_menu(sd, (mfd != NULL), (search_result_count(sd, NULL) == 0));
-        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event, bevent, bevent->button, bevent->time);
+        menu = search_result_menu(sd, mfd != NULL);
+        gtk_menu_popup(GTK_MENU(menu), NULL, NULL, popup_menu_at_event,
+                       bevent, bevent->button, bevent->time);
     }
 
     if (!mfd) return FALSE;
 
-    if (bevent->button == MOUSE_BUTTON_LEFT && bevent->type == GDK_2BUTTON_PRESS)
+    if (bevent->button == MOUSE_BUTTON_LEFT &&
+        bevent->type   == GDK_2BUTTON_PRESS)
     {
         layout_set_fd(NULL, mfd->fd);
     }
 
-    if (bevent->button == MOUSE_BUTTON_MIDDLE) return TRUE;
+    if (bevent->button == MOUSE_BUTTON_MIDDLE)
+        return TRUE;
 
     if (bevent->button == MOUSE_BUTTON_RIGHT)
     {
@@ -1120,9 +1114,10 @@ static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent
         return TRUE;
     }
 
-    if (bevent->button == MOUSE_BUTTON_LEFT && bevent->type == GDK_BUTTON_PRESS &&
-        !(bevent->state & GDK_SHIFT_MASK ) &&
-        !(bevent->state & GDK_CONTROL_MASK ) &&
+    if (bevent->button == MOUSE_BUTTON_LEFT &&
+        bevent->type   == GDK_BUTTON_PRESS &&
+        !(bevent->state & GDK_SHIFT_MASK) &&
+        !(bevent->state & GDK_CONTROL_MASK) &&
         search_result_row_selected(sd, mfd->fd))
     {
         /* this selection handled on release_cb */
@@ -1133,22 +1128,24 @@ static gboolean search_result_press_cb(GtkWidget *widget, GdkEventButton *bevent
     return FALSE;
 }
 
-static gboolean search_result_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
+static gboolean search_result_release_cb(GtkWidget *widget,
+                                         GdkEventButton *bevent, SearchData *sd)
 {
-    SearchData *sd = data;
     GtkTreeModel *store;
     GtkTreePath *tpath;
     GtkTreeIter iter;
 
     MatchFileData *mfd = NULL;
 
-    if (bevent->button != MOUSE_BUTTON_LEFT && bevent->button != MOUSE_BUTTON_MIDDLE) return TRUE;
+    if (bevent->button != MOUSE_BUTTON_LEFT &&
+        bevent->button != MOUSE_BUTTON_MIDDLE)
+        return TRUE;
 
     store = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 
     if ((bevent->x != 0 || bevent->y != 0) &&
         gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), bevent->x, bevent->y,
-                      &tpath, NULL, NULL, NULL))
+                                      &tpath, NULL, NULL, NULL))
     {
         gtk_tree_model_get_iter(store, &iter, tpath);
         gtk_tree_model_get(store, &iter, SEARCH_COLUMN_POINTER, &mfd, -1);
@@ -1163,20 +1160,16 @@ static gboolean search_result_release_cb(GtkWidget *widget, GdkEventButton *beve
 
             selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
             if (search_result_row_selected(sd, mfd->fd))
-            {
                 gtk_tree_selection_unselect_iter(selection, &iter);
-            }
             else
-            {
                 gtk_tree_selection_select_iter(selection, &iter);
-            }
         }
         return TRUE;
     }
 
     if (mfd && sd->click_fd == mfd->fd &&
-        !(bevent->state & GDK_SHIFT_MASK ) &&
-        !(bevent->state & GDK_CONTROL_MASK ) &&
+        !(bevent->state & GDK_SHIFT_MASK) &&
+        !(bevent->state & GDK_CONTROL_MASK) &&
         search_result_row_selected(sd, mfd->fd))
     {
         GtkTreeSelection *selection;
@@ -1195,9 +1188,8 @@ static gboolean search_result_release_cb(GtkWidget *widget, GdkEventButton *beve
     return FALSE;
 }
 
-static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event, gpointer data)
+static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event, SearchData *sd)
 {
-    SearchData *sd = data;
     gboolean stop_signal = FALSE;
     GtkTreeModel *store;
     GtkTreeSelection *selection;
@@ -1208,12 +1200,9 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
     slist = gtk_tree_selection_get_selected_rows(selection, &store);
     if (slist)
     {
-        GtkTreePath *tpath;
+        GList *last = g_list_last(slist);
+        GtkTreePath *tpath = last->data;
         GtkTreeIter iter;
-        GList *last;
-
-        last = g_list_last(slist);
-        tpath = last->data;
 
         /* last is newest selected file */
         gtk_tree_model_get_iter(store, &iter, tpath);
@@ -1227,16 +1216,8 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
         stop_signal = TRUE;
         switch (event->keyval)
         {
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
+            case '1': case '2': case '3': case '4': case '5':
+            case '6': case '7': case '8': case '9': case '0':
                 break;
             case 'C': case 'c':
                 file_util_copy(NULL, search_result_selection_list(sd), NULL, widget);
@@ -1252,13 +1233,9 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
                 break;
             case 'A': case 'a':
                 if (event->state & GDK_SHIFT_MASK)
-                {
                     gtk_tree_selection_unselect_all(selection);
-                }
                 else
-                {
                     gtk_tree_selection_select_all(selection);
-                }
                 break;
             case GDK_KEY_Delete: case GDK_KEY_KP_Delete:
                 search_result_clear(sd);
@@ -1274,13 +1251,12 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
         switch (event->keyval)
         {
             case GDK_KEY_Return: case GDK_KEY_KP_Enter:
-                if (mfd) layout_set_fd(NULL, mfd->fd);
+                if (mfd)
+                    layout_set_fd(NULL, mfd->fd);
                 break;
             case 'V': case 'v':
             {
-                GList *list;
-
-                list = search_result_selection_list(sd);
+                GList *list = search_result_selection_list(sd);
                 view_window_new_from_list(list);
                 filelist_free(list);
             }
@@ -1297,9 +1273,9 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
                 GtkWidget *menu;
 
                 sd->click_fd = mfd ? mfd->fd : NULL;
-                menu = search_result_menu(sd, (mfd != NULL), (search_result_count(sd, NULL) > 0));
-                gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                           search_result_menu_pos_cb, sd, 0, event->time);
+                menu = search_result_menu(sd, mfd != NULL);
+                gtk_menu_popup(GTK_MENU(menu), NULL, NULL, search_result_menu_pos_cb,
+                               sd, 0, event->time);
             }
                 break;
             default:
@@ -1311,9 +1287,9 @@ static gboolean search_result_keypress_cb(GtkWidget *widget, GdkEventKey *event,
     return stop_signal;
 }
 
-static gboolean search_window_keypress_cb(GtkWidget *widget, GdkEventKey *event, gpointer data)
+static gboolean search_window_keypress_cb(GtkWidget *widget, GdkEventKey *event,
+                                          SearchData *sd)
 {
-    SearchData *sd = data;
     gboolean stop_signal = FALSE;
 
     if (event->state & GDK_CONTROL_MASK)
@@ -1353,23 +1329,19 @@ static GtkTargetEntry result_drag_types[] = {
 static gint n_result_drag_types = 2;
 
 static void search_dnd_data_set(GtkWidget *widget, GdkDragContext *context,
-                GtkSelectionData *selection_data, guint info,
-                guint time, gpointer data)
+                                GtkSelectionData *selection_data, guint info,
+                                guint time, SearchData *sd)
 {
-    SearchData *sd = data;
-    GList *list;
-
-    list = search_result_selection_list(sd);
+    GList *list = search_result_selection_list(sd);
     if (!list) return;
 
     uri_selection_data_set_uris_from_filelist(selection_data, list);
     filelist_free(list);
 }
 
-static void search_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer data)
+static void search_dnd_begin(GtkWidget *widget, GdkDragContext *context,
+                             SearchData *sd)
 {
-    SearchData *sd = data;
-
     if (sd->click_fd && !search_result_row_selected(sd, sd->click_fd))
     {
         GtkListStore *store;
@@ -1394,19 +1366,20 @@ static void search_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointe
     if (sd->thumb_enable &&
         sd->click_fd && sd->click_fd->thumb_pixbuf)
     {
-        dnd_set_drag_icon(widget, context, sd->click_fd->thumb_pixbuf, search_result_selection_count(sd, NULL));
+        dnd_set_drag_icon(widget, context, sd->click_fd->thumb_pixbuf,
+                          search_result_selection_count(sd, NULL));
     }
 }
 
 static void search_dnd_init(SearchData *sd)
 {
     gtk_drag_source_set(sd->result_view, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-                result_drag_types, n_result_drag_types,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+                        result_drag_types, n_result_drag_types,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
     g_signal_connect(G_OBJECT(sd->result_view), "drag_data_get",
-             G_CALLBACK(search_dnd_data_set), sd);
+                     G_CALLBACK(search_dnd_data_set), sd);
     g_signal_connect(G_OBJECT(sd->result_view), "drag_begin",
-             G_CALLBACK(search_dnd_begin), sd);
+                     G_CALLBACK(search_dnd_begin), sd);
 }
 
 /*
@@ -1415,26 +1388,22 @@ static void search_dnd_init(SearchData *sd)
  *-------------------------------------------------------------------
  */
 
-#define MATCH_IS_BETWEEN(val, a, b)  ((b) > (a) ? ((val) >= (a) && (val) <= (b)) : ((val) >= (b) && (val) <= (a)))
+#define MATCH_IS_BETWEEN(val, a, b)  ((b) > (a) ? ((val) >= (a) && (val) <= (b)) \
+                                                : ((val) >= (b) && (val) <= (a)))
 
-static gboolean search_step_cb(gpointer data);
+static gboolean search_step_cb(SearchData *sd);
 
 
 static void search_buffer_flush(SearchData *sd)
 {
-    GList *work;
-
-    work = g_list_last(sd->search_buffer_list);
-    while (work)
+    for (GList *work = g_list_last(sd->search_buffer_list);
+         work;
+         work = work->prev)
     {
-        MatchFileData *mfd = work->data;
-        work = work->prev;
-
-        search_result_append(sd, mfd);
+        search_result_append(sd, (MatchFileData *)work->data);
     }
 
-    g_list_free(sd->search_buffer_list);
-    sd->search_buffer_list = NULL;
+    g_clear_list(&sd->search_buffer_list, NULL);
     sd->search_buffer_count = 0;
 }
 
@@ -1442,24 +1411,16 @@ static void search_stop(SearchData *sd)
 {
     g_clear_handle_id(&sd->search_idle_id, g_source_remove);
 
-    image_loader_free(sd->img_loader);
-    sd->img_loader = NULL;
-    cache_sim_data_free(sd->img_cd);
-    sd->img_cd = NULL;
-
-    cache_sim_data_free(sd->search_similarity_cd);
-    sd->search_similarity_cd = NULL;
+    g_clear_pointer(&sd->img_loader, image_loader_free);
+    g_clear_pointer(&sd->img_cd, cache_sim_data_free);
+    g_clear_pointer(&sd->search_similarity_cd, cache_sim_data_free);
 
     search_buffer_flush(sd);
 
-    filelist_free(sd->search_folder_list);
-    sd->search_folder_list = NULL;
+    g_clear_pointer(&sd->search_folder_list, filelist_free);
+    g_clear_pointer(&sd->search_file_list, filelist_free);
 
-    g_list_free(sd->search_done_list);
-    sd->search_done_list = NULL;
-
-    filelist_free(sd->search_file_list);
-    sd->search_file_list = NULL;
+    g_clear_list(&sd->search_done_list, NULL);
 
     gtk_widget_set_sensitive(sd->box_search, TRUE);
     spinner_set_interval(sd->spinner, -1);
@@ -1471,23 +1432,17 @@ static void search_stop(SearchData *sd)
 
 static void search_file_load_process(SearchData *sd, CacheData *cd)
 {
-    GdkPixbuf *pixbuf;
-
-    pixbuf = image_loader_get_pixbuf(sd->img_loader);
+    GdkPixbuf *pixbuf = image_loader_get_pixbuf(sd->img_loader);
 
     if (cd && pixbuf)
     {
         if (!cd->dimensions)
-        {
             cache_sim_data_set_dimensions(cd, gdk_pixbuf_get_width(pixbuf),
-                              gdk_pixbuf_get_height(pixbuf));
-        }
+                                          gdk_pixbuf_get_height(pixbuf));
 
         if (sd->match_similarity_enable && !cd->similarity)
         {
-            ImageSimilarityData *sim;
-
-            sim = image_sim_new_from_pixbuf(pixbuf);
+            ImageSimilarityData *sim = image_sim_new_from_pixbuf(pixbuf);
             cache_sim_data_set_similarity(cd, sim);
             image_sim_free(sim);
         }
@@ -1495,39 +1450,32 @@ static void search_file_load_process(SearchData *sd, CacheData *cd)
         if (options->thumbnails.enable_caching &&
             sd->img_loader && image_loader_get_fd(sd->img_loader))
         {
-            gchar *base;
-            const gchar *path;
             mode_t mode = 0755;
-
-            path = image_loader_get_fd(sd->img_loader)->path;
-            base = cache_get_location(CACHE_TYPE_SIM, path, FALSE, &mode);
+            const gchar *path = image_loader_get_fd(sd->img_loader)->path;
+            gchar *base = cache_get_location(CACHE_TYPE_SIM, path, FALSE, &mode);
             if (recursive_mkdir_if_not_exists(base, mode))
             {
                 g_free(cd->path);
                 cd->path = cache_get_location(CACHE_TYPE_SIM, path, TRUE, NULL);
                 if (cache_sim_data_save(cd))
-                {
                     filetime_set(cd->path, filetime(image_loader_get_fd(sd->img_loader)->path));
-                }
             }
             g_free(base);
         }
     }
 
-    image_loader_free(sd->img_loader);
-    sd->img_loader = NULL;
+    g_clear_pointer(&sd->img_loader, image_loader_free);
 
-    sd->search_idle_id = g_idle_add(search_step_cb, sd);
+    sd->search_idle_id = g_idle_add(G_SOURCE_FUNC(search_step_cb), sd);
 }
 
-static void search_file_load_done_cb(ImageLoader *il, gpointer data)
+static void search_file_load_done_cb(ImageLoader *il, SearchData *sd)
 {
-    SearchData *sd = data;
     search_file_load_process(sd, sd->img_cd);
 }
 
 static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
-                     gint *width, gint *height, gint *simval)
+                                     gint *width, gint *height, gint *simval)
 {
     gboolean new_data = FALSE;
     gboolean tmatch = TRUE;
@@ -1535,22 +1483,16 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
 
     if (!sd->img_cd)
     {
-        gchar *cd_path;
-
+        gchar *cd_path = cache_find_location(CACHE_TYPE_SIM, fd->path);
         new_data = TRUE;
 
-        cd_path = cache_find_location(CACHE_TYPE_SIM, fd->path);
         if (cd_path && filetime(fd->path) == filetime(cd_path))
-        {
             sd->img_cd = cache_sim_data_load(cd_path);
-        }
         g_free(cd_path);
     }
 
     if (!sd->img_cd)
-    {
         sd->img_cd = cache_sim_data_new();
-    }
 
     if (new_data)
     {
@@ -1558,17 +1500,14 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
             (sd->match_similarity_enable && !sd->img_cd->similarity))
         {
             sd->img_loader = image_loader_new(fd);
-            g_signal_connect(G_OBJECT(sd->img_loader), "error", (GCallback)search_file_load_done_cb, sd);
-            g_signal_connect(G_OBJECT(sd->img_loader), "done", (GCallback)search_file_load_done_cb, sd);
+            g_signal_connect(G_OBJECT(sd->img_loader), "error",
+                             G_CALLBACK(search_file_load_done_cb), sd);
+            g_signal_connect(G_OBJECT(sd->img_loader), "done",
+                             G_CALLBACK(search_file_load_done_cb), sd);
             if (image_loader_start(sd->img_loader))
-            {
                 return TRUE;
-            }
             else
-            {
-                image_loader_free(sd->img_loader);
-                sd->img_loader = NULL;
-            }
+                g_clear_pointer(&sd->img_loader, image_loader_free);
         }
     }
 
@@ -1580,22 +1519,14 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
         tested = TRUE;
 
         if (sd->match_dimensions == SEARCH_MATCH_EQUAL)
-        {
             tmatch = (cd->width == sd->search_width && cd->height == sd->search_height);
-        }
         else if (sd->match_dimensions == SEARCH_MATCH_UNDER)
-        {
-            tmatch = (cd->width < sd->search_width && cd->height < sd->search_height);
-        }
+            tmatch = (cd->width <  sd->search_width && cd->height <  sd->search_height);
         else if (sd->match_dimensions == SEARCH_MATCH_OVER)
-        {
-            tmatch = (cd->width > sd->search_width && cd->height > sd->search_height);
-        }
+            tmatch = (cd->width >  sd->search_width && cd->height >  sd->search_height);
         else if (sd->match_dimensions == SEARCH_MATCH_BETWEEN)
-        {
-            tmatch = (MATCH_IS_BETWEEN(cd->width, sd->search_width, sd->search_width_end) &&
-                  MATCH_IS_BETWEEN(cd->height, sd->search_height, sd->search_height_end));
-        }
+            tmatch = (MATCH_IS_BETWEEN(cd->width,  sd->search_width,  sd->search_width_end) &&
+                      MATCH_IS_BETWEEN(cd->height, sd->search_height, sd->search_height_end));
     }
 
     if (tmatch && sd->match_similarity_enable && sd->img_cd->similarity)
@@ -1611,7 +1542,7 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
             gdouble result;
 
             result = image_sim_compare_fast(sd->search_similarity_cd->sim, sd->img_cd->sim,
-                            (gdouble)sd->search_similarity / 100.0);
+                                            (gdouble)sd->search_similarity / 100.0);
             result *= 100.0;
             if (result >= (gdouble)sd->search_similarity)
             {
@@ -1619,18 +1550,16 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
                 value = (gint)result;
             }
         }
-
         if (simval) *simval = value;
     }
 
     if (sd->img_cd->dimensions)
     {
-        if (width) *width = sd->img_cd->width;
+        if (width)  *width =  sd->img_cd->width;
         if (height) *height = sd->img_cd->height;
     }
 
-    cache_sim_data_free(sd->img_cd);
-    sd->img_cd = NULL;
+    g_clear_pointer(&sd->img_cd, cache_sim_data_free);
 
     *match = (tmatch && tested);
 
@@ -1670,13 +1599,9 @@ static gboolean search_file_next(SearchData *sd)
         if (sd->match_name == SEARCH_MATCH_EQUAL)
         {
             if (sd->search_name_match_case)
-            {
                 match = (strcmp(fd->name, sd->search_name) == 0);
-            }
             else
-            {
                 match = (g_ascii_strcasecmp(fd->name, sd->search_name) == 0);
-            }
         }
         else if (sd->match_name == SEARCH_MATCH_CONTAINS)
         {
@@ -1690,21 +1615,13 @@ static gboolean search_file_next(SearchData *sd)
         match = FALSE;
 
         if (sd->match_size == SEARCH_MATCH_EQUAL)
-        {
             match = (fd->size == sd->search_size);
-        }
         else if (sd->match_size == SEARCH_MATCH_UNDER)
-        {
-            match = (fd->size < sd->search_size);
-        }
+            match = (fd->size <  sd->search_size);
         else if (sd->match_size == SEARCH_MATCH_OVER)
-        {
-            match = (fd->size > sd->search_size);
-        }
+            match = (fd->size >  sd->search_size);
         else if (sd->match_size == SEARCH_MATCH_BETWEEN)
-        {
             match = MATCH_IS_BETWEEN(fd->size, sd->search_size, sd->search_size_end);
-        }
     }
 
     if (match && sd->match_date_enable)
@@ -1714,35 +1631,38 @@ static gboolean search_file_next(SearchData *sd)
 
         if (sd->match_date == SEARCH_MATCH_EQUAL)
         {
-            struct tm *lt;
-
-            lt = localtime(&fd->dat.tv_sec);
+            struct tm *lt = localtime(&fd->dat.tv_sec);
             match = (lt &&
-                 lt->tm_year == sd->search_date_y - 1900 &&
-                 lt->tm_mon == sd->search_date_m - 1 &&
-                 lt->tm_mday == sd->search_date_d);
+                     lt->tm_year == sd->search_date_y - 1900 &&
+                     lt->tm_mon  == sd->search_date_m - 1 &&
+                     lt->tm_mday == sd->search_date_d);
         }
         else if (sd->match_date == SEARCH_MATCH_UNDER)
         {
-            match = (fd->dat.tv_sec < convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y));
+            match = (fd->dat.tv_sec < convert_dmy_to_time(sd->search_date_d,
+                                                          sd->search_date_m,
+                                                          sd->search_date_y));
         }
         else if (sd->match_date == SEARCH_MATCH_OVER)
         {
-            match = (fd->dat.tv_sec > convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y) + 60 * 60 * 24 - 1);
+            match = (fd->dat.tv_sec > convert_dmy_to_time(sd->search_date_d,
+                                                          sd->search_date_m,
+                                                          sd->search_date_y)
+                                      + 60 * 60 * 24 - 1);
         }
         else if (sd->match_date == SEARCH_MATCH_BETWEEN)
         {
-            time_t a = convert_dmy_to_time(sd->search_date_d, sd->search_date_m, sd->search_date_y);
-            time_t b = convert_dmy_to_time(sd->search_date_end_d, sd->search_date_end_m, sd->search_date_end_y);
+            time_t a = convert_dmy_to_time(sd->search_date_d,
+                                           sd->search_date_m,
+                                           sd->search_date_y);
+            time_t b = convert_dmy_to_time(sd->search_date_end_d,
+                                           sd->search_date_end_m,
+                                           sd->search_date_end_y);
 
             if (b >= a)
-            {
                 b += 60 * 60 * 24 - 1;
-            }
             else
-            {
                 a += 60 * 60 * 24 - 1;
-            }
             match = MATCH_IS_BETWEEN(fd->dat.tv_sec, a, b);
         }
     }
@@ -1772,8 +1692,8 @@ static gboolean search_file_next(SearchData *sd)
                     haystack = list;
                     while (haystack && !found)
                     {
-                        found = (g_ascii_strcasecmp((gchar *)needle->data,
-                                    (gchar *)haystack->data) == 0);
+                        found = g_ascii_strcasecmp((gchar *)needle->data,
+                                                   (gchar *)haystack->data) == 0;
                         haystack = haystack->next;
                     }
                     needle = needle->next;
@@ -1791,8 +1711,8 @@ static gboolean search_file_next(SearchData *sd)
                     haystack = list;
                     while (haystack && !found)
                     {
-                        found = (g_ascii_strcasecmp((gchar *)needle->data,
-                                    (gchar *)haystack->data) == 0);
+                        found = g_ascii_strcasecmp((gchar *)needle->data,
+                                                   (gchar *)haystack->data) == 0;
                         haystack = haystack->next;
                     }
                     needle = needle->next;
@@ -1810,8 +1730,8 @@ static gboolean search_file_next(SearchData *sd)
                     haystack = list;
                     while (haystack && !found)
                     {
-                        found = (g_ascii_strcasecmp((gchar *)needle->data,
-                                    (gchar *)haystack->data) == 0);
+                        found = g_ascii_strcasecmp((gchar *)needle->data,
+                                                   (gchar *)haystack->data) == 0;
                         haystack = haystack->next;
                     }
                     needle = needle->next;
@@ -1839,13 +1759,9 @@ static gboolean search_file_next(SearchData *sd)
         if (comment)
         {
             if (sd->match_comment == SEARCH_MATCH_CONTAINS)
-            {
                 match = g_regex_match(sd->search_comment_regex, comment, 0, NULL);
-            }
             else if (sd->match_comment == SEARCH_MATCH_NONE)
-            {
                 match = !g_regex_match(sd->search_comment_regex, comment, 0, NULL);
-            }
             g_free(comment);
         }
         else
@@ -1855,7 +1771,8 @@ static gboolean search_file_next(SearchData *sd)
     }
 
     if ((match || extra_only) &&
-        (sd->match_dimensions_enable || sd->match_similarity_enable))
+        (sd->match_dimensions_enable ||
+         sd->match_similarity_enable))
     {
         tested = TRUE;
 
@@ -1893,11 +1810,8 @@ static gboolean search_file_next(SearchData *sd)
     return FALSE;
 }
 
-static gboolean search_step_cb(gpointer data)
+static gboolean search_step_cb(SearchData *sd)
 {
-    SearchData *sd = data;
-    FileData *fd;
-
     if (sd->search_buffer_count > SEARCH_BUFFER_FLUSH_SIZE)
     {
         search_buffer_flush(sd);
@@ -1914,7 +1828,8 @@ static gboolean search_step_cb(gpointer data)
         return TRUE;
     }
 
-    if (!sd->search_file_list && !sd->search_folder_list)
+    if (!sd->search_file_list &&
+        !sd->search_folder_list)
     {
         sd->search_idle_id = 0;
 
@@ -1924,9 +1839,9 @@ static gboolean search_step_cb(gpointer data)
         return FALSE;
     }
 
-    fd = sd->search_folder_list->data;
+    FileData *fd = sd->search_folder_list->data;
 
-    if (g_list_find(sd->search_done_list, fd) == NULL)
+    if (!g_list_find(sd->search_done_list, fd))
     {
         GList *list = NULL;
         GList *dlist = NULL;
@@ -1939,12 +1854,10 @@ static gboolean search_step_cb(gpointer data)
             success = filelist_read(fd, &list, &dlist);
         }
         else if (sd->search_type == SEARCH_MATCH_ALL &&
-             sd->search_dir_fd &&
-             strlen(fd->path) >= strlen(sd->search_dir_fd->path))
+                 sd->search_dir_fd &&
+                 strlen(fd->path) >= strlen(sd->search_dir_fd->path))
         {
-            const gchar *path;
-
-            path = fd->path + strlen(sd->search_dir_fd->path);
+            const gchar *path = fd->path + strlen(sd->search_dir_fd->path);
             if (path != fd->path)
             {
                 FileData *dir_fd = file_data_new_dir(path);
@@ -1954,23 +1867,15 @@ static gboolean search_step_cb(gpointer data)
             success |= filelist_read(fd, NULL, &dlist);
             if (success)
             {
-                GList *work;
-
-                work = list;
-                while (work)
+                for (GList *work = list, *next; work; work = next)
                 {
-                    FileData *fdp;
-                    GList *link;
-                    gchar *meta_path;
-
-                    fdp = work->data;
-                    link = work;
-                    work = work->next;
-
-                    meta_path = cache_find_location(CACHE_TYPE_METADATA, fdp->path);
+                    FileData *fdp = work->data;
+                    gchar *meta_path = cache_find_location(CACHE_TYPE_METADATA,
+                                                           fdp->path);
+                    next = work->next;
                     if (!meta_path)
                     {
-                        list = g_list_delete_link(list, link);
+                        list = g_list_delete_link(list, work);
                         file_data_unref(fdp);
                     }
                     g_free(meta_path);
@@ -2004,9 +1909,8 @@ static gboolean search_step_cb(gpointer data)
     return TRUE;
 }
 
-static void search_similarity_load_done_cb(ImageLoader *il, gpointer data)
+static void search_similarity_load_done_cb(ImageLoader *il, SearchData *sd)
 {
-    SearchData *sd = data;
     search_file_load_process(sd, sd->search_similarity_cd);
 }
 
@@ -2018,39 +1922,34 @@ static void search_start(SearchData *sd)
     search_result_clear(sd);
 
     if (sd->search_dir_fd)
-    {
-        sd->search_folder_list = g_list_prepend(sd->search_folder_list, file_data_ref(sd->search_dir_fd));
-    }
+        sd->search_folder_list = g_list_prepend(sd->search_folder_list,
+                                                file_data_ref(sd->search_dir_fd));
 
     if(sd->search_name_regex)
-    {
         g_regex_unref(sd->search_name_regex);
-    }
 
     sd->search_name_regex = g_regex_new(sd->search_name,
                                         sd->search_name_match_case ? 0 : G_REGEX_CASELESS,
                                         0, &error);
     if (error)
     {
-        log_printf("Error: could not compile regular expression %s\n%s\n", sd->search_name, error->message);
-        g_error_free(error);
-        error = NULL;
+        log_printf("Error: could not compile regular expression %s\n%s\n",
+                   sd->search_name, error->message);
+        g_clear_pointer(&error, g_error_free);
         sd->search_name_regex = g_regex_new("", 0, 0, NULL);
     }
 
     if(sd->search_comment_regex)
-    {
         g_regex_unref(sd->search_comment_regex);
-    }
 
     sd->search_comment_regex = g_regex_new(sd->search_comment,
-                                        sd->search_comment_match_case ? 0 : G_REGEX_CASELESS,
-                                        0, &error);
+                                           sd->search_comment_match_case ? 0 : G_REGEX_CASELESS,
+                                           0, &error);
     if (error)
     {
-        log_printf("Error: could not compile regular expression %s\n%s\n", sd->search_comment, error->message);
-        g_error_free(error);
-        error = NULL;
+        log_printf("Error: could not compile regular expression %s\n%s\n",
+                   sd->search_comment, error->message);
+        g_clear_pointer(&error, g_error_free);
         sd->search_comment_regex = g_regex_new("", 0, 0, NULL);
     }
 
@@ -2071,39 +1970,33 @@ static void search_start(SearchData *sd)
 
         cd_path = cache_find_location(CACHE_TYPE_SIM, sd->search_similarity_path);
         if (cd_path && filetime(sd->search_similarity_path) == filetime(cd_path))
-        {
             sd->search_similarity_cd = cache_sim_data_load(cd_path);
-        }
         g_free(cd_path);
 
-        if (!sd->search_similarity_cd || !sd->search_similarity_cd->similarity)
+        if (!sd->search_similarity_cd ||
+            !sd->search_similarity_cd->similarity)
         {
             if (!sd->search_similarity_cd)
-            {
                 sd->search_similarity_cd = cache_sim_data_new();
-            }
 
-            sd->img_loader = image_loader_new(file_data_new_group(sd->search_similarity_path));
-            g_signal_connect(G_OBJECT(sd->img_loader), "error", (GCallback)search_similarity_load_done_cb, sd);
-            g_signal_connect(G_OBJECT(sd->img_loader), "done", (GCallback)search_similarity_load_done_cb, sd);
+            sd->img_loader =
+                image_loader_new(file_data_new_group(sd->search_similarity_path));
+            g_signal_connect(G_OBJECT(sd->img_loader), "error",
+                             G_CALLBACK(search_similarity_load_done_cb), sd);
+            g_signal_connect(G_OBJECT(sd->img_loader), "done",
+                             G_CALLBACK(search_similarity_load_done_cb), sd);
             if (image_loader_start(sd->img_loader))
-            {
                 return;
-            }
-            image_loader_free(sd->img_loader);
-            sd->img_loader = NULL;
+            g_clear_pointer(&sd->img_loader, image_loader_free);
         }
 
     }
-
-    sd->search_idle_id = g_idle_add(search_step_cb, sd);
+    sd->search_idle_id = g_idle_add(G_SOURCE_FUNC(search_step_cb), sd);
 }
 
-static void search_start_cb(GtkWidget *widget, gpointer data)
+static void search_start_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
     GtkTreeViewColumn *column;
-    gchar *path;
 
     if (sd->search_folder_list)
     {
@@ -2137,13 +2030,21 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
     string_list_free(sd->search_keyword_list);
     sd->search_keyword_list = keyword_list_pull(sd->entry_keywords);
 
-    date_selection_get(sd->date_sel, &sd->search_date_d, &sd->search_date_m, &sd->search_date_y);
-    date_selection_get(sd->date_sel_end, &sd->search_date_end_d, &sd->search_date_end_m, &sd->search_date_end_y);
+    date_selection_get(sd->date_sel,
+                       &sd->search_date_d,
+                       &sd->search_date_m,
+                       &sd->search_date_y);
+    date_selection_get(sd->date_sel_end,
+                       &sd->search_date_end_d,
+                       &sd->search_date_end_m,
+                       &sd->search_date_end_y);
 
-    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view), SEARCH_COLUMN_DIMENSIONS - 1);
+    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view),
+                                      SEARCH_COLUMN_DIMENSIONS - 1);
     gtk_tree_view_column_set_visible(column, sd->match_dimensions_enable);
 
-    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view), SEARCH_COLUMN_RANK - 1);
+    column = gtk_tree_view_get_column(GTK_TREE_VIEW(sd->result_view),
+                                      SEARCH_COLUMN_RANK - 1);
     gtk_tree_view_column_set_visible(column, sd->match_similarity_enable);
     if (!sd->match_similarity_enable)
     {
@@ -2155,7 +2056,9 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
         if (gtk_tree_sortable_get_sort_column_id(sortable, &id, &order) &&
             id == SEARCH_COLUMN_RANK)
         {
-            gtk_tree_sortable_set_sort_column_id(sortable, SEARCH_COLUMN_PATH, GTK_SORT_ASCENDING);
+            gtk_tree_sortable_set_sort_column_id(sortable,
+                                                 SEARCH_COLUMN_PATH,
+                                                 GTK_SORT_ASCENDING);
         }
     }
 
@@ -2163,7 +2066,7 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
     {
         /* search path */
 
-        path = remove_trailing_slash(gtk_entry_get_text(GTK_ENTRY(sd->path_entry)));
+        gchar *path = remove_trailing_slash(gtk_entry_get_text(GTK_ENTRY(sd->path_entry)));
         if (isdir(path))
         {
             file_data_unref(sd->search_dir_fd);
@@ -2176,8 +2079,8 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
         else
         {
             file_util_warning_dialog(_("Folder not found"),
-                         _("Please enter an existing folder to search."),
-                         GTK_STOCK_DIALOG_WARNING, sd->window);
+                                     _("Please enter an existing folder to search."),
+                                     GTK_STOCK_DIALOG_WARNING, sd->window);
         }
 
         g_free(path);
@@ -2196,8 +2099,7 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
 
         list = search_result_refine_list(sd);
 
-        file_data_unref(sd->search_dir_fd);
-        sd->search_dir_fd = NULL;
+        g_clear_pointer(&sd->search_dir_fd, file_data_unref);
 
         search_start(sd);
 
@@ -2211,10 +2113,8 @@ static void search_start_cb(GtkWidget *widget, gpointer data)
  *-------------------------------------------------------------------
  */
 
-static void search_thumb_toggle_cb(GtkWidget *button, gpointer data)
+static void search_thumb_toggle_cb(GtkWidget *button, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_result_thumb_enable(sd, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)));
 }
 
@@ -2247,40 +2147,38 @@ static gint search_result_sort_cb(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIt
         case SEARCH_COLUMN_RANK:
             if (((MatchFileData *)fda)->rank > (fdb)->rank) return 1;
             if (((MatchFileData *)fda)->rank < (fdb)->rank) return -1;
-            return 0;
-            break;
-        case SEARCH_COLUMN_NAME:
-            if (options->file_sort.case_sensitive)
-                return strcmp(fda->fd->collate_key_name, fdb->fd->collate_key_name);
-            else
-                return strcmp(fda->fd->collate_key_name_nocase, fdb->fd->collate_key_name_nocase);
             break;
         case SEARCH_COLUMN_SIZE:
             if (fda->fd->size > fdb->fd->size) return 1;
             if (fda->fd->size < fdb->fd->size) return -1;
-            return 0;
             break;
         case SEARCH_COLUMN_DATE:
             if (fda->fd->dat.tv_sec < fdb->fd->dat.tv_sec) return -1;
             if (fda->fd->dat.tv_sec > fdb->fd->dat.tv_sec) return 1;
             if (fda->fd->dat.tv_nsec < fdb->fd->dat.tv_nsec) return -1;
             if (fda->fd->dat.tv_nsec > fdb->fd->dat.tv_nsec) return 1;
-            return 0;
             break;
         case SEARCH_COLUMN_DIMENSIONS:
-            return sort_matchdata_dimensions(fda, fdb);
+            n = sort_matchdata_dimensions(fda, fdb);
+            if (n) return n;
+            break;
+        case SEARCH_COLUMN_NAME:
+            if (options->file_sort.case_sensitive)
+                n = strcmp(fda->fd->collate_key_name, fdb->fd->collate_key_name);
+            else
+                n = strcmp(fda->fd->collate_key_name_nocase, fdb->fd->collate_key_name_nocase);
+            if (n) return n;
             break;
         case SEARCH_COLUMN_PATH:
-            return utf8_compare(fda->fd->path, fdb->fd->path, options->file_sort.case_sensitive);
-            break;
+            /* fallback to this after switch */
         default:
             break;
     }
-
-    return 0;
+    return utf8_compare(fda->fd->path, fdb->fd->path, options->file_sort.case_sensitive);
 }
 
-static void search_result_add_column(SearchData * sd, gint n, const gchar *title, gboolean image, gboolean right_justify)
+static void search_result_add_column(SearchData * sd, gint n, const gchar *title,
+                                     gboolean image, gboolean right_justify)
 {
     GtkTreeViewColumn *column;
     GtkCellRenderer *renderer;
@@ -2322,76 +2220,56 @@ static void menu_choice_get_match_type(GtkWidget *combo, MatchType *type)
     *type = value;
 }
 
-static void menu_choice_path_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_path_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->search_type);
-
     gtk_widget_set_visible(gtk_widget_get_parent(sd->check_recurse),
-                (sd->search_type == SEARCH_MATCH_NONE));
+                           (sd->search_type == SEARCH_MATCH_NONE));
 }
 
-static void menu_choice_name_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_name_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_name);
 }
 
-static void menu_choice_size_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_size_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_size);
-
     gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_size_end),
-                (sd->match_size == SEARCH_MATCH_BETWEEN));
+                           (sd->match_size == SEARCH_MATCH_BETWEEN));
 }
 
-static void menu_choice_date_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_date_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_date);
-
     gtk_widget_set_visible(gtk_widget_get_parent(sd->date_sel_end),
-                (sd->match_date == SEARCH_MATCH_BETWEEN));
+                           (sd->match_date == SEARCH_MATCH_BETWEEN));
 }
 
-static void menu_choice_dimensions_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_dimensions_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_dimensions);
-
     gtk_widget_set_visible(gtk_widget_get_parent(sd->spin_width_end),
-                (sd->match_dimensions == SEARCH_MATCH_BETWEEN));
+                           (sd->match_dimensions == SEARCH_MATCH_BETWEEN));
 }
 
-static void menu_choice_keyword_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_keyword_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_keywords);
 }
 
-static void menu_choice_comment_cb(GtkWidget *combo, gpointer data)
+static void menu_choice_comment_cb(GtkWidget *combo, SearchData *sd)
 {
-    SearchData *sd = data;
-
     menu_choice_get_match_type(combo, &sd->match_comment);
 }
 
-static void menu_choice_spin_cb(GtkAdjustment *adjustment, gpointer data)
+static void menu_choice_spin_cb(GtkAdjustment *adjustment, gint *value)
 {
-    gint *value = data;
-
     *value = (gint)gtk_adjustment_get_value(adjustment);
 }
 
 static GtkWidget *menu_spin(GtkWidget *box, gdouble min, gdouble max, gint value,
-                GCallback func, gpointer data)
+                            GCallback func, gpointer data)
 {
     GtkWidget *spin;
     GtkAdjustment *adj;
@@ -2400,16 +2278,15 @@ static GtkWidget *menu_spin(GtkWidget *box, gdouble min, gdouble max, gint value
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), (gdouble)value);
     adj = gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(spin));
     if (func) g_signal_connect(G_OBJECT(adj), "value_changed",
-                   G_CALLBACK(func), data);
+                               G_CALLBACK(func), data);
     gtk_box_pack_start(GTK_BOX(box), spin, FALSE, FALSE, 0);
     gtk_widget_show(spin);
 
     return spin;
 }
 
-static void menu_choice_check_cb(GtkWidget *button, gpointer data)
+static void menu_choice_check_cb(GtkWidget *button, GtkWidget *widget)
 {
-    GtkWidget *widget = data;
     gboolean active;
     gboolean *value;
 
@@ -2421,8 +2298,8 @@ static void menu_choice_check_cb(GtkWidget *button, gpointer data)
 }
 
 static GtkWidget *menu_choice(GtkWidget *box, GtkWidget **check, GtkWidget **menu,
-                  const gchar *text, gboolean *value,
-                  const PrefComboItem *items, GCallback func, gpointer data)
+                              const gchar *text, gboolean *value,
+                              const PrefComboItem *items, GCallback func, gpointer data)
 {
     GtkWidget *base_box;
     GtkWidget *hbox;
@@ -2445,7 +2322,7 @@ static GtkWidget *menu_choice(GtkWidget *box, GtkWidget **check, GtkWidget **men
     gtk_widget_show(hbox);
 
     g_signal_connect(G_OBJECT(button), "toggled",
-             G_CALLBACK(menu_choice_check_cb), hbox);
+                     G_CALLBACK(menu_choice_check_cb), hbox);
     gtk_widget_set_sensitive(hbox, (value) ? *value : FALSE);
 
     pref_label_new(hbox, text);
@@ -2466,52 +2343,38 @@ static void search_window_close(SearchData *sd)
     gtk_widget_destroy(sd->window);
 }
 
-static gboolean search_window_delete_cb(GtkWidget *widget, GdkEventAny *event, gpointer data)
+static gboolean search_window_delete_cb(GtkWidget *widget, GdkEventAny *event, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_window_close(sd);
     return TRUE;
 }
 
-void mfd_free_fd(gpointer data)
+void mfd_free_fd(MatchFileData *mfd)
 {
-    MatchFileData *mfd = data;
-
     file_data_unref(mfd->fd);
     g_free(mfd);
 }
 
-static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
+static void search_window_destroy_cb(GtkWidget *widget, SearchData *sd)
 {
-    SearchData *sd = data;
-
     search_window_list = g_list_remove(search_window_list, sd);
 
     search_result_update_idle_cancel(sd);
 
-    g_list_free_full(sd->search_buffer_list, mfd_free_fd);
-    sd->search_buffer_list = NULL;
-
     search_stop(sd);
     search_result_clear(sd);
 
-    file_data_unref(sd->search_dir_fd);
+    g_clear_list(&sd->search_buffer_list, (GDestroyNotify)mfd_free_fd);
 
-    g_free(sd->search_name);
-    if(sd->search_name_regex)
-    {
-        g_regex_unref(sd->search_name_regex);
-    }
-    g_free(sd->search_comment);
-    if(sd->search_comment_regex)
-    {
-        g_regex_unref(sd->search_comment_regex);
-    }
-    g_free(sd->search_similarity_path);
-    string_list_free(sd->search_keyword_list);
+    g_clear_pointer(&sd->search_dir_fd,          file_data_unref);
+    g_clear_pointer(&sd->search_similarity_path, g_free);
+    g_clear_pointer(&sd->search_name,            g_free);
+    g_clear_pointer(&sd->search_comment,         g_free);
+    g_clear_pointer(&sd->search_name_regex,      g_regex_unref);
+    g_clear_pointer(&sd->search_comment_regex,   g_regex_unref);
+    g_clear_pointer(&sd->search_keyword_list,    string_list_free);
 
-    file_data_unregister_notify_func(search_notify_cb, sd);
+    file_data_unregister_notify_func((FileDataNotifyFunc)search_notify_cb, sd);
 
     g_free(sd);
 }
@@ -2519,66 +2382,59 @@ static void search_window_destroy_cb(GtkWidget *widget, gpointer data)
 void search_new(FileData *dir_fd, FileData *example_file)
 {
     SearchData *sd;
-    GtkWidget *vbox;
-    GtkWidget *hbox;
-    GtkWidget *hbox2;
-    GtkWidget *pad_box;
-    GtkWidget *frame;
-    GtkWidget *scrolled;
+    GtkWidget *vbox, *hbox, *hbox2, *pad_box, *frame, *scrolled, *combo;
     GtkListStore *store;
     GtkTreeSortable *sortable;
     GtkTreeSelection *selection;
-    GtkWidget *combo;
     GdkGeometry geometry;
 
     sd = g_new0(SearchData, 1);
 
-    sd->search_dir_fd = file_data_ref(dir_fd);
+    sd->search_dir_fd       = file_data_ref(dir_fd);
     sd->search_path_recurse = TRUE;
-    sd->search_size = 0;
-    sd->search_width = 640;
-    sd->search_height = 480;
-    sd->search_width_end = 1024;
-    sd->search_height_end = 768;
+    sd->search_size         = 0;
+    sd->search_width        = 640;
+    sd->search_height       = 480;
+    sd->search_width_end    = 1024;
+    sd->search_height_end   = 768;
 
     sd->search_type = SEARCH_MATCH_NONE;
 
-    sd->match_name = SEARCH_MATCH_CONTAINS;
-    sd->match_size = SEARCH_MATCH_EQUAL;
-    sd->match_date = SEARCH_MATCH_EQUAL;
+    sd->match_name       = SEARCH_MATCH_CONTAINS;
+    sd->match_size       = SEARCH_MATCH_EQUAL;
+    sd->match_date       = SEARCH_MATCH_EQUAL;
     sd->match_dimensions = SEARCH_MATCH_EQUAL;
-    sd->match_keywords = SEARCH_MATCH_ALL;
-    sd->match_comment = SEARCH_MATCH_CONTAINS;
+    sd->match_keywords   = SEARCH_MATCH_ALL;
+    sd->match_comment    = SEARCH_MATCH_CONTAINS;
 
     sd->match_name_enable = TRUE;
 
     sd->search_similarity = 95;
 
     if (example_file)
-    {
         sd->search_similarity_path = g_strdup(example_file->path);
-    }
 
-    sd->window = window_new(GTK_WINDOW_TOPLEVEL, "search", NULL, NULL, _("Image search"));
+    sd->window = window_new(GTK_WINDOW_TOPLEVEL,
+                            "search", NULL, NULL, _("Image search"));
 
     gtk_window_set_resizable(GTK_WINDOW(sd->window), TRUE);
 
-    geometry.min_width = DEFAULT_MINIMAL_WINDOW_SIZE;
-    geometry.min_height = DEFAULT_MINIMAL_WINDOW_SIZE;
-    geometry.base_width = DEF_SEARCH_WIDTH;
+    geometry.min_width   = DEFAULT_MINIMAL_WINDOW_SIZE;
+    geometry.min_height  = DEFAULT_MINIMAL_WINDOW_SIZE;
+    geometry.base_width  = DEF_SEARCH_WIDTH;
     geometry.base_height = DEF_SEARCH_HEIGHT;
     gtk_window_set_geometry_hints(GTK_WINDOW(sd->window), NULL, &geometry,
-                      GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
     gtk_window_set_default_size(GTK_WINDOW(sd->window), DEF_SEARCH_WIDTH, DEF_SEARCH_HEIGHT);
 
     g_signal_connect(G_OBJECT(sd->window), "delete_event",
-             G_CALLBACK(search_window_delete_cb), sd);
+                     G_CALLBACK(search_window_delete_cb), sd);
     g_signal_connect(G_OBJECT(sd->window), "destroy",
-             G_CALLBACK(search_window_destroy_cb), sd);
+                     G_CALLBACK(search_window_destroy_cb), sd);
 
     g_signal_connect(G_OBJECT(sd->window), "key_press_event",
-             G_CALLBACK(search_window_keypress_cb), sd);
+                     G_CALLBACK(search_window_keypress_cb), sd);
 
     vbox = gtk_vbox_new(FALSE, PREF_PAD_GAP);
     gtk_container_set_border_width(GTK_CONTAINER(vbox), PREF_PAD_GAP);
@@ -2599,8 +2455,7 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     hbox2 = pref_box_new(hbox, TRUE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
     combo = tab_completion_new_with_history(&sd->path_entry, sd->search_dir_fd->path,
-                        "search_path", -1,
-                        NULL, NULL);
+                                            "search_path", -1, NULL, NULL);
     tab_completion_add_select_button(sd->path_entry, NULL, TRUE);
     gtk_box_pack_start(GTK_BOX(hbox2), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
@@ -2608,30 +2463,32 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     /* Search for file name */
     hbox = menu_choice(sd->box_search, &sd->check_name, &sd->menu_name,
-               _("File name"), &sd->match_name_enable,
-               text_search_menu_name, G_CALLBACK(menu_choice_name_cb), sd);
+                       _("File name"), &sd->match_name_enable,
+                       text_search_menu_name, G_CALLBACK(menu_choice_name_cb), sd);
     combo = history_combo_new(&sd->entry_name, "", "search_name", -1);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
     pref_checkbox_new_int(hbox, _("Match case"), &sd->search_name_match_case);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(combo), "When set to \"contains\", this field uses Perl Compatible Regular Expressions.\ne.g. use \n.*\\.jpg\n and not \n*.jpg\n\nSee the Help file.");
+    gtk_widget_set_tooltip_text(GTK_WIDGET(combo),
+        "When set to \"contains\", this field uses Perl Compatible Regular Expressions.\n"
+        "e.g. use \n.*\\.jpg\n and not \n*.jpg\n\nSee the Help file.");
 
     /* Search for file size */
     hbox = menu_choice(sd->box_search, &sd->check_size, &sd->menu_size,
-               _("File size is"), &sd->match_size_enable,
-               text_search_menu_size, G_CALLBACK(menu_choice_size_cb), sd);
+                       _("File size is"), &sd->match_size_enable,
+                       text_search_menu_size, G_CALLBACK(menu_choice_size_cb), sd);
     sd->spin_size = menu_spin(hbox, 0, 1024*1024*1024, sd->search_size,
-                  G_CALLBACK(menu_choice_spin_cb), &sd->search_size);
+                              G_CALLBACK(menu_choice_spin_cb), &sd->search_size);
     hbox2 = gtk_hbox_new(FALSE, PREF_PAD_SPACE);
     gtk_box_pack_start(GTK_BOX(hbox), hbox2, FALSE, FALSE, 0);
     pref_label_new(hbox2, _("and"));
     sd->spin_size_end = menu_spin(hbox2, 0, 1024*1024*1024, sd->search_size_end,
-                      G_CALLBACK(menu_choice_spin_cb), &sd->search_size_end);
+                                  G_CALLBACK(menu_choice_spin_cb), &sd->search_size_end);
 
     /* Search for file date */
     hbox = menu_choice(sd->box_search, &sd->check_date, &sd->menu_date,
-               _("File date is"), &sd->match_date_enable,
-               text_search_menu_date, G_CALLBACK(menu_choice_date_cb), sd);
+                       _("File date is"), &sd->match_date_enable,
+                       text_search_menu_date, G_CALLBACK(menu_choice_date_cb), sd);
     sd->date_sel = date_selection_new();
     date_selection_time_set(sd->date_sel, time(NULL));
     gtk_box_pack_start(GTK_BOX(hbox), sd->date_sel, FALSE, FALSE, 0);
@@ -2647,37 +2504,38 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     /* Search for image dimensions */
     hbox = menu_choice(sd->box_search, &sd->check_dimensions, &sd->menu_dimensions,
-               _("Image dimensions are"), &sd->match_dimensions_enable,
-               text_search_menu_size, G_CALLBACK(menu_choice_dimensions_cb), sd);
+                       _("Image dimensions are"), &sd->match_dimensions_enable,
+                       text_search_menu_size, G_CALLBACK(menu_choice_dimensions_cb), sd);
     pad_box = pref_box_new(hbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 2);
     sd->spin_width = menu_spin(pad_box, 0, 1000000, sd->search_width,
-                   G_CALLBACK(menu_choice_spin_cb), &sd->search_width);
+                               G_CALLBACK(menu_choice_spin_cb), &sd->search_width);
     pref_label_new(pad_box, "x");
     sd->spin_height = menu_spin(pad_box, 0, 1000000, sd->search_height,
-                    G_CALLBACK(menu_choice_spin_cb), &sd->search_height);
+                                G_CALLBACK(menu_choice_spin_cb), &sd->search_height);
     hbox2 = gtk_hbox_new(FALSE, 2);
     gtk_box_pack_start(GTK_BOX(hbox), hbox2, FALSE, FALSE, 0);
     pref_label_new(hbox2, _("and"));
     pref_spacer(hbox2, PREF_PAD_SPACE - 2*2);
     sd->spin_width_end = menu_spin(hbox2, 0, 1000000, sd->search_width_end,
-                       G_CALLBACK(menu_choice_spin_cb), &sd->search_width_end);
+                                   G_CALLBACK(menu_choice_spin_cb), &sd->search_width_end);
     pref_label_new(hbox2, "x");
     sd->spin_height_end = menu_spin(hbox2, 0, 1000000, sd->search_height_end,
-                    G_CALLBACK(menu_choice_spin_cb), &sd->search_height_end);
+                                    G_CALLBACK(menu_choice_spin_cb), &sd->search_height_end);
 
     /* Search for image similarity */
     hbox = menu_choice(sd->box_search, &sd->check_similarity, NULL,
-               _("Image content is"), &sd->match_similarity_enable,
-               NULL, NULL, sd);
+                       _("Image content is"), &sd->match_similarity_enable,
+                       NULL, NULL, sd);
     sd->spin_similarity = menu_spin(hbox, 80, 100, sd->search_similarity,
-                    G_CALLBACK(menu_choice_spin_cb), &sd->search_similarity);
+                                    G_CALLBACK(menu_choice_spin_cb),
+                                    &sd->search_similarity);
 
     /* xgettext:no-c-format */
     pref_label_new(hbox, _("% similar to"));
 
     combo = tab_completion_new_with_history(&sd->entry_similarity,
-                        (sd->search_similarity_path) ? sd->search_similarity_path : "",
-                        "search_similarity_path", -1, NULL, NULL);
+            sd->search_similarity_path ? sd->search_similarity_path : "",
+            "search_similarity_path", -1, NULL, NULL);
     tab_completion_add_select_button(sd->entry_similarity, NULL, FALSE);
     tab_completion_set_initial_dir(sd->entry_similarity, sd->search_dir_fd->path);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
@@ -2687,55 +2545,58 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     /* Search for image keywords */
     hbox = menu_choice(sd->box_search, &sd->check_keywords, &sd->menu_keywords,
-               _("Keywords"), &sd->match_keywords_enable,
-               text_search_menu_keyword, G_CALLBACK(menu_choice_keyword_cb), sd);
+                       _("Keywords"), &sd->match_keywords_enable,
+                       text_search_menu_keyword, G_CALLBACK(menu_choice_keyword_cb), sd);
     sd->entry_keywords = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_keywords, TRUE, TRUE, 0);
     gtk_widget_set_sensitive(sd->entry_keywords, sd->match_keywords_enable);
     g_signal_connect(G_OBJECT(sd->check_keywords), "toggled",
-             G_CALLBACK(menu_choice_check_cb), sd->entry_keywords);
+                     G_CALLBACK(menu_choice_check_cb), sd->entry_keywords);
     gtk_widget_show(sd->entry_keywords);
 
     /* Search for image comment */
     hbox = menu_choice(sd->box_search, &sd->check_comment, &sd->menu_comment,
-            _("Comment"), &sd->match_comment_enable,
-            text_search_menu_comment, G_CALLBACK(menu_choice_comment_cb), sd);
+                       _("Comment"), &sd->match_comment_enable,
+                       text_search_menu_comment, G_CALLBACK(menu_choice_comment_cb), sd);
     sd->entry_comment = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox), sd->entry_comment, TRUE, TRUE, 0);
     gtk_widget_set_sensitive(sd->entry_comment, sd->match_comment_enable);
     g_signal_connect(G_OBJECT(sd->check_comment), "toggled",
-            G_CALLBACK(menu_choice_check_cb), sd->entry_comment);
+                     G_CALLBACK(menu_choice_check_cb), sd->entry_comment);
     gtk_widget_show(sd->entry_comment);
     pref_checkbox_new_int(hbox, _("Match case"), &sd->search_comment_match_case);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(sd->entry_comment), "This field uses Perl Compatible Regular Expressions.\ne.g. use \nabc.*ghk\n and not \nabc*ghk\n\nSee the Help file.");
+    gtk_widget_set_tooltip_text(GTK_WIDGET(sd->entry_comment),
+        "This field uses Perl Compatible Regular Expressions.\n"
+        "e.g. use \nabc.*ghk\n and not \nabc*ghk\n\nSee the Help file.");
 
     /* Done the types of searches */
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
-                       GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_box_pack_start(GTK_BOX(vbox), scrolled, TRUE, TRUE, 0);
     gtk_widget_show(scrolled);
 
-    store = gtk_list_store_new(8, G_TYPE_POINTER, G_TYPE_INT, GDK_TYPE_PIXBUF,
-                   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                   G_TYPE_STRING, G_TYPE_STRING);
+    store = gtk_list_store_new(8,
+                               G_TYPE_POINTER, G_TYPE_INT, GDK_TYPE_PIXBUF,
+                               G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+                               G_TYPE_STRING, G_TYPE_STRING);
 
     /* set up sorting */
     sortable = GTK_TREE_SORTABLE(store);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_RANK, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_RANK), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_RANK), NULL);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_NAME, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_NAME), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_NAME), NULL);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_SIZE, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_SIZE), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_SIZE), NULL);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_DATE, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_DATE), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_DATE), NULL);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_DIMENSIONS, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_DIMENSIONS), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_DIMENSIONS), NULL);
     gtk_tree_sortable_set_sort_func(sortable, SEARCH_COLUMN_PATH, search_result_sort_cb,
-                  GINT_TO_POINTER(SEARCH_COLUMN_PATH), NULL);
+                                    GINT_TO_POINTER(SEARCH_COLUMN_PATH), NULL);
 
 #if 0
     /* by default, search results are unsorted until user selects a sort column - for speed,
@@ -2756,27 +2617,27 @@ void search_new(FileData *dir_fd, FileData *example_file)
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(sd->result_view), TRUE);
     gtk_tree_view_set_enable_search(GTK_TREE_VIEW(sd->result_view), FALSE);
 
-    search_result_add_column(sd, SEARCH_COLUMN_RANK, _("Rank"), FALSE, FALSE);
-    search_result_add_column(sd, SEARCH_COLUMN_THUMB, "", TRUE, FALSE);
-    search_result_add_column(sd, SEARCH_COLUMN_NAME, _("Name"), FALSE, FALSE);
-    search_result_add_column(sd, SEARCH_COLUMN_SIZE, _("Size"), FALSE, TRUE);
-    search_result_add_column(sd, SEARCH_COLUMN_DATE, _("Date"), FALSE, TRUE);
+    search_result_add_column(sd, SEARCH_COLUMN_RANK,       _("Rank"),       FALSE, FALSE);
+    search_result_add_column(sd, SEARCH_COLUMN_THUMB,      "",              TRUE,  FALSE);
+    search_result_add_column(sd, SEARCH_COLUMN_NAME,       _("Name"),       FALSE, FALSE);
+    search_result_add_column(sd, SEARCH_COLUMN_SIZE,       _("Size"),       FALSE, TRUE);
+    search_result_add_column(sd, SEARCH_COLUMN_DATE,       _("Date"),       FALSE, TRUE);
     search_result_add_column(sd, SEARCH_COLUMN_DIMENSIONS, _("Dimensions"), FALSE, FALSE);
-    search_result_add_column(sd, SEARCH_COLUMN_PATH, _("Path"), FALSE, FALSE);
+    search_result_add_column(sd, SEARCH_COLUMN_PATH,       _("Path"),       FALSE, FALSE);
 
     search_dnd_init(sd);
 
     g_signal_connect(G_OBJECT(sd->result_view), "button_press_event",
-             G_CALLBACK(search_result_press_cb), sd);
+                     G_CALLBACK(search_result_press_cb), sd);
     g_signal_connect(G_OBJECT(sd->result_view), "button_release_event",
-             G_CALLBACK(search_result_release_cb), sd);
+                     G_CALLBACK(search_result_release_cb), sd);
     g_signal_connect(G_OBJECT(sd->result_view), "key_press_event",
-             G_CALLBACK(search_result_keypress_cb), sd);
+                     G_CALLBACK(search_result_keypress_cb), sd);
 
     hbox = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, 0);
 
     sd->button_thumbs = pref_checkbox_new(hbox, _("Thumbnails"), FALSE,
-                          G_CALLBACK(search_thumb_toggle_cb), sd);
+                                          G_CALLBACK(search_thumb_toggle_cb), sd);
 
     frame = gtk_frame_new(NULL);
     gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
@@ -2798,10 +2659,10 @@ void search_new(FileData *dir_fd, FileData *example_file)
     gtk_widget_show(sd->spinner);
 
     sd->button_start = pref_button_new(hbox, GTK_STOCK_FIND, NULL, FALSE,
-                       G_CALLBACK(search_start_cb), sd);
+                                       G_CALLBACK(search_start_cb), sd);
     pref_spacer(hbox, PREF_PAD_BUTTON_GAP);
     sd->button_stop = pref_button_new(hbox, GTK_STOCK_STOP, NULL, FALSE,
-                      G_CALLBACK(search_start_cb), sd);
+                                      G_CALLBACK(search_start_cb), sd);
     gtk_widget_set_sensitive(sd->button_stop, FALSE);
 
     search_status_update(sd);
@@ -2809,7 +2670,8 @@ void search_new(FileData *dir_fd, FileData *example_file)
 
     search_window_list = g_list_append(search_window_list, sd);
 
-    file_data_register_notify_func(search_notify_cb, sd, NOTIFY_PRIORITY_MEDIUM);
+    file_data_register_notify_func((FileDataNotifyFunc)search_notify_cb,
+                                   sd, NOTIFY_PRIORITY_MEDIUM);
 
     gtk_widget_show(sd->window);
 }
@@ -2830,33 +2692,25 @@ static void search_result_change_path(SearchData *sd, FileData *fd)
     valid = gtk_tree_model_get_iter_first(store, &iter);
     while (valid)
     {
-        GtkTreeIter current;
         MatchFileData *mfd;
-
-        current = iter;
+        GtkTreeIter current = iter;
         valid = gtk_tree_model_iter_next(store, &iter);
 
         gtk_tree_model_get(store, &current, SEARCH_COLUMN_POINTER, &mfd, -1);
         if (mfd->fd == fd)
         {
             if (fd->change && fd->change->dest)
-            {
                 gtk_list_store_set(GTK_LIST_STORE(store), &current,
-                           SEARCH_COLUMN_NAME, mfd->fd->name,
-                           SEARCH_COLUMN_PATH, mfd->fd->path, -1);
-            }
+                                   SEARCH_COLUMN_NAME, mfd->fd->name,
+                                   SEARCH_COLUMN_PATH, mfd->fd->path, -1);
             else
-            {
                 search_result_remove_item(sd, mfd, &current);
-            }
         }
     }
 }
 
-static void search_notify_cb(FileData *fd, NotifyType type, gpointer data)
+static void search_notify_cb(FileData *fd, NotifyType type, SearchData *sd)
 {
-    SearchData *sd = data;
-
     if (!(type & NOTIFY_CHANGE) || !fd->change) return;
 
     DEBUG_1("Notify search: %s %04x", fd->path, type);
