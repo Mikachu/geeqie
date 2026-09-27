@@ -46,13 +46,13 @@
 #include "exif.h"
 #else
 typedef enum {
-    EXIF_ORIENTATION_UNKNOWN    = 0,
-    EXIF_ORIENTATION_TOP_LEFT   = 1,
-    EXIF_ORIENTATION_TOP_RIGHT  = 2,
+    EXIF_ORIENTATION_UNKNOWN        = 0,
+    EXIF_ORIENTATION_TOP_LEFT       = 1,
+    EXIF_ORIENTATION_TOP_RIGHT      = 2,
     EXIF_ORIENTATION_BOTTOM_RIGHT   = 3,
     EXIF_ORIENTATION_BOTTOM_LEFT    = 4,
-    EXIF_ORIENTATION_LEFT_TOP   = 5,
-    EXIF_ORIENTATION_RIGHT_TOP  = 6,
+    EXIF_ORIENTATION_LEFT_TOP       = 5,
+    EXIF_ORIENTATION_RIGHT_TOP      = 6,
     EXIF_ORIENTATION_RIGHT_BOTTOM   = 7,
     EXIF_ORIENTATION_LEFT_BOTTOM    = 8
 } ExifOrientationType;
@@ -64,19 +64,19 @@ typedef struct _QueueData QueueData;
 struct _ImageTile
 {
     cairo_surface_t *surface;   /* off screen buffer */
-    GdkPixbuf *pixbuf;  /* pixbuf area for zooming */
-    gint x;         /* x offset into image */
-    gint y;         /* y offset into image */
-    gint w;         /* width that is visible (may be less if at edge of image) */
-    gint h;         /* height '' */
+    GdkPixbuf *pixbuf;          /* pixbuf area for zooming */
+    gint x;                     /* x offset into image */
+    gint y;                     /* y offset into image */
+    gint w;                     /* width that is visible (may be less if at edge of image) */
+    gint h;                     /* height '' */
 
     gboolean blank;
 
 /* render_todo: (explanation)
     NONE    do nothing
     AREA    render area of tile, usually only used when loading an image
-        note: will jump to an ALL if render_done is not ALL.
-    ALL render entire tile, if never done before w/ ALL, for expose events *only*
+            note: will jump to an ALL if render_done is not ALL.
+    ALL     render entire tile, if never done before w/ ALL, for expose events *only*
 */
 
     ImageRenderType render_todo;    /* what to do (see above) */
@@ -91,6 +91,7 @@ struct _ImageTile
 struct _QueueData
 {
     ImageTile *it;
+    GList *dq_link;
     gint x;
     gint y;
     gint w;
@@ -124,15 +125,15 @@ struct _RendererTiles
 
     gint tile_width;
     gint tile_height;
-    GList *tiles;       /* list of buffer tiles */
-    gint tile_cache_size;   /* allocated size of pixmaps/pixbufs */
-    GList *draw_queue;  /* list of areas to redraw */
-    GList *draw_queue_2pass;/* list when 2 pass is enabled */
+    GList *tiles;               /* list of buffer tiles */
+    gint tile_cache_size;       /* allocated size of pixmaps/pixbufs */
+    GQueue draw_queue;          /* list of areas to redraw */
+    GQueue draw_queue_2pass;    /* list when 2 pass is enabled */
 
     GList *overlay_list;
     cairo_surface_t *overlay_buffer;
 
-    guint draw_idle_id; /* event source id */
+    guint draw_idle_id;         /* event source id */
 
     GdkPixbuf *spare_tile;
 
@@ -140,7 +141,7 @@ struct _RendererTiles
     gint stereo_off_x;
     gint stereo_off_y;
 
-    gint x_scroll;  /* allow local adjustment and mirroring */
+    gint x_scroll;              /* allow local adjustment and mirroring */
     gint y_scroll;
 
 };
@@ -176,12 +177,12 @@ static void rt_sync_scroll(RendererTiles *rt)
 {
     PixbufRenderer *pr = rt->pr;
 
-    rt->x_scroll = (rt->stereo_mode & PR_STEREO_MIRROR) ?
-                   pr->width - pr->vis_width - pr->x_scroll
+    rt->x_scroll = (rt->stereo_mode & PR_STEREO_MIRROR)
+                   ? pr->width - pr->vis_width - pr->x_scroll
                    : pr->x_scroll;
 
-    rt->y_scroll = (rt->stereo_mode & PR_STEREO_FLIP) ?
-                   pr->height - pr->vis_height - pr->y_scroll
+    rt->y_scroll = (rt->stereo_mode & PR_STEREO_FLIP)
+                   ? pr->height - pr->vis_height - pr->y_scroll
                    : pr->y_scroll;
 }
 
@@ -220,9 +221,9 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
     if (!pr->pixbuf && !pr->source_tiles_enabled)
     {
         if (pr_clip_region(x, y, w, h,
-                   0, 0,
-                   pr->viewport_width, pr->viewport_height,
-                   &rx, &ry, &rw, &rh))
+                           0, 0,
+                           pr->viewport_width, pr->viewport_height,
+                           &rx, &ry, &rw, &rh))
             draw_one_bit(rt, cr, rx, ry, rw, rh);
         cairo_destroy(cr);
         return;
@@ -232,30 +233,32 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
     {
         if (pr->x_offset > 0 &&
             pr_clip_region(x, y, w, h,
-                   0, 0,
-                   pr->x_offset, pr->viewport_height,
-                   &rx, &ry, &rw, &rh))
+                           0, 0,
+                           pr->x_offset, pr->viewport_height,
+                           &rx, &ry, &rw, &rh))
             draw_one_bit(rt, cr, rx, ry, rw, rh);
         if (pr->viewport_width - pr->vis_width - pr->x_offset > 0 &&
             pr_clip_region(x, y, w, h,
-                   pr->x_offset + pr->vis_width, 0,
-                   pr->viewport_width - pr->vis_width - pr->x_offset, pr->viewport_height,
-                   &rx, &ry, &rw, &rh))
+                           pr->x_offset + pr->vis_width, 0,
+                           pr->viewport_width - pr->vis_width - pr->x_offset,
+                           pr->viewport_height,
+                           &rx, &ry, &rw, &rh))
             draw_one_bit(rt, cr, rx, ry, rw, rh);
     }
     if (pr->vis_height < pr->viewport_height)
     {
         if (pr->y_offset > 0 &&
             pr_clip_region(x, y, w, h,
-                   pr->x_offset, 0,
-                   pr->vis_width, pr->y_offset,
-                   &rx, &ry, &rw, &rh))
+                           pr->x_offset, 0,
+                           pr->vis_width, pr->y_offset,
+                           &rx, &ry, &rw, &rh))
             draw_one_bit(rt, cr, rx, ry, rw, rh);
         if (pr->viewport_height - pr->vis_height - pr->y_offset > 0 &&
             pr_clip_region(x, y, w, h,
-                   pr->x_offset, pr->y_offset + pr->vis_height,
-                   pr->vis_width, pr->viewport_height - pr->vis_height - pr->y_offset,
-                   &rx, &ry, &rw, &rh))
+                           pr->x_offset, pr->y_offset + pr->vis_height,
+                           pr->vis_width,
+                           pr->viewport_height - pr->vis_height - pr->y_offset,
+                           &rx, &ry, &rw, &rh))
             draw_one_bit(rt, cr, rx, ry, rw, rh);
     }
     cairo_destroy(cr);
@@ -263,8 +266,7 @@ static void rt_border_draw(RendererTiles *rt, gint x, gint y, gint w, gint h)
 
 static void rt_border_clear(RendererTiles *rt)
 {
-    PixbufRenderer *pr = rt->pr;
-    rt_border_draw(rt, 0, 0, pr->viewport_width, pr->viewport_height);
+    rt_border_draw(rt, 0, 0, rt->pr->viewport_width, rt->pr->viewport_height);
 }
 
 
@@ -276,9 +278,7 @@ static void rt_border_clear(RendererTiles *rt)
 
 static ImageTile *rt_tile_new(gint x, gint y, gint width, gint height)
 {
-    ImageTile *it;
-
-    it = g_new0(ImageTile, 1);
+    ImageTile *it = g_new0(ImageTile, 1);
 
     it->x = x;
     it->y = y;
@@ -302,17 +302,14 @@ static void rt_tile_free(ImageTile *it)
 
 static void rt_tile_free_all(RendererTiles *rt)
 {
-    g_list_free_full(rt->tiles, (GDestroyNotify)rt_tile_free);
-    rt->tiles = NULL;
+    g_clear_list(&rt->tiles, (GDestroyNotify)rt_tile_free);
     rt->tile_cache_size = 0;
 }
 
 static ImageTile *rt_tile_add(RendererTiles *rt, gint x, gint y)
 {
     PixbufRenderer *pr = rt->pr;
-    ImageTile *it;
-
-    it = rt_tile_new(x, y, rt->tile_width, rt->tile_height);
+    ImageTile *it = rt_tile_new(x, y, rt->tile_width, rt->tile_height);
 
     if (it->x + it->w > pr->width) it->w = pr->width - it->x;
     if (it->y + it->h > pr->height) it->h = pr->height - it->y;
@@ -323,45 +320,32 @@ static ImageTile *rt_tile_add(RendererTiles *rt, gint x, gint y)
     return it;
 }
 
-static void rt_tile_remove(RendererTiles *rt, ImageTile *it)
+static void rt_tile_unqueue(RendererTiles *rt, ImageTile *it)
 {
     if (it->qd)
     {
-        QueueData *qd = it->qd;
-
-        it->qd = NULL;
-        rt->draw_queue = g_list_remove(rt->draw_queue, qd);
-        g_free(qd);
+        g_queue_delete_link(&rt->draw_queue, it->qd->dq_link);
+        g_clear_pointer(&it->qd, g_free);
     }
 
     if (it->qd2)
     {
-        QueueData *qd = it->qd2;
-
-        it->qd2 = NULL;
-        rt->draw_queue_2pass = g_list_remove(rt->draw_queue_2pass, qd);
-        g_free(qd);
+        g_queue_delete_link(&rt->draw_queue_2pass, it->qd2->dq_link);
+        g_clear_pointer(&it->qd2, g_free);
     }
-
-    rt->tiles = g_list_remove(rt->tiles, it);
-    rt->tile_cache_size -= it->size;
-
-    rt_tile_free(it);
 }
 
-static void rt_tile_free_space(RendererTiles *rt, guint space, ImageTile *it)
+static void rt_tile_free_space(RendererTiles *rt, guint space, ImageTile *keep)
 {
     PixbufRenderer *pr = rt->pr;
-    GList *work;
     guint tile_max;
-
-    work = g_list_last(rt->tiles);
 
     if (pr->source_tiles_enabled && pr->scale < 1.0)
     {
         gint tiles;
 
-        tiles = (pr->vis_width / rt->tile_width + 1) * (pr->vis_height / rt->tile_height + 1);
+        tiles = (pr->vis_width  / rt->tile_width  + 1) *
+                (pr->vis_height / rt->tile_height + 1);
         tile_max = MAX(tiles * rt->tile_width * rt->tile_height * 3,
                    (gint)((gdouble)rt->tile_cache_max * 1048576.0 * pr->scale));
     }
@@ -370,29 +354,30 @@ static void rt_tile_free_space(RendererTiles *rt, guint space, ImageTile *it)
         tile_max = rt->tile_cache_max * 1048576;
     }
 
-    while (work && rt->tile_cache_size + space > tile_max)
+    for (GList *work = g_list_last(rt->tiles), *prev; work; work = prev)
     {
-        ImageTile *needle;
-
-        needle = work->data;
-        work = work->prev;
-        if (needle != it &&
-            ((!needle->qd && !needle->qd2) || !rt_tile_is_visible(rt, needle))) rt_tile_remove(rt, needle);
+        ImageTile *it = work->data;
+        prev = work->prev;
+        if (rt->tile_cache_size + space <= tile_max)
+            break;
+        if (it != keep && ((!it->qd && !it->qd2) ||
+                           !rt_tile_is_visible(rt, it)))
+        {
+            rt_tile_unqueue(rt, it);
+            rt->tiles = g_list_delete_link(rt->tiles, work);
+            rt->tile_cache_size -= it->size;
+            rt_tile_free(it);
+        }
     }
 }
 
 static void rt_tile_invalidate_all(RendererTiles *rt)
 {
     PixbufRenderer *pr = rt->pr;
-    GList *work;
 
-    work = rt->tiles;
-    while (work)
+    for (GList *work = rt->tiles; work; work = work->next)
     {
-        ImageTile *it;
-
-        it = work->data;
-        work = work->next;
+        ImageTile *it = work->data;
 
         it->render_done = TILE_RENDER_NONE;
         it->render_todo = TILE_RENDER_ALL;
@@ -405,22 +390,15 @@ static void rt_tile_invalidate_all(RendererTiles *rt)
 
 static ImageTile *rt_tile_get(RendererTiles *rt, gint x, gint y, gboolean only_existing)
 {
-    GList *work;
-
-    work = rt->tiles;
-    while (work)
+    for (GList *work = rt->tiles; work; work = work->next)
     {
-        ImageTile *it;
-
-        it = work->data;
+        ImageTile *it = work->data;
         if (it->x == x && it->y == y)
         {
             rt->tiles = g_list_delete_link(rt->tiles, work);
             rt->tiles = g_list_prepend(rt->tiles, it);
             return it;
         }
-
-        work = work->next;
     }
 
     if (only_existing) return NULL;
@@ -479,7 +457,7 @@ static void rt_tile_prepare(RendererTiles *rt, ImageTile *it)
  */
 
 static void rt_overlay_get_position(RendererTiles *rt, OverlayData *od,
-                    gint *x, gint *y, gint *w, gint *h)
+                                    gint *x, gint *y, gint *w, gint *h)
 {
     PixbufRenderer *pr = rt->pr;
 
@@ -490,7 +468,7 @@ static void rt_overlay_get_position(RendererTiles *rt, OverlayData *od,
 
     if (od->flags & OVL_RELATIVE)
     {
-        if (*x < 0) *x = pr->viewport_width - *w + *x;
+        if (*x < 0) *x = pr->viewport_width  - *w + *x;
         if (*y < 0) *y = pr->viewport_height - *h + *y;
     }
 }
@@ -505,15 +483,17 @@ static void rt_overlay_init_window(RendererTiles *rt, OverlayData *od)
     rt_overlay_get_position(rt, od, &px, &py, &pw, &ph);
 
     attributes.window_type = GDK_WINDOW_CHILD;
-    attributes.wclass = GDK_INPUT_OUTPUT;
-    attributes.width = pw;
-    attributes.height = ph;
-    attributes.event_mask = GDK_EXPOSURE_MASK;
-    attributes_mask = 0;
+    attributes.wclass      = GDK_INPUT_OUTPUT;
+    attributes.width       = pw;
+    attributes.height      = ph;
+    attributes.event_mask  = GDK_EXPOSURE_MASK;
+    attributes_mask        = 0;
 
-    od->window = gdk_window_new(gtk_widget_get_window(GTK_WIDGET(pr)), &attributes, attributes_mask);
+    od->window = gdk_window_new(gtk_widget_get_window(GTK_WIDGET(pr)),
+                                &attributes, attributes_mask);
     gdk_window_set_user_data(od->window, pr);
-    gdk_window_move(od->window, px + rt->stereo_off_x, py + rt->stereo_off_y);
+    gdk_window_move(od->window, px + rt->stereo_off_x,
+                                py + rt->stereo_off_y);
     gdk_window_show(od->window);
 }
 
@@ -529,21 +509,17 @@ static cairo_surface_t *pixbuf_to_surface(GdkPixbuf *pixbuf)
     return surface;
 }
 
-static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
-                ImageTile *it)
+static void rt_overlay_draw(RendererTiles *rt,
+                            gint x, gint y, gint w, gint h,
+                            ImageTile *it)
 {
     PixbufRenderer *pr = rt->pr;
-    GList *work;
 
-    work = rt->overlay_list;
-    while (work)
+    for (GList *work = rt->overlay_list; work; work = work->next)
     {
-        OverlayData *od;
+        OverlayData *od = work->data;
         gint px, py, pw, ph;
         gint rx, ry, rw, rh;
-
-        od = work->data;
-        work = work->next;
 
         if (!od->window) rt_overlay_init_window(rt, od);
 
@@ -551,23 +527,19 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
         if (pr_clip_region(x, y, w, h, px, py, pw, ph, &rx, &ry, &rw, &rh))
         {
             if (!rt->overlay_buffer)
-            {
-                rt->overlay_buffer = gdk_window_create_similar_surface(gtk_widget_get_window((GtkWidget *)pr),
-                                                    CAIRO_CONTENT_COLOR,
-                                                    rt->tile_width, rt->tile_height);
-            }
-
+                rt->overlay_buffer =
+                    gdk_window_create_similar_surface(gtk_widget_get_window((GtkWidget *)pr),
+                                                      CAIRO_CONTENT_COLOR,
+                                                      rt->tile_width, rt->tile_height);
             if (!od->surface)
-            {
                 od->surface = pixbuf_to_surface(od->pixbuf);
-            }
 
             if (it)
             {
-                cairo_t *cr;
-
-                cr = cairo_create(rt->overlay_buffer);
-                cairo_set_source_surface(cr, it->surface, (pr->x_offset + (it->x - rt->x_scroll)) - rx, (pr->y_offset + (it->y - rt->y_scroll)) - ry);
+                cairo_t *cr = cairo_create(rt->overlay_buffer);
+                cairo_set_source_surface(cr, it->surface,
+                                         pr->x_offset + it->x - rt->x_scroll - rx,
+                                         pr->y_offset + it->y - rt->y_scroll - ry);
                 cairo_rectangle(cr, 0, 0, rw, rh);
                 cairo_fill_preserve(cr);
 
@@ -598,7 +570,9 @@ static void rt_overlay_draw(RendererTiles *rt, gint x, gint y, gint w, gint h,
     }
 }
 
-static void rt_overlay_queue_draw(RendererTiles *rt, OverlayData *od, gint x1, gint y1, gint x2, gint y2)
+static void rt_overlay_queue_draw(RendererTiles *rt,
+                                  OverlayData *od,
+                                  gint x1, gint y1, gint x2, gint y2)
 {
     PixbufRenderer *pr = rt->pr;
     gint x, y, w, h;
@@ -612,36 +586,24 @@ static void rt_overlay_queue_draw(RendererTiles *rt, OverlayData *od, gint x1, g
     h += y1 + y2;
 
     rt_queue(rt, rt->x_scroll - pr->x_offset + x,
-         rt->y_scroll - pr->y_offset + y,
-         w, h,
-         FALSE, TILE_RENDER_ALL, FALSE, FALSE);
+             rt->y_scroll - pr->y_offset + y,
+             w, h,
+             FALSE, TILE_RENDER_ALL, FALSE, FALSE);
 
     rt_border_draw(rt, x, y, w, h);
 }
 
 static void rt_overlay_queue_all(RendererTiles *rt, gint x1, gint y1, gint x2, gint y2)
 {
-    GList *work;
-
-    work = rt->overlay_list;
-    while (work)
-    {
-        OverlayData *od = work->data;
-        work = work->next;
-
-        rt_overlay_queue_draw(rt, od, x1, y1, x2, y2);
-    }
+    for (GList *work = rt->overlay_list; work; work = work->next)
+        rt_overlay_queue_draw(rt, (OverlayData *)work->data, x1, y1, x2, y2);
 }
 
 static void rt_overlay_update_sizes(RendererTiles *rt)
 {
-    GList *work;
-
-    work = rt->overlay_list;
-    while (work)
+    for (GList *work = rt->overlay_list; work; work = work->next)
     {
         OverlayData *od = work->data;
-        work = work->next;
 
         if (!od->window) rt_overlay_init_window(rt, od);
 
@@ -650,40 +612,36 @@ static void rt_overlay_update_sizes(RendererTiles *rt)
             gint x, y, w, h;
 
             rt_overlay_get_position(rt, od, &x, &y, &w, &h);
-            gdk_window_move_resize(od->window, x + rt->stereo_off_x, y + rt->stereo_off_y, w, h);
+            gdk_window_move_resize(od->window,
+                                   x + rt->stereo_off_x,
+                                   y + rt->stereo_off_y, w, h);
         }
     }
 }
 
 static OverlayData *rt_overlay_find(RendererTiles *rt, gint id)
 {
-    GList *work;
-
-    work = rt->overlay_list;
-    while (work)
+    for (GList *work = rt->overlay_list; work; work = work->next)
     {
         OverlayData *od = work->data;
-        work = work->next;
 
         if (od->id == id) return od;
     }
-
     return NULL;
 }
 
-
-gint renderer_tiles_overlay_add(void *renderer, GdkPixbuf *pixbuf, gint x, gint y,
-                 OverlayRendererFlags flags)
+gint renderer_tiles_overlay_add(void *renderer, GdkPixbuf *pixbuf,
+                                gint x, gint y,
+                                OverlayRendererFlags flags)
 {
-    RendererTiles *rt = (RendererTiles *) renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
     OverlayData *od;
-    gint id;
+    gint id = 1;
 
     g_return_val_if_fail(IS_PIXBUF_RENDERER(pr), -1);
     g_return_val_if_fail(pixbuf != NULL, -1);
 
-    id = 1;
     while (rt_overlay_find(rt, id)) id++;
 
     od = g_new0(OverlayData, 1);
@@ -703,53 +661,44 @@ gint renderer_tiles_overlay_add(void *renderer, GdkPixbuf *pixbuf, gint x, gint 
     return od->id;
 }
 
+static void rt_overlay_free_item(OverlayData *od)
+{
+    g_clear_object(&od->pixbuf);
+    g_clear_pointer(&od->window, gdk_window_destroy);
+    g_clear_pointer(&od->surface, cairo_surface_destroy);
+    g_free(od);
+}
+
 static void rt_overlay_free(RendererTiles *rt, OverlayData *od)
 {
     rt->overlay_list = g_list_remove(rt->overlay_list, od);
 
-    if (od->pixbuf) g_object_unref(G_OBJECT(od->pixbuf));
-    if (od->window) gdk_window_destroy(od->window);
-    if (od->surface) cairo_surface_destroy(od->surface);
-    g_free(od);
+    rt_overlay_free_item(od);
 
-    if (!rt->overlay_list && rt->overlay_buffer)
-    {
-        cairo_surface_destroy(rt->overlay_buffer);
-        rt->overlay_buffer = NULL;
-    }
+    if (!rt->overlay_list)
+        g_clear_pointer(&rt->overlay_buffer, cairo_surface_destroy);
 }
 
 static void rt_overlay_list_clear(RendererTiles *rt)
 {
-    while (rt->overlay_list)
-    {
-        OverlayData *od;
-
-        od = rt->overlay_list->data;
-        rt_overlay_free(rt, od);
-    }
+    g_clear_list(&rt->overlay_list, (GDestroyNotify)rt_overlay_free_item);
+    g_clear_pointer(&rt->overlay_buffer, cairo_surface_destroy);
 }
 
 static void rt_overlay_list_reset_window(RendererTiles *rt)
 {
-    GList *work;
+    g_clear_pointer(&rt->overlay_buffer, cairo_surface_destroy);
 
-    if (rt->overlay_buffer) cairo_surface_destroy(rt->overlay_buffer);
-    rt->overlay_buffer = NULL;
-
-    work = rt->overlay_list;
-    while (work)
+    for (GList *work = rt->overlay_list; work; work = work->next)
     {
         OverlayData *od = work->data;
-        work = work->next;
-        if (od->window) gdk_window_destroy(od->window);
-        od->window = NULL;
+        g_clear_pointer(&od->window, gdk_window_destroy);
     }
 }
 
 void renderer_tiles_overlay_set(void *renderer, gint id, GdkPixbuf *pixbuf, gint x, gint y)
 {
-    RendererTiles *rt = (RendererTiles *) renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
     OverlayData *od;
 
@@ -759,10 +708,7 @@ void renderer_tiles_overlay_set(void *renderer, gint id, GdkPixbuf *pixbuf, gint
     if (!od) return;
 
     if (od->surface)
-    {
-        cairo_surface_destroy(od->surface);
-        od->surface = NULL;
-    }
+        g_clear_pointer(&od->surface, cairo_surface_destroy);
 
     if (pixbuf)
     {
@@ -775,11 +721,13 @@ void renderer_tiles_overlay_set(void *renderer, gint id, GdkPixbuf *pixbuf, gint
         od->x = x;
         od->y = y;
 
-        if (!od->window) rt_overlay_init_window(rt, od);
+        if (!od->window)
+            rt_overlay_init_window(rt, od);
 
         rt_overlay_queue_draw(rt, od, 0, 0, 0, 0);
         rt_overlay_get_position(rt, od, &px, &py, &pw, &ph);
-        gdk_window_move_resize(od->window, px + rt->stereo_off_x, py + rt->stereo_off_y, pw, ph);
+        gdk_window_move_resize(od->window, px + rt->stereo_off_x,
+                                           py + rt->stereo_off_y, pw, ph);
     }
     else
     {
@@ -788,9 +736,10 @@ void renderer_tiles_overlay_set(void *renderer, gint id, GdkPixbuf *pixbuf, gint
     }
 }
 
-gboolean renderer_tiles_overlay_get(void *renderer, gint id, GdkPixbuf **pixbuf, gint *x, gint *y)
+gboolean renderer_tiles_overlay_get(void *renderer, gint id,
+                                    GdkPixbuf **pixbuf, gint *x, gint *y)
 {
-    RendererTiles *rt = (RendererTiles *) renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
     OverlayData *od;
 
@@ -806,10 +755,10 @@ gboolean renderer_tiles_overlay_get(void *renderer, gint id, GdkPixbuf **pixbuf,
     return TRUE;
 }
 
-static void rt_hierarchy_changed_cb(GtkWidget *widget, GtkWidget *previous_toplevel, gpointer data)
+static void rt_hierarchy_changed_cb(GtkWidget *widget,
+                                    GtkWidget *previous_toplevel, gpointer data)
 {
-    RendererTiles *rt = data;
-    rt_overlay_list_reset_window(rt);
+    rt_overlay_list_reset_window((RendererTiles *)data);
 }
 
 /*
@@ -820,13 +769,16 @@ static void rt_hierarchy_changed_cb(GtkWidget *widget, GtkWidget *previous_tople
 
 static GdkPixbuf *rt_get_spare_tile(RendererTiles *rt)
 {
-    if (!rt->spare_tile) rt->spare_tile = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, rt->tile_width, rt->tile_height);
+    if (!rt->spare_tile)
+        rt->spare_tile = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8,
+                                        rt->tile_width, rt->tile_height);
     return rt->spare_tile;
 }
 
 #define COLOR_BYTES 3   /* rgb */
 
-static void rt_tile_rotate_90_clockwise(RendererTiles *rt, GdkPixbuf **tile, gint x, gint y, gint w, gint h)
+static void rt_tile_rotate_90_clockwise(RendererTiles *rt, GdkPixbuf **tile,
+                                        gint x, gint y, gint w, gint h)
 {
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
@@ -861,7 +813,8 @@ static void rt_tile_rotate_90_clockwise(RendererTiles *rt, GdkPixbuf **tile, gin
     *tile = dest;
 }
 
-static void rt_tile_rotate_90_counter_clockwise(RendererTiles *rt, GdkPixbuf **tile, gint x, gint y, gint w, gint h)
+static void rt_tile_rotate_90_counter_clockwise(RendererTiles *rt, GdkPixbuf **tile,
+                                                gint x, gint y, gint w, gint h)
 {
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
@@ -896,7 +849,8 @@ static void rt_tile_rotate_90_counter_clockwise(RendererTiles *rt, GdkPixbuf **t
     *tile = dest;
 }
 
-static void rt_tile_mirror_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gint y, gint w, gint h)
+static void rt_tile_mirror_only(RendererTiles *rt, GdkPixbuf **tile,
+                                gint x, gint y, gint w, gint h)
 {
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
@@ -932,7 +886,8 @@ static void rt_tile_mirror_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gin
     *tile = dest;
 }
 
-static void rt_tile_mirror_and_flip(RendererTiles *rt, GdkPixbuf **tile, gint x, gint y, gint w, gint h)
+static void rt_tile_mirror_and_flip(RendererTiles *rt, GdkPixbuf **tile,
+                                    gint x, gint y, gint w, gint h)
 {
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
@@ -967,7 +922,8 @@ static void rt_tile_mirror_and_flip(RendererTiles *rt, GdkPixbuf **tile, gint x,
     *tile = dest;
 }
 
-static void rt_tile_flip_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gint y, gint w, gint h)
+static void rt_tile_flip_only(RendererTiles *rt, GdkPixbuf **tile,
+                              gint x, gint y, gint w, gint h)
 {
     GdkPixbuf *src = *tile;
     GdkPixbuf *dest;
@@ -997,7 +953,8 @@ static void rt_tile_flip_only(RendererTiles *rt, GdkPixbuf **tile, gint x, gint 
     *tile = dest;
 }
 
-static void rt_tile_apply_orientation(RendererTiles *rt, gint orientation, GdkPixbuf **pixbuf, gint x, gint y, gint w, gint h)
+static void rt_tile_apply_orientation(RendererTiles *rt, gint orientation,
+                                      GdkPixbuf **pixbuf, gint x, gint y, gint w, gint h)
 {
     switch (orientation)
     {
@@ -1006,45 +963,31 @@ static void rt_tile_apply_orientation(RendererTiles *rt, gint orientation, GdkPi
             break;
         case EXIF_ORIENTATION_TOP_RIGHT:
             /* mirrored */
-        {
-                rt_tile_mirror_only(rt, pixbuf, x, y, w, h);
-        }
+            rt_tile_mirror_only(rt, pixbuf, x, y, w, h);
             break;
         case EXIF_ORIENTATION_BOTTOM_RIGHT:
             /* upside down */
-        {
-                rt_tile_mirror_and_flip(rt, pixbuf, x, y, w, h);
-        }
+            rt_tile_mirror_and_flip(rt, pixbuf, x, y, w, h);
             break;
         case EXIF_ORIENTATION_BOTTOM_LEFT:
             /* flipped */
-        {
-                rt_tile_flip_only(rt, pixbuf, x, y, w, h);
-        }
+            rt_tile_flip_only(rt, pixbuf, x, y, w, h);
             break;
         case EXIF_ORIENTATION_LEFT_TOP:
-        {
-                rt_tile_flip_only(rt, pixbuf, x, y, w, h);
-                rt_tile_rotate_90_clockwise(rt, pixbuf, x, rt->tile_height - y - h, w, h);
-        }
+            rt_tile_flip_only(rt, pixbuf, x, y, w, h);
+            rt_tile_rotate_90_clockwise(rt, pixbuf, x, rt->tile_height - y - h, w, h);
             break;
         case EXIF_ORIENTATION_RIGHT_TOP:
             /* rotated -90 (270) */
-        {
-                rt_tile_rotate_90_clockwise(rt, pixbuf, x, y, w, h);
-        }
+            rt_tile_rotate_90_clockwise(rt, pixbuf, x, y, w, h);
             break;
         case EXIF_ORIENTATION_RIGHT_BOTTOM:
-        {
-                rt_tile_flip_only(rt, pixbuf, x, y, w, h);
-                rt_tile_rotate_90_counter_clockwise(rt, pixbuf, x, rt->tile_height - y - h, w, h);
-        }
+            rt_tile_flip_only(rt, pixbuf, x, y, w, h);
+            rt_tile_rotate_90_counter_clockwise(rt, pixbuf, x, rt->tile_height - y - h, w, h);
             break;
         case EXIF_ORIENTATION_LEFT_BOTTOM:
             /* rotated 90 */
-        {
-                rt_tile_rotate_90_counter_clockwise(rt, pixbuf, x, y, w, h);
-        }
+            rt_tile_rotate_90_counter_clockwise(rt, pixbuf, x, y, w, h);
             break;
         default:
             /* The other values are out of range */
@@ -1053,42 +996,33 @@ static void rt_tile_apply_orientation(RendererTiles *rt, gint orientation, GdkPi
 }
 
 static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
-                      gint x, gint y, gint w, gint h,
-                      gboolean new_data, gboolean fast)
+                                      gint x, gint y, gint w, gint h,
+                                      gboolean new_data, gboolean fast)
 {
     PixbufRenderer *pr = rt->pr;
     GList *list;
-    GList *work;
     gboolean draw = FALSE;
 
     if (pr->zoom == 1.0 || pr->scale == 1.0)
     {
         list = pr_source_tile_compute_region(pr, it->x + x, it->y + y, w, h, TRUE);
-        work = list;
-        while (work)
+        for (GList *work = list; work; work = work->next)
         {
-            SourceTile *st;
+            SourceTile *st = work->data;
             gint rx, ry, rw, rh;
 
-            st = work->data;
-            work = work->next;
-
             if (pr_clip_region(st->x, st->y, pr->source_tile_width, pr->source_tile_height,
-                       it->x + x, it->y + y, w, h,
-                       &rx, &ry, &rw, &rh))
+                               it->x + x, it->y + y, w, h,
+                               &rx, &ry, &rw, &rh))
             {
                 cairo_t *cr;
                 cr = cairo_create(it->surface);
                 cairo_rectangle (cr, rx - it->x, ry - it->y, rw, rh);
 
                 if (st->blank)
-                {
                     cairo_set_source_rgb(cr, 0, 0, 0);
-                }
                 else /* (pr->zoom == 1.0 || pr->scale == 1.0) */
-                {
                     gdk_cairo_set_source_pixbuf(cr, st->pixbuf, -it->x + st->x, -it->y + st->y);
-                }
                 cairo_fill (cr);
                 cairo_destroy (cr);
             }
@@ -1100,7 +1034,7 @@ static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
         gint sx, sy, sw, sh;
 
         if (pr->image_width == 0 || pr->image_height == 0) return FALSE;
-        scale_x = (gdouble)pr->width / pr->image_width;
+        scale_x = (gdouble)pr->width  / pr->image_width;
         scale_y = (gdouble)pr->height / pr->image_height;
 
         sx = (gdouble)(it->x + x) / scale_x;
@@ -1108,7 +1042,9 @@ static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
         sw = (gdouble)w / scale_x;
         sh = (gdouble)h / scale_y;
 
-        if (pr->width < PR_MIN_SCALE_SIZE || pr->height < PR_MIN_SCALE_SIZE) fast = TRUE;
+        if (pr->width  < PR_MIN_SCALE_SIZE ||
+            pr->height < PR_MIN_SCALE_SIZE)
+            fast = TRUE;
 
 #if 0
         /* draws red over draw region, to check for leaks (regions not filled) */
@@ -1116,24 +1052,20 @@ static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
 #endif
 
         list = pr_source_tile_compute_region(pr, sx, sy, sw, sh, TRUE);
-        work = list;
-        while (work)
+        for (GList *work = list; work; work = work->next)
         {
-            SourceTile *st;
+            SourceTile *st = work->data;
             gint rx, ry, rw, rh;
             gint stx, sty, stw, sth;
 
-            st = work->data;
-            work = work->next;
-
             stx = floor((gdouble)st->x * scale_x);
             sty = floor((gdouble)st->y * scale_y);
-            stw = ceil((gdouble)(st->x + pr->source_tile_width) * scale_x) - stx;
+            stw = ceil((gdouble)(st->x + pr->source_tile_width)  * scale_x) - stx;
             sth = ceil((gdouble)(st->y + pr->source_tile_height) * scale_y) - sty;
 
             if (pr_clip_region(stx, sty, stw, sth,
-                       it->x + x, it->y + y, w, h,
-                       &rx, &ry, &rw, &rh))
+                               it->x + x, it->y + y, w, h,
+                               &rx, &ry, &rw, &rh))
             {
 
                 if (st->blank)
@@ -1155,10 +1087,10 @@ static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
                     offset_y = (gdouble)(sty - it->y);
 
                     gdk_pixbuf_scale(st->pixbuf, it->pixbuf, rx - it->x, ry - it->y, rw, rh,
-                         (gdouble) 0.0 + offset_x,
-                         (gdouble) 0.0 + offset_y,
-                         scale_x, scale_y,
-                         (fast) ? GDK_INTERP_NEAREST : pr->zoom_quality);
+                                     (gdouble) 0.0 + offset_x,
+                                     (gdouble) 0.0 + offset_y,
+                                     scale_x, scale_y,
+                                     fast ? GDK_INTERP_NEAREST : pr->zoom_quality);
                     draw = TRUE;
                 }
             }
@@ -1173,7 +1105,8 @@ static gboolean rt_source_tile_render(RendererTiles *rt, ImageTile *it,
 static void rt_tile_get_region(gboolean has_alpha,
                                const GdkPixbuf *src, GdkPixbuf *dest,
                                int pb_x, int pb_y, int pb_w, int pb_h,
-                               double offset_x, double offset_y, double scale_x, double scale_y,
+                               double offset_x, double offset_y,
+                               double scale_x, double scale_y,
                                GdkInterpType interp_type,
                                int check_x, int check_y)
 {
@@ -1182,37 +1115,39 @@ static void rt_tile_get_region(gboolean has_alpha,
         if (scale_x == 1.0 && scale_y == 1.0)
         {
             gdk_pixbuf_copy_area(src,
-                         -offset_x + pb_x, -offset_y + pb_y,
-                         pb_w, pb_h,
-                         dest,
-                         pb_x, pb_y);
+                                 -offset_x + pb_x,
+                                 -offset_y + pb_y,
+                                 pb_w, pb_h,
+                                 dest,
+                                 pb_x, pb_y);
         }
         else
         {
             gdk_pixbuf_scale(src, dest,
-                     pb_x, pb_y, pb_w, pb_h,
-                     offset_x,
-                     offset_y,
-                     scale_x, scale_y,
-                     interp_type);
+                             pb_x, pb_y,
+                             pb_w, pb_h,
+                             offset_x, offset_y,
+                             scale_x, scale_y,
+                             interp_type);
         }
     }
     else
     {
         gdk_pixbuf_composite_color(src, dest,
-                     pb_x, pb_y, pb_w, pb_h,
-                     offset_x,
-                     offset_y,
-                     scale_x, scale_y,
-                     (scale_x == 1.0 && scale_y == 1.0) ? GDK_INTERP_NEAREST : interp_type,
-                     255, check_x, check_y,
-                     PR_ALPHA_CHECK_SIZE,
-                     ((options->image.alpha_color_1.red << 8 & 0x00FF0000) +
-                     (options->image.alpha_color_1.green & 0x00FF00) +
-                     (options->image.alpha_color_1.blue >> 8 & 0x00FF)),
-                     ((options->image.alpha_color_2.red << 8 & 0x00FF0000) +
-                     (options->image.alpha_color_2.green & 0x00FF00) +
-                     (options->image.alpha_color_2.blue >> 8 & 0x00FF)));
+                                   pb_x, pb_y,
+                                   pb_w, pb_h,
+                                   offset_x, offset_y,
+                                   scale_x, scale_y,
+                                   (scale_x == 1.0 && scale_y == 1.0) ? GDK_INTERP_NEAREST
+                                                                      : interp_type,
+                                   255, check_x, check_y,
+                                   PR_ALPHA_CHECK_SIZE,
+                                   ((options->image.alpha_color_1.red << 8 & 0x00FF0000) +
+                                    (options->image.alpha_color_1.green & 0x00FF00) +
+                                    (options->image.alpha_color_1.blue >> 8 & 0x00FF)),
+                                   ((options->image.alpha_color_2.red << 8 & 0x00FF0000) +
+                                    (options->image.alpha_color_2.green & 0x00FF00) +
+                                    (options->image.alpha_color_2.blue >> 8 & 0x00FF)));
     }
 }
 
@@ -1222,12 +1157,13 @@ static gint rt_get_orientation(RendererTiles *rt)
     PixbufRenderer *pr = rt->pr;
 
     gint orientation = pr->orientation;
-    static const gint mirror[]       = {1,   2, 1, 4, 3, 6, 5, 8, 7};
-    static const gint flip[]         = {1,   4, 3, 2, 1, 8, 7, 6, 5};
+    static const gint mirror[] = {1, 2, 1, 4, 3, 6, 5, 8, 7};
+    static const gint flip[]   = {1, 4, 3, 2, 1, 8, 7, 6, 5};
 
     if (rt->stereo_mode & PR_STEREO_MIRROR) orientation = mirror[orientation];
-    if (rt->stereo_mode & PR_STEREO_FLIP) orientation = flip[orientation];
-        return orientation;
+    if (rt->stereo_mode & PR_STEREO_FLIP)   orientation = flip[orientation];
+
+    return orientation;
 }
 
 
@@ -1248,20 +1184,24 @@ static void rt_tile_render(RendererTiles *rt, ImageTile *it,
         y = 0;
         w = it->w;
         h = it->h;
-        if (!fast) it->render_done = TILE_RENDER_ALL;
+        if (!fast)
+            it->render_done = TILE_RENDER_ALL;
     }
     else if (it->render_todo != TILE_RENDER_AREA)
     {
-        if (!fast) it->render_todo = TILE_RENDER_NONE;
+        if (!fast)
+            it->render_todo = TILE_RENDER_NONE;
         return;
     }
 
-    if (!fast) it->render_todo = TILE_RENDER_NONE;
+    if (!fast)
+        it->render_todo = TILE_RENDER_NONE;
 
-    if (new_data) it->blank = FALSE;
+    if (new_data)
+        it->blank = FALSE;
 
     rt_tile_prepare(rt, it);
-    has_alpha = (pr->pixbuf && gdk_pixbuf_get_has_alpha(pr->pixbuf));
+    has_alpha = pr->pixbuf && gdk_pixbuf_get_has_alpha(pr->pixbuf);
 
     /* FIXME checker colors for alpha should be configurable,
      * also should be drawn for blank = TRUE
@@ -1290,30 +1230,32 @@ static void rt_tile_render(RendererTiles *rt, ImageTile *it,
 
         if (pr->image_width == 0 || pr->image_height == 0) return;
 
-        scale_x = (gdouble)pr->width / pr->image_width;
+        scale_x = (gdouble)pr->width  / pr->image_width;
         scale_y = (gdouble)pr->height / pr->image_height;
 
         pr_tile_coords_map_orientation(orientation, it->x, it->y,
-                        pr->width, pr->height,
-                        rt->tile_width, rt->tile_height,
-                        &src_x, &src_y);
+                                       pr->width, pr->height,
+                                       rt->tile_width, rt->tile_height,
+                                       &src_x, &src_y);
         pr_tile_region_map_orientation(orientation, x, y,
-                        rt->tile_width, rt->tile_height,
-                        w, h,
-                        &pb_x, &pb_y,
-                        &pb_w, &pb_h);
+                                       rt->tile_width, rt->tile_height,
+                                       w, h,
+                                       &pb_x, &pb_y,
+                                       &pb_w, &pb_h);
 
         switch (orientation)
         {
-            gdouble tmp;
             case EXIF_ORIENTATION_LEFT_TOP:
             case EXIF_ORIENTATION_RIGHT_TOP:
             case EXIF_ORIENTATION_RIGHT_BOTTOM:
             case EXIF_ORIENTATION_LEFT_BOTTOM:
+            {
+                gdouble tmp;
                 tmp = scale_x;
                 scale_x = scale_y;
                 scale_y = tmp;
                 break;
+            }
             default:
                 /* nothing to do */
                 break;
@@ -1322,26 +1264,29 @@ static void rt_tile_render(RendererTiles *rt, ImageTile *it,
         /* HACK: The pixbuf scalers get kinda buggy(crash) with extremely
          * small sizes for anything but GDK_INTERP_NEAREST
          */
-        if (pr->width < PR_MIN_SCALE_SIZE || pr->height < PR_MIN_SCALE_SIZE) fast = TRUE;
+        if (pr->width  < PR_MIN_SCALE_SIZE ||
+            pr->height < PR_MIN_SCALE_SIZE)
+            fast = TRUE;
 
         rt_tile_get_region(has_alpha,
-                   pr->pixbuf, it->pixbuf, pb_x, pb_y, pb_w, pb_h,
-                   (gdouble) 0.0 - src_x - GET_RIGHT_PIXBUF_OFFSET(rt) * scale_x,
-                   (gdouble) 0.0 - src_y,
-                   scale_x, scale_y,
-                   (fast) ? GDK_INTERP_NEAREST : pr->zoom_quality,
-                   it->x + pb_x, it->y + pb_y);
+                           pr->pixbuf, it->pixbuf, pb_x, pb_y, pb_w, pb_h,
+                           (gdouble) 0.0 - src_x - GET_RIGHT_PIXBUF_OFFSET(rt) * scale_x,
+                           (gdouble) 0.0 - src_y,
+                           scale_x, scale_y,
+                           (fast) ? GDK_INTERP_NEAREST : pr->zoom_quality,
+                           it->x + pb_x, it->y + pb_y);
         if (rt->stereo_mode & PR_STEREO_ANAGLYPH &&
-            (pr->stereo_pixbuf_offset_right > 0 || pr->stereo_pixbuf_offset_left > 0))
+            (pr->stereo_pixbuf_offset_right > 0 ||
+             pr->stereo_pixbuf_offset_left  > 0))
         {
             GdkPixbuf *right_pb = rt_get_spare_tile(rt);
             rt_tile_get_region(has_alpha,
-                       pr->pixbuf, right_pb, pb_x, pb_y, pb_w, pb_h,
-                       (gdouble) 0.0 - src_x - GET_LEFT_PIXBUF_OFFSET(rt) * scale_x,
-                       (gdouble) 0.0 - src_y,
-                       scale_x, scale_y,
-                       (fast) ? GDK_INTERP_NEAREST : pr->zoom_quality,
-                       it->x + pb_x, it->y + pb_y);
+                               pr->pixbuf, right_pb, pb_x, pb_y, pb_w, pb_h,
+                               (gdouble) 0.0 - src_x - GET_LEFT_PIXBUF_OFFSET(rt) * scale_x,
+                               (gdouble) 0.0 - src_y,
+                               scale_x, scale_y,
+                               (fast) ? GDK_INTERP_NEAREST : pr->zoom_quality,
+                               it->x + pb_x, it->y + pb_y);
             pr_create_anaglyph(rt->stereo_mode, it->pixbuf, right_pb, pb_x, pb_y, pb_w, pb_h);
             /* do not care about freeing spare_tile, it will be reused */
         }
@@ -1366,8 +1311,8 @@ static void rt_tile_render(RendererTiles *rt, ImageTile *it,
 
 
 static void rt_tile_expose(RendererTiles *rt, ImageTile *it,
-               gint x, gint y, gint w, gint h,
-               gboolean new_data, gboolean fast)
+                           gint x, gint y, gint w, gint h,
+                           gboolean new_data, gboolean fast)
 {
     PixbufRenderer *pr = rt->pr;
     GtkWidget *box;
@@ -1402,17 +1347,22 @@ static void rt_tile_expose(RendererTiles *rt, ImageTile *it,
     window = gtk_widget_get_window(box);
 
     cr = gdk_cairo_create(window);
-    cairo_set_source_surface(cr, it->surface, pr->x_offset + (it->x - rt->x_scroll) + rt->stereo_off_x, pr->y_offset + (it->y - rt->y_scroll) + rt->stereo_off_y);
-    cairo_rectangle (cr, pr->x_offset + (it->x - rt->x_scroll) + x + rt->stereo_off_x, pr->y_offset + (it->y - rt->y_scroll) + y + rt->stereo_off_y, w, h);
+    cairo_set_source_surface(cr, it->surface,
+                             pr->x_offset + it->x - rt->x_scroll + rt->stereo_off_x,
+                             pr->y_offset + it->y - rt->y_scroll + rt->stereo_off_y);
+    cairo_rectangle (cr,
+                     pr->x_offset + it->x - rt->x_scroll + x + rt->stereo_off_x,
+                     pr->y_offset + it->y - rt->y_scroll + y + rt->stereo_off_y, w, h);
     cairo_fill (cr);
     cairo_destroy (cr);
 
     if (rt->overlay_list)
     {
-        rt_overlay_draw(rt, pr->x_offset + (it->x - rt->x_scroll) + x,
-                pr->y_offset + (it->y - rt->y_scroll) + y,
-                w, h,
-                it);
+        rt_overlay_draw(rt,
+                        pr->x_offset + it->x - rt->x_scroll + x,
+                        pr->y_offset + it->y - rt->y_scroll + y,
+                        w, h,
+                        it);
     }
 }
 
@@ -1421,7 +1371,7 @@ static gboolean rt_tile_is_visible(RendererTiles *rt, ImageTile *it)
 {
     PixbufRenderer *pr = rt->pr;
     return (it->x + it->w >= rt->x_scroll && it->x < rt->x_scroll + pr->vis_width &&
-        it->y + it->h >= rt->y_scroll && it->y < rt->y_scroll + pr->vis_height);
+            it->y + it->h >= rt->y_scroll && it->y < rt->y_scroll + pr->vis_height);
 }
 
 /*
@@ -1434,12 +1384,11 @@ static gint rt_get_queued_area(const RendererTiles *rt)
 {
     gint area = 0;
 
-    for (GList *work = rt->draw_queue; work; work = work->next)
+    for (GList *work = rt->draw_queue.head; work; work = work->next)
     {
         QueueData *qd = work->data;
         area += qd->w * qd->h;
     }
-
     return area;
 }
 
@@ -1489,11 +1438,11 @@ static gboolean rt_queue_draw_idle_cb(gpointer data)
     RendererTiles *rt = data;
     PixbufRenderer *pr = rt->pr;
     QueueData *qd;
-    gboolean fast;
-
+    gboolean fast = FALSE, first_pass = TRUE;
 
     if ((!pr->pixbuf && !pr->source_tiles_enabled) ||
-        (!rt->draw_queue && !rt->draw_queue_2pass) ||
+        (!rt->draw_queue.head &&
+         !rt->draw_queue_2pass.head) ||
         !rt->draw_idle_id)
     {
         pr_render_complete_signal(pr);
@@ -1502,71 +1451,64 @@ static gboolean rt_queue_draw_idle_cb(gpointer data)
         return FALSE;
     }
 
-    if (rt->draw_queue)
+    if (rt->draw_queue.head)
     {
-        qd = rt->draw_queue->data;
-        fast = (pr->zoom_2pass && ((pr->zoom_quality != GDK_INTERP_NEAREST && pr->scale != 1.0) || pr->post_process_slow));
+        qd = g_queue_pop_head(&rt->draw_queue);
+        qd->dq_link = NULL;
+        fast = pr->zoom_2pass &&
+               ((pr->zoom_quality != GDK_INTERP_NEAREST && pr->scale != 1.0) ||
+                pr->post_process_slow);
     }
     else
     {
         if (pr->loading)
-        {
             /* still loading, wait till done (also drops the higher priority) */
-
             return rt_queue_schedule_next_draw(rt, FALSE);
-        }
-
-        qd = rt->draw_queue_2pass->data;
-        fast = FALSE;
+        qd = g_queue_pop_head(&rt->draw_queue_2pass);
+        qd->dq_link = NULL;
+        first_pass = FALSE;
     }
+
+    if (first_pass) qd->it->qd  = NULL;
+    else            qd->it->qd2 = NULL;
 
     if (gtk_widget_get_realized(GTK_WIDGET(pr)))
     {
         if (rt_tile_is_visible(rt, qd->it))
-        {
-            rt_tile_expose(rt, qd->it, qd->x, qd->y, qd->w, qd->h, qd->new_data, fast);
-        }
+            rt_tile_expose(rt, qd->it,
+                           qd->x, qd->y,
+                           qd->w, qd->h,
+                           qd->new_data, fast);
         else if (qd->new_data)
         {
             /* if new pixel data, and we already have a pixmap, update the tile */
             qd->it->blank = FALSE;
             if (qd->it->surface && qd->it->render_done == TILE_RENDER_ALL)
-            {
-                rt_tile_render(rt, qd->it, qd->x, qd->y, qd->w, qd->h, qd->new_data, fast);
-            }
+                rt_tile_render(rt, qd->it,
+                               qd->x, qd->y,
+                               qd->w, qd->h,
+                               qd->new_data, fast);
         }
     }
 
-    if (rt->draw_queue)
+    if (first_pass && fast)
     {
-        qd->it->qd = NULL;
-        rt->draw_queue = g_list_remove(rt->draw_queue, qd);
-        if (fast)
+        if (qd->it->qd2)
         {
-            if (qd->it->qd2)
-            {
-                rt_queue_merge(qd->it->qd2, qd);
-                g_free(qd);
-            }
-            else
-            {
-                qd->it->qd2 = qd;
-                rt->draw_queue_2pass = g_list_append(rt->draw_queue_2pass, qd);
-            }
+            rt_queue_merge(qd->it->qd2, qd);
         }
         else
         {
-            g_free(qd);
+            qd->it->qd2 = qd;
+            g_queue_push_tail(&rt->draw_queue_2pass, qd);
+            qd->dq_link = rt->draw_queue_2pass.tail;
+            qd = NULL; /* don't free since we added to queue */
         }
     }
-    else
-    {
-        qd->it->qd2 = NULL;
-        rt->draw_queue_2pass = g_list_remove(rt->draw_queue_2pass, qd);
-        g_free(qd);
-    }
+    g_free(qd);
 
-    if (!rt->draw_queue && !rt->draw_queue_2pass)
+    if (!rt->draw_queue.head &&
+        !rt->draw_queue_2pass.head)
     {
         pr_render_complete_signal(pr);
 
@@ -1574,7 +1516,7 @@ static gboolean rt_queue_draw_idle_cb(gpointer data)
         return FALSE;
     }
 
-        return rt_queue_schedule_next_draw(rt, FALSE);
+    return rt_queue_schedule_next_draw(rt, FALSE);
 }
 
 static void rt_queue_data_free(gpointer data)
@@ -1588,11 +1530,8 @@ static void rt_queue_data_free(gpointer data)
 
 static void rt_queue_clear(RendererTiles *rt)
 {
-    g_list_free_full(rt->draw_queue, rt_queue_data_free);
-    rt->draw_queue = NULL;
-
-    g_list_free_full(rt->draw_queue_2pass, rt_queue_data_free);
-    rt->draw_queue_2pass = NULL;
+    g_queue_clear_full(&rt->draw_queue,       rt_queue_data_free);
+    g_queue_clear_full(&rt->draw_queue_2pass, rt_queue_data_free);
 
     g_clear_handle_id(&rt->draw_idle_id, g_source_remove);
     rt_sync_scroll(rt);
@@ -1655,8 +1594,8 @@ static gboolean rt_clamp_to_visible(RendererTiles *rt, gint *x, gint *y, gint *w
 }
 
 static gboolean rt_queue_to_tiles(RendererTiles *rt, gint x, gint y, gint w, gint h,
-                  gboolean clamp, ImageRenderType render,
-                      gboolean new_data, gboolean only_existing)
+                                  gboolean clamp, ImageRenderType render,
+                                  gboolean new_data, gboolean only_existing)
 {
     PixbufRenderer *pr = rt->pr;
     gint i, j;
@@ -1672,77 +1611,72 @@ static gboolean rt_queue_to_tiles(RendererTiles *rt, gint x, gint y, gint w, gin
     y2 = ROUND_UP(y + h, rt->tile_height);
 
     for (j = y1; j <= y2; j += rt->tile_height)
+    for (i = x1; i <= x2; i += rt->tile_width)
     {
-        for (i = x1; i <= x2; i += rt->tile_width)
+        ImageTile *it;
+
+        it = rt_tile_get(rt, i, j,
+                         (only_existing &&
+                          (i + rt->tile_width < rt->x_scroll ||
+                           i > rt->x_scroll + pr->vis_width ||
+                           j + rt->tile_height < rt->y_scroll ||
+                           j > rt->y_scroll + pr->vis_height)));
+        if (it)
         {
-            ImageTile *it;
+            QueueData *qd;
 
-            it = rt_tile_get(rt, i, j,
-                     (only_existing &&
-                      (i + rt->tile_width < rt->x_scroll ||
-                       i > rt->x_scroll + pr->vis_width ||
-                       j + rt->tile_height < rt->y_scroll ||
-                       j > rt->y_scroll + pr->vis_height)));
-            if (it)
+            if ((render == TILE_RENDER_ALL  && it->render_done != TILE_RENDER_ALL) ||
+                (render == TILE_RENDER_AREA && it->render_todo != TILE_RENDER_ALL))
             {
-                QueueData *qd;
+                it->render_todo = render;
+            }
 
-                if ((render == TILE_RENDER_ALL && it->render_done != TILE_RENDER_ALL) ||
-                    (render == TILE_RENDER_AREA && it->render_todo != TILE_RENDER_ALL))
-                {
-                    it->render_todo = render;
-                }
+            qd = g_new(QueueData, 1);
+            qd->it = it;
+            qd->dq_link = NULL;
+            qd->new_data = new_data;
 
-                qd = g_new(QueueData, 1);
-                qd->it = it;
-                qd->new_data = new_data;
+            if (i < x)
+                qd->x = x - i;
+            else
+                qd->x = 0;
 
-                if (i < x)
-                {
-                    qd->x = x - i;
-                }
-                else
-                {
-                    qd->x = 0;
-                }
-                qd->w = x + w - i - qd->x;
-                if (qd->x + qd->w > rt->tile_width) qd->w = rt->tile_width - qd->x;
+            qd->w = x + w - i - qd->x;
+            if (qd->x + qd->w > rt->tile_width)
+                qd->w = rt->tile_width - qd->x;
 
-                if (j < y)
-                {
-                    qd->y = y - j;
-                }
-                else
-                {
-                    qd->y = 0;
-                }
-                qd->h = y + h - j - qd->y;
-                if (qd->y + qd->h > rt->tile_height) qd->h = rt->tile_height - qd->y;
+            if (j < y)
+                qd->y = y - j;
+            else
+                qd->y = 0;
 
-                if (qd->w < 1 || qd->h < 1)
-                {
-                    g_free(qd);
-                }
-                else if (it->qd)
-                {
-                    rt_queue_merge(it->qd, qd);
-                    g_free(qd);
-                }
-                else
-                {
-                    it->qd = qd;
-                    rt->draw_queue = g_list_append(rt->draw_queue, qd);
-                }
+            qd->h = y + h - j - qd->y;
+            if (qd->y + qd->h > rt->tile_height)
+                qd->h = rt->tile_height - qd->y;
+
+            if (qd->w < 1 || qd->h < 1)
+            {
+                g_free(qd);
+            }
+            else if (it->qd)
+            {
+                rt_queue_merge(it->qd, qd);
+                g_free(qd);
+            }
+            else
+            {
+                it->qd = qd;
+                g_queue_push_tail(&rt->draw_queue, qd);
+                qd->dq_link = rt->draw_queue.tail;
             }
         }
     }
-
     return TRUE;
 }
 
 static void rt_queue(RendererTiles *rt, gint x, gint y, gint w, gint h,
-             gboolean clamp, ImageRenderType render,
-             gboolean new_data, gboolean only_existing)
+                     gboolean clamp, ImageRenderType render,
+                     gboolean new_data, gboolean only_existing)
 {
     PixbufRenderer *pr = rt->pr;
     gint nx, ny;
@@ -1758,7 +1692,7 @@ static void rt_queue(RendererTiles *rt, gint x, gint y, gint w, gint h,
     if (w < 1 || h < 1) return;
 
     if (rt_queue_to_tiles(rt, nx, ny, w, h, clamp, render, new_data, only_existing) &&
-        ((!rt->draw_queue && !rt->draw_queue_2pass) || !rt->draw_idle_id))
+        ((!rt->draw_queue.head && !rt->draw_queue_2pass.head) || !rt->draw_idle_id))
     {
         g_clear_handle_id(&rt->draw_idle_id, g_source_remove);
         rt_queue_schedule_next_draw(rt, TRUE);
@@ -1767,14 +1701,14 @@ static void rt_queue(RendererTiles *rt, gint x, gint y, gint w, gint h,
 
 static void rt_scroll(void *renderer, gint x_off, gint y_off)
 {
-    RendererTiles *rt = (RendererTiles *) renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
 
     rt_sync_scroll(rt);
     if (rt->stereo_mode & PR_STEREO_MIRROR) x_off = -x_off;
-    if (rt->stereo_mode & PR_STEREO_FLIP) y_off = -y_off;
+    if (rt->stereo_mode & PR_STEREO_FLIP)   y_off = -y_off;
 
-    gint w = pr->vis_width - abs(x_off);
+    gint w = pr->vis_width  - abs(x_off);
     gint h = pr->vis_height - abs(y_off);
 
     if (w < 1 || h < 1)
@@ -1828,17 +1762,17 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
 
 static void renderer_area_changed(void *renderer, gint src_x, gint src_y, gint src_w, gint src_h)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
     gint x, y, width, height,  x1, y1, x2, y2;
 
     gint orientation = rt_get_orientation(rt);
     pr_coords_map_orientation_reverse(orientation,
-                     src_x - GET_RIGHT_PIXBUF_OFFSET(rt), src_y,
-                     pr->image_width, pr->image_height,
-                     src_w, src_h,
-                     &x, &y,
-                     &width, &height);
+                                      src_x - GET_RIGHT_PIXBUF_OFFSET(rt), src_y,
+                                      pr->image_width, pr->image_height,
+                                      src_w, src_h,
+                                      &x, &y,
+                                      &width, &height);
 
     if (pr->scale != 1.0 && pr->zoom_quality != GDK_INTERP_NEAREST)
     {
@@ -1849,14 +1783,16 @@ static void renderer_area_changed(void *renderer, gint src_x, gint src_y, gint s
 
     x1 = (gint)floor((gdouble)x * pr->scale);
     y1 = (gint)floor((gdouble)y * pr->scale * pr->aspect_ratio);
-    x2 = (gint)ceil((gdouble)(x + width) * pr->scale);
+    x2 = (gint)ceil((gdouble)(x + width)  * pr->scale);
     y2 = (gint)ceil((gdouble)(y + height) * pr->scale * pr->aspect_ratio);
 
     rt_queue(rt, x1, y1, x2 - x1, y2 - y1, FALSE, TILE_RENDER_AREA, TRUE, TRUE);
 }
 
-static void renderer_redraw(RendererTiles *rt, gint x, gint y, gint w, gint h,
-                     gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing)
+static void renderer_redraw(RendererTiles *rt,
+                            gint x, gint y, gint w, gint h,
+                            gint clamp, ImageRenderType render,
+                            gboolean new_data, gboolean only_existing)
 {
     PixbufRenderer *pr = rt->pr;
 
@@ -1869,29 +1805,28 @@ static void renderer_redraw(RendererTiles *rt, gint x, gint y, gint w, gint h,
     y = MAX(0, y - pr->y_offset + pr->y_scroll);
 
     rt_queue(rt,
-         x, y,
-         MIN(w, pr->width - x),
-         MIN(h, pr->height - y),
-         clamp, render, new_data, only_existing);
+             x, y,
+             MIN(w, pr->width  - x),
+             MIN(h, pr->height - y),
+             clamp, render, new_data, only_existing);
 }
 
 static void renderer_update_pixbuf(void *renderer, gboolean lazy)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
     rt_queue_clear(rt);
     rt_tile_free_all(rt);
 }
 
 static void renderer_update_zoom(void *renderer, gboolean lazy)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
     PixbufRenderer *pr = rt->pr;
 
-    rt_tile_invalidate_all((RendererTiles *)renderer);
+    rt_tile_invalidate_all(renderer);
     if (!lazy)
-    {
         renderer_redraw(renderer, 0, 0, pr->width, pr->height, TRUE, TILE_RENDER_ALL, TRUE, FALSE);
-    }
+
     rt_border_clear(rt);
 }
 
@@ -1900,7 +1835,6 @@ static void renderer_invalidate_region(void *renderer, gint x, gint y, gint w, g
     RendererTiles *rt = renderer;
     gint x1, x2;
     gint y1, y2;
-    GList *work;
 
     x1 = ROUND_DOWN(x, rt->tile_width);
     x2 = ROUND_UP(x + w, rt->tile_width);
@@ -1908,13 +1842,9 @@ static void renderer_invalidate_region(void *renderer, gint x, gint y, gint w, g
     y1 = ROUND_DOWN(y, rt->tile_height);
     y2 = ROUND_UP(y + h, rt->tile_height);
 
-    work = rt->tiles;
-    while (work)
+    for (GList *work = rt->tiles; work; work = work->next)
     {
-        ImageTile *it;
-
-        it = work->data;
-        work = work->next;
+        ImageTile *it = work->data;
 
         if (it->x < x2 && it->x + it->w > x1 &&
             it->y < y2 && it->y + it->h > y1)
@@ -1927,7 +1857,7 @@ static void renderer_invalidate_region(void *renderer, gint x, gint y, gint w, g
 
 static void renderer_update_viewport(void *renderer)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
 
     rt->stereo_off_x = 0;
     rt->stereo_off_y = 0;
@@ -1956,7 +1886,9 @@ static void renderer_update_viewport(void *renderer)
             rt->stereo_off_y = rt->pr->stereo_fixed_y_left;
         }
     }
-    DEBUG_1("update size: %p  %d %d   %d %d", rt, rt->stereo_off_x, rt->stereo_off_y, rt->pr->viewport_width, rt->pr->viewport_height);
+    DEBUG_1("update size: %p  %d %d   %d %d",
+            rt, rt->stereo_off_x, rt->stereo_off_y,
+            rt->pr->viewport_width, rt->pr->viewport_height);
     rt_sync_scroll(rt);
     rt_overlay_update_sizes(rt);
     rt_border_clear(rt);
@@ -1964,18 +1896,17 @@ static void renderer_update_viewport(void *renderer)
 
 static void renderer_stereo_set(void *renderer, gint stereo_mode)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
 
     rt->stereo_mode = stereo_mode;
 }
 
 static void renderer_free(void *renderer)
 {
-    RendererTiles *rt = (RendererTiles *)renderer;
+    RendererTiles *rt = renderer;
     rt_queue_clear(rt);
     rt_tile_free_all(rt);
-    if (rt->spare_tile) g_object_unref(rt->spare_tile);
-    if (rt->overlay_buffer) g_object_unref(rt->overlay_buffer);
+    g_clear_object(&rt->spare_tile);
     rt_overlay_list_clear(rt);
     /* disconnect "hierarchy-changed" */
     g_signal_handlers_disconnect_matched(G_OBJECT(rt->pr), G_SIGNAL_MATCH_DATA,
@@ -1985,29 +1916,27 @@ static void renderer_free(void *renderer)
 
 static gboolean rt_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-    RendererTiles *rt = (RendererTiles *)data;
-    if (gtk_widget_is_drawable(widget))
+    RendererTiles *rt = data;
+    if (gtk_widget_is_drawable(widget) &&
+        gtk_widget_get_has_window(widget))
     {
-        if (gtk_widget_get_has_window(widget))
+        if (event->window != gtk_widget_get_window(widget))
         {
-            if (event->window != gtk_widget_get_window(widget))
-            {
-                GdkRectangle area;
+            GdkRectangle area;
 
-                gdk_window_get_position(event->window, &area.x, &area.y);
-                area.x += event->area.x;
-                area.y += event->area.y;
-                area.width = event->area.width;
-                area.height = event->area.height;
-                renderer_redraw(rt, area.x, area.y, area.width, area.height,
-                        FALSE, TILE_RENDER_ALL, FALSE, FALSE);
+            gdk_window_get_position(event->window, &area.x, &area.y);
+            area.x += event->area.x;
+            area.y += event->area.y;
+            area.width  = event->area.width;
+            area.height = event->area.height;
+            renderer_redraw(rt, area.x, area.y, area.width, area.height,
+                            FALSE, TILE_RENDER_ALL, FALSE, FALSE);
 
-            }
-            else
-            {
-                renderer_redraw(rt, event->area.x, event->area.y, event->area.width, event->area.height,
-                        FALSE, TILE_RENDER_ALL, FALSE, FALSE);
-            }
+        }
+        else
+        {
+            renderer_redraw(rt, event->area.x, event->area.y, event->area.width, event->area.height,
+                            FALSE, TILE_RENDER_ALL, FALSE, FALSE);
         }
     }
 
@@ -2016,18 +1945,18 @@ static gboolean rt_expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer 
 
 RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
 {
+    G_STATIC_ASSERT(offsetof(RendererTiles, f) == 0);
     RendererTiles *rt = g_new0(RendererTiles, 1);
 
     rt->pr = pr;
 
-    rt->f.area_changed = renderer_area_changed;
-    rt->f.update_pixbuf = renderer_update_pixbuf;
-    rt->f.free = renderer_free;
-    rt->f.update_zoom = renderer_update_zoom;
+    rt->f.area_changed      = renderer_area_changed;
+    rt->f.update_pixbuf     = renderer_update_pixbuf;
+    rt->f.free              = renderer_free;
+    rt->f.update_zoom       = renderer_update_zoom;
     rt->f.invalidate_region = renderer_invalidate_region;
-    rt->f.scroll = rt_scroll;
-    rt->f.update_viewport = renderer_update_viewport;
-
+    rt->f.scroll            = rt_scroll;
+    rt->f.update_viewport   = renderer_update_viewport;
 
     rt->f.overlay_add = renderer_tiles_overlay_add;
     rt->f.overlay_set = renderer_tiles_overlay_set;
@@ -2035,7 +1964,7 @@ RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
 
     rt->f.stereo_set = renderer_stereo_set;
 
-    rt->tile_width = options->image.tile_size;
+    rt->tile_width  = options->image.tile_size;
     rt->tile_height = options->image.tile_size;
 
     rt->tiles = NULL;
@@ -2045,16 +1974,16 @@ RendererFuncs *renderer_tiles_new(PixbufRenderer *pr)
 
     rt->draw_idle_id = 0;
 
-    rt->stereo_mode = 0;
+    rt->stereo_mode  = 0;
     rt->stereo_off_x = 0;
     rt->stereo_off_y = 0;
 
     g_signal_connect(G_OBJECT(pr), "hierarchy-changed",
-             G_CALLBACK(rt_hierarchy_changed_cb), rt);
+                     G_CALLBACK(rt_hierarchy_changed_cb), rt);
 
     g_signal_connect(G_OBJECT(pr), "expose_event",
                      G_CALLBACK(rt_expose_cb), rt);
-    return (RendererFuncs *) rt;
+    return (RendererFuncs *)rt;
 }
 
 
