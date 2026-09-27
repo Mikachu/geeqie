@@ -502,9 +502,9 @@ ExifItem *exif_item_new(ExifFormatType format, guint tag,
     ExifItem *item;
 
     item = g_new0(ExifItem, 1);
-    item->format = format;
-    item->tag = tag;
-    item->marker = marker;
+    item->format   = format;
+    item->tag      = tag;
+    item->marker   = marker;
     item->elements = elements;
 
     switch (format)
@@ -544,7 +544,7 @@ ExifItem *exif_item_new(ExifFormatType format, guint tag,
             item->data_len = sizeof(ExifRational) * elements;
             break;
         case EXIF_FORMAT_FLOAT:
-            item->data_len = sizeof(float) * elements;
+            item->data_len = sizeof(gfloat) * elements;
             break;
         case EXIF_FORMAT_DOUBLE:
             item->data_len = sizeof(gdouble) * elements;
@@ -605,59 +605,40 @@ gchar *exif_item_get_description(ExifItem *item)
 const gchar *exif_item_get_format_name(ExifItem *item, gboolean brief)
 {
     if (!item || !item->marker) return NULL;
-    return (brief) ? ExifFormatList[item->format].short_name : ExifFormatList[item->format].description;
+    return brief ? ExifFormatList[item->format].short_name
+                 : ExifFormatList[item->format].description;
 }
 
 static GString *string_append_raw_bytes(GString *string, gpointer data, gint ne)
 {
-    gint i;
-
-    for (i = 0 ; i < ne; i++)
+    for (gint i = 0; i < ne; i++)
     {
         guchar c = ((gchar *)data)[i];
         if (c < 32 || c > 127) c = '.';
         g_string_append_printf(string, "%c", c);
     }
     string = g_string_append(string, " : ");
-    for (i = 0 ; i < ne; i++)
+    for (gint i = 0; i < ne; i++)
     {
         const gchar *spacer;
-        if (i > 0)
-        {
-            if (i%8 == 0)
-            {
-                spacer = " - ";
-            }
-            else
-            {
-                spacer = " ";
-            }
-        }
-        else
-        {
+        if (i == 0)
             spacer = "";
-        }
+        else if (i % 8 == 0)
+            spacer = " - ";
+        else
+            spacer = " ";
         g_string_append_printf(string, "%s%02x", spacer, ((gchar *)data)[i]);
     }
 
     return string;
 }
 
-
 gchar *exif_text_list_find_value(ExifTextList *list, guint value)
 {
-    gchar *result = NULL;
-    gint i;
-
-    i = 0;
-    while (!result && list[i].value >= 0)
-    {
-        if (value == (guint) list[i].value) result = g_strdup(_(list[i].description));
-        i++;
-    }
-    if (!result) result = g_strdup_printf("%d (%s)", value, _("unknown"));
-
-    return result;
+    for (gint i = 0; list[i].value >= 0; i++)
+        if (value == (guint) list[i].value)
+            return g_strdup(_(list[i].description));
+    return g_strdup_printf("%d (%s)", value, _("unknown"));
 }
 
 
@@ -743,10 +724,9 @@ static void rational_from_data(ExifRational *r, gpointer src, ExifByteOrder bo)
 }
 
 /* src_format and item->format must be compatible
- * and not overrun src or item->data.
- */
+ * and not overrun src or item->data. */
 void exif_item_copy_data(ExifItem *item, gpointer src, guint len,
-             ExifFormatType src_format, ExifByteOrder bo)
+                         ExifFormatType src_format, ExifByteOrder bo)
 {
     gint bs;
     gint ne;
@@ -778,7 +758,7 @@ void exif_item_copy_data(ExifItem *item, gpointer src, guint len,
         case EXIF_FORMAT_STRING:
             memcpy(dest, src, len);
             /* string is NULL terminated, make sure this is true */
-            if (((gchar *)dest)[len - 1] != '\0') ((gchar *)dest)[len - 1] = '\0';
+            ((gchar *)dest)[len - 1] = '\0';
             break;
         case EXIF_FORMAT_SHORT_UNSIGNED:
         case EXIF_FORMAT_SHORT:
@@ -795,32 +775,24 @@ void exif_item_copy_data(ExifItem *item, gpointer src, guint len,
 
                 ss = ExifFormatList[src_format].size;
                 for (i = 0; i < ne; i++)
-                {
                     ((gint32 *)dest)[i] =
                         (gint32)exif_byte_get_int16(src + i * ss, bo);
-                }
             }
             else
             {
                 for (i = 0; i < ne; i++)
-                {
                     ((gint32 *)dest)[i] =
                         exif_byte_get_int32(src + i * bs, bo);
-                }
             }
             break;
         case EXIF_FORMAT_RATIONAL_UNSIGNED:
         case EXIF_FORMAT_RATIONAL:
             for (i = 0; i < ne; i++)
-            {
                 rational_from_data(&((ExifRational *)dest)[i], src + i * bs, bo);
-            }
             break;
         case EXIF_FORMAT_FLOAT:
             for (i = 0; i < ne; i++)
-            {
-                ((float *)dest)[i] = exif_byte_get_int32(src + i * bs, bo);
-            }
+                ((gfloat *)dest)[i] = exif_byte_get_int32(src + i * bs, bo);
             break;
         case EXIF_FORMAT_DOUBLE:
             for (i = 0; i < ne; i++)
@@ -832,6 +804,19 @@ void exif_item_copy_data(ExifItem *item, gpointer src, guint len,
             }
             break;
     }
+}
+
+/* format pairs exif_item_copy_data() can convert between:
+   signed/unsigned rationals, and SHORT delivered where LONG was expected */
+static gboolean exif_format_compatible(guint expected, guint actual)
+{
+    if (expected == actual) return TRUE;
+
+    if (expected == EXIF_FORMAT_RATIONAL_UNSIGNED && actual == EXIF_FORMAT_RATIONAL) return TRUE;
+    if (expected == EXIF_FORMAT_RATIONAL && actual == EXIF_FORMAT_RATIONAL_UNSIGNED) return TRUE;
+    if (expected == EXIF_FORMAT_LONG_UNSIGNED && actual == EXIF_FORMAT_SHORT_UNSIGNED) return TRUE;
+
+    return FALSE;
 }
 
 static gint exif_parse_IFD_entry(ExifData *exif, guchar *tiff, guint offset,
@@ -848,9 +833,9 @@ static gint exif_parse_IFD_entry(ExifData *exif, guchar *tiff, guint offset,
     const ExifMarker *marker;
     ExifItem *item;
 
-    tag = exif_byte_get_int16(tiff + offset + EXIF_TIFD_OFFSET_TAG, bo);
-    format = exif_byte_get_int16(tiff + offset + EXIF_TIFD_OFFSET_FORMAT, bo);
-    count = exif_byte_get_int32(tiff + offset + EXIF_TIFD_OFFSET_COUNT, bo);
+    tag      = exif_byte_get_int16(tiff + offset + EXIF_TIFD_OFFSET_TAG, bo);
+    format   = exif_byte_get_int16(tiff + offset + EXIF_TIFD_OFFSET_FORMAT, bo);
+    count    = exif_byte_get_int32(tiff + offset + EXIF_TIFD_OFFSET_COUNT, bo);
     data_val = exif_byte_get_int32(tiff + offset + EXIF_TIFD_OFFSET_DATA, bo);
 
     /* Check tag type. If it does not match, either the format is wrong,
@@ -864,33 +849,27 @@ static gint exif_parse_IFD_entry(ExifData *exif, guchar *tiff, guint offset,
             log_printf("warning: exif tag 0x%4x has invalid format %d\n", tag, format);
             return 0;
         }
-        /* allow non recognized tags to be displayed */
+        /* allow non-recognized tags to be displayed */
         marker = &ExifUnknownMarkersList[format];
     }
     if (marker->format != format)
     {
         /* Some cameras got mixed up signed/unsigned_rational
          * eg KODAK DC4800 on object_distance tag
-         *
-         * FIXME: what exactly is this test trying to do?
-         * ok, so this test is to allow the case of swapped signed/unsigned mismatch to leak through?
          */
-        if (!(marker->format == EXIF_FORMAT_RATIONAL_UNSIGNED && format == EXIF_FORMAT_RATIONAL) &&
-            !(marker->format == EXIF_FORMAT_RATIONAL && format == EXIF_FORMAT_RATIONAL_UNSIGNED) &&
-            /* short fits into a long so allow this mismatch
-             * as well (some tags allowed to be unsigned short _or_ unsigned long)
-             */
-            !(marker->format == EXIF_FORMAT_LONG_UNSIGNED && format == EXIF_FORMAT_SHORT_UNSIGNED) )
+        if (marker && !exif_format_compatible(marker->format, format))
         {
             if (format < EXIF_FORMAT_COUNT)
             {
-                log_printf("warning: exif tag %s format mismatch, found %s exif spec requests %s\n",
+                log_printf("warning: exif tag %s format mismatch, "
+                           "found %s exif spec requests %s\n",
                            marker->key, ExifFormatList[format].short_name,
                            ExifFormatList[marker->format].short_name);
             }
             else
             {
-                log_printf("warning: exif tag %s format mismatch, found unknown id %d exif spec requests %d (%s)\n",
+                log_printf("warning: exif tag %s format mismatch, "
+                           "found unknown id %d exif spec requests %d (%s)\n",
                            marker->key, format, marker->format,
                            ExifFormatList[marker->format].short_name);
             }
@@ -906,13 +885,14 @@ static gint exif_parse_IFD_entry(ExifData *exif, guchar *tiff, guint offset,
                    marker->key, count, marker->components);
     }
 
-    data_length = ExifFormatList[marker->format].size * count;
+    data_length = ExifFormatList[format].size * count;
     if (data_length > 4)
     {
         data_offset = data_val;
         if (size < data_offset || size < data_offset + data_length)
         {
-            log_printf("warning: exif tag %s data will overrun end of file, ignored.\n", marker->key);
+            log_printf("warning: exif tag %s data will overrun end of file, ignored.\n",
+                       marker->key);
             return -1;
         }
     }
@@ -930,10 +910,12 @@ static gint exif_parse_IFD_entry(ExifData *exif, guchar *tiff, guint offset,
         switch (item->tag)
         {
             case TAG_EXIFOFFSET:
-                exif_parse_IFD_table(exif, tiff, data_val, size, bo, level + 1, list);
+                exif_parse_IFD_table(exif, tiff, data_val, size, bo,
+                                     level + 1, list);
                 break;
             case TAG_GPSOFFSET:
-                exif_parse_IFD_table(exif, tiff, data_val, size, bo, level + 1, ExifKnownGPSInfoMarkersList);
+                exif_parse_IFD_table(exif, tiff, data_val, size, bo,
+                                     level + 1, ExifKnownGPSInfoMarkersList);
                 break;
             case TAG_EXIFMAKERNOTE:
                 format_exif_makernote_parse(exif, tiff, data_val, size, bo);
@@ -1025,7 +1007,9 @@ gint exif_tiff_parse(ExifData *exif, guchar *tiff, guint size, ExifMarker *list)
          length of NN... == SSSS - 2.
        NNN.: the data in this segment
  */
-static ExifMarker jpeg_color_marker = { 0x8773, EXIF_FORMAT_UNDEFINED, -1, "Exif.Image.InterColorProfile", NULL, NULL };
+static ExifMarker jpeg_color_marker = { 0x8773, EXIF_FORMAT_UNDEFINED, -1,
+                                        "Exif.Image.InterColorProfile",
+                                        NULL, NULL };
 
 void exif_add_jpeg_color_profile(ExifData *exif, guchar *cp_data, guint cp_length)
 {
@@ -1036,7 +1020,6 @@ void exif_add_jpeg_color_profile(ExifData *exif, guchar *cp_data, guint cp_lengt
     item->elements = cp_length;
     item->data_len = cp_length;
     exif->items = g_list_prepend(exif->items, item);
-
 }
 
 static gint exif_jpeg_parse(ExifData *exif,
@@ -1047,11 +1030,8 @@ static gint exif_jpeg_parse(ExifData *exif,
     guint seg_length = 0;
     gint res = -1;
 
-    if (size < 4 ||
-        memcmp(data, "\xFF\xD8", 2) != 0)
-    {
+    if (size < 4 || memcmp(data, "\xFF\xD8", 2) != 0)
         return -2;
-    }
 
     if (jpeg_segment_find(data, size, JPEG_MARKER_APP1,
                           "Exif\x00\x00", 6,
@@ -1068,7 +1048,7 @@ guchar *exif_get_color_profile(ExifData *exif, guint *data_len)
 {
     ExifItem *prof_item = exif_get_item(exif, "Exif.Image.InterColorProfile");
     if (prof_item && exif_item_get_format_id(prof_item) == EXIF_FORMAT_UNDEFINED)
-        return (guchar *) exif_item_get_data(prof_item, data_len);
+        return exif_item_get_data(prof_item, data_len);
     return NULL;
 }
 
@@ -1084,7 +1064,7 @@ ExifItem *exif_get_first_item(ExifData *exif)
 {
     if (exif->items)
     {
-        ExifItem *ret = (ExifItem *)exif->items->data;
+        ExifItem *ret = exif->items->data;
         exif->current = exif->items->next;
         return ret;
     }
@@ -1096,7 +1076,7 @@ ExifItem *exif_get_next_item(ExifData *exif)
 {
     if (exif->current)
     {
-        ExifItem *ret = (ExifItem *)exif->current->data;
+        ExifItem *ret = exif->current->data;
         exif->current = exif->current->next;
         return ret;
     }
@@ -1183,9 +1163,7 @@ ExifData *exif_read(gchar *path, gchar *sidecar_path, GHashTable *modified_xmp)
 
     res = exif_jpeg_parse(exif, (guchar *)f, size, ExifKnownMarkersList);
     if (res == -2)
-    {
         res = exif_tiff_parse(exif, (guchar *)f, size, ExifKnownMarkersList);
-    }
 
     if (res != 0)
     {
@@ -1210,9 +1188,10 @@ ExifData *exif_read(gchar *path, gchar *sidecar_path, GHashTable *modified_xmp)
             case FORMAT_RAW_EXIF_IFD_II:
             case FORMAT_RAW_EXIF_IFD_MM:
                 res = exif_parse_IFD_table(exif, (guchar *)f, offset, size - offset,
-                                           (exif_type == FORMAT_RAW_EXIF_IFD_II) ?
-                                                EXIF_BYTE_ORDER_INTEL : EXIF_BYTE_ORDER_MOTOROLA,
-                                            0, ExifKnownMarkersList);
+                                           exif_type == FORMAT_RAW_EXIF_IFD_II
+                                           ? EXIF_BYTE_ORDER_INTEL
+                                           : EXIF_BYTE_ORDER_MOTOROLA,
+                                           0, ExifKnownMarkersList);
                 break;
             case FORMAT_RAW_EXIF_PROPRIETARY:
                 if (exif_parse_func)
@@ -1229,31 +1208,26 @@ ExifData *exif_read(gchar *path, gchar *sidecar_path, GHashTable *modified_xmp)
 
     unmap_file(f, size);
 
-    if (exif) exif->items = g_list_reverse(exif->items);
+    if (exif)
+        exif->items = g_list_reverse(exif->items);
 
     return exif;
 }
 
 ExifItem *exif_get_item(ExifData *exif, const gchar *key)
 {
-    GList *work;
-
     if (!key) return NULL;
 
-    work = exif->items;
-    while (work)
+    for (GList *work = exif->items; work; work = work->next)
     {
-        ExifItem *item;
-
-        item = work->data;
-        work = work->next;
-        if (item->marker->key && strcmp(key, item->marker->key) == 0) return item;
+        ExifItem *item = work->data;
+        if (item->marker->key && strcmp(key, item->marker->key) == 0)
+            return item;
     }
     return NULL;
 }
 
 #define EXIF_DATA_AS_TEXT_MAX_COUNT 16
-
 
 static gchar *exif_item_get_data_as_text_full(ExifItem *item, MetadataFormat format)
 {
@@ -1264,14 +1238,15 @@ static gchar *exif_item_get_data_as_text_full(ExifItem *item, MetadataFormat for
     gint ne;
     gint i;
 
-    if (!item) return NULL;
+    if (!item || !item->marker) return NULL;
 
     marker = item->marker;
-    if (!marker) return NULL;
-
     data = item->data;
     ne = item->elements;
-    if (ne > EXIF_DATA_AS_TEXT_MAX_COUNT) ne = EXIF_DATA_AS_TEXT_MAX_COUNT;
+
+    if (ne > EXIF_DATA_AS_TEXT_MAX_COUNT)
+        ne = EXIF_DATA_AS_TEXT_MAX_COUNT;
+
     string = g_string_new("");
     switch (item->format)
     {
@@ -1287,13 +1262,9 @@ static gchar *exif_item_get_data_as_text_full(ExifItem *item, MetadataFormat for
 
                 if (item->format == EXIF_FORMAT_BYTE_UNSIGNED ||
                     item->format == EXIF_FORMAT_UNDEFINED)
-                {
                     val = ((guchar *)data)[0];
-                }
                 else
-                {
                     val = (guchar)(((gchar *)data)[0]);
-                }
 
                 result = exif_text_list_find_value(marker->list, (guint)val);
                 string = g_string_append(string, result);
@@ -1305,7 +1276,8 @@ static gchar *exif_item_get_data_as_text_full(ExifItem *item, MetadataFormat for
             }
             break;
         case EXIF_FORMAT_STRING:
-            if (item->data) string = g_string_append(string, (gchar *)(item->data));
+            if (item->data)
+                string = g_string_append(string, (gchar *)(item->data));
             break;
         case EXIF_FORMAT_SHORT_UNSIGNED:
             if (ne == 1 && marker->list && format == METADATA_FORMATTED)
@@ -1316,58 +1288,53 @@ static gchar *exif_item_get_data_as_text_full(ExifItem *item, MetadataFormat for
                 string = g_string_append(string, result);
                 g_free(result);
             }
-            else for (i = 0; i < ne; i++)
+            else
             {
-                g_string_append_printf(string, "%s%hd", (i > 0) ? ", " : "", ((guint16 *)data)[i]);
+                for (i = 0; i < ne; i++)
+                    g_string_append_printf(string, "%s%hd", (i > 0) ? ", " : "",
+                                           ((guint16 *)data)[i]);
             }
             break;
         case EXIF_FORMAT_LONG_UNSIGNED:
             for (i = 0; i < ne; i++)
-            {
-                g_string_append_printf(string, "%s%ld", (i > 0) ? ", " : "", (gulong)((guint32 *)data)[i]);
-            }
+                g_string_append_printf(string, "%s%ld", (i > 0) ? ", " : "",
+                                       (gulong)((guint32 *)data)[i]);
             break;
         case EXIF_FORMAT_RATIONAL_UNSIGNED:
             for (i = 0; i < ne; i++)
             {
-                ExifRational *r;
-
-                r = &((ExifRational *)data)[i];
-                g_string_append_printf(string, "%s%ld/%ld", (i > 0) ? ", " : "", (gulong)r->num, (gulong)r->den);
+                ExifRational *r = &((ExifRational *)data)[i];
+                g_string_append_printf(string, "%s%ld/%ld", (i > 0) ? ", " : "",
+                                       (gulong)r->num, (gulong)r->den);
             }
             break;
         case EXIF_FORMAT_SHORT:
             for (i = 0; i < ne; i++)
-            {
-                g_string_append_printf(string, "%s%hd", (i > 0) ? ", " : "", ((gint16 *)data)[i]);
-            }
+                g_string_append_printf(string, "%s%hd", (i > 0) ? ", " : "",
+                                       ((gint16 *)data)[i]);
             break;
         case EXIF_FORMAT_LONG:
             for (i = 0; i < ne; i++)
-            {
-                g_string_append_printf(string, "%s%ld", (i > 0) ? ", " : "", (glong)((gint32 *)data)[i]);
-            }
+                g_string_append_printf(string, "%s%ld", (i > 0) ? ", " : "",
+                                       (glong)((gint32 *)data)[i]);
             break;
         case EXIF_FORMAT_RATIONAL:
             for (i = 0; i < ne; i++)
             {
-                ExifRational *r;
-
-                r = &((ExifRational *)data)[i];
-                g_string_append_printf(string, "%s%ld/%ld", (i > 0) ? ", " : "", (glong)r->num, (glong)r->den);
+                ExifRational *r = &((ExifRational *)data)[i];
+                g_string_append_printf(string, "%s%ld/%ld", (i > 0) ? ", " : "",
+                                       (glong)r->num, (glong)r->den);
             }
             break;
         case EXIF_FORMAT_FLOAT:
             for (i = 0; i < ne; i++)
-            {
-                g_string_append_printf(string, "%s%f", (i > 0) ? ", " : "", ((float *)data)[i]);
-            }
+                g_string_append_printf(string, "%s%f", (i > 0) ? ", " : "",
+                                       ((gfloat *)data)[i]);
             break;
         case EXIF_FORMAT_DOUBLE:
             for (i = 0; i < ne; i++)
-            {
-                g_string_append_printf(string, "%s%f", (i > 0) ? ", " : "", ((gdouble *)data)[i]);
-            }
+                g_string_append_printf(string, "%s%f", (i > 0) ? ", " : "",
+                                       ((gdouble *)data)[i]);
             break;
     }
 
@@ -1441,23 +1408,15 @@ ExifRational *exif_item_get_rational(ExifItem *item, gint *sign, guint n)
 
 gchar *exif_get_tag_description_by_key(const gchar *key)
 {
-    gint i;
-
     if (!key) return NULL;
 
-    i = 0;
-    while (ExifKnownMarkersList[i].tag > 0)
-    {
-        if (strcmp(key, ExifKnownMarkersList[i].key) == 0) return g_strdup(_(ExifKnownMarkersList[i].description));
-        i++;
-    }
+    for (gint i = 0; ExifKnownMarkersList[i].tag > 0; i++)
+        if (strcmp(key, ExifKnownMarkersList[i].key) == 0)
+            return g_strdup(_(ExifKnownMarkersList[i].description));
 
-    i = 0;
-    while (ExifKnownGPSInfoMarkersList[i].tag > 0)
-    {
-       if (strcmp(key, ExifKnownGPSInfoMarkersList[i].key) == 0) return g_strdup(_(ExifKnownGPSInfoMarkersList[i].description));
-       i++;
-    }
+    for (gint i = 0; ExifKnownGPSInfoMarkersList[i].tag > 0; i++)
+       if (strcmp(key, ExifKnownGPSInfoMarkersList[i].key) == 0)
+           return g_strdup(_(ExifKnownGPSInfoMarkersList[i].description));
 
     return NULL;
 }
@@ -1470,7 +1429,8 @@ static void exif_write_item(FILE *f, ExifItem *item, ExifData *exif)
     if (text)
     {
         gchar *tag = exif_item_get_tag_name(item);
-        g_fprintf(f, "%4x %9s %30s %s\n", item->tag, ExifFormatList[item->format].short_name, tag, text);
+        g_fprintf(f, "%4x %9s %30s %s\n",
+                  item->tag, ExifFormatList[item->format].short_name, tag, text);
         g_free(tag);
     }
     g_free(text);
@@ -1485,33 +1445,18 @@ void exif_write_data_list(ExifData *exif, FILE *f, gint human_readable_list)
 
     if (human_readable_list)
     {
-        gint i;
-
-        i = 0;
-        while (ExifFormattedList[i].key)
+        for (gint i = 0; ExifFormattedList[i].key; i++)
         {
-            gchar *text;
-
-            text = exif_get_formatted_by_key(exif, ExifFormattedList[i].key, NULL);
+            gchar *text = exif_get_formatted_by_key(exif, ExifFormattedList[i].key, NULL);
             if (text)
-            {
                 g_fprintf(f, "     %9s %30s %s\n", "string", ExifFormattedList[i].key, text);
-            }
-            i++;
         }
     }
     else
     {
-        GList *work;
-
-        work = exif->items;
-        while (work)
+        for (GList *work = exif->items; work; work = work->next)
         {
-            ExifItem *item;
-
-            item = work->data;
-            work = work->next;
-
+            ExifItem *item = work->data;
             exif_write_item(f, item, exif);
         }
     }
@@ -1544,7 +1489,8 @@ GList *exif_get_metadata(ExifData *exif, const gchar *key, MetadataFormat format
     if (!key) return NULL;
 
     /* convert xmp key to exif key */
-    if (strcmp(key, "Xmp.tiff.Orientation") == 0) key = "Exif.Image.Orientation";
+    if (strcmp(key, "Xmp.tiff.Orientation") == 0)
+        key = "Exif.Image.Orientation";
 
     if (format == METADATA_FORMATTED)
     {
@@ -1574,7 +1520,8 @@ struct _UnmapData
 
 static GList *exif_unmap_list = 0;
 
-guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, gint requested_height)
+guchar *exif_get_preview(ExifData *exif, guint *data_len,
+                         gint requested_width, gint requested_height)
 {
     guint offset;
     const gchar* path;
@@ -1584,29 +1531,21 @@ guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, 
     int fd;
 
     if (!exif) return NULL;
+
     path = exif->path;
-
     fd = open(path, O_RDONLY);
-
-
-    if (fd == -1)
-    {
-        return 0;
-    }
+    if (fd == -1) return 0;
 
     if (fstat(fd, &st) == -1)
     {
         close(fd);
         return 0;
     }
+
     map_len = st.st_size;
     map_data = (guchar *) mmap(0, map_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
-
-    if (map_data == MAP_FAILED)
-    {
-        return 0;
-    }
+    if (map_data == MAP_FAILED) return 0;
 
     if (format_raw_img_exif_offsets(map_data, map_len, &offset, NULL) && offset)
     {
@@ -1623,28 +1562,22 @@ guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, 
         exif_unmap_list = g_list_prepend(exif_unmap_list, ud);
         return ud->ptr;
     }
-
     munmap(map_data, map_len);
     return NULL;
-
 }
 
 void exif_free_preview(guchar *buf)
 {
-    GList *work = exif_unmap_list;
-
-    while (work)
+    for (GList *work = exif_unmap_list; work; work = work->next)
     {
         UnmapData *ud = (UnmapData *)work->data;
         if (ud->ptr == buf)
         {
             munmap(ud->map_data, ud->map_len);
-            exif_unmap_list = g_list_remove_link(exif_unmap_list, work);
-            g_list_free_1(work);
+            exif_unmap_list = g_list_delete_link(exif_unmap_list, work);
             g_free(ud);
             return;
         }
-        work = work->next;
     }
     g_assert_not_reached();
 }
