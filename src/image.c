@@ -1764,11 +1764,6 @@ static void image_notify_cb(FileData *fd, NotifyType type, gpointer data)
     }
 }
 
-void image_auto_refresh_enable(ImageWindow *imd, gboolean enable)
-{
-    imd->auto_refresh = 0;
-}
-
 void image_top_window_set_sync(ImageWindow *imd, gboolean allow_sync)
 {
     imd->top_window_sync = allow_sync;
