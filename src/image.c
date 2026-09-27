@@ -57,19 +57,14 @@ static void image_cache_set(ImageWindow *imd, FileData *fd);
  *-------------------------------------------------------------------
  */
 
-static void image_click_cb(PixbufRenderer *pr, GdkEventButton *event, gpointer data)
+static void image_click_cb(PixbufRenderer *pr, GdkEventButton *event, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->func_button)
-    {
         imd->func_button(imd, event, imd->data_button);
-    }
 }
 
-static void image_drag_cb(PixbufRenderer *pr, GdkEventMotion *event, gpointer data)
+static void image_drag_cb(PixbufRenderer *pr, GdkEventMotion *event, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
     gint width, height;
 
     pixbuf_renderer_get_scaled_size(pr, &width, &height);
@@ -77,25 +72,21 @@ static void image_drag_cb(PixbufRenderer *pr, GdkEventMotion *event, gpointer da
     if (imd->func_drag)
     {
         imd->func_drag(imd, event,
-                   (gfloat)(pr->drag_last_x - event->x) / width,
-                   (gfloat)(pr->drag_last_y - event->y) / height,
-                   imd->data_button);
+                       (gfloat)(pr->drag_last_x - event->x) / width,
+                       (gfloat)(pr->drag_last_y - event->y) / height,
+                       imd->data_button);
     }
 }
 
-static void image_scroll_notify_cb(PixbufRenderer *pr, gpointer data)
+static void image_scroll_notify_cb(PixbufRenderer *pr, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->func_scroll_notify && pr->scale)
-    {
         imd->func_scroll_notify(imd,
-                    (gint)((gdouble)pr->x_scroll / pr->scale),
-                    (gint)((gdouble)pr->y_scroll / pr->scale),
-                    (gint)((gdouble)pr->image_width - pr->vis_width / pr->scale),
-                    (gint)((gdouble)pr->image_height - pr->vis_height / pr->scale),
-                    imd->data_scroll_notify);
-    }
+                                (gint)((gdouble)pr->x_scroll / pr->scale),
+                                (gint)((gdouble)pr->y_scroll / pr->scale),
+                                (gint)((gdouble)pr->image_width  - pr->vis_width  / pr->scale),
+                                (gint)((gdouble)pr->image_height - pr->vis_height / pr->scale),
+                                imd->data_scroll_notify);
 }
 
 /*
@@ -114,9 +105,8 @@ typedef struct {
     guint update_idle_id;
 } ZoomRectData;
 
-static gboolean image_zoom_rect_update_idle_cb(gpointer data)
+static gboolean image_zoom_rect_update_idle_cb(ImageWindow *imd)
 {
-    ImageWindow *imd = data;
     ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
     if (!rd) return FALSE;
 
@@ -166,9 +156,11 @@ static gboolean image_zoom_rect_update_idle_cb(gpointer data)
 
     return FALSE;
 }
-static gboolean image_zoom_rect_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpointer data)
+
+static gboolean image_zoom_rect_motion_cb(GtkWidget *widget,
+                                          GdkEventMotion *event,
+                                          ImageWindow *imd)
 {
-    ImageWindow *imd = data;
     ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
     if (!rd) return FALSE;
 
@@ -177,16 +169,16 @@ static gboolean image_zoom_rect_motion_cb(GtkWidget *widget, GdkEventMotion *eve
     rd->cur_x = (gint)event->x;
     rd->cur_y = (gint)event->y;
 
-    if (rd->update_idle_id)
-        g_source_remove(rd->update_idle_id);
-    rd->update_idle_id = g_idle_add(image_zoom_rect_update_idle_cb, imd);
+    g_clear_handle_id(&rd->update_idle_id, g_source_remove);
+    rd->update_idle_id = g_idle_add(G_SOURCE_FUNC(image_zoom_rect_update_idle_cb), imd);
 
     return FALSE;
 }
 
-static gboolean image_zoom_rect_release_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+static gboolean image_zoom_rect_release_cb(GtkWidget *widget,
+                                           GdkEventButton *event,
+                                           ImageWindow *imd)
 {
-    ImageWindow *imd = data;
     ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
     if (!rd) return FALSE;
 
@@ -236,21 +228,19 @@ static gboolean image_zoom_rect_release_cb(GtkWidget *widget, GdkEventButton *ev
     /* Map from displayed (possibly rotated) image coords to original image coords */
     gint rx, ry, rw2, rh2;
     pr_coords_map_orientation_reverse(pr->orientation,
-                      iix1, iiy1,
-                      pr->image_width, pr->image_height,
-                      iirw, iirh,
-                      &rx, &ry, &rw2, &rh2);
+                                      iix1, iiy1,
+                                      pr->image_width, pr->image_height,
+                                      iirw, iirh,
+                                      &rx, &ry, &rw2, &rh2);
 
     if (rw2 < 1 || rh2 < 1) return TRUE;
 
-    gdouble scale = MIN((gdouble)pr->viewport_width / iirw,
-                (gdouble)pr->viewport_height / iirh);
-    gdouble fit_scale = MIN((gdouble)pr->viewport_width / pr->image_width,
-                    (gdouble)pr->viewport_height / pr->image_height);
-    gdouble zoom;
-    if (fabs(scale - fit_scale) < fit_scale * 0.005)
-        zoom = 0.0;
-    else
+    gdouble scale = MIN((gdouble)pr->viewport_width  / iirw,
+                        (gdouble)pr->viewport_height / iirh);
+    gdouble fit_scale = MIN((gdouble)pr->viewport_width  / pr->image_width,
+                            (gdouble)pr->viewport_height / pr->image_height);
+    gdouble zoom = 0.0;
+    if (fabs(scale - fit_scale) > fit_scale * 0.005)
         zoom = (scale >= 1.0) ? scale : -1.0 / scale;
 
     pixbuf_renderer_zoom_set(pr, zoom);
@@ -259,10 +249,10 @@ static gboolean image_zoom_rect_release_cb(GtkWidget *widget, GdkEventButton *ev
     return TRUE;
 }
 
-static gboolean image_zoom_rect_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+static gboolean image_zoom_rect_press_cb(GtkWidget *widget,
+                                         GdkEventButton *event,
+                                         ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
 
     /* One-shot: disconnect ourselves so normal clicks work after one rectangle */
@@ -281,9 +271,9 @@ static gboolean image_zoom_rect_press_cb(GtkWidget *widget, GdkEventButton *even
     g_object_set_data_full(G_OBJECT(pr), "zoom_rect_data", rd, g_free);
 
     g_signal_connect(G_OBJECT(pr), "button-release-event",
-             G_CALLBACK(image_zoom_rect_release_cb), imd);
+                     G_CALLBACK(image_zoom_rect_release_cb), imd);
     g_signal_connect(G_OBJECT(pr), "motion-notify-event",  
-             G_CALLBACK(image_zoom_rect_motion_cb), imd);
+                     G_CALLBACK(image_zoom_rect_motion_cb), imd);
 
     return TRUE;  /* suppress panning for this press */
 }
@@ -291,7 +281,7 @@ static gboolean image_zoom_rect_press_cb(GtkWidget *widget, GdkEventButton *even
 void image_start_rectangle_zoom(ImageWindow *imd)
 {
     g_signal_connect(G_OBJECT(imd->pr), "button-press-event",
-             G_CALLBACK(image_zoom_rect_press_cb), imd);
+                     G_CALLBACK(image_zoom_rect_press_cb), imd);
 
     GdkCursor *cursor = gdk_cursor_new(GDK_CROSSHAIR);
     gdk_window_set_cursor(gtk_widget_get_window(imd->pr), cursor);
@@ -305,37 +295,30 @@ static void image_update_util(ImageWindow *imd)
     if (imd->func_update) imd->func_update(imd, imd->data_update);
 }
 
-
 static void image_complete_util(ImageWindow *imd, gboolean preload)
 {
     if (imd->il && image_get_pixbuf(imd) != image_loader_get_pixbuf(imd->il)) return;
 
     DEBUG_1("%s image load completed \"%s\" (%s)", get_exec_time(),
-              (preload) ? (imd->read_ahead_fd ? imd->read_ahead_fd->path : "null") :
+            (preload) ? (imd->read_ahead_fd ? imd->read_ahead_fd->path : "null") :
                       (imd->image_fd ? imd->image_fd->path : "null"),
-              (preload) ? "preload" : "current");
+             (preload) ? "preload" : "current");
 
     if (!preload) imd->completed = TRUE;
     if (imd->func_complete) imd->func_complete(imd, preload, imd->data_complete);
 }
 
-static void image_render_complete_cb(PixbufRenderer *pr, gpointer data)
+static void image_render_complete_cb(PixbufRenderer *pr, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     image_complete_util(imd, FALSE);
 }
 
 static void image_state_set(ImageWindow *imd, ImageState state)
 {
     if (state == IMAGE_STATE_NONE)
-    {
         imd->state = state;
-    }
     else
-    {
         imd->state |= state;
-    }
     if (imd->func_state) imd->func_state(imd, state, imd->data_state);
 }
 
@@ -345,10 +328,8 @@ static void image_state_unset(ImageWindow *imd, ImageState state)
     if (imd->func_state) imd->func_state(imd, state, imd->data_state);
 }
 
-static void image_zoom_cb(PixbufRenderer *pr, gdouble zoom, gpointer data)
+static void image_zoom_cb(PixbufRenderer *pr, gdouble zoom, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->title_show_zoom) image_update_title(imd);
     image_state_set(imd, IMAGE_STATE_IMAGE);
     image_update_util(imd);
@@ -383,12 +364,12 @@ static void image_update_title(ImageWindow *imd)
     }
 
     title = g_strdup_printf("%s%s%s%s%s%s",
-        imd->title ? imd->title : "",
-        imd->image_fd ? imd->image_fd->name : "",
-        zoom ? zoom : "",
-        collection ? collection : "",
-        imd->image_fd ? " - " : "",
-        imd->title_right ? imd->title_right : "");
+                            imd->title       ? imd->title          : "",
+                            imd->image_fd    ? imd->image_fd->name : "",
+                            zoom             ? zoom                : "",
+                            collection       ? collection          : "",
+                            imd->image_fd    ? " - "               : "",
+                            imd->title_right ? imd->title_right    : "");
 
     gtk_window_set_title(GTK_WINDOW(imd->top_window), title);
 
@@ -402,17 +383,20 @@ static void image_update_title(ImageWindow *imd)
  * rotation, flip, etc.
  *-------------------------------------------------------------------
  */
-static gboolean image_get_x11_screen_profile(ImageWindow *imd, guchar **screen_profile, gint *screen_profile_len)
+static gboolean image_get_x11_screen_profile(ImageWindow *imd,
+                                             guchar **screen_profile,
+                                             gint *screen_profile_len)
 {
     GdkScreen *screen = gtk_widget_get_screen(imd->widget);
     GdkAtom    type   = GDK_NONE;
     gint       format = 0;
 
     return (gdk_property_get(gdk_screen_get_root_window(screen),
-                 gdk_atom_intern ("_ICC_PROFILE", FALSE),
-                 GDK_NONE,
-                 0, 64 * 1024 * 1024, FALSE,
-                 &type, &format, screen_profile_len, screen_profile) && *screen_profile_len > 0);
+                             gdk_atom_intern ("_ICC_PROFILE", FALSE),
+                             GDK_NONE,
+                             0, 64 * 1024 * 1024, FALSE,
+                             &type, &format, screen_profile_len, screen_profile) &&
+            *screen_profile_len > 0);
 }
 
 static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gboolean run_in_bg)
@@ -433,7 +417,8 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
     if (imd->color_profile_input >= COLOR_PROFILE_FILE &&
         imd->color_profile_input <  COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS)
     {
-        const gchar *file = options->color_profile.input_file[imd->color_profile_input - COLOR_PROFILE_FILE];
+        const gchar *file = options->color_profile.input_file[imd->color_profile_input -
+                                                              COLOR_PROFILE_FILE];
 
         if (!is_readable_file(file)) return FALSE;
 
@@ -441,7 +426,7 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
         input_file = file;
     }
     else if (imd->color_profile_input >= COLOR_PROFILE_SRGB &&
-         imd->color_profile_input <  COLOR_PROFILE_FILE)
+             imd->color_profile_input <  COLOR_PROFILE_FILE)
     {
         input_type = imd->color_profile_input;
         input_file = NULL;
@@ -458,7 +443,7 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
         DEBUG_1("Using X11 screen profile, length: %d", screen_profile_len);
     }
     else if (options->color_profile.screen_file &&
-        is_readable_file(options->color_profile.screen_file))
+             is_readable_file(options->color_profile.screen_file))
     {
         screen_type = COLOR_PROFILE_FILE;
         screen_file = options->color_profile.screen_file;
@@ -469,9 +454,7 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
         screen_file = NULL;
     }
 
-
     imd->color_profile_from_image = COLOR_PROFILE_NONE;
-
     exif = exif_read_fd(imd->image_fd);
 
     if (exif)
@@ -525,13 +508,13 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
                 }
             }
 
-            if (imd->color_profile_use_image && imd->color_profile_from_image != COLOR_PROFILE_NONE)
+            if (imd->color_profile_use_image &&
+                imd->color_profile_from_image != COLOR_PROFILE_NONE)
             {
                 input_type = imd->color_profile_from_image;
                 input_file = NULL;
             }
         }
-
         exif_free_fd(imd->image_fd, exif);
     }
 
@@ -539,15 +522,17 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
     if (profile)
     {
         cm = color_man_new_embedded(run_in_bg ? imd : NULL, NULL,
-                        profile, profile_len,
-                        screen_type, screen_file, screen_profile, screen_profile_len);
+                                    profile, profile_len,
+                                    screen_type, screen_file,
+                                    screen_profile, screen_profile_len);
         g_free(profile);
     }
     else
     {
         cm = color_man_new(run_in_bg ? imd : NULL, NULL,
-                   input_type, input_file,
-                   screen_type, screen_file, screen_profile, screen_profile_len);
+                           input_type, input_file,
+                           screen_type, screen_file,
+                           screen_profile, screen_profile_len);
     }
 
     if (cm)
@@ -557,10 +542,8 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
             cm->row = start_row;
             cm->incremental_sync = TRUE;
         }
-
         imd->cm = (gpointer)cm;
     }
-
     image_update_util(imd);
 
     if (screen_profile)
@@ -568,31 +551,32 @@ static gboolean image_post_process_color(ImageWindow *imd, gint start_row, gbool
         g_free(screen_profile);
         screen_profile = NULL;
     }
-
     return !!cm;
 }
 
 
-static void image_post_process_tile_color_cb(PixbufRenderer *pr, GdkPixbuf **pixbuf, gint x, gint y, gint w, gint h, gpointer data)
+static void image_post_process_tile_color_cb(PixbufRenderer *pr,
+                                             GdkPixbuf **pixbuf,
+                                             gint x, gint y,
+                                             gint w, gint h, ImageWindow *imd)
 {
-    ImageWindow *imd = (ImageWindow *)data;
     if (imd->cm) color_man_correct_region(imd->cm, *pixbuf, x, y, w, h);
     if (imd->desaturate) pixbuf_desaturate_rect(*pixbuf, x, y, w, h);
-
 }
 
 void image_alter_orientation(ImageWindow *imd, AlterType type)
 {
-    static const gint rotate_90[]    = {1,   6, 7, 8, 5, 2, 3, 4, 1};
-    static const gint rotate_90_cc[] = {1,   8, 5, 6, 7, 4, 1, 2, 3};
-    static const gint rotate_180[]   = {1,   3, 4, 1, 2, 7, 8, 5, 6};
-    static const gint mirror[]       = {1,   2, 1, 4, 3, 6, 5, 8, 7};
-    static const gint flip[]         = {1,   4, 3, 2, 1, 8, 7, 6, 5};
+    static const gint rotate_90[]    = {1, 6, 7, 8, 5, 2, 3, 4, 1};
+    static const gint rotate_90_cc[] = {1, 8, 5, 6, 7, 4, 1, 2, 3};
+    static const gint rotate_180[]   = {1, 3, 4, 1, 2, 7, 8, 5, 6};
+    static const gint mirror[]       = {1, 2, 1, 4, 3, 6, 5, 8, 7};
+    static const gint flip[]         = {1, 4, 3, 2, 1, 8, 7, 6, 5};
 
 
     if (!imd || !imd->pr || !imd->image_fd) return;
 
-    if (imd->orientation < 1 || imd->orientation > 8) imd->orientation = 1;
+    if (imd->orientation < 1 || imd->orientation > 8)
+        imd->orientation = 1;
 
     switch (type)
     {
@@ -612,44 +596,44 @@ void image_alter_orientation(ImageWindow *imd, AlterType type)
             imd->orientation = flip[imd->orientation];
             break;
         case ALTER_NONE:
-            imd->orientation = imd->image_fd->exif_orientation ? imd->image_fd->exif_orientation : 1;
+            imd->orientation = imd->image_fd->exif_orientation ?
+                               imd->image_fd->exif_orientation : 1;
             break;
         default:
             return;
             break;
     }
 
-    if (imd->orientation != (imd->image_fd->exif_orientation ? imd->image_fd->exif_orientation : 1))
+    if (imd->orientation != (imd->image_fd->exif_orientation ?
+                             imd->image_fd->exif_orientation : 1))
     {
         if (!options->metadata.write_orientation)
         {
-            /* user_orientation does not work together with options->metadata.write_orientation,
-               use either one or the other.
-               we must however handle switching metadata.write_orientation on and off, therefore
-               we just disable referencing new fd's, not unreferencing the old ones
-            */
-            if (imd->image_fd->user_orientation == 0) file_data_ref(imd->image_fd);
+            /* user_orientation does not work together with
+             * options->metadata.write_orientation, use either one or the
+             * other.
+             * we must however handle switching metadata.write_orientation on
+             * and off, therefore we just disable referencing new fd's, not
+             * unreferencing the old ones */
+            if (imd->image_fd->user_orientation == 0)
+                file_data_ref(imd->image_fd);
             imd->image_fd->user_orientation = imd->orientation;
         }
     }
     else
     {
-        if (imd->image_fd->user_orientation != 0) file_data_unref(imd->image_fd);
+        if (imd->image_fd->user_orientation != 0)
+            file_data_unref(imd->image_fd);
         imd->image_fd->user_orientation = 0;
     }
 
     if (options->metadata.write_orientation)
     {
         if (type == ALTER_NONE)
-        {
             metadata_write_revert(imd->image_fd, ORIENTATION_KEY);
-        }
         else
-        {
             metadata_write_int(imd->image_fd, ORIENTATION_KEY, imd->orientation);
-        }
     }
-
     pixbuf_renderer_set_orientation((PixbufRenderer *)imd->pr, imd->orientation);
 }
 
@@ -657,9 +641,12 @@ void image_set_desaturate(ImageWindow *imd, gboolean desaturate)
 {
     imd->desaturate = desaturate;
     if (imd->cm || imd->desaturate)
-        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, image_post_process_tile_color_cb, (gpointer) imd, (imd->cm != NULL) );
+        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr,
+            (PixbufRendererPostProcessFunc)image_post_process_tile_color_cb,
+            (gpointer) imd, (imd->cm != NULL) );
     else
-        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, NULL, NULL, TRUE);
+        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr,
+                                              NULL, NULL, TRUE);
     pixbuf_renderer_set_orientation((PixbufRenderer *)imd->pr, imd->orientation);
 }
 
@@ -676,7 +663,8 @@ gboolean image_get_desaturate(ImageWindow *imd)
 
 static void image_read_ahead_cancel(ImageWindow *imd)
 {
-    DEBUG_1("%s read ahead cancelled for :%s", get_exec_time(), imd->read_ahead_fd ? imd->read_ahead_fd->path : "null");
+    DEBUG_1("%s read ahead cancelled for :%s",
+            get_exec_time(), imd->read_ahead_fd ? imd->read_ahead_fd->path : "null");
 
     image_loader_free(imd->read_ahead_il);
     imd->read_ahead_il = NULL;
@@ -702,8 +690,7 @@ static void image_read_ahead_done_cb(ImageLoader *il, gpointer data)
             image_cache_set(imd, imd->read_ahead_fd);
         }
     }
-    image_loader_free(imd->read_ahead_il);
-    imd->read_ahead_il = NULL;
+    g_clear_pointer(&imd->read_ahead_il, image_loader_free);
 
     image_complete_util(imd, TRUE);
 }
@@ -726,10 +713,13 @@ static void image_read_ahead_start(ImageWindow *imd)
 
     imd->read_ahead_il = image_loader_new(imd->read_ahead_fd);
 
-    image_loader_delay_area_ready(imd->read_ahead_il, TRUE); /* we will need the area_ready signals later */
+    /* we will need the area_ready signals later */
+    image_loader_delay_area_ready(imd->read_ahead_il, TRUE);
 
-    g_signal_connect(G_OBJECT(imd->read_ahead_il), "error", (GCallback)image_read_ahead_error_cb, imd);
-    g_signal_connect(G_OBJECT(imd->read_ahead_il), "done", (GCallback)image_read_ahead_done_cb, imd);
+    g_signal_connect(G_OBJECT(imd->read_ahead_il), "error",
+                     G_CALLBACK(image_read_ahead_error_cb), imd);
+    g_signal_connect(G_OBJECT(imd->read_ahead_il), "done",
+                     G_CALLBACK(image_read_ahead_done_cb), imd);
 
     if (!image_loader_start(imd->read_ahead_il))
     {
@@ -759,15 +749,15 @@ static void image_read_ahead_set(ImageWindow *imd, FileData *fd)
 
 static void image_cache_release_cb(FileData *fd)
 {
-    g_object_unref(fd->pixbuf);
-    fd->pixbuf = NULL;
+    g_clear_object(&fd->pixbuf);
 }
 
 static FileCacheData *image_get_cache(void)
 {
     static FileCacheData *cache = NULL;
-    if (!cache) cache = file_cache_new(image_cache_release_cb, 1);
-    file_cache_set_max_size(cache, (gulong)options->image.image_cache_max * 1048576); /* update from options */
+    if (!cache)
+        cache = file_cache_new(image_cache_release_cb, 1);
+    file_cache_set_max_size(cache, (gulong)options->image.image_cache_max * 1048576);
     return cache;
 }
 
@@ -775,15 +765,15 @@ static void image_cache_set(ImageWindow *imd, FileData *fd)
 {
     g_assert(fd->pixbuf);
 
-    file_cache_put(image_get_cache(), fd, (gulong)gdk_pixbuf_get_rowstride(fd->pixbuf) * (gulong)gdk_pixbuf_get_height(fd->pixbuf));
+    file_cache_put(image_get_cache(), fd,
+                   (gulong)gdk_pixbuf_get_rowstride(fd->pixbuf) *
+                   (gulong)gdk_pixbuf_get_height(fd->pixbuf));
     file_data_send_notification(fd, NOTIFY_PIXBUF); /* to update histogram */
 }
 
 static gint image_cache_get(ImageWindow *imd)
 {
-    gint success;
-
-    success = file_cache_get(image_get_cache(), imd->image_fd);
+    gint success = file_cache_get(image_get_cache(), imd->image_fd);
     if (success)
     {
         g_assert(imd->image_fd->pixbuf);
@@ -804,15 +794,16 @@ static void image_load_pixbuf_ready(ImageWindow *imd)
 {
     if (image_get_pixbuf(imd) || !imd->il) return;
 
-    image_change_pixbuf(imd, image_loader_get_pixbuf(imd->il), image_zoom_get(imd), FALSE);
+    image_change_pixbuf(imd,
+                        image_loader_get_pixbuf(imd->il),
+                        image_zoom_get(imd), FALSE);
 }
 
-static void image_load_area_cb(ImageLoader *il, gint x, gint y, gint w, gint h, gpointer data)
+static void image_load_area_cb(ImageLoader *il,
+                               gint x, gint y, gint w, gint h,
+                               ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-    PixbufRenderer *pr;
-
-    pr = (PixbufRenderer *)imd->pr;
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
 
     if (imd->delay_flip &&
         pr->pixbuf != image_loader_get_pixbuf(il))
@@ -820,15 +811,16 @@ static void image_load_area_cb(ImageLoader *il, gint x, gint y, gint w, gint h, 
         return;
     }
 
-    if (!pr->pixbuf) image_change_pixbuf(imd, image_loader_get_pixbuf(imd->il), image_zoom_get(imd), TRUE);
+    if (!pr->pixbuf)
+        image_change_pixbuf(imd,
+                            image_loader_get_pixbuf(imd->il),
+                            image_zoom_get(imd), TRUE);
 
     pixbuf_renderer_area_changed(pr, x, y, w, h);
 }
 
-static void image_load_done_cb(ImageLoader *il, gpointer data)
+static void image_load_done_cb(ImageLoader *il, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->il != il)
     {
 #ifndef ASYNC_FREE
@@ -840,44 +832,41 @@ static void image_load_done_cb(ImageLoader *il, gpointer data)
 
     DEBUG_1("%s image done", get_exec_time());
 
-    if (options->image.enable_read_ahead && imd->image_fd && !imd->image_fd->pixbuf && image_loader_get_pixbuf(il))
+    if (options->image.enable_read_ahead &&
+        imd->image_fd && !imd->image_fd->pixbuf &&
+        image_loader_get_pixbuf(il))
     {
         imd->image_fd->pixbuf = g_object_ref(image_loader_get_pixbuf(il));
         image_cache_set(imd, imd->image_fd);
     }
+
     /* call the callback triggered by image_state after fd->pixbuf is set */
     g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);
     image_state_unset(imd, IMAGE_STATE_LOADING);
 
     if (!image_loader_get_pixbuf(il))
     {
-        GdkPixbuf *pixbuf;
-
-        pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN);
+        GdkPixbuf *pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN);
         image_change_pixbuf(imd, pixbuf, image_zoom_get(imd), FALSE);
         g_object_unref(pixbuf);
 
         imd->unknown = TRUE;
     }
     else if (imd->delay_flip &&
-        image_get_pixbuf(imd) != image_loader_get_pixbuf(il))
+             image_get_pixbuf(imd) != image_loader_get_pixbuf(il))
     {
         g_object_set(G_OBJECT(imd->pr), "complete", FALSE, NULL);
         image_change_pixbuf(imd, image_loader_get_pixbuf(il), image_zoom_get(imd), FALSE);
     }
-
-    image_loader_free(il);
-    imd->il = NULL;
+    g_clear_pointer(&imd->il, image_loader_free);
 
 //  image_post_process(imd, TRUE);
 
     image_read_ahead_start(imd);
 }
 
-static void image_load_size_cb(ImageLoader *il, gint width, gint height, gpointer data)
+static void image_load_size_cb(ImageLoader *il, gint width, gint height, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     DEBUG_1("image_load_size_cb: %dx%d", width, height);
     pixbuf_renderer_set_size_early((PixbufRenderer *)imd->pr, width, height);
 }
@@ -896,15 +885,14 @@ static void image_load_set_signals(ImageWindow *imd, gboolean override_old_signa
 {
     g_assert(imd->il);
     if (override_old_signals)
-    {
         /* override the old signals */
-        g_signal_handlers_disconnect_matched(G_OBJECT(imd->il), G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, imd);
-    }
+        g_signal_handlers_disconnect_matched(G_OBJECT(imd->il), G_SIGNAL_MATCH_DATA,
+                                             0, 0, NULL, NULL, imd);
 
-    g_signal_connect(G_OBJECT(imd->il), "area_ready", (GCallback)image_load_area_cb, imd);
-    g_signal_connect(G_OBJECT(imd->il), "error", (GCallback)image_load_error_cb, imd);
-    g_signal_connect(G_OBJECT(imd->il), "done", (GCallback)image_load_done_cb, imd);
-    g_signal_connect(G_OBJECT(imd->il), "size_prepared", (GCallback)image_load_size_cb, imd);
+    g_signal_connect(G_OBJECT(imd->il), "area_ready",    (GCallback)image_load_area_cb,  imd);
+    g_signal_connect(G_OBJECT(imd->il), "error",         (GCallback)image_load_error_cb, imd);
+    g_signal_connect(G_OBJECT(imd->il), "done",          (GCallback)image_load_done_cb,  imd);
+    g_signal_connect(G_OBJECT(imd->il), "size_prepared", (GCallback)image_load_size_cb,  imd);
 }
 
 /* this read ahead is located here merely for the callbacks, above */
@@ -922,8 +910,7 @@ static gboolean image_read_ahead_check(ImageWindow *imd)
 
     if (imd->read_ahead_il)
     {
-        imd->il = imd->read_ahead_il;
-        imd->read_ahead_il = NULL;
+        imd->il = g_steal_pointer(&imd->read_ahead_il);
 
         image_load_set_signals(imd, TRUE);
 
@@ -931,22 +918,18 @@ static gboolean image_read_ahead_check(ImageWindow *imd)
         image_state_set(imd, IMAGE_STATE_LOADING);
 
         if (!imd->delay_flip)
-        {
             image_change_pixbuf(imd, image_loader_get_pixbuf(imd->il), image_zoom_get(imd), TRUE);
-        }
 
-        image_loader_delay_area_ready(imd->il, FALSE); /* send the delayed area_ready signals */
+        image_loader_delay_area_ready(imd->il, FALSE);
 
-        file_data_unref(imd->read_ahead_fd);
-        imd->read_ahead_fd = NULL;
+        g_clear_pointer(&imd->read_ahead_fd, file_data_unref);
         return TRUE;
     }
     else if (imd->read_ahead_fd->pixbuf)
     {
         image_change_pixbuf(imd, imd->read_ahead_fd->pixbuf, image_zoom_get(imd), FALSE);
 
-        file_data_unref(imd->read_ahead_fd);
-        imd->read_ahead_fd = NULL;
+        g_clear_pointer(&imd->read_ahead_fd, file_data_unref);
 
 //      image_post_process(imd, FALSE);
         return TRUE;
@@ -979,11 +962,8 @@ static gboolean image_load_begin(ImageWindow *imd, FileData *fd)
 
     if (!imd->delay_flip && image_get_pixbuf(imd))
     {
-        PixbufRenderer *pr;
-
-        pr = PIXBUF_RENDERER(imd->pr);
-        if (pr->pixbuf) g_object_unref(pr->pixbuf);
-        pr->pixbuf = NULL;
+        PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+        g_clear_object(&pr->pixbuf);
     }
 
     g_object_set(G_OBJECT(imd->pr), "loading", TRUE, NULL);
@@ -998,8 +978,7 @@ static gboolean image_load_begin(ImageWindow *imd, FileData *fd)
 
         g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);
 
-        image_loader_free(imd->il);
-        imd->il = NULL;
+        g_clear_pointer(&imd->il, image_loader_free);
 
         image_complete_util(imd, FALSE);
 
@@ -1027,13 +1006,12 @@ static void image_reset(ImageWindow *imd)
 
 #ifdef ASYNC_FREE
     image_loader_free_async(imd->il, imd);
-#else
-    image_loader_free(imd->il);
-#endif
     imd->il = NULL;
+#else
+    g_clear_pointer(&imd->il, image_loader_free);
+#endif
 
-    color_man_free((ColorMan *)imd->cm);
-    imd->cm = NULL;
+    g_clear_pointer(&imd->cm, color_man_free);
 
     imd->delay_alter_type = ALTER_NONE;
 
@@ -1060,32 +1038,25 @@ static void image_change_complete(ImageWindow *imd, gdouble zoom)
 
         if (is_readable_file(imd->image_fd->path))
         {
-            PixbufRenderer *pr;
-
-            pr = PIXBUF_RENDERER(imd->pr);
-            pr->zoom = zoom;    /* store the zoom, needed by the loader */
+            PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+            pr->zoom = zoom; /* store the zoom, needed by the loader */
 
             if (image_load_begin(imd, imd->image_fd))
-            {
                 imd->unknown = FALSE;
-            }
         }
 
         if (imd->unknown == TRUE)
         {
-            GdkPixbuf *pixbuf;
-
-            pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN);
+            GdkPixbuf *pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN);
             image_change_pixbuf(imd, pixbuf, zoom, FALSE);
             g_object_unref(pixbuf);
         }
     }
-
     image_update_util(imd);
 }
 
 static void image_change_real(ImageWindow *imd, FileData *fd,
-                  CollectionData *cd, CollectInfo *info, gdouble zoom)
+                              CollectionData *cd, CollectInfo *info, gdouble zoom)
 {
 
     imd->collection = cd;
@@ -1106,29 +1077,22 @@ static void image_change_real(ImageWindow *imd, FileData *fd,
  *-------------------------------------------------------------------
  */
 
-static gboolean image_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+static gboolean image_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->func_focus_in)
-    {
         imd->func_focus_in(imd, imd->data_focus_in);
-    }
 
     return TRUE;
 }
 
-static gboolean image_scroll_cb(GtkWidget *widget, GdkEventScroll *event, gpointer data)
+static gboolean image_scroll_cb(GtkWidget *widget, GdkEventScroll *event, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
-
     if (imd->func_scroll &&
         event && event->type == GDK_SCROLL)
     {
         imd->func_scroll(imd, event, imd->data_scroll);
         return TRUE;
     }
-
     return FALSE;
 }
 
@@ -1139,7 +1103,7 @@ static gboolean image_scroll_cb(GtkWidget *widget, GdkEventScroll *event, gpoint
  */
 
 void image_attach_window(ImageWindow *imd, GtkWidget *window,
-             const gchar *title, const gchar *title_right, gboolean show_zoom)
+                         const gchar *title, const gchar *title_right, gboolean show_zoom)
 {
     LayoutWindow *lw;
 
@@ -1160,24 +1124,24 @@ void image_attach_window(ImageWindow *imd, GtkWidget *window,
 }
 
 void image_set_update_func(ImageWindow *imd,
-               void (*func)(ImageWindow *imd, gpointer data),
-               gpointer data)
+                           void (*func)(ImageWindow *imd, gpointer data),
+                           gpointer data)
 {
     imd->func_update = func;
     imd->data_update = data;
 }
 
 void image_set_complete_func(ImageWindow *imd,
-                 void (*func)(ImageWindow *imd, gboolean preload, gpointer data),
-                 gpointer data)
+                             void (*func)(ImageWindow *imd, gboolean preload, gpointer data),
+                             gpointer data)
 {
     imd->func_complete = func;
     imd->data_complete = data;
 }
 
 void image_set_state_func(ImageWindow *imd,
-            void (*func)(ImageWindow *imd, ImageState state, gpointer data),
-            gpointer data)
+                          void (*func)(ImageWindow *imd, ImageState state, gpointer data),
+                          gpointer data)
 {
     imd->func_state = func;
     imd->data_state = data;
@@ -1185,40 +1149,42 @@ void image_set_state_func(ImageWindow *imd,
 
 
 void image_set_button_func(ImageWindow *imd,
-               void (*func)(ImageWindow *, GdkEventButton *event, gpointer),
-               gpointer data)
+                           void (*func)(ImageWindow *, GdkEventButton *event, gpointer),
+                           gpointer data)
 {
     imd->func_button = func;
     imd->data_button = data;
 }
 
 void image_set_drag_func(ImageWindow *imd,
-               void (*func)(ImageWindow *, GdkEventMotion *event, gdouble dx, gdouble dy, gpointer),
-               gpointer data)
+                         void (*func)(ImageWindow *, GdkEventMotion *event,
+                                      gdouble dx, gdouble dy, gpointer),
+                         gpointer data)
 {
     imd->func_drag = func;
     imd->data_drag = data;
 }
 
 void image_set_scroll_func(ImageWindow *imd,
-               void (*func)(ImageWindow *, GdkEventScroll *event, gpointer),
-               gpointer data)
+                           void (*func)(ImageWindow *, GdkEventScroll *event, gpointer),
+                           gpointer data)
 {
     imd->func_scroll = func;
     imd->data_scroll = data;
 }
 
 void image_set_scroll_notify_func(ImageWindow *imd,
-                  void (*func)(ImageWindow *imd, gint x, gint y, gint width, gint height, gpointer data),
-                  gpointer data)
+                                  void (*func)(ImageWindow *imd, gint x, gint y,
+                                               gint width, gint height, gpointer data),
+                                  gpointer data)
 {
     imd->func_scroll_notify = func;
     imd->data_scroll_notify = data;
 }
 
 void image_set_focus_in_func(ImageWindow *imd,
-               void (*func)(ImageWindow *, gpointer),
-               gpointer data)
+                             void (*func)(ImageWindow *, gpointer),
+                             gpointer data)
 {
     imd->func_focus_in = func;
     imd->data_focus_in = data;
@@ -1275,9 +1241,11 @@ GdkPixbuf *image_get_pixbuf(ImageWindow *imd)
 void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboolean lazy)
 {
     StereoPixbufData stereo_data = STEREO_PIXBUF_DEFAULT;
-    /* read_exif and similar functions can actually notice that the file has changed and trigger
-       a notification that removes the pixbuf from cache and unrefs it. Therefore we must ref it
-       here before it is taken over by the renderer. */
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+    /* read_exif and similar functions can actually notice that the file has
+     * changed and trigger a notification that removes the pixbuf from cache
+     * and unrefs it. Therefore we must ref it here before it is taken over by
+     * the renderer. */
     if (pixbuf) g_object_ref(pixbuf);
 
     imd->orientation = EXIF_ORIENTATION_TOP_LEFT;
@@ -1289,7 +1257,9 @@ void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboo
         }
         else if (options->image.exif_rotate_enable)
         {
-            imd->orientation = metadata_read_int(imd->image_fd, ORIENTATION_KEY, EXIF_ORIENTATION_TOP_LEFT);
+            imd->orientation = metadata_read_int(imd->image_fd,
+                                                 ORIENTATION_KEY,
+                                                 EXIF_ORIENTATION_TOP_LEFT);
             imd->image_fd->exif_orientation = imd->orientation;
         }
     }
@@ -1298,27 +1268,21 @@ void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboo
     {
         stereo_data = imd->user_stereo;
         if (stereo_data == STEREO_PIXBUF_DEFAULT)
-        {
             stereo_data = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(pixbuf), "stereo_data"));
-        }
     }
 
-    pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, NULL, NULL, FALSE);
-    if (imd->cm)
-    {
-        color_man_free(imd->cm);
-        imd->cm = NULL;
-    }
+    pixbuf_renderer_set_post_process_func(pr, NULL, NULL, FALSE);
+    g_clear_pointer(&imd->cm, color_man_free);
 
     if (lazy)
     {
-        pixbuf_renderer_set_pixbuf_lazy((PixbufRenderer *)imd->pr, pixbuf, zoom, imd->orientation, stereo_data);
+        pixbuf_renderer_set_pixbuf_lazy(pr, pixbuf, zoom, imd->orientation, stereo_data);
     }
     else
     {
-        pixbuf_renderer_set_pixbuf((PixbufRenderer *)imd->pr, pixbuf, zoom);
-        pixbuf_renderer_set_orientation((PixbufRenderer *)imd->pr, imd->orientation);
-        pixbuf_renderer_set_stereo_data((PixbufRenderer *)imd->pr, stereo_data);
+        pixbuf_renderer_set_pixbuf(pr, pixbuf, zoom);
+        pixbuf_renderer_set_orientation(pr, imd->orientation);
+        pixbuf_renderer_set_stereo_data(pr, stereo_data);
     }
 
     if (pixbuf) g_object_unref(pixbuf);
@@ -1329,12 +1293,15 @@ void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboo
     }
 
     if (imd->cm || imd->desaturate)
-        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, image_post_process_tile_color_cb, (gpointer) imd, (imd->cm != NULL) );
+        pixbuf_renderer_set_post_process_func(pr,
+            (PixbufRendererPostProcessFunc)image_post_process_tile_color_cb,
+            (gpointer) imd, (imd->cm != NULL));
 
     image_state_set(imd, IMAGE_STATE_IMAGE);
 }
 
-void image_change_from_collection(ImageWindow *imd, CollectionData *cd, CollectInfo *info, gdouble zoom)
+void image_change_from_collection(ImageWindow *imd, CollectionData *cd,
+                                  CollectInfo *info, gdouble zoom)
 {
     if (!cd || !info || !g_list_find(cd->list, info)) return;
 
@@ -1348,14 +1315,10 @@ CollectionData *image_get_collection(ImageWindow *imd, CollectInfo **info)
 {
     if (collection_to_number(imd->collection) >= 0)
     {
-        if (g_list_find(imd->collection->list, imd->collection_info) != NULL)
-        {
-            if (info) *info = imd->collection_info;
-        }
-        else
-        {
-            if (info) *info = NULL;
-        }
+        if (info)
+            *info = g_list_find(imd->collection->list, imd->collection_info)
+                    ? imd->collection_info
+                    : NULL;
         return imd->collection;
     }
 
@@ -1365,23 +1328,33 @@ CollectionData *image_get_collection(ImageWindow *imd, CollectInfo **info)
 
 static void image_loader_sync_read_ahead_data(ImageLoader *il, gpointer old_data, gpointer data)
 {
-    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il), (GCallback)image_read_ahead_error_cb, old_data))
-        g_signal_connect(G_OBJECT(il), "error", (GCallback)image_read_ahead_error_cb, data);
+    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il),
+                                             G_CALLBACK(image_read_ahead_error_cb), old_data))
+        g_signal_connect(G_OBJECT(il), "error",
+                         G_CALLBACK(image_read_ahead_error_cb), data);
 
-    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il), (GCallback)image_read_ahead_done_cb, old_data))
-        g_signal_connect(G_OBJECT(il), "done", (GCallback)image_read_ahead_done_cb, data);
+    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il),
+                                             G_CALLBACK(image_read_ahead_done_cb), old_data))
+        g_signal_connect(G_OBJECT(il), "done",
+                         G_CALLBACK(image_read_ahead_done_cb), data);
 }
 
 static void image_loader_sync_data(ImageLoader *il, gpointer old_data, gpointer data)
 {
-    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il), (GCallback)image_load_area_cb, old_data))
-        g_signal_connect(G_OBJECT(il), "area_ready", (GCallback)image_load_area_cb, data);
+    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il),
+                                             G_CALLBACK(image_load_area_cb), old_data))
+        g_signal_connect(G_OBJECT(il), "area_ready",
+                         G_CALLBACK(image_load_area_cb), data);
 
-    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il), (GCallback)image_load_error_cb, old_data))
-        g_signal_connect(G_OBJECT(il), "error", (GCallback)image_load_error_cb, data);
+    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il),
+                                             G_CALLBACK(image_load_error_cb), old_data))
+        g_signal_connect(G_OBJECT(il), "error",
+                         G_CALLBACK(image_load_error_cb), data);
 
-    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il), (GCallback)image_load_done_cb, old_data))
-        g_signal_connect(G_OBJECT(il), "done", (GCallback)image_load_done_cb, data);
+    if (g_signal_handlers_disconnect_by_func(G_OBJECT(il),
+                                             G_CALLBACK(image_load_done_cb), old_data))
+        g_signal_connect(G_OBJECT(il), "done",
+                         G_CALLBACK(image_load_done_cb), data);
 }
 
 /* this is more like a move function
@@ -1398,18 +1371,17 @@ void image_move_from_image(ImageWindow *imd, ImageWindow *source)
 
 #ifdef ASYNC_FREE
     image_loader_free_async(imd->il, imd);
-#else
-    image_loader_free(imd->il);
-#endif
     imd->il = NULL;
+#else
+    g_clear_pointer(&imd->il, image_loader_free);
+#endif
 
     image_set_fd(imd, image_get_fd(source));
 
 
     if (source->il)
     {
-        imd->il = source->il;
-        source->il = NULL;
+        imd->il = g_steal_pointer(&source->il);
 
         image_loader_sync_data(imd->il, source, imd);
 
@@ -1420,8 +1392,7 @@ void image_move_from_image(ImageWindow *imd, ImageWindow *source)
     imd->color_profile_enable = source->color_profile_enable;
     imd->color_profile_input = source->color_profile_input;
     imd->color_profile_use_image = source->color_profile_use_image;
-    color_man_free((ColorMan *)imd->cm);
-    imd->cm = NULL;
+    g_clear_pointer(&imd->cm, color_man_free);
     if (source->cm)
     {
         ColorMan *cm;
@@ -1445,7 +1416,7 @@ void image_move_from_image(ImageWindow *imd, ImageWindow *source)
     pixbuf_renderer_move(PIXBUF_RENDERER(imd->pr), PIXBUF_RENDERER(source->pr));
 
     if (imd->cm || imd->desaturate)
-        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, image_post_process_tile_color_cb, (gpointer) imd, (imd->cm != NULL) );
+        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, (PixbufRendererPostProcessFunc)image_post_process_tile_color_cb, (gpointer) imd, (imd->cm != NULL) );
     else
         pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, NULL, NULL, TRUE);
 
@@ -1472,14 +1443,12 @@ void image_copy_from_image(ImageWindow *imd, ImageWindow *source)
     imd->color_profile_enable = source->color_profile_enable;
     imd->color_profile_input = source->color_profile_input;
     imd->color_profile_use_image = source->color_profile_use_image;
-    color_man_free((ColorMan *)imd->cm);
-    imd->cm = NULL;
+    g_clear_pointer(&imd->cm, color_man_free);
     if (source->cm)
     {
         ColorMan *cm;
 
-        imd->cm = source->cm;
-        source->cm = NULL;
+        imd->cm = g_steal_pointer(&source->cm);
 
         cm = (ColorMan *)imd->cm;
         cm->imd = imd;
@@ -1487,13 +1456,12 @@ void image_copy_from_image(ImageWindow *imd, ImageWindow *source)
     }
 
     image_loader_free(imd->read_ahead_il);
-    imd->read_ahead_il = source->read_ahead_il;
-    source->read_ahead_il = NULL;
-    if (imd->read_ahead_il) image_loader_sync_read_ahead_data(imd->read_ahead_il, source, imd);
+    imd->read_ahead_il = g_steal_pointer(&source->read_ahead_il);
+    if (imd->read_ahead_il)
+        image_loader_sync_read_ahead_data(imd->read_ahead_il, source, imd);
 
     file_data_unref(imd->read_ahead_fd);
-    imd->read_ahead_fd = source->read_ahead_fd;
-    source->read_ahead_fd = NULL;
+    imd->read_ahead_fd = g_steal_pointer(&source->read_ahead_fd);
 
     imd->completed = source->completed;
     imd->state = source->state;
@@ -1507,10 +1475,11 @@ void image_copy_from_image(ImageWindow *imd, ImageWindow *source)
     pixbuf_renderer_copy(PIXBUF_RENDERER(imd->pr), PIXBUF_RENDERER(source->pr));
 
     if (imd->cm || imd->desaturate)
-        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, image_post_process_tile_color_cb, (gpointer) imd, (imd->cm != NULL) );
+        pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr,
+            (PixbufRendererPostProcessFunc)image_post_process_tile_color_cb,
+            (gpointer) imd, (imd->cm != NULL));
     else
         pixbuf_renderer_set_post_process_func((PixbufRenderer *)imd->pr, NULL, NULL, TRUE);
-
 }
 
 
@@ -1534,7 +1503,7 @@ void image_scroll(ImageWindow *imd, gint x, gint y)
 }
 
 void image_scroll_to_point(ImageWindow *imd, gint x, gint y,
-               gdouble x_align, gdouble y_align)
+                           gdouble x_align, gdouble y_align)
 {
     pixbuf_renderer_scroll_to_point((PixbufRenderer *)imd->pr, x, y, x_align, y_align);
 }
@@ -1571,28 +1540,20 @@ void image_zoom_set(ImageWindow *imd, gdouble zoom)
 
 void image_zoom_set_fill_geometry(ImageWindow *imd, gboolean vertical)
 {
-    PixbufRenderer *pr;
+    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
     gdouble zoom;
     gint width, height;
-
-    pr = (PixbufRenderer *)imd->pr;
 
     if (!pixbuf_renderer_get_pixbuf(pr) ||
         !pixbuf_renderer_get_image_size(pr, &width, &height)) return;
 
     if (vertical)
-    {
         zoom = (gdouble)pr->viewport_height / height;
-    }
     else
-    {
         zoom = (gdouble)pr->viewport_width / width;
-    }
 
     if (zoom < 1.0)
-    {
         zoom = 0.0 - 1.0 / zoom;
-    }
 
     pixbuf_renderer_zoom_set(pr, zoom);
 }
@@ -1621,23 +1582,15 @@ gchar *image_zoom_get_as_text(ImageWindow *imd)
     scale = image_zoom_get_real(imd);
 
     if (zoom > 0.0)
-    {
         l = zoom;
-    }
     else if (zoom < 0.0)
-    {
         r = 0.0 - zoom;
-    }
     else if (zoom == 0.0 && scale != 0.0)
     {
         if (scale >= 1.0)
-        {
             l = scale;
-        }
         else
-        {
             r = 1.0 / scale;
-        }
         approx = "~";
     }
 
@@ -1733,9 +1686,7 @@ void image_prebuffer_set(ImageWindow *imd, FileData *fd)
     if (fd)
     {
         if (!file_cache_get(image_get_cache(), fd))
-        {
             image_read_ahead_set(imd, fd);
-        }
     }
     else
     {
@@ -1748,17 +1699,17 @@ static void image_notify_cb(FileData *fd, NotifyType type, gpointer data)
     ImageWindow *imd = data;
 
     if (!imd || !image_get_pixbuf(imd) ||
-        /* imd->il || */ /* loading in progress - do not check - it should start from the beginning anyway */
+        /* loading in progress - do not check - it should start from the beginning anyway */
+        /* imd->il || */
         !imd->image_fd || /* nothing to reload */
-        imd->state == IMAGE_STATE_NONE /* loading not started, no need to reload */
-        ) return;
+        imd->state == IMAGE_STATE_NONE) /* loading not started, no need to reload */
+        return;
 
     if ((type & NOTIFY_REREAD) && fd == imd->image_fd)
     {
-        /* there is no need to reload on NOTIFY_CHANGE,
-           modified files should be detacted anyway and NOTIFY_REREAD should be recieved
-           or they are removed from the filelist completely on "move" and "delete"
-        */
+        /* there is no need to reload on NOTIFY_CHANGE, modified files should
+         * be detected anyway and NOTIFY_REREAD should be received or they are
+         * removed from the filelist completely on "move" and "delete" */
         DEBUG_1("Notify image: %s %04x", fd->path, type);
         image_reload(imd);
     }
@@ -1790,28 +1741,26 @@ void image_background_set_color_from_options(ImageWindow *imd, gboolean fullscre
 }
 
 void image_color_profile_set(ImageWindow *imd,
-                 gint input_type,
-                 gboolean use_image)
+                             gint input_type,
+                             gboolean use_image)
 {
     if (!imd) return;
 
     if (input_type < 0 || input_type >= COLOR_PROFILE_FILE + COLOR_PROFILE_INPUTS)
-    {
         return;
-    }
 
     imd->color_profile_input = input_type;
     imd->color_profile_use_image = use_image;
 }
 
 gboolean image_color_profile_get(ImageWindow *imd,
-                 gint *input_type,
-                     gboolean *use_image)
+                                 gint *input_type,
+                                 gboolean *use_image)
 {
     if (!imd) return FALSE;
 
     if (input_type) *input_type = imd->color_profile_input;
-    if (use_image) *use_image = imd->color_profile_use_image;
+    if (use_image)  *use_image  = imd->color_profile_use_image;
 
     return TRUE;
 }
@@ -1827,26 +1776,23 @@ void image_color_profile_set_use(ImageWindow *imd, gboolean enable)
 
 gboolean image_color_profile_get_use(ImageWindow *imd)
 {
-    if (!imd) return FALSE;
-
-    return imd->color_profile_enable;
+    return imd && imd->color_profile_enable;
 }
 
-gboolean image_color_profile_get_status(ImageWindow *imd, gchar **image_profile, gchar **screen_profile)
+gboolean image_color_profile_get_status(ImageWindow *imd,
+                                        gchar **image_profile,
+                                        gchar **screen_profile)
 {
-    ColorMan *cm;
     if (!imd) return FALSE;
 
-    cm = imd->cm;
-    if (!cm) return FALSE;
-    return color_man_get_status(cm, image_profile, screen_profile);
+    ColorMan *cm = imd->cm;
+    return cm && color_man_get_status(cm, image_profile, screen_profile);
 
 }
 
 void image_set_delay_flip(ImageWindow *imd, gboolean delay)
 {
-    if (!imd ||
-        imd->delay_flip == delay) return;
+    if (!imd || imd->delay_flip == delay) return;
 
     imd->delay_flip = delay;
 
@@ -1854,11 +1800,8 @@ void image_set_delay_flip(ImageWindow *imd, gboolean delay)
 
     if (!imd->delay_flip && imd->il)
     {
-        PixbufRenderer *pr;
-
-        pr = PIXBUF_RENDERER(imd->pr);
-        if (pr->pixbuf) g_object_unref(pr->pixbuf);
-        pr->pixbuf = NULL;
+        PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
+        g_clear_object(&pr->pixbuf);
 
         image_load_pixbuf_ready(imd);
     }
@@ -1892,7 +1835,8 @@ void image_to_root_window(ImageWindow *imd, gboolean scaled)
         pixbuf_renderer_get_scaled_size((PixbufRenderer *)imd->pr, &width, &height);
     }
 
-    pb = gdk_pixbuf_scale_simple(pixbuf, width, height, (GdkInterpType)options->image.zoom_quality);
+    pb = gdk_pixbuf_scale_simple(pixbuf, width, height,
+                                 (GdkInterpType)options->image.zoom_quality);
 
     gdk_pixbuf_render_pixmap_and_mask(pb, &pixmap, NULL, 128);
     gdk_window_set_back_pixmap(rootwindow, pixmap, FALSE);
@@ -1926,14 +1870,7 @@ void image_set_selectable(ImageWindow *imd, gboolean selectable)
 
 void image_grab_focus(ImageWindow *imd)
 {
-    if (imd->has_frame)
-    {
-        gtk_widget_grab_focus(imd->frame);
-    }
-    else
-    {
-        gtk_widget_grab_focus(imd->widget);
-    }
+    gtk_widget_grab_focus(imd->has_frame ? imd->frame : imd->widget);
 }
 
 
@@ -1945,17 +1882,18 @@ void image_grab_focus(ImageWindow *imd)
 
 static void image_options_set(ImageWindow *imd, ConfOptions *options)
 {
-    g_object_set(G_OBJECT(imd->pr), "zoom_quality", options->image.zoom_quality,
-                    "zoom_2pass", options->image.zoom_2pass,
-                    "zoom_expand", options->image.zoom_to_fit_allow_expand,
-                    "scroll_reset", options->image.scroll_reset_method,
-                    "window_fit", (imd->top_window_sync && options->image.fit_window_to_image),
-                    "window_limit", options->image.limit_window_size,
-                    "window_limit_value", options->image.max_window_size,
-                    "autofit_limit", options->image.limit_autofit_size,
-                    "autofit_limit_value", options->image.max_autofit_size,
+    g_object_set(G_OBJECT(imd->pr),
+                 "zoom_quality", options->image.zoom_quality,
+                 "zoom_2pass", options->image.zoom_2pass,
+                 "zoom_expand", options->image.zoom_to_fit_allow_expand,
+                 "scroll_reset", options->image.scroll_reset_method,
+                 "window_fit", (imd->top_window_sync && options->image.fit_window_to_image),
+                 "window_limit", options->image.limit_window_size,
+                 "window_limit_value", options->image.max_window_size,
+                 "autofit_limit", options->image.limit_autofit_size,
+                 "autofit_limit_value", options->image.max_autofit_size,
 
-                    NULL);
+                 NULL);
 
     pixbuf_renderer_set_parent((PixbufRenderer *)imd->pr, (GtkWindow *)imd->top_window);
 
@@ -1964,9 +1902,9 @@ static void image_options_set(ImageWindow *imd, ConfOptions *options)
     else
         image_stereo_set(imd, options->stereo.window.mode);
     pixbuf_renderer_stereo_fixed_set((PixbufRenderer *)imd->pr,
-                    options->stereo.fixed_w, options->stereo.fixed_h,
-                    options->stereo.fixed_x1, options->stereo.fixed_y1,
-                    options->stereo.fixed_x2, options->stereo.fixed_y2);
+                                     options->stereo.fixed_w,  options->stereo.fixed_h,
+                                     options->stereo.fixed_x1, options->stereo.fixed_y1,
+                                     options->stereo.fixed_x2, options->stereo.fixed_y2);
 }
 
 void image_options_sync(void)
@@ -1996,9 +1934,8 @@ static void image_free(ImageWindow *imd)
     g_free(imd);
 }
 
-static void image_destroy_cb(GtkWidget *widget, gpointer data)
+static void image_destroy_cb(GtkWidget *widget, ImageWindow *imd)
 {
-    ImageWindow *imd = data;
     image_free(imd);
 }
 
@@ -2007,28 +1944,28 @@ gboolean selectable_frame_expose_cb(GtkWidget *widget, GdkEventExpose *event, gp
     GtkAllocation allocation;
     gtk_widget_get_allocation(widget, &allocation);
     gtk_paint_flat_box(gtk_widget_get_style(widget),
-               gtk_widget_get_window(widget),
-               gtk_widget_get_state(widget),
-               gtk_frame_get_shadow_type(GTK_FRAME(widget)),
-               NULL,
-               widget,
-               NULL,
-               allocation.x + 3, allocation.y + 3,
-               allocation.width - 6, allocation.height - 6);
+                       gtk_widget_get_window(widget),
+                       gtk_widget_get_state(widget),
+                       gtk_frame_get_shadow_type(GTK_FRAME(widget)),
+                       NULL, widget, NULL,
+                       allocation.x + 3, allocation.y + 3,
+                       allocation.width - 6, allocation.height - 6);
 
     if (gtk_widget_has_focus(widget))
     {
         gtk_paint_focus(gtk_widget_get_style(widget), gtk_widget_get_window(widget), GTK_STATE_ACTIVE,
-                &event->area, widget, "image_window",
-                allocation.x, allocation.y,
-                allocation.width - 1, allocation.height - 1);
+                        &event->area, widget, "image_window",
+                        allocation.x, allocation.y,
+                        allocation.width - 1, allocation.height - 1);
     }
     else
     {
-        gtk_paint_shadow(gtk_widget_get_style(widget), gtk_widget_get_window(widget), GTK_STATE_NORMAL, GTK_SHADOW_IN,
-                 &event->area, widget, "image_window",
-                 allocation.x, allocation.y,
-                 allocation.width - 1, allocation.height - 1);
+        gtk_paint_shadow(gtk_widget_get_style(widget),
+                         gtk_widget_get_window(widget),
+                         GTK_STATE_NORMAL, GTK_SHADOW_IN,
+                         &event->area, widget, "image_window",
+                         allocation.x, allocation.y,
+                         allocation.width - 1, allocation.height - 1);
     }
     return FALSE;
 }
@@ -2045,10 +1982,11 @@ void image_set_frame(ImageWindow *imd, gboolean frame)
     {
         imd->frame = gtk_frame_new(NULL);
         g_object_ref(imd->pr);
-        if (imd->has_frame != -1) gtk_container_remove(GTK_CONTAINER(imd->widget), imd->pr);
+        if (imd->has_frame != -1) /* one time uninitialized state */
+            gtk_container_remove(GTK_CONTAINER(imd->widget), imd->pr);
         gtk_container_add(GTK_CONTAINER(imd->frame), imd->pr);
-
         g_object_unref(imd->pr);
+
         gtk_widget_set_can_focus(imd->frame, TRUE);
         gtk_widget_set_app_paintable(imd->frame, TRUE);
 
@@ -2066,14 +2004,11 @@ void image_set_frame(ImageWindow *imd, gboolean frame)
         if (imd->frame)
         {
             gtk_container_remove(GTK_CONTAINER(imd->frame), imd->pr);
-            gtk_widget_destroy(imd->frame);
-            imd->frame = NULL;
+            g_clear_pointer(&imd->frame, gtk_widget_destroy);
         }
         gtk_box_pack_start(GTK_BOX(imd->widget), imd->pr, TRUE, TRUE, 0);
-
         g_object_unref(imd->pr);
     }
-
     gtk_widget_show(imd->pr);
 
     imd->has_frame = frame;
@@ -2103,22 +2038,22 @@ ImageWindow *image_new(gboolean frame)
     image_set_selectable(imd, 0);
 
     g_signal_connect(G_OBJECT(imd->pr), "clicked",
-             G_CALLBACK(image_click_cb), imd);
+                     G_CALLBACK(image_click_cb), imd);
     g_signal_connect(G_OBJECT(imd->pr), "scroll_notify",
-             G_CALLBACK(image_scroll_notify_cb), imd);
+                     G_CALLBACK(image_scroll_notify_cb), imd);
 
     g_signal_connect(G_OBJECT(imd->pr), "scroll_event",
-             G_CALLBACK(image_scroll_cb), imd);
+                     G_CALLBACK(image_scroll_cb), imd);
 
     g_signal_connect(G_OBJECT(imd->pr), "destroy",
-             G_CALLBACK(image_destroy_cb), imd);
+                     G_CALLBACK(image_destroy_cb), imd);
 
     g_signal_connect(G_OBJECT(imd->pr), "zoom",
-             G_CALLBACK(image_zoom_cb), imd);
+                     G_CALLBACK(image_zoom_cb), imd);
     g_signal_connect(G_OBJECT(imd->pr), "render_complete",
-             G_CALLBACK(image_render_complete_cb), imd);
+                     G_CALLBACK(image_render_complete_cb), imd);
     g_signal_connect(G_OBJECT(imd->pr), "drag",
-             G_CALLBACK(image_drag_cb), imd);
+                     G_CALLBACK(image_drag_cb), imd);
 
     file_data_register_notify_func(image_notify_cb, imd, NOTIFY_PRIORITY_LOW);
 
