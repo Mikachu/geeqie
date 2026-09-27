@@ -102,7 +102,7 @@ GtkWidget *pref_radiobutton_new_mnemonic(GtkWidget *parent_box, GtkWidget *sibli
 
 GtkWidget *pref_radiobutton_new_int(GtkWidget *parent_box, GtkWidget *sibling,
                     const gchar *text, gboolean active,
-                    gboolean *result, gboolean value,
+                    gint *result, gint value,
                     GCallback func, gpointer data);
 
 GtkWidget *pref_spin_new(GtkWidget *parent_box, const gchar *text, const gchar *suffix,
