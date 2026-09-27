@@ -1676,8 +1676,6 @@ GtkWidget *layout_image_new(LayoutWindow *lw, gint i)
 
         image_background_set_color_from_options(lw->split_images[i], FALSE);
 
-        image_auto_refresh_enable(lw->split_images[i], TRUE);
-
         layout_image_dnd_init(lw, i);
         image_color_profile_set(lw->split_images[i],
                                 options->color_profile.input_type,
