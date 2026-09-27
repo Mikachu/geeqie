@@ -117,9 +117,6 @@ void image_set_page(ImageWindow *imd, guint page_num);
 /* read ahead, pass NULL to cancel */
 void image_prebuffer_set(ImageWindow *imd, FileData *fd);
 
-/* auto refresh */
-void image_auto_refresh_enable(ImageWindow *imd, gboolean enable);
-
 /* allow top window to be resized ? */
 void image_top_window_set_sync(ImageWindow *imd, gboolean allow_sync);
 

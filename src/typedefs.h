@@ -498,8 +498,6 @@ struct _ImageWindow
 
     gint prev_color_row;
 
-    gboolean auto_refresh;
-
     gboolean delay_flip;
     gint orientation;
     gboolean desaturate;
