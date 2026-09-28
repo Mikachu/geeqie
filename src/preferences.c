@@ -623,8 +623,6 @@ static gboolean filter_add_scroll(gpointer data)
     GList *list_cells;
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
-    const gchar *title;
-    guint i = 0;
     gint rows;
 
     rows = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(filter_store), NULL);
@@ -920,11 +918,6 @@ static void layout_action_list_free(GList *list)
 static void accel_store_populate(void)
 {
     LayoutWindow *lw;
-    GList *groups, *actions;
-    GtkAction *action;
-    const gchar *accel_path;
-    GtkAccelKey key;
-    GtkTreeIter iter;
 
     if (!c_options->accel_store || !layout_window_list || !layout_window_list->data) return;
 
@@ -950,6 +943,7 @@ static void accel_store_populate(void)
 
             if (tooltip)
             {
+                GtkTreeIter iter;
                 gtk_tree_store_append(c_options->accel_store, &iter, NULL);
                 gtk_tree_store_set(c_options->accel_store, &iter,
                            AE_ACTION, item->label,
@@ -1210,7 +1204,7 @@ static void config_tab_general(GtkWidget *notebook)
 /* image tab */
 static void config_tab_image(GtkWidget *notebook)
 {
-    GtkWidget *hbox, *vbox, *vbox2, *group, *button, *ct_button, *table, *spin;
+    GtkWidget *hbox, *vbox, *group, *ct_button, *table, *spin;
 
     vbox = scrolled_notebook_page(notebook, _("Image"));
 
