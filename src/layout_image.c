@@ -271,7 +271,12 @@ static gboolean layout_image_slideshow_continue_check(LayoutWindow *lw)
 
     if (!slideshow_should_continue(lw->slideshow))
     {
-        layout_image_slideshow_stop(lw);
+        if (lw->slideshow->stepping)
+            /* we're nested inside slideshow_step(); deferring the
+               free to its caller, which unwinds safely */
+            lw->slideshow->stop_pending = TRUE;
+        else
+            layout_image_slideshow_stop(lw);
         return FALSE;
     }
 
