@@ -532,10 +532,15 @@ static gboolean view_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, 
  * view window main routines
  *-----------------------------------------------------------------------------
  */
+
+static gboolean mouse_binding_activate(ViewWindow *vw,
+                                       guint button, GdkModifierType state);
 static void button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
 {
     ViewWindow *vw = data;
     GtkWidget *menu;
+
+    if (mouse_binding_activate(vw, event->button, event->state)) return;
 
     switch (event->button)
     {
@@ -557,9 +562,26 @@ static void button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
     }
 }
 
+static guint scroll_direction_to_button(GdkScrollDirection direction)
+{
+    switch (direction)
+    {
+        case GDK_SCROLL_UP:    return MOUSE_BUTTON_WHEEL_UP;
+        case GDK_SCROLL_DOWN:  return MOUSE_BUTTON_WHEEL_DOWN;
+        case GDK_SCROLL_LEFT:  return MOUSE_BUTTON_WHEEL_LEFT;
+        case GDK_SCROLL_RIGHT: return MOUSE_BUTTON_WHEEL_RIGHT;
+        default:
+            return 0;
+    }
+}
+
 static void scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpointer data)
 {
     ViewWindow *vw = data;
+
+    guint button = scroll_direction_to_button(event->direction);
+    if (mouse_binding_activate(vw, button, event->state))
+        return;
 
     if (event->state & GDK_CONTROL_MASK)
     {
@@ -575,22 +597,14 @@ static void scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpointer data)
                 break;
         }
     }
-    else if ( (event->state & GDK_SHIFT_MASK) != (guint) (options->mousewheel_scrolls))
+    else if ((event->state & GDK_SHIFT_MASK) != (guint)(options->mousewheel_scrolls))
     {
         switch (event->direction)
         {
-            case GDK_SCROLL_UP:
-                image_scroll(imd, 0, -MOUSEWHEEL_SCROLL_SIZE);
-                break;
-            case GDK_SCROLL_DOWN:
-                image_scroll(imd, 0, MOUSEWHEEL_SCROLL_SIZE);
-                break;
-            case GDK_SCROLL_LEFT:
-                image_scroll(imd, -MOUSEWHEEL_SCROLL_SIZE, 0);
-                break;
-            case GDK_SCROLL_RIGHT:
-                image_scroll(imd, MOUSEWHEEL_SCROLL_SIZE, 0);
-                break;
+            case GDK_SCROLL_UP:    image_scroll(imd, 0, -MOUSEWHEEL_SCROLL_SIZE); break;
+            case GDK_SCROLL_DOWN:  image_scroll(imd, 0,  MOUSEWHEEL_SCROLL_SIZE); break;
+            case GDK_SCROLL_LEFT:  image_scroll(imd, -MOUSEWHEEL_SCROLL_SIZE, 0); break;
+            case GDK_SCROLL_RIGHT: image_scroll(imd,  MOUSEWHEEL_SCROLL_SIZE, 0); break;
             default:
                 break;
         }
@@ -599,12 +613,8 @@ static void scroll_cb(ImageWindow *imd, GdkEventScroll *event, gpointer data)
     {
         switch (event->direction)
         {
-            case GDK_SCROLL_UP:
-                view_step_prev(vw);
-                break;
-            case GDK_SCROLL_DOWN:
-                view_step_next(vw);
-                break;
+            case GDK_SCROLL_UP:   view_step_prev(vw); break;
+            case GDK_SCROLL_DOWN: view_step_next(vw); break;
             default:
                 break;
         }
@@ -1383,6 +1393,33 @@ static void view_window_accels_init(ViewWindow *vw)
 
     gtk_window_add_accel_group(GTK_WINDOW(vw->window), group);
 }
+
+typedef void (*ViewAccelFunc)(GtkAccelGroup *group, GObject *acceleratable,  
+                              guint keyval, GdkModifierType mod, gpointer data);  
+
+static gboolean mouse_binding_activate(ViewWindow *vw,
+                                       guint button, GdkModifierType state)
+{
+    state &= gtk_accelerator_get_default_mod_mask();
+    for (GList *work = options->mouse_bindings; work; work = work->next)
+    {
+        MouseBinding *mb = work->data;
+
+        if (mb->button != button ||
+            mb->state  != state) continue;
+
+        for (gint i = 0; i < G_N_ELEMENTS(view_accels); i++)  
+            if (strcmp(mb->action_name, view_accels[i].path +
+                                        strlen("<Actions>/MenuActions/")) == 0)  
+            {  
+                ((ViewAccelFunc)view_accels[i].func)(NULL, NULL, 0, 0, vw);  
+                return TRUE;  
+            }  
+    }
+
+    return FALSE;
+}
+
 
 /*
  *-------------------------------------------------------------------
