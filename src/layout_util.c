@@ -791,7 +791,6 @@ static void layout_menu_foreach_func(gpointer data,
 
 static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
 {
-    LayoutWindow *lw = data;
     gint fd = -1;
     GPtrArray *array;
     gchar *tmp_file;
@@ -1011,7 +1010,6 @@ static void layout_menu_page_prev_cb(GtkAction *action, LayoutWindow *lw)
 static void layout_menu_image_random_cb(GtkAction *action, LayoutWindow *lw)
 {
     guint count = layout_list_count(lw, NULL);
-    guint index;
 
     if (count < 1) return;
     layout_image_set_index(lw, rand() % count);
@@ -1933,7 +1931,6 @@ static void layout_actions_setup_editors(LayoutWindow *lw)
 void layout_actions_setup(LayoutWindow *lw)
 {
     GError *error;
-    gint i;
 
     DEBUG_1("%s layout_actions_setup: start", get_exec_time());
     if (lw->ui_manager) return;

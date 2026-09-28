@@ -2877,7 +2877,7 @@ void file_util_copy_path_list_to_clipboard(GList *list)
     filelist_free(list);
 }
 
-static gboolean new_folder_entry_activate_cb(GtkWidget *widget, gpointer data)
+static void new_folder_entry_activate_cb(GtkWidget *widget, gpointer data)
 {
     GtkDialog *dialog = data;
 

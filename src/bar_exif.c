@@ -259,8 +259,6 @@ static void bar_pane_exif_update_entry(GtkWidget *entry, PaneExifData *ped)
 
 static void bar_pane_exif_update(PaneExifData *ped)
 {
-    GList *list, *work;
-
     ped->all_hidden = TRUE;
 
     gtk_container_foreach(GTK_CONTAINER(ped->vbox), (GtkCallback)bar_pane_exif_update_entry, ped);
