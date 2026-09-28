@@ -916,6 +916,8 @@ struct _SlideShowData
     gpointer stop_data;
 
     gboolean paused;
+    gboolean stepping;
+    gboolean stop_pending;
 };
 
 struct _FullScreenData

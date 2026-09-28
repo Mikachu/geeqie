@@ -231,8 +231,11 @@ static gboolean slideshow_step(SlideShowData *ss, gboolean forward)
         row = GPOINTER_TO_INT(ss->list_done->data);
     }
 
-    file_data_unref(ss->slide_fd);
-    ss->slide_fd = NULL;
+    g_clear_pointer(&ss->slide_fd, file_data_unref);
+
+    /* the display calls below can re-enter slideshow code via
+       layout_image_slideshow_continue_check(); never let it free us */
+    ss->stepping = TRUE;
 
     if (ss->filelist)
     {
@@ -265,6 +268,15 @@ static gboolean slideshow_step(SlideShowData *ss, gboolean forward)
         {
             layout_image_set_index(ss->lw, row);
         }
+    }
+
+    ss->stepping = FALSE;
+    if (ss->stop_pending)
+    {
+        /* a continue_check fired while we were changing the image,
+           let the caller stop the slideshow the normal way */
+        ss->stop_pending = FALSE;
+        return FALSE;
     }
 
     if (!ss->list && options->slideshow.repeat)
