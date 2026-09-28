@@ -1721,8 +1721,6 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
     {
         gint x1, y1;
         gint x2, y2;
-        GtkWidget *box;
-        GdkWindow *window;
 
         if (x_off < 0)
         {
@@ -1745,9 +1743,6 @@ static void rt_scroll(void *renderer, gint x_off, gint y_off)
             y1 = 0;
             y2 = abs(y_off);
         }
-
-        box = GTK_WIDGET(pr);
-        window = gtk_widget_get_window(box);
 
         rt_queue(rt, rt->x_scroll, rt->y_scroll,  
                  pr->vis_width, pr->vis_height,  
