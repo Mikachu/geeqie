@@ -37,7 +37,12 @@ static void slideshow_timer_stop(SlideShowData *ss)
 
 static FileData *slideshow_get_fd(SlideShowData *ss)
 {
-    return ss->lw ? layout_image_get_fd(ss->lw) : image_get_fd(ss->imd);
+    if (ss->lw)
+    {
+        FileData *pfd = ss->lw->image_pending_fd;
+        return pfd ? pfd : layout_image_get_fd(ss->lw);
+    }
+    return image_get_fd(ss->imd);
 }
 
 void slideshow_free(SlideShowData *ss)
