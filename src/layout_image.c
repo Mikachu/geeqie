@@ -1383,13 +1383,14 @@ static gboolean layout_image_mouse_binding_activate(LayoutWindow *lw,
 {
     if (!lw->action_group) return FALSE;
 
+    state &= gtk_accelerator_get_default_mod_mask();
     for (GList *work = options->mouse_bindings; work; work = work->next)
     {
         MouseBinding *mb = work->data;
         GtkAction *action;
 
         if (mb->button != button) continue;
-        if (mb->state != (state & gtk_accelerator_get_default_mod_mask())) continue;
+        if (mb->state != state) continue;
 
         action = gtk_action_group_get_action(lw->action_group, mb->action_name);
         if (!action) continue;
@@ -1401,16 +1402,11 @@ static gboolean layout_image_mouse_binding_activate(LayoutWindow *lw,
     return FALSE;
 }
 
-static gboolean layout_image_mouse_binding_dispatch(LayoutWindow *lw, GdkEventButton *event)
-{
-    return layout_image_mouse_binding_activate(lw, event->button, event->state);
-}
-
 static void layout_image_button_cb(ImageWindow *imd, GdkEventButton *event, gpointer data)
 {
     LayoutWindow *lw = data;
 
-    if (layout_image_mouse_binding_dispatch(lw, event)) return;
+    if (layout_image_mouse_binding_activate(lw, event->button, event->state)) return;
 
     switch (event->button)
     {
