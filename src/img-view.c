@@ -37,6 +37,7 @@
 #include "misc.h"
 #include "pixbuf_util.h"
 #include "pixbuf-renderer.h"
+#include "preferences.h"
 #include "print.h"
 #include "slideshow.h"
 #include "ui_fileops.h"
@@ -276,6 +277,179 @@ static void view_step_to_end(ViewWindow *vw, gboolean last)
 
 /*
  *-----------------------------------------------------------------------------
+ * view window accelerators
+ *
+ * Bound to the same accel paths as the layout window actions, so both
+ * default keys and user remapping are shared.
+ * Accel closures connected via gtk_accel_group_connect_by_path() are
+ * invoked with the accelerator signature (group, acceleratable, keyval,
+ * mod, user_data), NOT the (widget, data) convention used by menu items.
+ * vw arrives in data (the user_data passed to g_cclosure_new);
+ *-----------------------------------------------------------------------------
+ */
+
+static void view_accel_step_prev_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    view_step_prev(data);
+}
+
+static void view_accel_step_next_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    view_step_next(data);
+}
+
+static void view_accel_step_first_cb(GtkAccelGroup *group, GObject *obj,
+                                     guint keyval, GdkModifierType mod,
+                                     gpointer data)
+{
+    view_step_to_end(data, FALSE);
+}
+
+static void view_accel_step_last_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    view_step_to_end(data, TRUE);
+}
+
+static void view_accel_slideshow_toggle_cb(GtkAccelGroup *group, GObject *obj,
+                                           guint keyval, GdkModifierType mod,
+                                           gpointer data)
+{
+    ViewWindow *vw = data;
+
+    if (vw->ss)
+        view_slideshow_stop(vw);
+    else
+        view_slideshow_start(vw);
+}
+
+static void view_accel_reload_cb(GtkAccelGroup *group, GObject *obj,
+                                 guint keyval, GdkModifierType mod,
+                                 gpointer data)
+{
+    image_reload(view_window_active_image(data));
+}
+
+static void view_accel_overlay_cb(GtkAccelGroup *group, GObject *obj,
+                                  guint keyval, GdkModifierType mod,
+                                  gpointer data)
+{
+    view_overlay_toggle(data);
+}
+
+static void view_accel_escape_cb(GtkAccelGroup *group, GObject *obj,
+                                 guint keyval, GdkModifierType mod,
+                                 gpointer data)
+{
+    ViewWindow *vw = data;
+
+    if (vw->fs)
+        view_fullscreen_toggle(vw, TRUE);
+}
+
+static void view_accel_print_cb(GtkAccelGroup *group, GObject *obj,
+                                guint keyval, GdkModifierType mod,
+                                gpointer data)
+{
+    ViewWindow *vw = data;
+    ImageWindow *imd;
+    FileData *fd;
+
+    view_fullscreen_toggle(vw, TRUE);
+    imd = view_window_active_image(vw);
+    fd = image_get_fd(imd);
+    print_window_new(fd,
+                     fd ? g_list_append(NULL, file_data_ref(fd)) : NULL,
+                     filelist_copy(vw->list), vw->window);
+}
+
+static void view_accel_config_cb(GtkAccelGroup *group, GObject *obj,
+                                 guint keyval, GdkModifierType mod,
+                                 gpointer data)
+{
+    show_config_window();
+}
+
+#define VIEW_ACCEL_ZOOM_CB(name, zoom)                                   \
+    static void name(GtkAccelGroup *group, GObject *obj,                 \
+                     guint keyval, GdkModifierType mod,                  \
+                     gpointer data)                                      \
+    {                                                                    \
+        image_zoom_set(view_window_active_image(data), zoom);            \
+    }
+
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_2_1_cb,  2.0)
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_3_1_cb,  3.0)
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_4_1_cb,  4.0)
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_1_2_cb, -2.0)
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_1_3_cb, -3.0)
+VIEW_ACCEL_ZOOM_CB(view_accel_zoom_1_4_cb, -4.0)
+
+static void view_accel_fill_vert_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    image_zoom_set_fill_geometry(view_window_active_image(data), TRUE);
+}
+
+static void view_accel_fill_horz_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    image_zoom_set_fill_geometry(view_window_active_image(data), FALSE);
+}
+
+static void view_accel_rotate_cw_cb(GtkAccelGroup *group, GObject *obj,
+                                    guint keyval, GdkModifierType mod,
+                                    gpointer data)
+{
+    image_alter_orientation(view_window_active_image(data), ALTER_ROTATE_90);
+}
+
+static void view_accel_rotate_ccw_cb(GtkAccelGroup *group, GObject *obj,
+                                     guint keyval, GdkModifierType mod,
+                                     gpointer data)
+{
+    image_alter_orientation(view_window_active_image(data), ALTER_ROTATE_90_CC);
+}
+
+static void view_accel_rotate_180_cb(GtkAccelGroup *group, GObject *obj,
+                                     guint keyval, GdkModifierType mod,
+                                     gpointer data)
+{
+    image_alter_orientation(view_window_active_image(data), ALTER_ROTATE_180);
+}
+
+static void view_accel_mirror_cb(GtkAccelGroup *group, GObject *obj,
+                                 guint keyval, GdkModifierType mod,
+                                 gpointer data)
+{
+    image_alter_orientation(view_window_active_image(data), ALTER_MIRROR);
+}
+
+static void view_accel_flip_cb(GtkAccelGroup *group, GObject *obj,
+                               guint keyval, GdkModifierType mod,
+                               gpointer data)
+{
+    image_alter_orientation(view_window_active_image(data), ALTER_FLIP);
+}
+
+static void view_accel_desaturate_cb(GtkAccelGroup *group, GObject *obj,
+                                     guint keyval, GdkModifierType mod,
+                                     gpointer data)
+{
+    ImageWindow *imd = view_window_active_image(data);
+
+    image_set_desaturate(imd, !image_get_desaturate(imd));
+}
+
+/*
+ *-----------------------------------------------------------------------------
  * view window keyboard
  *-----------------------------------------------------------------------------
  */
@@ -295,14 +469,13 @@ static gboolean view_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, 
 {
     ViewWindow *vw = data;
     ImageWindow *imd;
-    gint stop_signal;
+    gboolean arrow_handled = TRUE;
     GtkWidget *menu;
     gint x = 0;
     gint y = 0;
 
     imd = view_window_active_image(vw);
 
-    stop_signal = TRUE;
     switch (event->keyval)
     {
         case GDK_KEY_Left: case GDK_KEY_KP_Left:
@@ -318,11 +491,11 @@ static gboolean view_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, 
             y += 1;
             break;
         default:
-            stop_signal = FALSE;
+            arrow_handled = FALSE;
             break;
     }
 
-    if (x != 0 || y!= 0)
+    if (x != 0 || y != 0)
     {
         if (event->state & GDK_SHIFT_MASK)
         {
@@ -334,194 +507,24 @@ static gboolean view_window_key_press_cb(GtkWidget *widget, GdkEventKey *event, 
         image_scroll(imd, x, y);
     }
 
-    if (stop_signal) return stop_signal;
+    if (arrow_handled) return TRUE;
 
-    if (event->state & GDK_CONTROL_MASK)
+    if (!(event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK)))
     {
-        stop_signal = TRUE;
         switch (event->keyval)
         {
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
-                break;
-            case 'C': case 'c':
-                file_util_copy(image_get_fd(imd), NULL, NULL, imd->widget);
-                break;
-            case 'M': case 'm':
-                file_util_move(image_get_fd(imd), NULL, NULL, imd->widget);
-                break;
-            case 'R': case 'r':
-                file_util_rename(image_get_fd(imd), NULL, imd->widget);
-                break;
-            case 'D': case 'd':
-                file_util_delete(image_get_fd(imd), NULL, imd->widget);
-                break;
-            case 'W': case 'w':
-                view_window_close(vw);
-                break;
-            default:
-                stop_signal = FALSE;
-                break;
-        }
-    }
-    else if (event->state & GDK_SHIFT_MASK)
-    {
-        stop_signal = TRUE;
-        switch (event->keyval)
-        {
-            case 'R': case 'r':
-                image_alter_orientation(imd, ALTER_ROTATE_180);
-                break;
-            case 'M': case 'm':
-                image_alter_orientation(imd, ALTER_MIRROR);
-                break;
-            case 'F': case 'f':
-                image_alter_orientation(imd, ALTER_FLIP);
-                break;
-            case 'G': case 'g':
-                image_set_desaturate(imd, !image_get_desaturate(imd));
-                break;
-            case 'P': case 'p':
-            {
-                FileData *fd;
-
-                view_fullscreen_toggle(vw, TRUE);
-                imd = view_window_active_image(vw);
-                fd = image_get_fd(imd);
-                print_window_new(fd,
-                         fd ? g_list_append(NULL, file_data_ref(fd)) : NULL,
-                         filelist_copy(vw->list), vw->window);
-            }
-                break;
-            default:
-                stop_signal = FALSE;
-                break;
-        }
-    }
-    else
-    {
-        stop_signal = TRUE;
-        switch (event->keyval)
-        {
-            case GDK_KEY_Page_Up: case GDK_KEY_KP_Page_Up:
-            case GDK_KEY_BackSpace:
-            case 'B': case 'b':
-                view_step_prev(vw);
-                break;
-            case GDK_KEY_Page_Down: case GDK_KEY_KP_Page_Down:
-            case GDK_KEY_space:
-            case 'N': case 'n':
-                view_step_next(vw);
-                break;
-            case GDK_KEY_Home: case GDK_KEY_KP_Home:
-                view_step_to_end(vw, FALSE);
-                break;
-            case GDK_KEY_End: case GDK_KEY_KP_End:
-                view_step_to_end(vw, TRUE);
-                break;
-            case '+': case '=': case GDK_KEY_KP_Add:
-                image_zoom_adjust(imd, get_zoom_increment());
-                break;
-            case '-': case GDK_KEY_KP_Subtract:
-                image_zoom_adjust(imd, -get_zoom_increment());
-                break;
-            case 'X': case 'x': case GDK_KEY_KP_Multiply:
-                image_zoom_set(imd, 0.0);
-                break;
-            case 'Z': case 'z': case GDK_KEY_KP_Divide: case '1':
-                image_zoom_set(imd, 1.0);
-                break;
-            case '2':
-                image_zoom_set(imd, 2.0);
-                break;
-            case '3':
-                image_zoom_set(imd, 3.0);
-                break;
-            case '4':
-                image_zoom_set(imd, 4.0);
-                break;
-            case '7':
-                image_zoom_set(imd, -4.0);
-                break;
-            case '8':
-                image_zoom_set(imd, -3.0);
-                break;
-            case '9':
-                image_zoom_set(imd, -2.0);
-                break;
-            case 'W': case 'w':
-                image_zoom_set_fill_geometry(imd, FALSE);
-                break;
-            case 'H': case 'h':
-                image_zoom_set_fill_geometry(imd, TRUE);
-                break;
-            case 'R': case 'r':
-                image_reload(imd);
-                break;
-            case 'S': case 's':
-                if (vw->ss)
-                {
-                    view_slideshow_stop(vw);
-                }
-                else
-                {
-                    view_slideshow_start(vw);
-                }
-                break;
-            case 'P': case 'p':
-                slideshow_pause_toggle(vw->ss);
-                break;
-            case 'F': case 'f':
-            case 'V': case 'v':
-            case GDK_KEY_F11:
-                view_fullscreen_toggle(vw, FALSE);
-                break;
-            case 'I': case 'i':
-                view_overlay_toggle(vw);
-                break;
-            case ']':
-                image_alter_orientation(imd, ALTER_ROTATE_90);
-                break;
-            case '[':
-                image_alter_orientation(imd, ALTER_ROTATE_90_CC);
-                break;
-            case GDK_KEY_Delete: case GDK_KEY_KP_Delete:
-                if (options->file_ops.enable_delete_key)
-                {
-                    file_util_delete(image_get_fd(imd), NULL, imd->widget);
-                }
-                break;
-            case GDK_KEY_Escape:
-                if (vw->fs)
-                {
-                    view_fullscreen_toggle(vw, TRUE);
-                }
-                else
-                {
-                    view_window_close(vw);
-                }
-                break;
             case GDK_KEY_Menu:
             case GDK_KEY_F10:
                 menu = view_popup_menu(vw);
                 gtk_menu_popup(GTK_MENU(menu), NULL, NULL,
-                           view_window_menu_pos_cb, vw, 0, event->time);
-                break;
+                               view_window_menu_pos_cb, vw, 0, event->time);
+                return TRUE;
             default:
-                stop_signal = FALSE;
-                break;
+                return FALSE;
         }
     }
 
-    return stop_signal;
+    return FALSE;
 }
 
 /*
@@ -727,6 +730,8 @@ static gboolean view_window_delete_cb(GtkWidget *w, GdkEventAny *event, gpointer
     return TRUE;
 }
 
+static void view_window_accels_init(ViewWindow *vw);
+
 static ViewWindow *real_view_window_new(FileData *fd, GList *list,
                                         CollectionData *cd, CollectInfo *info)
 {
@@ -773,6 +778,9 @@ static ViewWindow *real_view_window_new(FileData *fd, GList *list,
                      G_CALLBACK(view_window_delete_cb), vw);
     g_signal_connect(G_OBJECT(vw->window), "key_press_event",
                      G_CALLBACK(view_window_key_press_cb), vw);
+
+    view_window_accels_init(vw);
+
     if (cd && info)
     {
         image_change_from_collection(vw->imd, cd, info, image_zoom_get_default(NULL));
@@ -1012,6 +1020,11 @@ static void view_zoom_1_1_cb(GtkWidget *widget, gpointer data)
     image_zoom_set(view_window_active_image(vw), 1.0);
 }
 
+static void view_zoom_to_rectangle_cb(GtkWidget *widget, gpointer data)
+{
+    image_start_rectangle_zoom(view_window_active_image(data));
+}
+
 static void view_zoom_fit_cb(GtkWidget *widget, gpointer data)
 {
     ViewWindow *vw = data;
@@ -1044,6 +1057,17 @@ static void view_rename_cb(GtkWidget *widget, gpointer data)
 
     imd = view_window_active_image(vw);
     file_util_rename(image_get_fd(imd), NULL, imd->widget);
+}
+
+static void view_delete_key_cb(GtkWidget *widget, gpointer data)
+{
+    ViewWindow *vw = data;
+    ImageWindow *imd;
+
+    if (!options->file_ops.enable_delete_key)
+        return;
+    imd = view_window_active_image(vw);
+    file_util_delete(image_get_fd(imd), NULL, imd->widget);
 }
 
 static void view_delete_cb(GtkWidget *widget, gpointer data)
@@ -1098,6 +1122,31 @@ static void view_close_cb(GtkWidget *widget, gpointer data)
 
     view_window_close(vw);
 }
+
+/* accel callbacks for keys that already have a (widget, data) menu
+   callback: chain to it, the widget argument is unused there */
+#define VIEW_ACCEL_CHAIN_CB(name, target)                                \
+    static void name(GtkAccelGroup *group, GObject *obj,                 \
+                     guint keyval, GdkModifierType mod,                  \
+                     gpointer data)                                      \
+    {                                                                    \
+        target(NULL, data);                                              \
+    }
+
+VIEW_ACCEL_CHAIN_CB(view_accel_zoom_in_cb,          view_zoom_in_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_zoom_out_cb,         view_zoom_out_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_zoom_fit_cb,         view_zoom_fit_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_zoom_1_1_cb,         view_zoom_1_1_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_zoom_to_rectangle_cb,view_zoom_to_rectangle_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_slideshow_pause_cb,  view_slideshow_pause_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_fullscreen_cb,       view_fullscreen_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_copy_cb,             view_copy_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_move_cb,             view_move_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_rename_cb,           view_rename_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_delete_key_cb,       view_delete_key_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_copy_path_cb,        view_copy_path_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_new_window_cb,       view_new_window_cb)
+VIEW_ACCEL_CHAIN_CB(view_accel_close_cb,            view_close_cb)
 
 static LayoutWindow *view_new_layout_with_fd(FileData *fd)
 {
@@ -1165,6 +1214,8 @@ static GtkWidget *view_popup_menu(ViewWindow *vw)
                         G_CALLBACK(view_zoom_out_cb), vw);
     menu_item_add_stock(menu, _("Zoom _1:1"), GTK_STOCK_ZOOM_100,
                         G_CALLBACK(view_zoom_1_1_cb), vw);
+    menu_item_add_stock(menu, _("Zoom to _Rectangle"), GTK_STOCK_ZOOM_IN,
+                        G_CALLBACK(view_zoom_to_rectangle_cb), vw);
     menu_item_add_stock(menu, _("Fit image to _window"), GTK_STOCK_ZOOM_FIT,
                         G_CALLBACK(view_zoom_fit_cb), vw);
     menu_item_add_divider(menu);
@@ -1239,6 +1290,98 @@ static GtkWidget *view_popup_menu(ViewWindow *vw)
                         G_CALLBACK(view_close_cb), vw);
 
     return menu;
+}
+
+typedef struct {
+    const gchar *path;
+    GCallback func;
+} ViewAccel;
+
+/* path strings must match the GtkActionEntry names in layout_util.c
+   verbatim ("<Actions>/<group>/<name>"); these inherit both the default
+   accelerators and any user remapping */
+static const ViewAccel view_accels[] = {
+    { "<Actions>/MenuActions/PrevImage",       G_CALLBACK(view_accel_step_prev_cb) },
+    { "<Actions>/MenuActions/PrevImageAlt1",   G_CALLBACK(view_accel_step_prev_cb) },
+    { "<Actions>/MenuActions/PrevImageAlt2",   G_CALLBACK(view_accel_step_prev_cb) },
+    { "<Actions>/MenuActions/NextImage",       G_CALLBACK(view_accel_step_next_cb) },
+    { "<Actions>/MenuActions/NextImageAlt1",   G_CALLBACK(view_accel_step_next_cb) },
+    { "<Actions>/MenuActions/NextImageAlt2",   G_CALLBACK(view_accel_step_next_cb) },
+    { "<Actions>/MenuActions/FirstImage",      G_CALLBACK(view_accel_step_first_cb) },
+    { "<Actions>/MenuActions/LastImage",       G_CALLBACK(view_accel_step_last_cb) },
+
+    { "<Actions>/MenuActions/ZoomIn",          G_CALLBACK(view_accel_zoom_in_cb) },
+    { "<Actions>/MenuActions/ZoomInAlt1",      G_CALLBACK(view_accel_zoom_in_cb) },
+    { "<Actions>/MenuActions/ZoomOut",         G_CALLBACK(view_accel_zoom_out_cb) },
+    { "<Actions>/MenuActions/ZoomOutAlt1",     G_CALLBACK(view_accel_zoom_out_cb) },
+    { "<Actions>/MenuActions/ZoomFit",         G_CALLBACK(view_accel_zoom_fit_cb) },
+    { "<Actions>/MenuActions/ZoomFitAlt1",     G_CALLBACK(view_accel_zoom_fit_cb) },
+    { "<Actions>/MenuActions/Zoom100",         G_CALLBACK(view_accel_zoom_1_1_cb) },
+    { "<Actions>/MenuActions/Zoom100Alt1",     G_CALLBACK(view_accel_zoom_1_1_cb) },
+    { "<Actions>/MenuActions/Zoom200",         G_CALLBACK(view_accel_zoom_2_1_cb) },
+    { "<Actions>/MenuActions/Zoom300",         G_CALLBACK(view_accel_zoom_3_1_cb) },
+    { "<Actions>/MenuActions/Zoom400",         G_CALLBACK(view_accel_zoom_4_1_cb) },
+    { "<Actions>/MenuActions/Zoom50",          G_CALLBACK(view_accel_zoom_1_2_cb) },
+    { "<Actions>/MenuActions/Zoom33",          G_CALLBACK(view_accel_zoom_1_3_cb) },
+    { "<Actions>/MenuActions/Zoom25",          G_CALLBACK(view_accel_zoom_1_4_cb) },
+    { "<Actions>/MenuActions/ZoomFillVert",    G_CALLBACK(view_accel_fill_vert_cb) },
+    { "<Actions>/MenuActions/ZoomFillHor",     G_CALLBACK(view_accel_fill_horz_cb) },
+    { "<Actions>/MenuActions/ZoomToRectangle", G_CALLBACK(view_accel_zoom_to_rectangle_cb) },
+
+    { "<Actions>/MenuActions/RotateCW",        G_CALLBACK(view_accel_rotate_cw_cb) },
+    { "<Actions>/MenuActions/RotateCCW",       G_CALLBACK(view_accel_rotate_ccw_cb) },
+    { "<Actions>/MenuActions/Rotate180",       G_CALLBACK(view_accel_rotate_180_cb) },
+    { "<Actions>/MenuActions/Mirror",          G_CALLBACK(view_accel_mirror_cb) },
+    { "<Actions>/MenuActions/Flip",            G_CALLBACK(view_accel_flip_cb) },
+    { "<Actions>/MenuActions/Grayscale",       G_CALLBACK(view_accel_desaturate_cb) },
+
+    { "<Actions>/MenuActions/Refresh",         G_CALLBACK(view_accel_reload_cb) },
+    { "<Actions>/MenuActions/SlideShow",       G_CALLBACK(view_accel_slideshow_toggle_cb) },
+    { "<Actions>/MenuActions/SlideShowPause",  G_CALLBACK(view_accel_slideshow_pause_cb) },
+    { "<Actions>/MenuActions/FullScreen",      G_CALLBACK(view_accel_fullscreen_cb) },
+    { "<Actions>/MenuActions/FullScreenAlt1",  G_CALLBACK(view_accel_fullscreen_cb) },
+    { "<Actions>/MenuActions/FullScreenAlt2",  G_CALLBACK(view_accel_fullscreen_cb) },
+    { "<Actions>/MenuActions/ImageOverlayCycle",G_CALLBACK(view_accel_overlay_cb) },
+
+    { "<Actions>/MenuActions/Copy",            G_CALLBACK(view_accel_copy_cb) },
+    { "<Actions>/MenuActions/Move",            G_CALLBACK(view_accel_move_cb) },
+    { "<Actions>/MenuActions/Rename",          G_CALLBACK(view_accel_rename_cb) },
+    { "<Actions>/MenuActions/Delete",          G_CALLBACK(view_accel_delete_key_cb) },
+    { "<Actions>/MenuActions/DeleteAlt1",      G_CALLBACK(view_accel_delete_key_cb) },
+    { "<Actions>/MenuActions/DeleteAlt2",      G_CALLBACK(view_accel_delete_key_cb) },
+    { "<Actions>/MenuActions/CopyPath",        G_CALLBACK(view_accel_copy_path_cb) },
+
+    { "<Actions>/MenuActions/Print",           G_CALLBACK(view_accel_print_cb) },
+    { "<Actions>/MenuActions/ViewInNewWindow", G_CALLBACK(view_accel_new_window_cb) },
+    { "<Actions>/MenuActions/Preferences",     G_CALLBACK(view_accel_config_cb) },
+
+    { "<Actions>/MenuActions/Escape",          G_CALLBACK(view_accel_escape_cb) },
+    { "<Actions>/MenuActions/EscapeAlt1",      G_CALLBACK(view_accel_escape_cb) },
+    { "<Actions>/MenuActions/CloseWindow",     G_CALLBACK(view_accel_close_cb) },
+};
+
+static void view_window_accels_init(ViewWindow *vw)
+{
+    GtkAccelGroup *group;
+    guint i;
+
+    group = gtk_accel_group_new();
+
+    for (i = 0; i < G_N_ELEMENTS(view_accels); i++)
+    {
+        if (!gtk_accel_map_lookup_entry(view_accels[i].path, NULL))
+        {
+            /* no entry means the layout action was never built —
+               warn rather than silently binding nothing */
+            g_warning("no accel entry for %s", view_accels[i].path);
+            continue;
+        }
+        gtk_accel_group_connect_by_path(group,
+                                        view_accels[i].path,
+                                        g_cclosure_new(view_accels[i].func, vw, NULL));
+    }
+
+    gtk_window_add_accel_group(GTK_WINDOW(vw->window), group);
 }
 
 /*
