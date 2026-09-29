@@ -21,13 +21,18 @@
 #include "main.h"
 #include "view_file.h"
 
+#include "dnd.h"
 #include "editors.h"
+#include "img-view.h"
 #include "layout.h"
+#include "layout_image.h"
 #include "menu.h"
+#include "metadata.h"
 #include "thumb.h"
 #include "ui_menu.h"
 #include "ui_fileops.h"
 #include "utilops.h"
+#include "uri_utils.h"
 #include "view_file_list.h"
 #include "view_file_icon.h"
 
@@ -57,6 +62,31 @@ void vf_sort_set(ViewFile *vf, SortType type, gboolean ascend)
     }
 }
 
+gboolean vf_fd_selected(ViewFile *vf, FileData *fd)
+{
+    return vf->funcs->fd_selected(vf, fd);
+}
+
+FileData *vf_clicked_fd(ViewFile *vf)
+{
+    return vf->funcs->clicked_fd(vf);
+}
+
+static void vf_clicked_clear(ViewFile *vf)
+{
+    vf->funcs->clicked_clear(vf);
+}
+
+FileData *vf_item_fd(ViewFile *vf, gpointer item)
+{
+    return vf->funcs->item_fd(item);
+}
+
+void vf_fd_color_set(ViewFile *vf, FileData *fd, gboolean enable)
+{
+    if (fd) vf->funcs->color_set(vf, fd, enable);
+}
+
 /*
  *-----------------------------------------------------------------------------
  * row stuff
@@ -65,54 +95,115 @@ void vf_sort_set(ViewFile *vf, SortType type, gboolean ascend)
 
 FileData *vf_index_get_data(ViewFile *vf, gint row)
 {
-    FileData *fd = NULL;
-
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST: fd = vflist_index_get_data(vf, row); break;
-    case FILEVIEW_ICON: fd = vficon_index_get_data(vf, row); break;
-    }
-
-    return fd;
+    return vf_item_fd(vf, g_list_nth_data(vf->list, row));
 }
 
 gint vf_index_by_fd(ViewFile *vf, FileData *fd)
 {
-    gint index = -1;
+    gint p = 0;
 
-    switch (vf->type)
+    if (!fd) return -1;
+
+    for (GList *work = vf->list; work; work = work->next)
     {
-    case FILEVIEW_LIST: index = vflist_index_by_fd(vf, fd); break;
-    case FILEVIEW_ICON: index = vficon_index_by_fd(vf, fd); break;
-    }
+        FileData *list_fd = vf_item_fd(vf, work->data);
 
-    return index;
+        if (list_fd == fd) return p;
+
+        /* FIXME: return the same index also for sidecars
+           it is sufficient for next/prev navigation but it should be
+           rewritten without using indexes at all */
+        for (GList *s = list_fd->sidecar_files; s; s = s->next)
+            if (s->data == fd) return p;
+
+        p++;
+    }
+    return -1;
 }
 
 guint vf_count(ViewFile *vf, gint64 *bytes)
 {
-    guint count = 0;
-
-    switch (vf->type)
+    if (bytes)
     {
-    case FILEVIEW_LIST: count = vflist_count(vf, bytes); break;
-    case FILEVIEW_ICON: count = vficon_count(vf, bytes); break;
-    }
+        gint64 b = 0;
+        guint n = 0;
 
-    return count;
+        for (GList *work = vf->list; work; work = work->next)
+        {
+            b += vf_item_fd(vf, work->data)->size;
+            n++;
+        }
+
+        *bytes = b;
+        return n;
+    }
+    return g_list_length(vf->list);
 }
 
 GList *vf_get_list(ViewFile *vf)
 {
     GList *list = NULL;
+    for (GList *work = vf->list; work; work = work->next)
+        list = g_list_prepend(list, file_data_ref(vf_item_fd(vf, work->data)));
 
-    switch (vf->type)
+    return g_list_reverse(list);
+}
+
+/* finds the entry that sorts at-or-after sel_fd in vf->list order,
+   falling back to the last entry; returns NULL on empty list */
+gpointer vf_find_closest_entry(ViewFile *vf, FileData *sel_fd)
+{
+    gpointer entry = NULL;
+
+    if (!sel_fd) return NULL;
+    if (sel_fd->parent) sel_fd = sel_fd->parent;
+
+    for (GList *work = vf->list; work; work = work->next)
     {
-    case FILEVIEW_LIST: list = vflist_get_list(vf); break;
-    case FILEVIEW_ICON: list = vficon_get_list(vf); break;
+        gint match;
+
+        entry = work->data;
+        FileData *fd = vf_item_fd(vf, entry);
+        match = filelist_sort_compare_filedata(fd, sel_fd,
+                                               vf->sort_method,
+                                               vf->sort_ascend);
+        if (match >= 0) break;
     }
 
-    return list;
+    return entry;
+}
+
+/* change the image displayed in the layout window to sel_fd,
+   picking a read-ahead neighbor along the sort order */
+void vf_send_layout_select(ViewFile *vf, FileData *sel_fd)
+{
+    FileData *read_ahead_fd = NULL;
+    FileData *cur_fd;
+    gint row;
+
+    if (!vf->layout || !sel_fd) return;
+
+    cur_fd = vf->layout->image_pending_fd ? vf->layout->image_pending_fd
+                                          : layout_image_get_fd(vf->layout);
+    if (sel_fd == cur_fd) return; /* no change */
+
+    row = vf_index_by_fd(vf, sel_fd);
+    /* FIXME sidecar data */
+
+    if (options->image.enable_read_ahead && row >= 0)
+    {
+        if (row > vf_index_by_fd(vf, cur_fd) &&
+            (guint) (row + 1) < vf_count(vf, NULL))
+        {
+            read_ahead_fd = vf_index_get_data(vf, row + 1);
+        }
+        else if (row > 0)
+        {
+            read_ahead_fd = vf_index_get_data(vf, row - 1);
+        }
+    }
+
+    layout_image_set_with_ahead(vf->layout, sel_fd, read_ahead_fd);
 }
 
 
@@ -266,6 +357,21 @@ void vf_select_by_fd(ViewFile *vf, FileData *fd)
     }
 }
 
+gboolean vf_mts_select(FileData *fd, gint n, gboolean selected,
+                       MarkToSelectionMode mode)
+{
+    gboolean mark_val = file_data_get_mark(fd, n);
+
+    switch (mode)
+    {
+    case MTS_MODE_SET:   return mark_val;
+    case MTS_MODE_OR:    return mark_val || selected;
+    case MTS_MODE_AND:   return mark_val && selected;
+    case MTS_MODE_MINUS: return !mark_val && selected;
+    }
+    return selected;
+}
+
 void vf_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
 {
     switch (vf->type)
@@ -277,11 +383,36 @@ void vf_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
 
 void vf_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
 {
-    switch (vf->type)
+    GList *slist, *work;
+    gint n = mark - 1;
+
+    g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
+
+    /* the change has a very limited range and the standard notification would
+     * trigger complete re-read of the directory - try to do only minimal
+     * update instead */
+    file_data_unregister_notify_func(vf_notify_cb, vf);
+
+    slist = vf_selection_get_list(vf);
+    for (work = slist; work; work = work->next)
     {
-    case FILEVIEW_LIST: vflist_selection_to_mark(vf, mark, mode); break;
-    case FILEVIEW_ICON: vficon_selection_to_mark(vf, mark, mode); break;
+        FileData *fd = work->data;
+
+        switch (mode)
+        {
+        case STM_MODE_SET:    file_data_set_mark(fd, n, 1); break;
+        case STM_MODE_RESET:  file_data_set_mark(fd, n, 0); break;
+        case STM_MODE_TOGGLE: file_data_set_mark(fd, n, !file_data_get_mark(fd, n)); break;
+        }
+
+        if (!file_data_filter_marks(fd, vf_marks_get_filter(vf)))
+            vf_refresh_idle(vf);  /* file no longer matches the filter -> remove it */
+        else
+            vf->funcs->fd_mark_updated(vf, fd);
     }
+
+    file_data_register_notify_func(vf_notify_cb, vf, NOTIFY_PRIORITY_MEDIUM);
+    filelist_free(slist);
 }
 
 /*
@@ -291,13 +422,96 @@ void vf_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
  */
 
 
-static void vf_dnd_init(ViewFile *vf)
+static void vf_dnd_get(GtkWidget *widget, GdkDragContext *context,
+                       GtkSelectionData *selection_data, guint info,
+                       guint time, gpointer data)
 {
-    switch (vf->type)
+    ViewFile *vf = data;
+    FileData *fd = vf->funcs->clicked_fd(vf);
+    GList *list = NULL;
+
+    if (!fd) return;
+
+    if (vf->funcs->fd_selected(vf, fd))
+        list = vf_selection_get_list(vf);
+    else
+        list = g_list_append(NULL, file_data_ref(fd));
+
+    if (!list) return;
+    uri_selection_data_set_uris_from_filelist(selection_data, list);
+    filelist_free(list);
+}
+
+static void vf_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer data)
+{
+    ViewFile *vf = data;
+    FileData *fd = vf->funcs->clicked_fd(vf);
+
+    vf->funcs->drag_started(vf);
+
+    if (fd && fd->thumb_pixbuf)
     {
-    case FILEVIEW_LIST: vflist_dnd_init(vf); break;
-    case FILEVIEW_ICON: vficon_dnd_init(vf); break;
+        guint items;
+
+        if (vf->funcs->fd_selected(vf, fd))
+            items = vf_selection_count(vf, NULL);
+        else
+            items = 1;
+
+        dnd_set_drag_icon(widget, context, fd->thumb_pixbuf, items);
     }
+}
+
+static void vf_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer data)
+{
+    ViewFile *vf = data;
+
+    vf->funcs->drag_ended(vf);
+
+    if (gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE)
+        vf_refresh(vf);
+}
+
+static void vf_drag_data_received(GtkWidget *widget, GdkDragContext *context,
+                                  int x, int y, GtkSelectionData *selection,
+                                  guint info, guint time, gpointer data)
+{
+    ViewFile *vf = data;
+
+    if (info == TARGET_TEXT_PLAIN)
+    {
+        FileData *fd = vf->funcs->fd_at_coord(vf, x, y);
+
+        if (fd)
+        {
+            /* Add keywords to file */
+            gchar *str = (gchar *) gtk_selection_data_get_text(selection);
+            GList *kw_list = string_to_keywords_list(str);
+
+            metadata_append_list(fd, KEYWORD_KEY, kw_list);
+            string_list_free(kw_list);
+            g_free(str);
+        }
+    }
+}
+
+void vf_dnd_init(ViewFile *vf)
+{
+    gtk_drag_source_set(vf->listview, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
+                        dnd_file_drag_types, dnd_file_drag_types_count,
+                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+    gtk_drag_dest_set(vf->listview, GTK_DEST_DEFAULT_ALL,
+                      dnd_file_drag_types, dnd_file_drag_types_count,
+                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+
+    g_signal_connect(G_OBJECT(vf->listview), "drag_data_get",
+                     G_CALLBACK(vf_dnd_get), vf);
+    g_signal_connect(G_OBJECT(vf->listview), "drag_begin",
+                     G_CALLBACK(vf_dnd_begin), vf);
+    g_signal_connect(G_OBJECT(vf->listview), "drag_end",
+                     G_CALLBACK(vf_dnd_end), vf);
+    g_signal_connect(G_OBJECT(vf->listview), "drag_data_received",
+                     G_CALLBACK(vf_drag_data_received), vf);
 }
 
 /*
@@ -308,15 +522,11 @@ static void vf_dnd_init(ViewFile *vf)
 
 GList *vf_pop_menu_file_list(ViewFile *vf)
 {
-    GList *ret = NULL;
+    FileData *fd = vf_clicked_fd(vf);
 
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST: ret = vflist_pop_menu_file_list(vf); break;
-    case FILEVIEW_ICON: ret = vficon_pop_menu_file_list(vf); break;
-    }
-
-    return ret;
+    if (!fd) return NULL;
+    if (vf_fd_selected(vf, fd)) return vf_selection_get_list(vf);
+    return vf_selection_get_one(vf, fd);
 }
 
 GList *vf_selection_get_one(ViewFile *vf, FileData *fd)
@@ -347,11 +557,19 @@ static void vf_pop_menu_edit_cb(GtkWidget *widget, gpointer data)
 static void vf_pop_menu_view_cb(GtkWidget *widget, gpointer data)
 {
     ViewFile *vf = data;
+    FileData *fd = vf_clicked_fd(vf);
 
-    switch (vf->type)
+    if (!fd) return;
+
+    if (vf_fd_selected(vf, fd))
     {
-    case FILEVIEW_LIST: vflist_pop_menu_view_cb(widget, data); break;
-    case FILEVIEW_ICON: vficon_pop_menu_view_cb(widget, data); break;
+        GList *list = vf_selection_get_list(vf);
+        view_window_new_from_list(list);
+        filelist_free(list);
+    }
+    else
+    {
+        view_window_new(fd);
     }
 }
 
@@ -499,22 +717,16 @@ static void vf_pop_menu_refresh_cb(GtkWidget *widget, gpointer data)
 {
     ViewFile *vf = data;
 
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST: vflist_pop_menu_refresh_cb(widget, data); break;
-    case FILEVIEW_ICON: vficon_pop_menu_refresh_cb(widget, data); break;
-    }
+    vf_clicked_clear(vf);
+    vf_refresh(vf);
 }
 
 static void vf_popup_destroy_cb(GtkWidget *widget, gpointer data)
 {
     ViewFile *vf = data;
 
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST: vflist_popup_destroy_cb(widget, data); break;
-    case FILEVIEW_ICON: vficon_popup_destroy_cb(widget, data); break;
-    }
+    vf_clicked_clear(vf);
+    vf->popup = NULL;
 
     filelist_free(vf->editmenu_fd_list);
     vf->editmenu_fd_list = NULL;
@@ -527,16 +739,9 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
     GtkWidget *submenu;
     gboolean active = FALSE;
 
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST:
-        vflist_color_set(vf, VFLIST(vf)->click_fd, TRUE);
-        active = (VFLIST(vf)->click_fd != NULL);
-        break;
-    case FILEVIEW_ICON:
-        active = (VFICON(vf)->click_id != NULL);
-        break;
-    }
+    FileData *fd = vf_clicked_fd(vf);
+    vf_fd_color_set(vf, fd, TRUE);
+    active = !!fd;
 
     menu = popup_menu_short_lived();
 
@@ -804,6 +1009,24 @@ void vf_thumb_set(ViewFile *vf, gboolean enable)
     }
 }
 
+void vf_thumb_progress_count(ViewFile *vf, GList *list, gint *count, gint *done)
+{
+    for (GList *work = list; work; work = work->next)
+    {
+        FileData *fd = vf_item_fd(vf, work->data);
+
+        if (fd->thumb_pixbuf) ++*done;
+        ++*count;
+
+        /* sidecar lists hold plain FileData *, recurse without item_fd */
+        for (GList *s = fd->sidecar_files; s; s = s->next)
+        {
+            FileData *sc = s->data;
+            if (sc->thumb_pixbuf) ++*done;
+            ++*count;
+        }
+    }
+}
 
 static gboolean vf_thumb_next(ViewFile *vf);
 
@@ -812,11 +1035,7 @@ static gdouble vf_thumb_progress(ViewFile *vf)
     gint count = 0;
     gint done = 0;
 
-    switch (vf->type)
-    {
-    case FILEVIEW_LIST: vflist_thumb_progress_count(vf->list, &count, &done); break;
-    case FILEVIEW_ICON: vficon_thumb_progress_count(vf->list, &count, &done); break;
-    }
+    vf_thumb_progress_count(vf, vf->list, &count, &done);
 
     DEBUG_1("thumb progress: %d of %d", done, count);
     return (gdouble)done / count;
@@ -930,10 +1149,10 @@ static gboolean vf_thumb_next(ViewFile *vf)
 
 static void vf_thumb_reset_all(ViewFile *vf)
 {
-    switch (vf->type)
+    for (GList *work = vf->list; work; work = work->next)
     {
-    case FILEVIEW_LIST: vflist_thumb_reset_all(vf); break;
-    case FILEVIEW_ICON: vficon_thumb_reset_all(vf); break;
+        FileData *fd = vf->funcs->item_fd(work->data);
+        if (fd) g_clear_object(&fd->thumb_pixbuf);
     }
 }
 

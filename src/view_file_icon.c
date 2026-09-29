@@ -27,20 +27,16 @@
 #include "collect.h"
 #include "collect-io.h"
 #include "collect-table.h"
-#include "dnd.h"
 #include "editors.h"
-#include "img-view.h"
 #include "filedata.h"
 #include "layout.h"
 #include "layout_image.h"
 #include "menu.h"
-#include "metadata.h"
 #include "thumb.h"
 #include "utilops.h"
 #include "ui_fileops.h"
 #include "ui_menu.h"
 #include "ui_tree_edit.h"
-#include "uri_utils.h"
 #include "view_file.h"
 
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
@@ -73,8 +69,6 @@ struct _IconData
     SelectionType selected;
     FileData *fd;
 };
-
-static gint vficon_index_by_id(ViewFile *vf, IconData *in_id);
 
 static IconData *vficon_icon_data(ViewFile *vf, FileData *fd)
 {
@@ -138,41 +132,27 @@ static void vficon_populate_at_new_size(ViewFile *vf, gint w, gint h, gboolean f
  *-----------------------------------------------------------------------------
  */
 
+FileData *vficon_clicked_fd(ViewFile *vf)
+{
+    return (VFICON(vf)->click_id) ? VFICON(vf)->click_id->fd : NULL;
+}
+
+gboolean vficon_fd_selected(ViewFile *vf, FileData *fd)
+{
+    IconData *id = vficon_icon_data(vf, fd);
+
+    return (id && (id->selected & SELECTION_SELECTED));
+}
+
 GList *vficon_selection_get_one(ViewFile *vf, FileData *fd)
 {
     return g_list_prepend(filelist_copy(fd->sidecar_files), file_data_ref(fd));
 }
 
-GList *vficon_pop_menu_file_list(ViewFile *vf)
+void vficon_clicked_clear(ViewFile *vf)
 {
-    if (!VFICON(vf)->click_id) return NULL;
-
-    if (VFICON(vf)->click_id->selected & SELECTION_SELECTED)
-    {
-        return vf_selection_get_list(vf);
-    }
-
-    return vficon_selection_get_one(vf, VFICON(vf)->click_id->fd);
-}
-
-void vficon_pop_menu_view_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-
-    if (!VFICON(vf)->click_id) return;
-
-    if (VFICON(vf)->click_id->selected & SELECTION_SELECTED)
-    {
-        GList *list;
-
-        list = vf_selection_get_list(vf);
-        view_window_new_from_list(list);
-        filelist_free(list);
-    }
-    else
-    {
-        view_window_new(VFICON(vf)->click_id->fd);
-    }
+    vficon_selection_remove(vf, VFICON(vf)->click_id, SELECTION_PRELIGHT, NULL);
+    VFICON(vf)->click_id = NULL;
 }
 
 void vficon_pop_menu_rename_cb(GtkWidget *widget, gpointer data)
@@ -189,58 +169,11 @@ void vficon_pop_menu_show_names_cb(GtkWidget *widget, gpointer data)
     vficon_toggle_filenames(vf);
 }
 
-void vficon_pop_menu_refresh_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-
-    vf_refresh(vf);
-}
-
-void vficon_popup_destroy_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-    vficon_selection_remove(vf, VFICON(vf)->click_id, SELECTION_PRELIGHT, NULL);
-    VFICON(vf)->click_id = NULL;
-    vf->popup = NULL;
-}
-
 /*
  *-------------------------------------------------------------------
  * signals
  *-------------------------------------------------------------------
  */
-
-static void vficon_send_layout_select(ViewFile *vf, IconData *id)
-{
-    FileData *read_ahead_fd = NULL;
-    FileData *sel_fd;
-    FileData *cur_fd;
-
-    if (!vf->layout || !id || !id->fd) return;
-
-    sel_fd = id->fd;
-
-    cur_fd = layout_image_get_fd(vf->layout);
-    if (sel_fd == cur_fd) return; /* no change */
-
-    if (options->image.enable_read_ahead)
-    {
-        gint row;
-
-        row = g_list_index(vf->list, id);
-        if (row > vficon_index_by_fd(vf, cur_fd) &&
-            (guint) (row + 1) < vf_count(vf, NULL))
-        {
-            read_ahead_fd = vf_index_get_data(vf, row + 1);
-        }
-        else if (row > 0)
-        {
-            read_ahead_fd = vf_index_get_data(vf, row - 1);
-        }
-    }
-
-    layout_image_set_with_ahead(vf->layout, sel_fd, read_ahead_fd);
-}
 
 static void vficon_toggle_filenames(ViewFile *vf)
 {
@@ -504,108 +437,6 @@ static void tip_update(ViewFile *vf, gint x, gint y, gint x_root, gint y_root)
     }
 }
 
-/*
- *-------------------------------------------------------------------
- * dnd
- *-------------------------------------------------------------------
- */
-
-static void vficon_dnd_get(GtkWidget *widget, GdkDragContext *context,
-               GtkSelectionData *selection_data, guint info,
-               guint time, gpointer data)
-{
-    ViewFile *vf = data;
-    GList *list = NULL;
-
-    if (!VFICON(vf)->click_id) return;
-
-    if (VFICON(vf)->click_id->selected & SELECTION_SELECTED)
-    {
-        list = vf_selection_get_list(vf);
-    }
-    else
-    {
-        list = g_list_append(NULL, file_data_ref(VFICON(vf)->click_id->fd));
-    }
-
-    if (!list) return;
-    uri_selection_data_set_uris_from_filelist(selection_data, list);
-    filelist_free(list);
-}
-
-static void vficon_drag_data_received(GtkWidget *entry_widget, GdkDragContext *context,
-                      int x, int y, GtkSelectionData *selection,
-                      guint info, guint time, gpointer data)
-{
-    ViewFile *vf = data;
-
-    if (info == TARGET_TEXT_PLAIN) {
-        IconData *id = vficon_find_data_by_coord(vf, x, y, NULL);
-
-        if (id && id->fd) {
-            /* Add keywords to file */
-            FileData *fd = id->fd;
-            gchar *str = (gchar *) gtk_selection_data_get_text(selection);
-            GList *kw_list = string_to_keywords_list(str);
-
-            metadata_append_list(fd, KEYWORD_KEY, kw_list);
-            string_list_free(kw_list);
-            g_free(str);
-    }
-    }
-}
-
-static void vficon_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer data)
-{
-    ViewFile *vf = data;
-
-    tip_unschedule(vf);
-
-    if (VFICON(vf)->click_id && VFICON(vf)->click_id->fd->thumb_pixbuf)
-    {
-        gint items;
-
-        if (VFICON(vf)->click_id->selected & SELECTION_SELECTED)
-            items = g_list_length(VFICON(vf)->selection);
-        else
-            items = 1;
-
-        dnd_set_drag_icon(widget, context, VFICON(vf)->click_id->fd->thumb_pixbuf, items);
-    }
-}
-
-static void vficon_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer data)
-{
-    ViewFile *vf = data;
-
-    vficon_selection_remove(vf, VFICON(vf)->click_id, SELECTION_PRELIGHT, NULL);
-
-    if (gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE)
-    {
-        vf_refresh(vf);
-    }
-
-    tip_unschedule(vf);
-}
-
-void vficon_dnd_init(ViewFile *vf)
-{
-    gtk_drag_source_set(vf->listview, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-                dnd_file_drag_types, dnd_file_drag_types_count,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
-    gtk_drag_dest_set(vf->listview, GTK_DEST_DEFAULT_ALL,
-                dnd_file_drag_types, dnd_file_drag_types_count,
-                GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
-
-    g_signal_connect(G_OBJECT(vf->listview), "drag_data_get",
-             G_CALLBACK(vficon_dnd_get), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_begin",
-             G_CALLBACK(vficon_dnd_begin), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_end",
-             G_CALLBACK(vficon_dnd_end), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_data_received",
-             G_CALLBACK(vficon_drag_data_received), vf);
-}
 
 /*
  *-------------------------------------------------------------------
@@ -668,6 +499,25 @@ void vficon_marks_set(ViewFile *vf, gint enable)
  * selections
  *-------------------------------------------------------------------
  */
+
+static gint vficon_index_by_id(ViewFile *vf, IconData *in_id)
+{
+    gint p = 0;
+    GList *work;
+
+    if (!in_id) return -1;
+
+    work = vf->list;
+    while (work)
+    {
+        IconData *id = work->data;
+        if (id == in_id) return p;
+        work = work->next;
+        p++;
+    }
+
+    return -1;
+}
 
 static void vficon_verify_selections(ViewFile *vf)
 {
@@ -942,6 +792,21 @@ void vficon_select_by_fd(ViewFile *vf, FileData *fd)
     vficon_select_by_id(vf, id);
 }
 
+static void vficon_fd_mark_updated(ViewFile *vf, FileData *fd)
+{
+    GtkTreeModel *store = gtk_tree_view_get_model(GTK_TREE_VIEW(vf->listview));
+    GtkTreeIter row;
+    GList *list;
+
+    if (vficon_find_iter(vf, vficon_icon_data(vf, fd), &row, NULL))
+    {
+        gtk_tree_model_get(store, &row, FILE_COLUMN_POINTER, &list, -1);
+        if (list)
+            gtk_list_store_set(GTK_LIST_STORE(store),
+                               &row, FILE_COLUMN_POINTER, list, -1);
+    }
+}
+
 void vficon_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
 {
     GList *work;
@@ -961,81 +826,13 @@ void vficon_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
         mark_val = file_data_get_mark(fd, n);
         selected = (id->selected & SELECTION_SELECTED);
 
-        switch (mode)
-        {
-            case MTS_MODE_SET: selected = mark_val;
-                break;
-            case MTS_MODE_OR: selected = mark_val || selected;
-                break;
-            case MTS_MODE_AND: selected = mark_val && selected;
-                break;
-            case MTS_MODE_MINUS: selected = !mark_val && selected;
-                break;
-        }
+        selected = vf_mts_select(fd, n, selected, mode);
 
         vficon_select_util(vf, id, selected);
 
         work = work->next;
     }
 }
-
-void vficon_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
-{
-    GList *slist;
-    GList *work;
-    gint n = mark -1;
-
-    g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
-
-    slist = vf_selection_get_list(vf);
-    work = slist;
-    while (work)
-    {
-        FileData *fd = work->data;
-
-        switch (mode)
-        {
-            case STM_MODE_SET: file_data_set_mark(fd, n, 1);
-                break;
-            case STM_MODE_RESET: file_data_set_mark(fd, n, 0);
-                break;
-            case STM_MODE_TOGGLE: file_data_set_mark(fd, n, !file_data_get_mark(fd, n));
-                break;
-        }
-        work = work->next;
-    }
-    filelist_free(slist);
-}
-
-static void vficon_select_closest(ViewFile *vf, FileData *sel_fd)
-{
-    GList *work;
-    IconData *id = NULL;
-
-    if (sel_fd->parent) sel_fd = sel_fd->parent;
-    work = vf->list;
-
-    while (work)
-    {
-        gint match;
-        FileData *fd;
-
-        id = work->data;
-        fd = id->fd;
-        work = work->next;
-
-        match = filelist_sort_compare_filedata(fd, sel_fd, vf->sort_method, vf->sort_ascend);
-
-        if (match >= 0) break;
-    }
-
-    if (id)
-    {
-        vficon_select(vf, id);
-        vficon_send_layout_select(vf, id);
-    }
-}
-
 
 /*
  *-------------------------------------------------------------------
@@ -1270,14 +1067,14 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
                     else
                     {
                         vficon_select(vf, id);
-                        vficon_send_layout_select(vf, id);
+                        vf_send_layout_select(vf, id->fd);
                     }
                 }
                 else
                 {
                     vf_select_none(vf);
                     vficon_select(vf, id);
-                    vficon_send_layout_select(vf, id);
+                    vf_send_layout_select(vf, id->fd);
                 }
             }
             break;
@@ -1318,7 +1115,7 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
                     vficon_select_region_util(vf, VFICON(vf)->click_id, old_id, FALSE);
                 }
                 vficon_select_region_util(vf, VFICON(vf)->click_id, new_id, TRUE);
-                vficon_send_layout_select(vf, new_id);
+                vf_send_layout_select(vf, new_id->fd);
             }
             else if (event->state & GDK_CONTROL_MASK)
             {
@@ -1329,7 +1126,7 @@ gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
                 VFICON(vf)->click_id = new_id;
                 vf_select_none(vf);
                 vficon_select(vf, new_id);
-                vficon_send_layout_select(vf, new_id);
+                vf_send_layout_select(vf, new_id->fd);
             }
         }
     }
@@ -1474,7 +1271,7 @@ gboolean vficon_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer d
 
     if (!was_selected && (id->selected & SELECTION_SELECTED))
     {
-        vficon_send_layout_select(vf, id);
+        vf_send_layout_select(vf, id->fd);
     }
 
     return TRUE;
@@ -1723,20 +1520,6 @@ void vficon_sort_set(ViewFile *vf, SortType type, gboolean ascend)
  *-----------------------------------------------------------------------------
  */
 
-void vficon_thumb_progress_count(GList *list, gint *count, gint *done)
-{
-    GList *work = list;
-    while (work)
-    {
-        IconData *id = work->data;
-        FileData *fd = id->fd;
-        work = work->next;
-
-        if (fd->thumb_pixbuf) (*done)++;
-        (*count)++;
-    }
-}
-
 void vficon_set_thumb_fd(ViewFile *vf, FileData *fd)
 {
     GtkTreeModel *store;
@@ -1802,118 +1585,6 @@ FileData *vficon_thumb_next_fd(ViewFile *vf)
     return fd;
 }
 
-void vficon_thumb_reset_all(ViewFile *vf)
-{
-    GList *work = vf->list;
-
-    while (work)
-    {
-        IconData *id = work->data;
-        FileData *fd = id->fd;
-        if (fd->thumb_pixbuf)
-        {
-            g_object_unref(fd->thumb_pixbuf);
-            fd->thumb_pixbuf = NULL;
-        }
-        work = work->next;
-    }
-}
-
-
-/*
- *-----------------------------------------------------------------------------
- * row stuff
- *-----------------------------------------------------------------------------
- */
-
-FileData *vficon_index_get_data(ViewFile *vf, gint row)
-{
-    IconData *id;
-
-    id = g_list_nth_data(vf->list, row);
-    return id ? id->fd : NULL;
-}
-
-
-gint vficon_index_by_fd(ViewFile *vf, FileData *in_fd)
-{
-    gint p = 0;
-    GList *work;
-
-    if (!in_fd) return -1;
-
-    work = vf->list;
-    while (work)
-    {
-        IconData *id = work->data;
-        FileData *fd = id->fd;
-        if (fd == in_fd) return p;
-        work = work->next;
-        p++;
-    }
-
-    return -1;
-}
-
-static gint vficon_index_by_id(ViewFile *vf, IconData *in_id)
-{
-    gint p = 0;
-    GList *work;
-
-    if (!in_id) return -1;
-
-    work = vf->list;
-    while (work)
-    {
-        IconData *id = work->data;
-        if (id == in_id) return p;
-        work = work->next;
-        p++;
-    }
-
-    return -1;
-}
-
-guint vficon_count(ViewFile *vf, gint64 *bytes)
-{
-    if (bytes)
-    {
-        gint64 b = 0;
-        GList *work;
-
-        work = vf->list;
-        while (work)
-        {
-            IconData *id = work->data;
-            FileData *fd = id->fd;
-            work = work->next;
-
-            b += fd->size;
-        }
-
-        *bytes = b;
-    }
-
-    return g_list_length(vf->list);
-}
-
-GList *vficon_get_list(ViewFile *vf)
-{
-    GList *list = NULL;
-    GList *work;
-
-    work = vf->list;
-    while (work)
-    {
-        IconData *id = work->data;
-        FileData *fd = id->fd;
-        work = work->next;
-
-        list = g_list_prepend(list, file_data_ref(fd));
-    }
-
-    return g_list_reverse(list);
-}
 
 /*
  *-----------------------------------------------------------------------------
@@ -2037,7 +1708,12 @@ static gboolean vficon_refresh_real(ViewFile *vf, gboolean keep_position)
     if (first_selected && !VFICON(vf)->selection)
     {
         /* all selected files disappeared */
-        vficon_select_closest(vf, first_selected);
+        IconData *closest = (IconData *)vf_find_closest_entry(vf, first_selected);
+        if (closest)
+        {
+            vficon_select(vf, closest);
+            vf_send_layout_select(vf, closest->fd);
+        }
     }
     file_data_unref(first_selected);
 
@@ -2179,6 +1855,45 @@ static void vficon_append_column(ViewFile *vf, gint n)
  *-----------------------------------------------------------------------------
  */
 
+static FileData *vficon_op_item_fd(gpointer item)
+{
+    return item ? ((IconData *)item)->fd : NULL;
+}
+
+static void vficon_op_color_set(ViewFile *vf, FileData *fd, gboolean enable)
+{
+    /* no op */
+}
+
+static FileData *vficon_op_fd_at_coord(ViewFile *vf, gint x, gint y)
+{
+    IconData *id = vficon_find_data_by_coord(vf, x, y, NULL);
+    return id ? id->fd : NULL;
+}
+
+static void vficon_op_drag_started(ViewFile *vf)
+{
+    tip_unschedule(vf);
+}
+
+static void vficon_op_drag_ended(ViewFile *vf)
+{
+    vficon_selection_remove(vf, VFICON(vf)->click_id, SELECTION_PRELIGHT, NULL);
+    tip_unschedule(vf);
+}
+
+static const ViewFileFuncs vficon_funcs = {
+    .item_fd         = vficon_op_item_fd,
+    .fd_selected     = vficon_fd_selected,
+    .fd_mark_updated = vficon_fd_mark_updated,
+    .fd_at_coord     = vficon_op_fd_at_coord,
+    .clicked_fd      = vficon_clicked_fd,
+    .clicked_clear   = vficon_clicked_clear,
+    .color_set       = vficon_op_color_set,
+    .drag_started    = vficon_op_drag_started,
+    .drag_ended      = vficon_op_drag_ended,
+};
+
 gboolean vficon_set_fd(ViewFile *vf, FileData *dir_fd)
 {
     gboolean ret;
@@ -2227,6 +1942,7 @@ ViewFile *vficon_new(ViewFile *vf, FileData *dir_fd)
     gint i;
 
     vf->info = g_new0(ViewFileInfoIcon, 1);
+    vf->funcs = &vficon_funcs;
 
     VFICON(vf)->show_text = options->show_icon_names;
 

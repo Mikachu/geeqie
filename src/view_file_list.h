@@ -29,8 +29,6 @@ gboolean vflist_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer dat
 gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 
-void vflist_dnd_init(ViewFile *vf);
-
 void vflist_destroy_cb(GtkWidget *widget, gpointer data);
 ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd);
 
@@ -42,18 +40,12 @@ void vflist_marks_set(ViewFile *vf, gboolean enable);
 void vflist_sort_set(ViewFile *vf, SortType type, gboolean ascend);
 
 GList *vflist_selection_get_one(ViewFile *vf, FileData *fd);
-GList *vflist_pop_menu_file_list(ViewFile *vf);
-void vflist_pop_menu_view_cb(GtkWidget *widget, gpointer data);
 void vflist_pop_menu_rename_cb(GtkWidget *widget, gpointer data);
-void vflist_pop_menu_refresh_cb(GtkWidget *widget, gpointer data);
-void vflist_popup_destroy_cb(GtkWidget *widget, gpointer data);
 void vflist_pop_menu_thumbs_cb(GtkWidget *widget, gpointer data);
+void vflist_clicked_clear(ViewFile *vf);
+gboolean vflist_rename_in_place(ViewFile *vf);
 
-FileData *vflist_index_get_data(ViewFile *vf, gint row);
-gint vflist_index_by_fd(ViewFile *vf, FileData *fd);
-guint vflist_count(ViewFile *vf, gint64 *bytes);
-GList *vflist_get_list(ViewFile *vf);
-
+gboolean vflist_row_is_selected(ViewFile *vf, FileData *fd);
 gboolean vflist_index_is_selected(ViewFile *vf, gint row);
 guint vflist_selection_count(ViewFile *vf, gint64 *bytes);
 GList *vflist_selection_get_list(ViewFile *vf);
@@ -65,13 +57,10 @@ void vflist_select_invert(ViewFile *vf);
 void vflist_select_by_fd(ViewFile *vf, FileData *fd);
 
 void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode);
-void vflist_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode);
 
 void vflist_color_set(ViewFile *vf, FileData *fd, gboolean color_set);
 
-void vflist_thumb_progress_count(GList *list, gint *count, gint *done);
 void vflist_set_thumb_fd(ViewFile *vf, FileData *fd);
 FileData *vflist_thumb_next_fd(ViewFile *vf);
-void vflist_thumb_reset_all(ViewFile *vf);
 
 #endif

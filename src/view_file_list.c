@@ -24,19 +24,15 @@
 
 #include "bar.h"
 #include "cache_maint.h"
-#include "dnd.h"
 #include "editors.h"
-#include "img-view.h"
 #include "layout.h"
 #include "layout_image.h"
 #include "menu.h"
-#include "metadata.h"
 #include "thumb.h"
 #include "utilops.h"
 #include "ui_fileops.h"
 #include "ui_menu.h"
 #include "ui_tree_edit.h"
-#include "uri_utils.h"
 #include "view_file.h"
 
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
@@ -71,11 +67,50 @@ enum {
 
 
 
-static gboolean vflist_row_is_selected(ViewFile *vf, FileData *fd);
 static gboolean vflist_row_rename_cb(TreeEditData *td, const gchar *old,
                                      const gchar *new, gpointer data);
 static void vflist_populate_view(ViewFile *vf, gboolean force);
 static gboolean vflist_is_multiline(ViewFile *vf);
+static FileData *vflist_find_data_by_coord(ViewFile *vf, gint x, gint y, GtkTreeIter *iter);
+static void vflist_fd_mark_updated(ViewFile *vf, FileData *fd);
+
+
+static FileData *vflist_op_item_fd(gpointer item)
+{
+    return item; /* list nodes hold FileData* directly */
+}
+
+static FileData *vflist_op_clicked_fd(ViewFile *vf)
+{
+    return VFLIST(vf)->click_fd;
+}
+
+static FileData *vflist_op_fd_at_coord(ViewFile *vf, gint x, gint y)
+{
+    return vflist_find_data_by_coord(vf, x, y, NULL);
+}
+
+static void vflist_op_drag_started(ViewFile *vf)
+{
+    vflist_color_set(vf, VFLIST(vf)->click_fd, TRUE);
+}
+
+static void vflist_op_drag_ended(ViewFile *vf)
+{
+    vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
+}
+
+static const ViewFileFuncs vflist_funcs = {
+    .item_fd         = vflist_op_item_fd,
+    .fd_selected     = vflist_row_is_selected,
+    .fd_mark_updated = vflist_fd_mark_updated,
+    .fd_at_coord     = vflist_op_fd_at_coord,
+    .clicked_fd      = vflist_op_clicked_fd,
+    .clicked_clear   = vflist_clicked_clear,
+    .color_set       = vflist_color_set,
+    .drag_started    = vflist_op_drag_started,
+    .drag_ended      = vflist_op_drag_ended,
+};
 
 
 /*
@@ -213,101 +248,6 @@ static void vflist_move_cursor(ViewFile *vf, GtkTreeIter *iter)
 
 /*
  *-----------------------------------------------------------------------------
- * dnd
- *-----------------------------------------------------------------------------
- */
-
-static void vflist_dnd_get(GtkWidget *widget, GdkDragContext *context,
-                           GtkSelectionData *selection_data, guint info,
-                           guint time, gpointer data)
-{
-    ViewFile *vf = data;
-    GList *list = NULL;
-
-    if (!VFLIST(vf)->click_fd) return;
-
-    if (vflist_row_is_selected(vf, VFLIST(vf)->click_fd))
-        list = vf_selection_get_list(vf);
-    else
-        list = g_list_append(NULL, file_data_ref(VFLIST(vf)->click_fd));
-
-    if (!list) return;
-    uri_selection_data_set_uris_from_filelist(selection_data, list);
-    filelist_free(list);
-}
-
-static void vflist_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer data)
-{
-    ViewFile *vf = data;
-
-    vflist_color_set(vf, VFLIST(vf)->click_fd, TRUE);
-
-    if (VFLIST(vf)->thumbs_enabled &&
-        VFLIST(vf)->click_fd && VFLIST(vf)->click_fd->thumb_pixbuf)
-    {
-        guint items;
-
-        if (vflist_row_is_selected(vf, VFLIST(vf)->click_fd))
-            items = vf_selection_count(vf, NULL);
-        else
-            items = 1;
-
-        dnd_set_drag_icon(widget, context, VFLIST(vf)->click_fd->thumb_pixbuf, items);
-    }
-}
-
-static void vflist_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer data)
-{
-    ViewFile *vf = data;
-
-    vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
-
-    if (gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE)
-        vf_refresh(vf);
-}
-
-static void vflist_drag_data_received(GtkWidget *entry_widget, GdkDragContext *context,
-                                      int x, int y, GtkSelectionData *selection,
-                                      guint info, guint time, gpointer data)
-{
-    ViewFile *vf = data;
-
-    if (info == TARGET_TEXT_PLAIN) {
-        FileData *fd = vflist_find_data_by_coord(vf, x, y, NULL);
-
-        if (fd) {
-            /* Add keywords to file */
-            gchar *str = (gchar *) gtk_selection_data_get_text(selection);
-            GList *kw_list = string_to_keywords_list(str);
-
-            metadata_append_list(fd, KEYWORD_KEY, kw_list);
-            string_list_free(kw_list);
-            g_free(str);
-        }
-    }
-}
-
-void vflist_dnd_init(ViewFile *vf)
-{
-    gtk_drag_source_set(vf->listview, GDK_BUTTON1_MASK | GDK_BUTTON2_MASK,
-                        dnd_file_drag_types, dnd_file_drag_types_count,
-                        GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
-    gtk_drag_dest_set(vf->listview, GTK_DEST_DEFAULT_ALL,
-                      dnd_file_drag_types, dnd_file_drag_types_count,
-                      GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
-
-    g_signal_connect(G_OBJECT(vf->listview), "drag_data_get",
-                     G_CALLBACK(vflist_dnd_get), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_begin",
-                     G_CALLBACK(vflist_dnd_begin), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_end",
-                     G_CALLBACK(vflist_dnd_end), vf);
-    g_signal_connect(G_OBJECT(vf->listview), "drag_data_received",
-                     G_CALLBACK(vflist_drag_data_received), vf);
-}
-
-/*
- *-----------------------------------------------------------------------------
  * pop-up menu
  *-----------------------------------------------------------------------------
  */
@@ -340,33 +280,10 @@ GList *vflist_selection_get_one(ViewFile *vf, FileData *fd)
     return g_list_prepend(list, file_data_ref(fd));
 }
 
-GList *vflist_pop_menu_file_list(ViewFile *vf)
+void vflist_clicked_clear(ViewFile *vf)
 {
-    if (!VFLIST(vf)->click_fd) return NULL;
-
-    if (vflist_row_is_selected(vf, VFLIST(vf)->click_fd))
-        return vf_selection_get_list(vf);
-
-    return vflist_selection_get_one(vf, VFLIST(vf)->click_fd);
-}
-
-
-void vflist_pop_menu_view_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-
-    if (vflist_row_is_selected(vf, VFLIST(vf)->click_fd))
-    {
-        GList *list;
-
-        list = vf_selection_get_list(vf);
-        view_window_new_from_list(list);
-        filelist_free(list);
-    }
-    else
-    {
-        view_window_new(VFLIST(vf)->click_fd);
-    }
+    vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
+    VFLIST(vf)->click_fd = NULL;
 }
 
 void vflist_pop_menu_rename_cb(GtkWidget *widget, gpointer data)
@@ -409,22 +326,6 @@ void vflist_pop_menu_thumbs_cb(GtkWidget *widget, gpointer data)
         layout_thumb_set(vf->layout, !VFLIST(vf)->thumbs_enabled);
     else
         vflist_thumb_set(vf, !VFLIST(vf)->thumbs_enabled);
-}
-
-void vflist_pop_menu_refresh_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-
-    vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
-    vf_refresh(vf);
-}
-
-void vflist_popup_destroy_cb(GtkWidget *widget, gpointer data)
-{
-    ViewFile *vf = data;
-    vflist_color_set(vf, VFLIST(vf)->click_fd, FALSE);
-    VFLIST(vf)->click_fd = NULL;
-    vf->popup = NULL;
 }
 
 
@@ -591,38 +492,6 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
     return FALSE;
 }
 
-static void vflist_select_image(ViewFile *vf, FileData *sel_fd)
-{
-    FileData *read_ahead_fd = NULL;
-    gint row;
-    FileData *cur_fd;
-
-    if (!sel_fd) return;
-
-    cur_fd = vf->layout->image_pending_fd
-             ? vf->layout->image_pending_fd
-             : layout_image_get_fd(vf->layout);
-    if (sel_fd == cur_fd) return; /* no change */
-
-    row = g_list_index(vf->list, sel_fd);
-    // FIXME sidecar data
-
-    if (sel_fd && options->image.enable_read_ahead && row >= 0)
-    {
-        if (row > g_list_index(vf->list, cur_fd) &&
-            (guint) (row + 1) < vf_count(vf, NULL))
-        {
-            read_ahead_fd = vf_index_get_data(vf, row + 1);
-        }
-        else if (row > 0)
-        {
-            read_ahead_fd = vf_index_get_data(vf, row - 1);
-        }
-    }
-
-    layout_image_set_with_ahead(vf->layout, sel_fd, read_ahead_fd);
-}
-
 gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data)
 {
     ViewFile *vf = data;
@@ -674,7 +543,7 @@ gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer d
         if (gtk_tree_selection_count_selected_rows(selection) == 1)
             vflist_move_cursor(vf, &iter);
         else
-            vflist_select_image(vf, fd);
+            vf_send_layout_select(vf, fd);
     }
 
     return FALSE;
@@ -694,7 +563,7 @@ static gboolean vflist_select_idle_cb(gpointer data)
 
     if (VFLIST(vf)->select_fd)
     {
-        vflist_select_image(vf, VFLIST(vf)->select_fd);
+        vf_send_layout_select(vf, VFLIST(vf)->select_fd);
         g_clear_pointer(&VFLIST(vf)->select_fd, file_data_unref);
     }
 
@@ -1048,20 +917,6 @@ void vflist_sort_set(ViewFile *vf, SortType type, gboolean ascend)
  */
 
 
-void vflist_thumb_progress_count(GList *list, gint *count, gint *done)
-{
-    for (GList *work = list; work; work = work->next)
-    {
-        FileData *fd = work->data;
-
-        if (fd->thumb_pixbuf) ++*done;
-
-        if (fd->sidecar_files)
-            vflist_thumb_progress_count(fd->sidecar_files, count, done);
-        ++*count;
-    }
-}
-
 void vflist_set_thumb_fd(ViewFile *vf, FileData *fd)
 {
     GtkListStore *store;
@@ -1129,82 +984,13 @@ FileData *vflist_thumb_next_fd(ViewFile *vf)
 }
 
 
-void vflist_thumb_reset_all(ViewFile *vf)
-{
-    for (GList *work = vf->list; work; work = work->next)
-    {
-        FileData *fd = work->data;
-        g_clear_object(&fd->thumb_pixbuf);
-    }
-}
-
-/*
- *-----------------------------------------------------------------------------
- * row stuff
- *-----------------------------------------------------------------------------
- */
-
-FileData *vflist_index_get_data(ViewFile *vf, gint row)
-{
-    return g_list_nth_data(vf->list, row);
-}
-
-gint vflist_index_by_fd(ViewFile *vf, FileData *fd)
-{
-    gint p = 0;
-
-    for (GList *work = vf->list; work; work = work->next)
-    {
-        FileData *list_fd = work->data;
-        if (list_fd == fd) return p;
-
-        for (GList *work = list_fd->sidecar_files; work; work = work->next)
-        {
-            /* FIXME: return the same index also for sidecars
-               it is sufficient for next/prev navigation but it should be rewritten
-               without using indexes at all
-            */
-            FileData *sidecar_fd = work->data;
-            if (sidecar_fd == fd) return p;
-        }
-        p++;
-    }
-
-    return -1;
-}
-
-guint vflist_count(ViewFile *vf, gint64 *bytes)
-{
-    if (bytes)
-    {
-        gint64 b = 0;
-        guint n = 0;
-
-        for (GList *work = vf->list; work; work = work->next)
-        {
-            FileData *fd = work->data;
-            b += fd->size;
-            n++;
-        }
-
-        *bytes = b;
-        return n;
-    }
-    return g_list_length(vf->list);
-}
-
-GList *vflist_get_list(ViewFile *vf)
-{
-    return filelist_copy(vf->list);
-}
-
 /*
  *-----------------------------------------------------------------------------
  * selections
  *-----------------------------------------------------------------------------
  */
 
-static gboolean vflist_row_is_selected(ViewFile *vf, FileData *fd)
+gboolean vflist_row_is_selected(ViewFile *vf, FileData *fd)
 {
     GtkTreeModel *store;
     GtkTreeSelection *selection;
@@ -1410,24 +1196,14 @@ void vflist_select_by_fd(ViewFile *vf, FileData *fd)
         vflist_move_cursor(vf, &iter);
 }
 
-static void vflist_select_closest(ViewFile *vf, FileData *sel_fd)
+static void vflist_fd_mark_updated(ViewFile *vf, FileData *fd)
 {
-    FileData *fd = NULL;
+    GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(
+                          GTK_TREE_VIEW(vf->listview)));
+    GtkTreeIter iter;
 
-    if (sel_fd->parent) sel_fd = sel_fd->parent;
-
-    for (GList *work = vf->list; work; work = work->next)
-    {
-        gint match;
-        fd = work->data;
-
-        match = filelist_sort_compare_filedata(fd, sel_fd, vf->sort_method, vf->sort_ascend);
-
-        if (match >= 0) break;
-    }
-
-    if (fd) vflist_select_by_fd(vf, fd);
-
+    if (vflist_find_row(vf, fd, &iter) >= 0)
+        vflist_setup_iter(vf, store, &iter, fd);
 }
 
 void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
@@ -1467,19 +1243,7 @@ void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
         path = gtk_tree_path_new_from_indices(row, -1);
         selected = gtk_tree_selection_path_is_selected(selection, path);
 
-        switch (mode)
-        {
-            case MTS_MODE_SET: new_selected = mark_val;
-                break;
-            case MTS_MODE_OR: new_selected = mark_val || selected;
-                break;
-            case MTS_MODE_AND: new_selected = mark_val && selected;
-                break;
-            case MTS_MODE_MINUS: new_selected = !mark_val && selected;
-                break;
-            default: new_selected = selected;
-                break;
-        }
+        new_selected = vf_mts_select(fd, n, selected, mode);
 
         if (new_selected != selected)
         {
@@ -1516,54 +1280,6 @@ static void vflist_unregister_notify(ViewFile *vf)
         file_data_unregister_notify_func(vf_notify_cb, vf);
         VFLIST(vf)->notify_registered = FALSE;
     }
-}
-
-void vflist_selection_to_mark(ViewFile *vf, gint mark, SelectionToMarkMode mode)
-{
-    GtkTreeModel *store;
-    GtkTreeSelection *selection;
-    GList *slist;
-    gint n = mark - 1;
-
-    g_assert(mark >= 1 && mark <= FILEDATA_MARKS_SIZE);
-
-    selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(vf->listview));
-    slist = gtk_tree_selection_get_selected_rows(selection, &store);
-
-    for (GList *work = slist; work; work = work->next)
-    {
-        FileData *fd;
-        GtkTreeIter iter;
-
-        gtk_tree_model_get_iter(store, &iter, (GtkTreePath *)work->data);
-        gtk_tree_model_get(store, &iter, FILE_COLUMN_POINTER, &fd, -1);
-
-        /* the change has a very limited range and the standard notification would trigger
-           complete re-read of the directory - try to do only minimal update instead */
-        vflist_unregister_notify(vf); /* we don't need the notification */
-
-        switch (mode)
-        {
-            case STM_MODE_SET: file_data_set_mark(fd, n, 1);
-                break;
-            case STM_MODE_RESET: file_data_set_mark(fd, n, 0);
-                break;
-            case STM_MODE_TOGGLE: file_data_set_mark(fd, n, !file_data_get_mark(fd, n));
-                break;
-        }
-
-        if (!file_data_filter_marks(fd, vf_marks_get_filter(vf)))
-            /* file no longer matches the filter -> remove it */
-            vf_refresh_idle(vf);
-        else
-            /* mark functions can have various side effects - update all columns to be sure */
-            vflist_setup_iter(vf, GTK_LIST_STORE(store), &iter, fd);
-
-
-        vflist_register_notify(vf);
-    }
-    g_list_foreach(slist, (GFunc)gtk_tree_path_free, NULL);
-    g_list_free(slist);
 }
 
 /*
@@ -1716,8 +1432,12 @@ static void vflist_populate_view(ViewFile *vf, gboolean force)
     }
 
     if (selected && vflist_selection_count(vf, NULL) == 0)
+    {
         /* all selected files disappeared */
-        vflist_select_closest(vf, selected->data);
+        FileData *closest = (FileData *)vf_find_closest_entry(vf, selected->data);
+        if (closest)
+            vflist_select_by_fd(vf, closest);
+    }
 
     filelist_free(selected);
 
@@ -2019,6 +1739,7 @@ ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd)
     gint column;
 
     vf->info = g_new0(ViewFileInfoList, 1);
+    vf->funcs = &vflist_funcs;
 
     flist_types[FILE_COLUMN_POINTER] = G_TYPE_POINTER;
     flist_types[FILE_COLUMN_VERSION] = G_TYPE_INT;
