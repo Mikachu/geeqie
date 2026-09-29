@@ -804,9 +804,12 @@ struct _ViewDirInfoTree
 };
 
 
+typedef struct _ViewFileFuncs ViewFileFuncs;
+
 struct _ViewFile
 {
     FileViewType type;
+    const struct _ViewFileFuncs *funcs;
     gpointer info;
 
     GtkWidget *widget;
