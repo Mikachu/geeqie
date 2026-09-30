@@ -83,7 +83,8 @@ static gboolean metadata_file_read(gchar *path, GList **keywords, gchar **commen
 static void metadata_cache_update(FileData *fd, const gchar *key, const GList *values)
 {
     if (!fd->cached_metadata)
-        fd->cached_metadata = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)string_list_free);
+        fd->cached_metadata = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+                                                    (GDestroyNotify)string_list_free);
 
     g_hash_table_replace(fd->cached_metadata, g_strdup(key), string_list_copy(values));
     DEBUG_1("updated %s %s\n", key, fd->path);
@@ -250,7 +251,8 @@ gboolean metadata_write_perform(FileData *fd)
         */
         file_data_unref(file_data_new_group(fd->change->dest));
 
-    if (success) metadata_legacy_delete(fd, fd->change->dest);
+    if (success)
+        metadata_legacy_delete(fd, fd->change->dest);
     return success;
 }
 
@@ -386,7 +388,8 @@ static gboolean metadata_legacy_write(FileData *fd)
     have_comment  = g_hash_table_lookup_extended(fd->modified_xmp, COMMENT_KEY, NULL, &comment_l);
     comment = (have_comment && comment_l) ? ((GList *)comment_l)->data : NULL;
 
-    if (!have_keywords || !have_comment) metadata_file_read(metadata_pathl, &orig_keywords, &orig_comment);
+    if (!have_keywords || !have_comment)
+        metadata_file_read(metadata_pathl, &orig_keywords, &orig_comment);
 
     success = metadata_file_write(metadata_pathl,
                                   have_keywords ? (GList *)keywords : orig_keywords,
@@ -599,7 +602,8 @@ GList *metadata_read_list(FileData *fd, const gchar *key, MetadataFormat format)
     else if (strcmp(key, COMMENT_KEY) == 0)
     {
         gchar *comment = NULL;
-        if (metadata_legacy_read(fd, NULL, &comment)) return g_list_append(NULL, comment);
+        if (metadata_legacy_read(fd, NULL, &comment))
+            return g_list_append(NULL, comment);
     }
     else if (strncmp(key, "file.", 5) == 0)
     {
@@ -622,8 +626,7 @@ gchar *metadata_read_string(FileData *fd, const gchar *key, MetadataFormat forma
     GList *string_list = metadata_read_list(fd, key, format);
     if (string_list)
     {
-        gchar *str = string_list->data;
-        string_list->data = NULL;
+        gchar *str = g_steal_pointer(&string_list->data);
         string_list_free(string_list);
         return str;
     }
@@ -638,7 +641,8 @@ guint64 metadata_read_int(FileData *fd, const gchar *key, guint64 fallback)
     if (!string) return fallback;
 
     ret = g_ascii_strtoull(string, &endptr, 10);
-    if (string == endptr) ret = fallback;
+    if (string == endptr)
+        ret = fallback;
     g_free(string);
     return ret;
 }
@@ -734,19 +738,14 @@ gboolean metadata_append_list(FileData *fd, const gchar *key, const GList *value
     GList *list = metadata_read_list(fd, key, METADATA_PLAIN);
 
     if (!list)
-    {
         return metadata_write_list(fd, key, values);
-    }
-    else
-    {
-        gboolean ret;
-        list = g_list_concat(list, string_list_copy(values));
-        list = remove_duplicate_strings_from_list(list);
 
-        ret = metadata_write_list(fd, key, list);
-        string_list_free(list);
-        return ret;
-    }
+    list = g_list_concat(list, string_list_copy(values));
+    list = remove_duplicate_strings_from_list(list);
+
+    gboolean ret = metadata_write_list(fd, key, list);
+    string_list_free(list);
+    return ret;
 }
 
 static gint compare_utf8nocase(gconstpointer data, gconstpointer user_data)
@@ -893,7 +892,6 @@ void meta_data_connect_mark_with_keyword(GtkTreeModel *keyword_tree, GtkTreeIter
         }
     }
 
-
     if (mark >= 0 && mark < FILEDATA_MARKS_SIZE)
     {
         GList *path;
@@ -943,10 +941,12 @@ gboolean keyword_get_is_keyword(GtkTreeModel *keyword_tree, GtkTreeIter *iter)
 void keyword_set(GtkTreeStore *keyword_tree, GtkTreeIter *iter, const gchar *name, gboolean is_keyword)
 {
     gchar *casefold = g_utf8_casefold(name, -1);
-    gtk_tree_store_set(keyword_tree, iter, KEYWORD_COLUMN_MARK, "",
-                        KEYWORD_COLUMN_NAME, name,
-                        KEYWORD_COLUMN_CASEFOLD, casefold,
-                        KEYWORD_COLUMN_IS_KEYWORD, is_keyword, -1);
+    gtk_tree_store_set(keyword_tree, iter,
+                       KEYWORD_COLUMN_MARK,       "",
+                       KEYWORD_COLUMN_NAME,       name,
+                       KEYWORD_COLUMN_CASEFOLD,   casefold,
+                       KEYWORD_COLUMN_IS_KEYWORD, is_keyword,
+                       -1);
     g_free(casefold);
 }
 
@@ -971,7 +971,7 @@ gboolean keyword_same_parent(GtkTreeModel *keyword_tree, GtkTreeIter *a, GtkTree
     if (valid_pa && valid_pb)
         return keyword_compare(keyword_tree, &parent_a, &parent_b) == 0;
     else
-        return (!valid_pa && !valid_pb); /* both are toplevel */
+        return !valid_pa && !valid_pb; /* both are toplevel */
 }
 
 gboolean keyword_exists(GtkTreeModel *keyword_tree, GtkTreeIter *parent_ptr, GtkTreeIter *sibling,
@@ -990,14 +990,17 @@ gboolean keyword_exists(GtkTreeModel *keyword_tree, GtkTreeIter *parent_ptr, Gtk
     else
         toplevel = TRUE;
 
-    if (!gtk_tree_model_iter_children(GTK_TREE_MODEL(keyword_tree), &iter, toplevel ? NULL : &parent)) return FALSE;
+    if (!gtk_tree_model_iter_children(GTK_TREE_MODEL(keyword_tree), &iter,
+                                      toplevel ? NULL : &parent))
+        return FALSE;
 
     casefold = g_utf8_casefold(name, -1);
     ret = FALSE;
 
     for (;;)
     {
-        if (!(exclude_sibling && sibling && keyword_compare(keyword_tree, &iter, sibling) == 0))
+        if (!(exclude_sibling && sibling &&
+              keyword_compare(keyword_tree, &iter, sibling) == 0))
         {
             if (options->metadata.keywords_case_sensitive)
             {
@@ -1014,7 +1017,8 @@ gboolean keyword_exists(GtkTreeModel *keyword_tree, GtkTreeIter *parent_ptr, Gtk
         }
         if (ret)
         {
-            if (result) *result = iter;
+            if (result)
+                *result = iter;
             break;
         }
         if (!gtk_tree_model_iter_next(keyword_tree, &iter)) break;
@@ -1031,15 +1035,19 @@ void keyword_copy(GtkTreeStore *keyword_tree, GtkTreeIter *to, GtkTreeIter *from
     gboolean is_keyword;
 
     /* do not copy KEYWORD_COLUMN_HIDE_IN, it fully shows the new subtree */
-    gtk_tree_model_get(GTK_TREE_MODEL(keyword_tree), from, KEYWORD_COLUMN_MARK, &mark,
-                       KEYWORD_COLUMN_NAME, &name,
-                       KEYWORD_COLUMN_CASEFOLD, &casefold,
-                       KEYWORD_COLUMN_IS_KEYWORD, &is_keyword, -1);
+    gtk_tree_model_get(GTK_TREE_MODEL(keyword_tree), from,
+                       KEYWORD_COLUMN_MARK,       &mark,
+                       KEYWORD_COLUMN_NAME,       &name,
+                       KEYWORD_COLUMN_CASEFOLD,   &casefold,
+                       KEYWORD_COLUMN_IS_KEYWORD, &is_keyword,
+                       -1);
 
-    gtk_tree_store_set(keyword_tree, to, KEYWORD_COLUMN_MARK, mark,
-                       KEYWORD_COLUMN_NAME, name,
-                       KEYWORD_COLUMN_CASEFOLD, casefold,
-                       KEYWORD_COLUMN_IS_KEYWORD, is_keyword, -1);
+    gtk_tree_store_set(keyword_tree, to,
+                       KEYWORD_COLUMN_MARK,       mark,
+                       KEYWORD_COLUMN_NAME,       name,
+                       KEYWORD_COLUMN_CASEFOLD,   casefold,
+                       KEYWORD_COLUMN_IS_KEYWORD, is_keyword,
+                       -1);
     g_free(mark);
     g_free(name);
     g_free(casefold);
@@ -1110,9 +1118,10 @@ gboolean keyword_tree_get_iter(GtkTreeModel *keyword_tree, GtkTreeIter *iter_ptr
     }
 }
 
-static gboolean keyword_tree_is_set_casefold(GtkTreeModel *keyword_tree, GtkTreeIter iter, GList *casefold_list)
+static gboolean keyword_tree_is_set_in_list(GtkTreeModel *keyword_tree, GtkTreeIter iter, GList *list,
+                                            gchar *(*get_value)(GtkTreeModel *, GtkTreeIter *))
 {
-    if (!casefold_list) return FALSE;
+    if (!list) return FALSE;
 
     if (!keyword_get_is_keyword(keyword_tree, &iter))
     {
@@ -1123,7 +1132,7 @@ static gboolean keyword_tree_is_set_casefold(GtkTreeModel *keyword_tree, GtkTree
 
         for (;;)
         {
-            if (keyword_tree_is_set_casefold(keyword_tree, child, casefold_list)) return TRUE;
+            if (keyword_tree_is_set_in_list(keyword_tree, child, list, get_value)) return TRUE;
             if (!gtk_tree_model_iter_next(keyword_tree, &child)) return FALSE;
         }
     }
@@ -1134,65 +1143,11 @@ static gboolean keyword_tree_is_set_casefold(GtkTreeModel *keyword_tree, GtkTree
 
         if (keyword_get_is_keyword(keyword_tree, &iter))
         {
-            gboolean found = FALSE;
-            gchar *iter_casefold = keyword_get_casefold(keyword_tree, &iter);
-            for (GList *work = casefold_list; work; work = work->next)
-            {
-                const gchar *casefold = work->data;
-
-                if (strcmp(iter_casefold, casefold) == 0)
-                {
-                    found = TRUE;
-                    break;
-                }
-            }
-            g_free(iter_casefold);
-            if (!found) return FALSE;
-        }
-
-        if (!gtk_tree_model_iter_parent(keyword_tree, &parent, &iter)) return TRUE;
-        iter = parent;
-    }
-}
-
-static gboolean keyword_tree_is_set_casefull(GtkTreeModel *keyword_tree, GtkTreeIter iter, GList *kw_list)
-{
-    if (!kw_list) return FALSE;
-
-    if (!keyword_get_is_keyword(keyword_tree, &iter))
-    {
-        /* for the purpose of expanding and hiding, a helper is set if it has any children set */
-        GtkTreeIter child;
-        if (!gtk_tree_model_iter_children(keyword_tree, &child, &iter))
-            return FALSE; /* this should happen only on empty helpers */
-
-        for (;;)
-        {
-            if (keyword_tree_is_set_casefull(keyword_tree, child, kw_list)) return TRUE;
-            if (!gtk_tree_model_iter_next(keyword_tree, &child)) return FALSE;
-        }
-    }
-
-    for (;;)
-    {
-        GtkTreeIter parent;
-
-        if (keyword_get_is_keyword(keyword_tree, &iter))
-        {
-            gboolean found = FALSE;
-            gchar *iter_name = keyword_get_name(keyword_tree, &iter);
-            for (GList *work = kw_list; work; work = work->next)
-            {
-                const gchar *name = work->data;
-
-                if (strcmp(iter_name, name) == 0)
-                {
-                    found = TRUE;
-                    break;
-                }
-            }
-            g_free(iter_name);
-            if (!found) return FALSE;
+            gchar *iter_value = get_value(keyword_tree, &iter);
+            gboolean notfound = !g_list_find_custom(list, iter_value,
+                                                    (GCompareFunc)strcmp);
+            g_free(iter_value);
+            if (notfound) return FALSE;
         }
 
         if (!gtk_tree_model_iter_parent(keyword_tree, &parent, &iter)) return TRUE;
@@ -1207,7 +1162,7 @@ gboolean keyword_tree_is_set(GtkTreeModel *keyword_tree, GtkTreeIter *iter, GLis
 
     if (options->metadata.keywords_case_sensitive)
     {
-        ret = keyword_tree_is_set_casefull(keyword_tree, *iter, kw_list);
+        ret = keyword_tree_is_set_in_list(keyword_tree, *iter, kw_list, keyword_get_name);
     }
     else
     {
@@ -1216,7 +1171,7 @@ gboolean keyword_tree_is_set(GtkTreeModel *keyword_tree, GtkTreeIter *iter, GLis
             const gchar *kw = work->data;
             casefold_list = g_list_prepend(casefold_list, g_utf8_casefold(kw, -1));
         }
-        ret = keyword_tree_is_set_casefold(keyword_tree, *iter, casefold_list);
+        ret = keyword_tree_is_set_in_list(keyword_tree, *iter, casefold_list, keyword_get_casefold);
 
         string_list_free(casefold_list);
     }
@@ -1368,7 +1323,8 @@ gboolean keyword_is_hidden_in(GtkTreeModel *keyword_tree, GtkTreeIter *iter, gpo
     return !!g_list_find(list, id);
 }
 
-static gboolean keyword_show_all_in_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+static gboolean keyword_show_all_in_cb(GtkTreeModel *model, GtkTreePath *path,
+                                       GtkTreeIter *iter, gpointer data)
 {
     keyword_show_in(GTK_TREE_STORE(model), iter, data);
     return FALSE;
@@ -1379,7 +1335,8 @@ void keyword_show_all_in(GtkTreeStore *keyword_tree, gpointer id)
     gtk_tree_model_foreach(GTK_TREE_MODEL(keyword_tree), keyword_show_all_in_cb, id);
 }
 
-static void keyword_hide_unset_in_recursive(GtkTreeStore *keyword_tree, GtkTreeIter iter, gpointer id, GList *keywords)
+static void keyword_hide_unset_in_recursive(GtkTreeStore *keyword_tree, GtkTreeIter iter,
+                                            gpointer id, GList *keywords)
 {
     for (;;)
     {
@@ -1403,7 +1360,8 @@ void keyword_hide_unset_in(GtkTreeStore *keyword_tree, gpointer id, GList *keywo
     keyword_hide_unset_in_recursive(keyword_tree, iter, id, keywords);
 }
 
-static gboolean keyword_show_set_in_cb(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter_ptr, gpointer data)
+static gboolean keyword_show_set_in_cb(GtkTreeModel *model, GtkTreePath *path,
+                                       GtkTreeIter *iter_ptr, gpointer data)
 {
     GtkTreeIter iter = *iter_ptr;
     GList *keywords = data;
@@ -1435,9 +1393,9 @@ void keyword_tree_new(void)
 {
     if (keyword_tree) return;
 
-    keyword_tree = gtk_tree_store_new(KEYWORD_COLUMN_COUNT, G_TYPE_STRING, G_TYPE_STRING,
-                                                            G_TYPE_STRING, G_TYPE_BOOLEAN,
-                                                            G_TYPE_POINTER);
+    keyword_tree = gtk_tree_store_new(KEYWORD_COLUMN_COUNT,
+                                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+                                      G_TYPE_BOOLEAN, G_TYPE_POINTER);
 }
 
 static GtkTreeIter keyword_tree_default_append(GtkTreeStore *keyword_tree, GtkTreeIter *parent,
@@ -1455,6 +1413,7 @@ void keyword_tree_new_default(void)
 
     if (!keyword_tree) keyword_tree_new();
 
+    /* this is indented to show the tree level, not control flow */
     i1 = keyword_tree_default_append(keyword_tree, NULL, _("People"), TRUE);
         i2 = keyword_tree_default_append(keyword_tree, &i1, _("Family"), TRUE);
         i2 = keyword_tree_default_append(keyword_tree, &i1, _("Free time"), TRUE);
@@ -1518,7 +1477,8 @@ void keyword_tree_new_default(void)
 }
 
 
-static void keyword_tree_node_write_config(GtkTreeModel *keyword_tree, GtkTreeIter iter, GString *outstr, gint indent)
+static void keyword_tree_node_write_config(GtkTreeModel *keyword_tree, GtkTreeIter iter,
+                                           GString *outstr, gint indent)
 {
     for (;;)
     {
