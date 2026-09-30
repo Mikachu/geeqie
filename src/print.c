@@ -1307,7 +1307,7 @@ static gboolean print_job_ps_page_text(PrintWindow *pw, const gchar *text, gdoub
 
     pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, lw, lh);
     gdk_pixbuf_fill(pixbuf, 0xffffffff);
-    pixbuf_draw_layout(pixbuf, layout, pw->dialog->dialog, 0, 0, r, g, b, 255);
+    pixbuf_draw_layout(pixbuf, layout, 0, 0, r, g, b, 255);
     g_object_unref(G_OBJECT(layout));
 
     ret = print_job_ps_page_image(pw, pixbuf, x, y,
@@ -1556,7 +1556,7 @@ static gboolean print_job_rgb_page_text(PrintWindow *pw, const gchar *text, gdou
     pango_layout_get_pixel_size(layout, &lw, &lh);
     x = x - (gdouble)lw / 2.0;
 
-    pixbuf_draw_layout(pw->job_pixbuf, layout, pw->dialog->dialog, x, y, r, g, b, 255);
+    pixbuf_draw_layout(pw->job_pixbuf, layout, x, y, r, g, b, 255);
     g_object_unref(G_OBJECT(layout));
 
     return TRUE;
@@ -1732,7 +1732,7 @@ static gboolean print_job_preview_page_text(PrintWindow *pw, const gchar *text, 
 
     pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, lw, lh);
     pixbuf_set_rect_fill(pixbuf, 0, 0, lw, lh, 0, 0, 0, 0);
-    pixbuf_draw_layout(pixbuf, layout, pw->dialog->dialog, 0, 0, r, g, b, 255);
+    pixbuf_draw_layout(pixbuf, layout, 0, 0, r, g, b, 255);
     g_object_unref(G_OBJECT(layout));
 
     print_job_preview_page_image(pw, pixbuf, x, y, (gdouble)lw, (gdouble)lh, 0, 0);

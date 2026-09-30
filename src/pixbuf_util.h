@@ -40,8 +40,8 @@ gboolean pixbuf_scale_aspect(gint req_w, gint req_h, gint old_w, gint old_h, gin
 #define PIXBUF_INLINE_FOLDER_UP     "folder_up"
 #define PIXBUF_INLINE_SCROLLER      "scroller"
 #define PIXBUF_INLINE_BROKEN        "broken"
-#define PIXBUF_INLINE_ICON      "icon"
-#define PIXBUF_INLINE_LOGO      "logo"
+#define PIXBUF_INLINE_ICON          "icon"
+#define PIXBUF_INLINE_LOGO          "logo"
 
 #define PIXBUF_INLINE_ICON_FLOAT    "icon_float"
 #define PIXBUF_INLINE_ICON_THUMB    "icon_thumb"
@@ -57,57 +57,57 @@ GdkPixbuf *pixbuf_copy_mirror(GdkPixbuf *src, gboolean mirror, gboolean flip);
 GdkPixbuf* pixbuf_apply_orientation(GdkPixbuf *pixbuf, gint orientation);
 
 void pixbuf_draw_rect_fill(GdkPixbuf *pb,
-               gint x, gint y, gint w, gint h,
-               gint r, gint g, gint b, gint a);
+                           gint x, gint y, gint w, gint h,
+                           gint r, gint g, gint b, gint a);
 
 void pixbuf_draw_rect(GdkPixbuf *pb,
-              gint x, gint y, gint w, gint h,
-              gint r, gint g, gint b, gint a,
-              gint left, gint right, gint top, gint bottom);
+                      gint x, gint y, gint w, gint h,
+                      gint r, gint g, gint b, gint a,
+                      gint left, gint right, gint top, gint bottom);
 
 void pixbuf_set_rect_fill(GdkPixbuf *pb,
-              gint x, gint y, gint w, gint h,
-              gint r, gint g, gint b, gint a);
+                          gint x, gint y, gint w, gint h,
+                          gint r, gint g, gint b, gint a);
 
 void pixbuf_set_rect(GdkPixbuf *pb,
-             gint x, gint y, gint w, gint h,
-             gint r, gint g, gint b, gint a,
-             gint left, gint right, gint top, gint bottom);
+                     gint x, gint y, gint w, gint h,
+                     gint r, gint g, gint b, gint a,
+                     gint left, gint right, gint top, gint bottom);
 
 void pixbuf_pixel_set(GdkPixbuf *pb, gint x, gint y, gint r, gint g, gint b, gint a);
 
 
-void pixbuf_draw_layout(GdkPixbuf *pixbuf, PangoLayout *layout, GtkWidget *widget,
-            gint x, gint y,
-            guint8 r, guint8 g, guint8 b, guint8 a);
+void pixbuf_draw_layout(GdkPixbuf *pixbuf, PangoLayout *layout,
+                        gint x, gint y,
+                        guint8 r, guint8 g, guint8 b, guint8 a);
 
 
 void pixbuf_draw_triangle(GdkPixbuf *pb,
-              gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-              gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
-              guint8 r, guint8 g, guint8 b, guint8 a);
+                          gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                          gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
+                          guint8 r, guint8 g, guint8 b, guint8 a);
 
 void pixbuf_draw_line(GdkPixbuf *pb,
-              gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-              gint x1, gint y1, gint x2, gint y2,
-              guint8 r, guint8 g, guint8 b, guint8 a);
+                      gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                      gint x1, gint y1, gint x2, gint y2,
+                      guint8 r, guint8 g, guint8 b, guint8 a);
 
 void pixbuf_draw_shadow(GdkPixbuf *pb,
-            gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-            gint x, gint y, gint w, gint h, gint border,
-            guint8 r, guint8 g, guint8 b, guint8 a);
+                        gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                        gint x, gint y, gint w, gint h, gint border,
+                        guint8 r, guint8 g, guint8 b, guint8 a);
 
 void pixbuf_desaturate_rect(GdkPixbuf *pb,
-                gint x, gint y, gint w, gint h);
+                            gint x, gint y, gint w, gint h);
 
 
 /* clipping utils */
 
 gboolean util_clip_region(gint x, gint y, gint w, gint h,
-                  gint clip_x, gint clip_y, gint clip_w, gint clip_h,
-                  gint *rx, gint *ry, gint *rw, gint *rh);
+                          gint clip_x, gint clip_y, gint clip_w, gint clip_h,
+                          gint *rx, gint *ry, gint *rw, gint *rh);
 void util_clip_triangle(gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
-            gint *rx, gint *ry, gint *rw, gint *rh);
+                        gint *rx, gint *ry, gint *rw, gint *rh);
 
 
 #endif

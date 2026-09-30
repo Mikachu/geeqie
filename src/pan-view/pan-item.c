@@ -440,9 +440,9 @@ gint pan_item_text_draw(PanWindow *pw, PanItem *pi, GdkPixbuf *pixbuf, PixbufRen
     PangoLayout *layout;
 
     layout = pan_item_text_layout(pi, (GtkWidget *)pr);
-    pixbuf_draw_layout(pixbuf, layout, (GtkWidget *)pr,
-               pi->x - x + pi->border, pi->y - y + pi->border,
-               pi->color_r, pi->color_g, pi->color_b, pi->color_a);
+    pixbuf_draw_layout(pixbuf, layout,
+                       pi->x - x + pi->border, pi->y - y + pi->border,
+                       pi->color_r, pi->color_g, pi->color_b, pi->color_a);
     g_object_unref(G_OBJECT(layout));
 
     return FALSE;
