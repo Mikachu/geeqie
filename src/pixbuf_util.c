@@ -43,7 +43,7 @@ gboolean pixbuf_to_file_as_png(GdkPixbuf *pixbuf, const gchar *filename)
     if (!pixbuf || !filename) return FALSE;
 
     ret = gdk_pixbuf_save(pixbuf, filename, "png", &error,
-                  "tEXt::Software", GQ_APPNAME " " VERSION, NULL);
+                          "tEXt::Software", GQ_APPNAME " " VERSION, NULL);
 
     if (error)
     {
@@ -121,19 +121,11 @@ static PixbufInline inline_pixbuf_data[] = {
 
 GdkPixbuf *pixbuf_inline(const gchar *key)
 {
-    gint i;
-
     if (!key) return NULL;
 
-    i = 0;
-    while (inline_pixbuf_data[i].key)
-    {
+    for (gint i = 0; inline_pixbuf_data[i].key; i++)
         if (strcmp(inline_pixbuf_data[i].key, key) == 0)
-        {
             return gdk_pixbuf_new_from_inline(-1, inline_pixbuf_data[i].data, FALSE, NULL);
-        }
-        i++;
-    }
 
     log_printf("warning: inline pixbuf key \"%s\" not found.\n", key);
 
@@ -158,14 +150,9 @@ static void register_stock_icon(const gchar *key, GdkPixbuf *pixbuf)
 
 void pixbuf_inline_register_stock_icons(void)
 {
-    gint i;
-
-    i = 0;
-    while (inline_pixbuf_data[i].key)
-    {
-        register_stock_icon(inline_pixbuf_data[i].key, pixbuf_inline(inline_pixbuf_data[i].key));
-        i++;
-    }
+    for (gint i = 0; inline_pixbuf_data[i].key; i++)
+        register_stock_icon(inline_pixbuf_data[i].key,
+                            pixbuf_inline(inline_pixbuf_data[i].key));
 }
 
 gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon)
@@ -180,8 +167,8 @@ gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon)
 
     pixbuf = gtk_icon_theme_load_icon(icon_theme,
                                       icon, /* icon name */
-                                      64, /* size */
-                                      0,  /* flags */
+                                      64,   /* size */
+                                      0,    /* flags */
                                       &error);
     if (!pixbuf)
     {
@@ -198,8 +185,8 @@ gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon)
             gchar *icon2 = remove_extension_from_path(icon);
             pixbuf = gtk_icon_theme_load_icon(icon_theme,
                                    icon2, /* icon name */
-                                   64, /* size */
-                                   0,  /* flags */
+                                   64,    /* size */
+                                   0,     /* flags */
                                    &error);
             if (error)
             {
@@ -238,7 +225,8 @@ gboolean pixbuf_scale_aspect(gint req_w, gint req_h,
 
 GdkPixbuf *pixbuf_fallback(FileData *fd, gint requested_width, gint requested_height)
 {
-    GdkPixbuf *pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN); /* FIXME use different images according to FORMAT_CLASS */
+    /* FIXME use different images according to FORMAT_CLASS */
+    GdkPixbuf *pixbuf = pixbuf_inline(PIXBUF_INLINE_BROKEN);
 
     if (requested_width && requested_height)
     {
@@ -250,11 +238,9 @@ GdkPixbuf *pixbuf_fallback(FileData *fd, gint requested_width, gint requested_he
             gint nw, nh;
 
             if (pixbuf_scale_aspect(requested_width, requested_height,
-                              w, h, &nw, &nh))
+                                    w, h, &nw, &nh))
             {
-                GdkPixbuf *tmp;
-
-                tmp = pixbuf;
+                GdkPixbuf *tmp = pixbuf;
                 pixbuf = gdk_pixbuf_scale_simple(tmp, nw, nh, GDK_INTERP_TILES);
                 g_object_unref(G_OBJECT(tmp));
             }
@@ -341,7 +327,6 @@ GdkPixbuf *pixbuf_apply_orientation(GdkPixbuf *pixbuf, gint orientation)
     }
     if (flipped) g_object_unref(flipped);
     return dest;
-
 }
 
 
@@ -613,8 +598,8 @@ void pixbuf_draw_layout(GdkPixbuf *pixbuf, PangoLayout *layout, GtkWidget *widge
     if (y + h > dh) h = dh - y;
 
     pixbuf_copy_font(buffer, sx, sy,
-             pixbuf, x, y, w, h,
-             r, g, b, a);
+                     pixbuf, x, y, w, h,
+                     r, g, b, a);
 
     g_object_unref(buffer);
     cairo_surface_destroy(source);
@@ -778,13 +763,9 @@ static gboolean util_clip_line(gdouble clip_x, gdouble clip_y, gdouble clip_w, g
     if (x2 < clip_x || x1 > clip_x + clip_w) return FALSE;
 
     if (y1 < y2)
-    {
         if (y2 < clip_y || y1 > clip_y + clip_h) return FALSE;
-    }
     else
-    {
         if (y1 < clip_y || y2 > clip_y + clip_h) return FALSE;
-    }
 
     d = x2 - x1;
     if (d > 0.0)
