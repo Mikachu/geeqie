@@ -37,7 +37,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#define IMAGE_LOADER_READ_BUFFER_SIZE_DEFAULT   4096
+#define IMAGE_LOADER_READ_BUFFER_SIZE_DEFAULT    4096
 #define IMAGE_LOADER_IDLE_READ_LOOP_COUNT_DEFAULT   1
 
 
@@ -87,26 +87,26 @@ static void image_loader_init(GTypeInstance *instance, gpointer g_class)
 {
     ImageLoader *il = (ImageLoader *)instance;
 
-    il->pixbuf = NULL;
-    il->idle_id = 0;
+    il->pixbuf        = NULL;
+    il->idle_id       = 0;
     il->idle_priority = G_PRIORITY_DEFAULT_IDLE;
-    il->done = FALSE;
-    il->loader = NULL;
+    il->done          = FALSE;
+    il->loader        = NULL;
 
-    il->bytes_read = 0;
+    il->bytes_read  = 0;
     il->bytes_total = 0;
 
     il->idle_done_id = 0;
 
     il->idle_read_loop_count = IMAGE_LOADER_IDLE_READ_LOOP_COUNT_DEFAULT;
-    il->read_buffer_size = IMAGE_LOADER_READ_BUFFER_SIZE_DEFAULT;
-    il->mapped_file = NULL;
+    il->read_buffer_size     = IMAGE_LOADER_READ_BUFFER_SIZE_DEFAULT;
+    il->mapped_file          = NULL;
 
-    il->requested_width = 0;
+    il->requested_width  = 0;
     il->requested_height = 0;
-    il->actual_width = 0;
-    il->actual_height = 0;
-    il->shrunk = FALSE;
+    il->actual_width     = 0;
+    il->actual_height    = 0;
+    il->shrunk           = FALSE;
 
     il->can_destroy = TRUE;
 
@@ -121,7 +121,8 @@ static void image_loader_init(GTypeInstance *instance, gpointer g_class)
     il->can_destroy_cond = g_cond_new();
 #endif
 #endif
-    DEBUG_1("new image loader %p, bufsize=%" G_GSIZE_FORMAT " idle_loop=%u", il, il->read_buffer_size, il->idle_read_loop_count);
+    DEBUG_1("new image loader %p, bufsize=%" G_GSIZE_FORMAT " idle_loop=%u",
+            il, il->read_buffer_size, il->idle_read_loop_count);
 }
 
 static void image_loader_class_init(ImageLoaderClass *class)
@@ -136,55 +137,55 @@ static void image_loader_class_init(ImageLoaderClass *class)
 
     signals[SIGNAL_AREA_READY] =
         g_signal_new("area_ready",
-                 G_OBJECT_CLASS_TYPE(gobject_class),
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, area_ready),
-                 NULL, NULL,
-                 gq_marshal_VOID__INT_INT_INT_INT,
-                 G_TYPE_NONE, 4,
-                 G_TYPE_INT,
-                 G_TYPE_INT,
-                 G_TYPE_INT,
-                 G_TYPE_INT);
+                     G_OBJECT_CLASS_TYPE(gobject_class),
+                     G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(ImageLoaderClass, area_ready),
+                     NULL, NULL,
+                     gq_marshal_VOID__INT_INT_INT_INT,
+                     G_TYPE_NONE, 4,
+                     G_TYPE_INT,
+                     G_TYPE_INT,
+                     G_TYPE_INT,
+                     G_TYPE_INT);
 
     signals[SIGNAL_ERROR] =
         g_signal_new("error",
-                 G_OBJECT_CLASS_TYPE(gobject_class),
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, error),
-                 NULL, NULL,
-                 g_cclosure_marshal_VOID__VOID,
-                 G_TYPE_NONE, 0);
+                     G_OBJECT_CLASS_TYPE(gobject_class),
+                     G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(ImageLoaderClass, error),
+                     NULL, NULL,
+                     g_cclosure_marshal_VOID__VOID,
+                     G_TYPE_NONE, 0);
 
     signals[SIGNAL_DONE] =
         g_signal_new("done",
-                 G_OBJECT_CLASS_TYPE(gobject_class),
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, done),
-                 NULL, NULL,
-                 g_cclosure_marshal_VOID__VOID,
-                 G_TYPE_NONE, 0);
+                     G_OBJECT_CLASS_TYPE(gobject_class),
+                     G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(ImageLoaderClass, done),
+                     NULL, NULL,
+                     g_cclosure_marshal_VOID__VOID,
+                     G_TYPE_NONE, 0);
 
     signals[SIGNAL_PERCENT] =
         g_signal_new("percent",
-                 G_OBJECT_CLASS_TYPE(gobject_class),
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, percent),
-                 NULL, NULL,
-                 g_cclosure_marshal_VOID__DOUBLE,
-                 G_TYPE_NONE, 1,
-                 G_TYPE_DOUBLE);
+                     G_OBJECT_CLASS_TYPE(gobject_class),
+                     G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(ImageLoaderClass, percent),
+                     NULL, NULL,
+                     g_cclosure_marshal_VOID__DOUBLE,
+                     G_TYPE_NONE, 1,
+                     G_TYPE_DOUBLE);
 
     signals[SIGNAL_SIZE] =
         g_signal_new("size_prepared",
-                 G_OBJECT_CLASS_TYPE(gobject_class),
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(ImageLoaderClass, size_prepared),
-                 NULL, NULL,
-                 gq_marshal_VOID__INT_INT,
-                 G_TYPE_NONE, 2,
-                 G_TYPE_INT,
-                 G_TYPE_INT);
+                     G_OBJECT_CLASS_TYPE(gobject_class),
+                     G_SIGNAL_RUN_LAST,
+                     G_STRUCT_OFFSET(ImageLoaderClass, size_prepared),
+                     NULL, NULL,
+                     gq_marshal_VOID__INT_INT,
+                     G_TYPE_NONE, 2,
+                     G_TYPE_INT,
+                     G_TYPE_INT);
 
 }
 
@@ -201,22 +202,22 @@ static void image_loader_finalize(GObject *object)
     g_clear_handle_id(&il->idle_done_id, g_source_remove);
 
     while (g_source_remove_by_user_data(il))
-    {
         DEBUG_2("pending signals detected");
-    }
 
     while (il->area_param_list)
     {
         DEBUG_1("pending area_ready signals detected");
-        while (g_source_remove_by_user_data(il->area_param_list->data)) {}
+        while (g_source_remove_by_user_data(il->area_param_list->data));
         g_free(il->area_param_list->data);
-        il->area_param_list = g_list_delete_link(il->area_param_list, il->area_param_list);
+        il->area_param_list = g_list_delete_link(il->area_param_list,
+                                                 il->area_param_list);
     }
 
     while (il->area_param_delayed_list)
     {
         g_free(il->area_param_delayed_list->data);
-        il->area_param_delayed_list = g_list_delete_link(il->area_param_delayed_list, il->area_param_delayed_list);
+        il->area_param_delayed_list = g_list_delete_link(il->area_param_delayed_list,
+                                                         il->area_param_delayed_list);
     }
 
     if (il->pixbuf) g_object_unref(il->pixbuf);
@@ -243,7 +244,6 @@ void image_loader_free(ImageLoader *il)
     g_object_unref(G_OBJECT(il));
 }
 
-
 ImageLoader *image_loader_new(FileData *fd)
 {
     ImageLoader *il;
@@ -251,7 +251,6 @@ ImageLoader *image_loader_new(FileData *fd)
     if (!fd) return NULL;
 
     il = (ImageLoader *) g_object_new(TYPE_IMAGE_LOADER, NULL);
-
     il->fd = file_data_ref(fd);
 
     return il;
@@ -314,14 +313,15 @@ static gboolean image_loader_emit_size_cb(gpointer data)
 {
     gint width, height;
     ImageLoader *il = data;
+
     g_mutex_lock(il->data_mutex);
-    width = il->actual_width;
+    width  = il->actual_width;
     height = il->actual_height;
     g_mutex_unlock(il->data_mutex);
+
     g_signal_emit(il, signals[SIGNAL_SIZE], 0, width, height);
     return FALSE;
 }
-
 
 /* DONE and ERROR are emited only once, thus they can have normal priority
    PERCENT and AREA_READY should be processed ASAP
@@ -347,24 +347,24 @@ static void image_loader_emit_size(ImageLoader *il)
     g_idle_add_full(G_PRIORITY_HIGH, image_loader_emit_size_cb, il, NULL);
 }
 
-static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GList **list, gint x, gint y, gint w, gint h)
+static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GList **list,
+                                                           gint x, gint y, gint w, gint h)
 {
     if (*list)
     {
         ImageLoaderAreaParam *prev_par = (*list)->data;
 
+        /* check if we can merge the notifications */
         if (prev_par->x == x && prev_par->w == w)
         {
             if (prev_par->y + prev_par->h == y)
             {
-                /* we can merge the notifications */
                 prev_par->h += h;
                 return NULL;
             }
 
             if (prev_par->y == y + h)
             {
-                /* we can merge the notifications */
                 prev_par->y = y;
                 prev_par->h += h;
                 return NULL;
@@ -375,14 +375,12 @@ static ImageLoaderAreaParam *image_loader_queue_area_ready(ImageLoader *il, GLis
         {
             if (prev_par->x + prev_par->w == x)
             {
-                /* we can merge the notifications */
                 prev_par->w += w;
                 return NULL;
             }
 
             if (prev_par->x == x + w)
             {
-                /* we can merge the notifications */
                 prev_par->x = x;
                 prev_par->w += w;
                 return NULL;
@@ -407,9 +405,7 @@ static void image_loader_emit_area_ready(ImageLoader *il, gint x, gint y, gint w
     ImageLoaderAreaParam *par = image_loader_queue_area_ready(il, &il->area_param_list, x, y, w, h);
 
     if (par)
-    {
         g_idle_add_full(G_PRIORITY_HIGH, image_loader_emit_area_ready_cb, par, NULL);
-    }
 }
 
 /**************************************************************************************/
@@ -420,8 +416,6 @@ static void image_loader_queue_delayed_area_ready(ImageLoader *il, gint x, gint 
 {
     image_loader_queue_area_ready(il, &il->area_param_delayed_list, x, y, w, h);
 }
-
-
 
 static gboolean image_loader_get_stopping(ImageLoader *il)
 {
@@ -457,9 +451,7 @@ static void image_loader_sync_pixbuf(ImageLoader *il)
     }
 
     if (g_ascii_strcasecmp(".jps", il->fd->extension) == 0)
-    {
         g_object_set_data(G_OBJECT(pb), "stereo_data", GINT_TO_POINTER(STEREO_PIXBUF_CROSS));
-    }
 
     if (il->pixbuf) g_object_unref(il->pixbuf);
 
@@ -470,8 +462,8 @@ static void image_loader_sync_pixbuf(ImageLoader *il)
 }
 
 static void image_loader_area_updated_cb(gpointer loader,
-                 gint x, gint y, gint w, gint h,
-                 gpointer data)
+                                         gint x, gint y, gint w, gint h,
+                                         gpointer data)
 {
     ImageLoader *il = data;
 
@@ -479,9 +471,7 @@ static void image_loader_area_updated_cb(gpointer loader,
     {
         image_loader_sync_pixbuf(il);
         if (!image_loader_get_pixbuf(il))
-        {
             log_printf("critical: area_ready signal with NULL pixbuf (out of mem?)\n");
-        }
     }
 
     g_mutex_lock(il->data_mutex);
@@ -490,18 +480,18 @@ static void image_loader_area_updated_cb(gpointer loader,
     else
         image_loader_emit_area_ready(il, x, y, w, h);
 
-    if (il->stopping) il->backend.abort(il->loader);
+    if (il->stopping)
+        il->backend.abort(il->loader);
 
     g_mutex_unlock(il->data_mutex);
 }
 
 static void image_loader_size_cb(gpointer loader,
-                 gint width, gint height, gpointer data)
+                                 gint width, gint height, gpointer data)
 {
     ImageLoader *il = data;
     gchar **mime_types;
     gboolean scale = FALSE;
-    gint n;
 
     g_mutex_lock(il->data_mutex);
     il->actual_width = width;
@@ -515,8 +505,7 @@ static void image_loader_size_cb(gpointer loader,
     g_mutex_unlock(il->data_mutex);
 
     mime_types = il->backend.get_format_mime_types(loader);
-    n = 0;
-    while (mime_types[n])
+    for (gint n = 0; mime_types[n]; n++)
     {
         if (strstr(mime_types[n], "jpeg") ||
             strstr(mime_types[n], "photoshop"))
@@ -524,11 +513,10 @@ static void image_loader_size_cb(gpointer loader,
             scale = TRUE;
             break;
         }
-        n++;
     }
     g_strfreev(mime_types);
 
-    il->original_width = width;
+    il->original_width  = width;
     il->original_height = height;
     if (!scale)
     {
@@ -558,7 +546,8 @@ static void image_loader_stop_loader(ImageLoader *il)
     if (il->loader)
     {
         /* some loaders do not have a pixbuf till close, order is important here */
-        il->backend.close(il->loader, il->error ? NULL : &il->error); /* we are interested in the first error only */
+        /* we are interested in the first error only */
+        il->backend.close(il->loader, il->error ? NULL : &il->error);
         image_loader_sync_pixbuf(il);
         il->backend.free(il->loader);
         il->loader = NULL;
@@ -583,7 +572,7 @@ static void image_loader_setup_loader(ImageLoader *il)
     if (il->bytes_total >= 10 &&
         (memcmp(il->mapped_file, "MM\0*", 4) == 0 ||
          memcmp(il->mapped_file, "II*\0", 4) == 0))
-            {
+    {
         DEBUG_1("Using custom tiff loader");
         image_loader_backend_set_tiff(&il->backend);
     }
@@ -605,16 +594,13 @@ static void image_loader_setup_loader(ImageLoader *il)
 static void image_loader_done(ImageLoader *il)
 {
     image_loader_stop_loader(il);
-
     image_loader_emit_done(il);
 }
 
 static void image_loader_error(ImageLoader *il)
 {
     image_loader_stop_loader(il);
-
     DEBUG_1("pixbuf_loader reported load error for: %s", il->fd->path);
-
     image_loader_emit_error(il);
 }
 
@@ -636,21 +622,20 @@ static gboolean image_loader_continue(ImageLoader *il)
             return FALSE;
         }
 
-        if (b < 0 || (b > 0 && !il->backend.write(il->loader, il->mapped_file + il->bytes_read, b, &il->error)))
+        if (b < 0 || (b > 0 &&
+                      !il->backend.write(il->loader, il->mapped_file + il->bytes_read,
+                                         b, &il->error)))
         {
             image_loader_error(il);
             return FALSE;
         }
 
         il->bytes_read += b;
-
         c--;
     }
 
     if (il->bytes_total > 0)
-    {
         image_loader_emit_percent(il);
-    }
 
     return TRUE;
 }
@@ -686,17 +671,21 @@ static gboolean image_loader_begin(ImageLoader *il)
     il->bytes_read += b;
 
     /* read until size is known */
-    while (il->loader && !il->backend.get_pixbuf(il->loader) && b > 0 && !image_loader_get_stopping(il))
+    while (il->loader && !il->backend.get_pixbuf(il->loader) &&
+           b > 0 && !image_loader_get_stopping(il))
     {
         b = MIN(il->read_buffer_size, il->bytes_total - il->bytes_read);
-        if (b < 0 || (b > 0 && !il->backend.write(il->loader, il->mapped_file + il->bytes_read, b, &il->error)))
+        if (b < 0 || (b > 0 &&
+                      !il->backend.write(il->loader, il->mapped_file + il->bytes_read,
+                                         b, &il->error)))
         {
             image_loader_stop_loader(il);
             return FALSE;
         }
         il->bytes_read += b;
     }
-    if (!il->pixbuf) image_loader_sync_pixbuf(il);
+    if (!il->pixbuf)
+        image_loader_sync_pixbuf(il);
 
     if (il->bytes_read == il->bytes_total || b < 1)
     {
@@ -744,10 +733,10 @@ static gboolean image_loader_setup_source(ImageLoader *il)
                                  &image_data, &image_len,
                                  &total_images))
         {
-            il->mmap_base = base;
-            il->mmap_base_len = base_len;
-            il->mapped_file = image_data;
-            il->bytes_total = image_len;
+            il->mmap_base      = base;
+            il->mmap_base_len  = base_len;
+            il->mapped_file    = image_data;
+            il->bytes_total    = image_len;
             il->fd->page_total = total_images;
             DEBUG_1("Usable embedded cover attachment loaded from file %s", il->fd->path);
             return TRUE;
@@ -759,9 +748,11 @@ static gboolean image_loader_setup_source(ImageLoader *il)
         ExifData *exif = exif_read_fd(il->fd);
 
         if (options->thumbnails.use_exif)
-            il->mapped_file = exif_get_preview(exif, (guint *)&il->bytes_total, il->requested_width, il->requested_height);
+            il->mapped_file = exif_get_preview(exif, (guint *)&il->bytes_total,
+                                               il->requested_width, il->requested_height);
         else
-            il->mapped_file = exif_get_preview(exif, (guint *)&il->bytes_total, 0, 0); /* get the largest available preview image or NULL for normal images*/
+            /* get the largest available preview image or NULL for normal images */
+            il->mapped_file = exif_get_preview(exif, (guint *)&il->bytes_total, 0, 0);
 
         exif_free_fd(il->fd, exif);
         if (il->mapped_file)
@@ -845,15 +836,18 @@ void image_loader_free_async(ImageLoader *il, gpointer data)
         return;
     }
     g_atomic_int_inc(&image_loader_async_free_count);
+
     g_mutex_lock(il->data_mutex);
     if (data)
         g_signal_handlers_disconnect_matched(G_OBJECT(il), G_SIGNAL_MATCH_DATA,
                                              0, 0, NULL, NULL, data);
     il->stopping = TRUE;
     il->async_free = TRUE;
-    if (il->loader) il->backend.abort(il->loader);
+    if (il->loader)
+        il->backend.abort(il->loader);
     gboolean already_done = il->can_destroy;
     g_mutex_unlock(il->data_mutex);
+
     if (already_done)
     {
         /* Thread already finished and read async_free as FALSE,
@@ -888,9 +882,11 @@ void image_loader_abort(ImageLoader *il)
     if (!il) return;
 
     g_clear_handle_id(&il->idle_id, g_source_remove);
+
     g_mutex_lock(il->data_mutex);
     il->stopping = TRUE;
-    if (il->loader) il->backend.abort(il->loader);
+    if (il->loader)
+        il->backend.abort(il->loader);
     g_mutex_unlock(il->data_mutex);
 }
 
@@ -901,19 +897,15 @@ void image_loader_delay_area_ready(ImageLoader *il, gboolean enable)
     if (!enable)
     {
         /* send delayed */
-        GList *list, *work;
-        list = g_list_reverse(il->area_param_delayed_list);
+        GList *list = g_list_reverse(il->area_param_delayed_list);
         il->area_param_delayed_list = NULL;
         g_mutex_unlock(il->data_mutex);
 
-        work = list;
-
-        while (work)
+        for (GList *work = list; work; work = work->next)
         {
             ImageLoaderAreaParam *par = work->data;
-            work = work->next;
-
-            g_signal_emit(il, signals[SIGNAL_AREA_READY], 0, par->x, par->y, par->w, par->h);
+            g_signal_emit(il, signals[SIGNAL_AREA_READY], 0,
+                          par->x, par->y, par->w, par->h);
         }
         g_list_free_full(list, g_free);
     }
@@ -934,14 +926,10 @@ static gboolean image_loader_idle_cb(gpointer data)
     ImageLoader *il = data;
 
     if (il->idle_id)
-    {
         ret = image_loader_continue(il);
-    }
 
     if (!ret)
-    {
         image_loader_stop_source(il);
-    }
 
     return ret;
 }
@@ -951,15 +939,13 @@ static gboolean image_loader_start_idle(ImageLoader *il)
 {
     gboolean ret;
 
-    if (!il) return FALSE;
-
-    if (!il->fd) return FALSE;
-
+    if (!il || !il->fd) return FALSE;
     if (!image_loader_setup_source(il)) return FALSE;
 
     ret = image_loader_begin(il);
 
-    if (ret && !il->done) il->idle_id = g_idle_add_full(il->idle_priority, image_loader_idle_cb, il, NULL);
+    if (ret && !il->done)
+        il->idle_id = g_idle_add_full(il->idle_priority, image_loader_idle_cb, il, NULL);
     return ret;
 }
 
@@ -985,7 +971,9 @@ static void image_loader_thread_leave_high(void)
 {
     g_mutex_lock(image_loader_prio_mutex);
     image_loader_prio_num--;
-    if (image_loader_prio_num == 0) g_cond_broadcast(image_loader_prio_cond); /* wake up all low prio threads */
+    if (image_loader_prio_num == 0)
+        /* wake up all low prio threads */
+        g_cond_broadcast(image_loader_prio_cond);
     g_mutex_unlock(image_loader_prio_mutex);
 }
 
@@ -993,9 +981,7 @@ static void image_loader_thread_wait_high(void)
 {
     g_mutex_lock(image_loader_prio_mutex);
     while (image_loader_prio_num)
-    {
         g_cond_wait(image_loader_prio_cond, image_loader_prio_mutex);
-    }
 
     g_mutex_unlock(image_loader_prio_mutex);
 }
@@ -1008,46 +994,35 @@ static void image_loader_thread_run(gpointer data, gpointer user_data)
     gboolean err;
 
     if (il->idle_priority > G_PRIORITY_DEFAULT_IDLE)
-    {
         /* low prio, wait untill high prio tasks finishes */
         image_loader_thread_wait_high();
-    }
     else
-    {
         /* high prio */
         image_loader_thread_enter_high();
-    }
 
     err = !image_loader_begin(il);
 
     if (err)
-    {
-        /*
-           loader failed, we have to send signal
+        /* loader failed, we have to send signal
            (idle mode returns the image_loader_begin return value directly)
            (success is always reported indirectly from image_loader_begin)
            */
         image_loader_emit_error(il);
-    }
 
     cont = !err;
 
     while (cont && !image_loader_get_is_done(il) && !image_loader_get_stopping(il))
     {
         if (il->idle_priority > G_PRIORITY_DEFAULT_IDLE)
-        {
             /* low prio, wait untill high prio tasks finishes */
             image_loader_thread_wait_high();
-        }
         cont = image_loader_continue(il);
     }
     image_loader_stop_loader(il);
 
     if (il->idle_priority <= G_PRIORITY_DEFAULT_IDLE)
-    {
         /* high prio */
         image_loader_thread_leave_high();
-    }
 
     g_mutex_lock(il->data_mutex);
     il->can_destroy = TRUE;
@@ -1068,9 +1043,7 @@ static void image_loader_thread_run(gpointer data, gpointer user_data)
 
 static gboolean image_loader_start_thread(ImageLoader *il)
 {
-    if (!il) return FALSE;
-
-    if (!il->fd) return FALSE;
+    if (!il || !il->fd) return FALSE;
 
     il->thread = TRUE;
 
@@ -1078,7 +1051,8 @@ static gboolean image_loader_start_thread(ImageLoader *il)
 
     if (!image_loader_thread_pool)
     {
-        image_loader_thread_pool = g_thread_pool_new(image_loader_thread_run, NULL, -1, FALSE, NULL);
+        image_loader_thread_pool = g_thread_pool_new(image_loader_thread_run,
+                                                     NULL, -1, FALSE, NULL);
 #if GLIB_CHECK_VERSION(2,32,0)
         if (!image_loader_prio_cond) image_loader_prio_cond = g_new(GCond, 1);
         g_cond_init(image_loader_prio_cond);
@@ -1093,7 +1067,8 @@ static gboolean image_loader_start_thread(ImageLoader *il)
     il->can_destroy = FALSE; /* ImageLoader can't be freed until image_loader_thread_run finishes */
 
     g_thread_pool_push(image_loader_thread_pool, il, NULL);
-    DEBUG_1("Thread pool num threads: %d", g_thread_pool_get_num_threads(image_loader_thread_pool));
+    DEBUG_1("Thread pool num threads: %d",
+            g_thread_pool_get_num_threads(image_loader_thread_pool));
 
     return TRUE;
 }
@@ -1106,9 +1081,7 @@ static gboolean image_loader_start_thread(ImageLoader *il)
 
 gboolean image_loader_start(ImageLoader *il)
 {
-    if (!il) return FALSE;
-
-    if (!il->fd) return FALSE;
+    if (!il || !il->fd) return FALSE;
 
 #ifdef HAVE_GTHREAD
     return image_loader_start_thread(il);
@@ -1116,7 +1089,6 @@ gboolean image_loader_start(ImageLoader *il)
     return image_loader_start_idle(il);
 #endif
 }
-
 
 /* don't forget to gdk_pixbuf_ref() it if you want to use it after image_loader_free() */
 GdkPixbuf *image_loader_get_pixbuf(ImageLoader *il)
@@ -1135,7 +1107,7 @@ void image_loader_set_requested_size(ImageLoader *il, gint width, gint height)
     if (!il) return;
 
     g_mutex_lock(il->data_mutex);
-    il->requested_width = width;
+    il->requested_width  = width;
     il->requested_height = height;
     g_mutex_unlock(il->data_mutex);
 }
@@ -1157,7 +1129,6 @@ void image_loader_set_priority(ImageLoader *il, gint priority)
     il->idle_priority = priority;
 }
 
-
 gdouble image_loader_get_percent(ImageLoader *il)
 {
     gdouble ret;
@@ -1165,14 +1136,11 @@ gdouble image_loader_get_percent(ImageLoader *il)
 
     g_mutex_lock(il->data_mutex);
     if (il->bytes_total == 0)
-    {
         ret = 0.0;
-    }
     else
-    {
         ret = (gdouble)il->bytes_read / il->bytes_total;
-    }
     g_mutex_unlock(il->data_mutex);
+
     return ret;
 }
 
@@ -1208,6 +1176,7 @@ gboolean image_loader_get_shrunk(ImageLoader *il)
     g_mutex_lock(il->data_mutex);
     ret = il->shrunk;
     g_mutex_unlock(il->data_mutex);
+
     return ret;
 }
 
@@ -1215,20 +1184,22 @@ const gchar *image_loader_get_error(ImageLoader *il)
 {
     const gchar *ret = NULL;
     if (!il) return NULL;
+
     g_mutex_lock(il->data_mutex);
     if (il->error) ret = il->error->message;
     g_mutex_unlock(il->data_mutex);
+
     return ret;
 }
 
 gboolean image_load_dimensions(FileData *fd, gint *width, gint *height)
 {
-    gint width_file = 0;
+    gint width_file  = 0;
     gint height_file = 0;
 
     if (gdk_pixbuf_get_file_info(fd->path, &width_file, &height_file))
     {
-        if (width) *width = width_file;
+        if (width)  *width  = width_file;
         if (height) *height = height_file;
         return TRUE;
     }
@@ -1243,12 +1214,12 @@ gboolean image_load_dimensions(FileData *fd, gint *width, gint *height)
 
     if (success && il->pixbuf)
     {
-        if (width) *width = gdk_pixbuf_get_width(il->pixbuf);
+        if (width)  *width  = gdk_pixbuf_get_width(il->pixbuf);
         if (height) *height = gdk_pixbuf_get_height(il->pixbuf);
     }
     else
     {
-        if (width) *width = -1;
+        if (width)  *width  = -1;
         if (height) *height = -1;
         success = FALSE;
     }
