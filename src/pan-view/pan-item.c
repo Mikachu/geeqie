@@ -259,10 +259,10 @@ PanItem *pan_item_tri_new(PanWindow *pw, FileData *fd, gint x, gint y, gint widt
 
     pi = g_new0(PanItem, 1);
     pi->type = PAN_ITEM_TRIANGLE;
-    pi->x = x;
-    pi->y = y;
-    pi->width = width;
-    pi->height = height;
+    pi->x = x - 1;
+    pi->y = y - 1;
+    pi->width = width + 2;
+    pi->height = height + 2;
 
     pi->color_r = r;
     pi->color_g = g;
