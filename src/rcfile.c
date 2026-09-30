@@ -188,7 +188,8 @@ gboolean read_uint16_option(const gchar *option, const gchar *label, const gchar
     return TRUE;
 }
 
-gboolean read_uint_option_clamp(const gchar *option, const gchar *label, const gchar *value, guint *n, guint min, guint max)
+gboolean read_uint_option_clamp(const gchar *option, const gchar *label, const gchar *value,
+                                guint *n, guint min, guint max)
 {
     gboolean ret;
 
@@ -199,7 +200,8 @@ gboolean read_uint_option_clamp(const gchar *option, const gchar *label, const g
 }
 
 
-gboolean read_int_option_clamp(const gchar *option, const gchar *label, const gchar *value, gint *n, gint min, gint max)
+gboolean read_int_option_clamp(const gchar *option, const gchar *label, const gchar *value,
+                               gint *n, gint min, gint max)
 {
     gboolean ret;
 
@@ -227,7 +229,8 @@ void write_int_unit_option(GString *str, gint indent, gchar *label, gint n, gint
     g_string_append_printf(str, "%s = \"%d.%d\" ", label, l, r);
 }
 
-gboolean read_int_unit_option(const gchar *option, const gchar *label, const gchar *value, gint *n, gint subunits)
+gboolean read_int_unit_option(const gchar *option, const gchar *label, const gchar *value,
+                              gint *n, gint subunits)
 {
     gint l, r;
     gchar *ptr, *buf;
@@ -468,7 +471,7 @@ static void write_color_profile(GString *outstr, gint indent)
     gint i;
 #ifndef HAVE_LCMS
     g_string_append_printf(outstr, "<!-- NOTICE: %s was not built with support for color profiles,\n"
-                "         color profile options will have no effect.\n-->\n", GQ_APPNAME);
+                           "         color profile options will have no effect.\n-->\n", GQ_APPNAME);
 #endif
 
     WRITE_NL(); WRITE_STRING("<color_profiles ");
@@ -505,7 +508,6 @@ gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options)
     gchar *rc_pathl;
     GString *outstr;
     gint indent = 0;
-    GList *work;
 
     rc_pathl = path_from_utf8(utf8_path);
     ssi = secure_open(rc_pathl);
@@ -556,12 +558,10 @@ gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options)
     WRITE_SEPARATOR();
 
     /* Layout Options */
-    work = layout_window_list;
-    while (work)
+    for (GList *work = layout_window_list; work; work = work->next)
     {
         LayoutWindow *lw = work->data;
         layout_write_config(lw, outstr, indent);
-        work = work->next;
     }
 
     indent--;
@@ -760,9 +760,6 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
         if (READ_INT(*options, stereo.fixed_x2)) continue;
         if (READ_INT(*options, stereo.fixed_y2)) continue;
 
-        /* Dummy options */
-        if (READ_DUMMY(*options, image.dither_quality, "deprecated since 2012-08-13")) continue;
-
         /* Unknown options */
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -770,7 +767,9 @@ static gboolean load_global_params(const gchar **attribute_names, const gchar **
     return TRUE;
 }
 
-static void options_load_color_profiles(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_load_color_profiles(GQParserData *parser_data, GMarkupParseContext *context,
+                                        const gchar *element_name, const gchar **attribute_names,
+                                        const gchar **attribute_values, gpointer data, GError **error)
 {
     while (*attribute_names)
     {
@@ -786,10 +785,11 @@ static void options_load_color_profiles(GQParserData *parser_data, GMarkupParseC
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
-
 }
 
-static void options_load_profile(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_load_profile(GQParserData *parser_data, GMarkupParseContext *context,
+                                 const gchar *element_name, const gchar **attribute_names,
+                                 const gchar **attribute_values, gpointer data, GError **error)
 {
     gint i = GPOINTER_TO_INT(data);
     if (i < 0 || i >= COLOR_PROFILE_INPUTS) return;
@@ -805,9 +805,7 @@ static void options_load_profile(GQParserData *parser_data, GMarkupParseContext 
     }
     i++;
     options_parse_func_set_data(parser_data, GINT_TO_POINTER(i));
-
 }
-
 
 
 /*
@@ -828,24 +826,29 @@ static const gchar *options_get_id(const gchar **attribute_names, const gchar **
         const gchar *option = *attribute_names++;
         const gchar *value = *attribute_values++;
 
-        if (strcmp(option, "id") == 0) return value;
-
+        if (strcmp(option, "id") == 0)
+            return value;
     }
     return NULL;
 }
 
 
-void options_parse_leaf(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+void options_parse_leaf(GQParserData *parser_data, GMarkupParseContext *context,
+                        const gchar *element_name, const gchar **attribute_names,
+                        const gchar **attribute_values, gpointer data, GError **error)
 {
     log_printf("unexpected: %s\n", element_name);
     options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
 }
 
-static void options_parse_color_profiles(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_color_profiles(GQParserData *parser_data, GMarkupParseContext *context,
+                                         const gchar *element_name, const gchar **attribute_names,
+                                         const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "profile") == 0)
     {
-        options_load_profile(parser_data, context, element_name, attribute_names, attribute_values, data, error);
+        options_load_profile(parser_data, context, element_name,
+                             attribute_names, attribute_values, data, error);
         options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
     }
     else
@@ -895,7 +898,9 @@ static void options_load_mouse_binding(const gchar **attribute_names, const gcha
     }
 }
 
-static void options_parse_mouse_bindings(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_mouse_bindings(GQParserData *parser_data, GMarkupParseContext *context,
+                                         const gchar *element_name, const gchar **attribute_names,
+                                         const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "mouse_binding") == 0)
     {
@@ -909,7 +914,9 @@ static void options_parse_mouse_bindings(GQParserData *parser_data, GMarkupParse
     }
 }
 
-static void options_parse_filter(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_filter(GQParserData *parser_data, GMarkupParseContext *context,
+                                 const gchar *element_name, const gchar **attribute_names,
+                                 const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "file_type") == 0)
     {
@@ -923,25 +930,30 @@ static void options_parse_filter(GQParserData *parser_data, GMarkupParseContext 
     }
 }
 
-static void options_parse_filter_end(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error)
+static void options_parse_filter_end(GQParserData *parser_data, GMarkupParseContext *context,
+                                     const gchar *element_name, gpointer data, GError **error)
 {
     if (parser_data->startup) filter_add_defaults();
     filter_rebuild();
 }
 
-static void options_parse_keyword_end(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error)
+static void options_parse_keyword_end(GQParserData *parser_data, GMarkupParseContext *context,
+                                      const gchar *element_name, gpointer data, GError **error)
 {
     GtkTreeIter *iter_ptr = data;
     gtk_tree_iter_free(iter_ptr);
 }
 
 
-static void options_parse_keyword(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_keyword(GQParserData *parser_data, GMarkupParseContext *context,
+                                  const gchar *element_name, const gchar **attribute_names,
+                                  const gchar **attribute_values, gpointer data, GError **error)
 {
     GtkTreeIter *iter_ptr = data;
     if (g_ascii_strcasecmp(element_name, "keyword") == 0)
     {
-        GtkTreeIter *child = keyword_add_from_config(keyword_tree, iter_ptr, attribute_names, attribute_values);
+        GtkTreeIter *child = keyword_add_from_config(keyword_tree, iter_ptr,
+                                                     attribute_names, attribute_values);
         options_parse_func_push(parser_data, options_parse_keyword, options_parse_keyword_end, child);
     }
     else
@@ -953,11 +965,14 @@ static void options_parse_keyword(GQParserData *parser_data, GMarkupParseContext
 
 
 
-static void options_parse_keyword_tree(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_keyword_tree(GQParserData *parser_data, GMarkupParseContext *context,
+                                       const gchar *element_name, const gchar **attribute_names,
+                                       const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "keyword") == 0)
     {
-        GtkTreeIter *iter_ptr = keyword_add_from_config(keyword_tree, NULL, attribute_names, attribute_values);
+        GtkTreeIter *iter_ptr = keyword_add_from_config(keyword_tree, NULL,
+                                                        attribute_names, attribute_values);
         options_parse_func_push(parser_data, options_parse_keyword, options_parse_keyword_end, iter_ptr);
     }
     else
@@ -968,22 +983,23 @@ static void options_parse_keyword_tree(GQParserData *parser_data, GMarkupParseCo
 }
 
 
-static void options_parse_global(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_global(GQParserData *parser_data, GMarkupParseContext *context,
+                                 const gchar *element_name, const gchar **attribute_names,
+                                 const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "color_profiles") == 0)
     {
-        options_load_color_profiles(parser_data, context, element_name, attribute_names, attribute_values, data, error);
+        options_load_color_profiles(parser_data, context, element_name,
+                                    attribute_names, attribute_values, data, error);
         options_parse_func_push(parser_data, options_parse_color_profiles, NULL, GINT_TO_POINTER(0));
     }
     else if (g_ascii_strcasecmp(element_name, "mouse_bindings") == 0)
     {
-        GList *work = options->mouse_bindings;
-        while (work)
+        for (GList *work = options->mouse_bindings; work; work = work->next)
         {
             MouseBinding *b = work->data;
             g_free(b->action_name);
             g_free(b);
-            work = work->next;
         }
         g_list_free(options->mouse_bindings);
         options->mouse_bindings = NULL;
@@ -1005,7 +1021,8 @@ static void options_parse_global(GQParserData *parser_data, GMarkupParseContext 
     }
 }
 
-static void options_parse_global_end(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error)
+static void options_parse_global_end(GQParserData *parser_data, GMarkupParseContext *context,
+                                     const gchar *element_name, gpointer data, GError **error)
 {
 #ifndef HAVE_EXIV2
     /* some options do not work without exiv2 */
@@ -1016,7 +1033,9 @@ static void options_parse_global_end(GQParserData *parser_data, GMarkupParseCont
 #endif
 }
 
-static void options_parse_pane_exif(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_pane_exif(GQParserData *parser_data, GMarkupParseContext *context,
+                                    const gchar *element_name, const gchar **attribute_names,
+                                    const gchar **attribute_values, gpointer data, GError **error)
 {
     GtkWidget *pane = data;
     if (g_ascii_strcasecmp(element_name, "entry") == 0)
@@ -1031,12 +1050,15 @@ static void options_parse_pane_exif(GQParserData *parser_data, GMarkupParseConte
     }
 }
 
-static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *context,
+                              const gchar *element_name, const gchar **attribute_names,
+                              const gchar **attribute_values, gpointer data, GError **error)
 {
     GtkWidget *bar = data;
     if (g_ascii_strcasecmp(element_name, "pane_comment") == 0)
     {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_COMMENT, options_get_id(attribute_names, attribute_values));
+        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_COMMENT,
+                                              options_get_id(attribute_names, attribute_values));
         if (pane)
         {
             bar_pane_comment_update_from_config(pane, attribute_names, attribute_values);
@@ -1050,7 +1072,8 @@ static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *co
     }
     else if (g_ascii_strcasecmp(element_name, "pane_exif") == 0)
     {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_EXIF, options_get_id(attribute_names, attribute_values));
+        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_EXIF,
+                                              options_get_id(attribute_names, attribute_values));
         if (pane)
         {
             bar_pane_exif_update_from_config(pane, attribute_names, attribute_values);
@@ -1064,7 +1087,8 @@ static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *co
     }
     else if (g_ascii_strcasecmp(element_name, "pane_histogram") == 0)
     {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_HISTOGRAM, options_get_id(attribute_names, attribute_values));
+        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_HISTOGRAM,
+                                              options_get_id(attribute_names, attribute_values));
         if (pane)
         {
             bar_pane_histogram_update_from_config(pane, attribute_names, attribute_values);
@@ -1078,7 +1102,8 @@ static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *co
     }
     else if (g_ascii_strcasecmp(element_name, "pane_keywords") == 0)
     {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_KEYWORDS, options_get_id(attribute_names, attribute_values));
+        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_KEYWORDS,
+                                              options_get_id(attribute_names, attribute_values));
         if (pane)
         {
             bar_pane_keywords_update_from_config(pane, attribute_names, attribute_values);
@@ -1106,12 +1131,16 @@ static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *co
  *
  * This function can be cleaned somedays.
  */
-static void options_parse_toolbar_and_statusbar(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_toolbar_and_statusbar(GQParserData *parser_data, GMarkupParseContext *context,
+                                                const gchar *element_name, const gchar **attribute_names,
+                                                const gchar **attribute_values, gpointer data, GError **error)
 {
     options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
 }
 
-static void options_parse_layout(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_layout(GQParserData *parser_data, GMarkupParseContext *context,
+                                 const gchar *element_name, const gchar **attribute_names,
+                                 const gchar **attribute_values, gpointer data, GError **error)
 {
     LayoutWindow *lw = data;
     if (g_ascii_strcasecmp(element_name, "bar") == 0)
@@ -1149,13 +1178,16 @@ static void options_parse_layout(GQParserData *parser_data, GMarkupParseContext 
     }
 }
 
-static void options_parse_layout_end(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error)
+static void options_parse_layout_end(GQParserData *parser_data, GMarkupParseContext *context,
+                                     const gchar *element_name, gpointer data, GError **error)
 {
     LayoutWindow *lw = data;
     layout_util_sync(lw);
 }
 
-static void options_parse_toplevel(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error)
+static void options_parse_toplevel(GQParserData *parser_data, GMarkupParseContext *context,
+                                   const gchar *element_name, const gchar **attribute_names,
+                                   const gchar **attribute_values, gpointer data, GError **error)
 {
     if (g_ascii_strcasecmp(element_name, "gq") == 0)
     {
@@ -1175,13 +1207,9 @@ static void options_parse_toplevel(GQParserData *parser_data, GMarkupParseContex
         LayoutWindow *lw;
         lw = layout_find_by_layout_id(options_get_id(attribute_names, attribute_values));
         if (lw)
-        {
             layout_update_from_config(lw, attribute_names, attribute_values);
-        }
         else
-        {
             lw = layout_new_from_config(attribute_names, attribute_values, parser_data->startup);
-        }
         options_parse_func_push(parser_data, options_parse_layout, options_parse_layout_end, lw);
     }
     else
@@ -1190,9 +1218,6 @@ static void options_parse_toplevel(GQParserData *parser_data, GMarkupParseContex
         options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
     }
 }
-
-
-
 
 
 /*
@@ -1209,7 +1234,8 @@ struct _GQParserFuncData
     gpointer data;
 };
 
-void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_func, GQParserEndFunc end_func, gpointer data)
+void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_func,
+                             GQParserEndFunc end_func, gpointer data)
 {
     GQParserFuncData *func_data = g_new0(GQParserFuncData, 1);
     func_data->start_func = start_func;
@@ -1222,7 +1248,8 @@ void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_
 void options_parse_func_pop(GQParserData *parser_data)
 {
     g_free(parser_data->parse_func_stack->data);
-    parser_data->parse_func_stack = g_list_delete_link(parser_data->parse_func_stack, parser_data->parse_func_stack);
+    parser_data->parse_func_stack = g_list_delete_link(parser_data->parse_func_stack,
+                                                       parser_data->parse_func_stack);
 }
 
 void options_parse_func_set_data(GQParserData *parser_data, gpointer data)
@@ -1231,26 +1258,26 @@ void options_parse_func_set_data(GQParserData *parser_data, gpointer data)
     func->data = data;
 }
 
-
 static void start_element(GMarkupParseContext *context,
-              const gchar *element_name,
-              const gchar **attribute_names,
-              const gchar **attribute_values,
-              gpointer user_data,
-              GError **error)
+                          const gchar *element_name,
+                          const gchar **attribute_names,
+                          const gchar **attribute_values,
+                          gpointer user_data,
+                          GError **error)
 {
     GQParserData *parser_data = user_data;
     GQParserFuncData *func = parser_data->parse_func_stack->data;
     DEBUG_2("start %s", element_name);
 
     if (func->start_func)
-        func->start_func(parser_data, context, element_name, attribute_names, attribute_values, func->data, error);
+        func->start_func(parser_data, context, element_name,
+                         attribute_names, attribute_values, func->data, error);
 }
 
 static void end_element(GMarkupParseContext *context,
-              const gchar *element_name,
-              gpointer user_data,
-              GError **error)
+                        const gchar *element_name,
+                        gpointer user_data,
+                        GError **error)
 {
     GQParserData *parser_data = user_data;
     GQParserFuncData *func = parser_data->parse_func_stack->data;
@@ -1307,10 +1334,8 @@ gboolean load_config_from_file(const gchar *utf8_path, gboolean startup)
     gchar *buf;
     gboolean ret = TRUE;
 
-    if (g_file_get_contents(utf8_path, &buf, &size, NULL) == FALSE)
-    {
-        return FALSE;
-    }
+    if (g_file_get_contents(utf8_path, &buf, &size, NULL) == FALSE) return FALSE;
+
     ret = load_config_from_buf(buf, size, startup);
     g_free(buf);
     return ret;
