@@ -99,9 +99,11 @@ gboolean collection_info_load_thumb(CollectInfo *ci)
 {
     if (!ci) return FALSE;
 
-    if (ci->pixbuf) g_object_unref(g_steal_pointer(&ci->pixbuf));
+    if (ci->pixbuf)
+        g_object_unref(g_steal_pointer(&ci->pixbuf));
 
-    log_printf("collection_info_load_thumb not implemented!\n(because an instant thumb loader not implemented)");
+    log_printf("collection_info_load_thumb not implemented!\n"
+               "(because an instant thumb loader not implemented)");
     return FALSE;
 }
 
@@ -119,33 +121,27 @@ static gint collection_list_sort_cb(gconstpointer a, gconstpointer b, gpointer d
             break;
         case SORT_NONE:
             return 0;
-            break;
         case SORT_SIZE:
             if (cia->fd->size < cib->fd->size) return -1;
             if (cia->fd->size > cib->fd->size) return 1;
             return 0;
-            break;
         case SORT_TIME:
             if (cia->fd->dat.tv_sec < cib->fd->dat.tv_sec) return -1;
             if (cia->fd->dat.tv_sec > cib->fd->dat.tv_sec) return 1;
             if (cia->fd->dat.tv_nsec < cib->fd->dat.tv_nsec) return -1;
             if (cia->fd->dat.tv_nsec > cib->fd->dat.tv_nsec) return 1;
             return 0;
-            break;
         case SORT_CTIME:
             if (cia->fd->cdat.tv_sec < cib->fd->cdat.tv_sec) return -1;
             if (cia->fd->cdat.tv_sec > cib->fd->cdat.tv_sec) return 1;
             if (cia->fd->cdat.tv_nsec < cib->fd->cdat.tv_nsec) return -1;
             if (cia->fd->cdat.tv_nsec > cib->fd->cdat.tv_nsec) return 1;
             return 0;
-            break;
         case SORT_PATH:
             return utf8_compare(cia->fd->path, cib->fd->path, options->file_sort.case_sensitive);
-            break;
 #ifdef HAVE_STRVERSCMP
         case SORT_NUMBER:
             return strverscmp(cia->fd->name, cib->fd->name);
-            break;
 #endif
         default:
             break;
@@ -166,24 +162,28 @@ GList *collection_list_sort(GList *list, SortType method)
 
 GList *collection_list_randomize(GList *list)
 {
-    guint random, length, i;
-    gpointer tmp;
-    GList *nlist, *olist;
+    guint length = g_list_length(list);
+    guint i = 0;
+    GList *work;
+    gpointer *items;
 
-    length = g_list_length(list);
     if (!length) return NULL;
 
-    srand((unsigned int)time(NULL)); // Initialize random generator (hasn't to be that much strong)
+    items = g_new(gpointer, length);
+    for (work = list, i = 0; work; work = work->next, i++)
+        items[i] = work->data;
 
-    for (i = 0; i < length; i++)
+    for (i = length; i > 1; i--)
     {
-        random = (guint) (1.0 * length * rand()/(RAND_MAX + 1.0));
-        olist = g_list_nth(list, i);
-        nlist = g_list_nth(list, random);
-        tmp = olist->data;
-        olist->data = nlist->data;
-        nlist->data = tmp;
+        guint j = g_random_int_range(0, i);
+        gpointer tmp = items[i - 1];
+        items[i - 1] = items[j];
+        items[j] = tmp;
     }
+
+    for (work = list, i = 0; work; work = work->next, i++)
+        work->data = items[i];
+    g_free(items);
 
     return list;
 }
@@ -191,13 +191,9 @@ GList *collection_list_randomize(GList *list)
 GList *collection_list_add(GList *list, CollectInfo *ci, SortType method)
 {
     if (method != SORT_NONE)
-    {
         list = g_list_insert_sorted_with_data(list, ci, collection_list_sort_cb, &method);
-    }
     else
-    {
         list = g_list_append(list, ci);
-    }
 
     return list;
 }
@@ -205,18 +201,10 @@ GList *collection_list_add(GList *list, CollectInfo *ci, SortType method)
 GList *collection_list_insert(GList *list, CollectInfo *ci, CollectInfo *insert_ci, SortType method)
 {
     if (method != SORT_NONE)
-    {
-        list = g_list_insert_sorted_with_data(list, ci, collection_list_sort_cb, &method);
-    }
-    else
-    {
-        GList *point;
+        return g_list_insert_sorted_with_data(list, ci, collection_list_sort_cb, &method);
 
-        point = g_list_find(list, insert_ci);
-        list = g_list_insert_before(list, point, ci);
-    }
-
-    return list;
+    GList *point = g_list_find(list, insert_ci);
+    return g_list_insert_before(list, point, ci);
 }
 
 GList *collection_list_remove(GList *list, CollectInfo *ci)
@@ -228,63 +216,46 @@ GList *collection_list_remove(GList *list, CollectInfo *ci)
 
 CollectInfo *collection_list_find_fd(GList *list, FileData *fd)
 {
-    GList *work = list;
-
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         CollectInfo *ci = work->data;
         if (ci->fd == fd) return ci;
-        work = work->next;
     }
-
     return NULL;
 }
 
 GList *collection_list_to_filelist(GList *list)
 {
     GList *filelist = NULL;
-    GList *work = list;
 
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         CollectInfo *info = work->data;
         filelist = g_list_prepend(filelist, file_data_ref(info->fd));
-        work = work->next;
     }
-
     filelist = g_list_reverse(filelist);
     return filelist;
 }
 
 CollectWindow *collection_window_find(CollectionData *cd)
 {
-    GList *work;
-
-    work = collection_window_list;
-    while (work)
+    for (GList *work = collection_window_list; work; work = work->next)
     {
         CollectWindow *cw = work->data;
         if (cw->cd == cd) return cw;
-        work = work->next;
     }
-
     return NULL;
 }
 
 CollectWindow *collection_window_find_by_path(const gchar *path)
 {
-    GList *work;
-
     if (!path) return NULL;
 
-    work = collection_window_list;
-    while (work)
+    for (GList *work = collection_window_list; work; work = work->next)
     {
         CollectWindow *cw = work->data;
         if (cw->cd->path && strcmp(cw->cd->path, path) == 0) return cw;
-        work = work->next;
     }
-
     return NULL;
 }
 
@@ -301,11 +272,11 @@ CollectionData *collection_new(const gchar *path)
 
     cd = g_new0(CollectionData, 1);
 
-    cd->ref = 1;    /* starts with a ref of 1 */
+    cd->ref = 1;
     cd->sort_method = SORT_NONE;
-    cd->window_w = COLLECT_DEF_WIDTH;
-    cd->window_h = COLLECT_DEF_HEIGHT;
-    cd->existence = g_hash_table_new(NULL, NULL);
+    cd->window_w    = COLLECT_DEF_WIDTH;
+    cd->window_h    = COLLECT_DEF_HEIGHT;
+    cd->existence   = g_hash_table_new(NULL, NULL);
 
     if (path)
     {
@@ -316,20 +287,14 @@ CollectionData *collection_new(const gchar *path)
     else
     {
         if (untitled_counter == 0)
-        {
             cd->name = g_strdup(_("Untitled"));
-        }
         else
-        {
             cd->name = g_strdup_printf(_("Untitled (%d)"), untitled_counter + 1);
-        }
 
         untitled_counter++;
     }
 
     file_data_register_notify_func(collection_notify_cb, cd, NOTIFY_PRIORITY_MEDIUM);
-
-
     collection_list = g_list_append(collection_list, cd);
 
     return cd;
@@ -370,9 +335,7 @@ void collection_unref(CollectionData *cd)
     DEBUG_1("collection \"%s\" ref count = %d", cd->name, cd->ref);
 
     if (cd->ref < 1)
-    {
         collection_free(cd);
-    }
 }
 
 void collection_path_changed(CollectionData *cd)
@@ -396,7 +359,7 @@ CollectionData *collection_from_dnd_data(const gchar *data, GList **list, GList 
     gint collection_number;
     const gchar *ptr;
 
-    if (list) *list = NULL;
+    if (list)           *list = NULL;
     if (info_list) *info_list = NULL;
 
     if (strncmp(data, "COLLECTION:", 11) != 0) return NULL;
@@ -428,7 +391,7 @@ CollectionData *collection_from_dnd_data(const gchar *data, GList **list, GList 
         info = g_list_nth_data(cd->list, item_number);
         if (!info) continue;
 
-        if (list) *list = g_list_append(*list, file_data_ref(info->fd));
+        if (list)           *list = g_list_append(*list, file_data_ref(info->fd));
         if (info_list) *info_list = g_list_append(*info_list, info);
     }
 
@@ -437,7 +400,6 @@ CollectionData *collection_from_dnd_data(const gchar *data, GList **list, GList 
 
 gchar *collection_info_list_to_dnd_data(CollectionData *cd, GList *list, gint *length)
 {
-    GList *work;
     GList *temp = NULL;
     gchar *ptr;
     gchar *text;
@@ -454,12 +416,9 @@ gchar *collection_info_list_to_dnd_data(CollectionData *cd, GList *list, gint *l
     *length += strlen(text);
     temp = g_list_prepend(temp, text);
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         gint item_number = g_list_index(cd->list, work->data);
-
-        work = work->next;
 
         if (item_number < 0) continue;
 
@@ -473,21 +432,15 @@ gchar *collection_info_list_to_dnd_data(CollectionData *cd, GList *list, gint *l
     uri_text = g_malloc(*length);
     ptr = uri_text;
 
-    work = g_list_last(temp);
-    while (work)
+    for (GList *work = g_list_last(temp); work; work = work->prev)
     {
-        gint len;
         gchar *text = work->data;
-
-        work = work->prev;
-
-        len = strlen(text);
+        gint len = strlen(text);
         memcpy(ptr, text, len);
         ptr += len;
     }
 
     ptr[0] = '\0';
-
     string_list_free(temp);
 
     return uri_text;
@@ -502,44 +455,28 @@ gint collection_info_valid(CollectionData *cd, CollectInfo *info)
 
 CollectInfo *collection_next_by_info(CollectionData *cd, CollectInfo *info)
 {
-    GList *work;
+    GList *work = g_list_find(cd->list, info);
 
-    work = g_list_find(cd->list, info);
-
-    if (!work) return NULL;
-    work = work->next;
-    if (work) return work->data;
-    return NULL;
+    return (work && work->next) ? work->next->data : NULL;
 }
 
 CollectInfo *collection_prev_by_info(CollectionData *cd, CollectInfo *info)
 {
-    GList *work;
+    GList *work = g_list_find(cd->list, info);
 
-    work = g_list_find(cd->list, info);
-
-    if (!work) return NULL;
-    work = work->prev;
-    if (work) return work->data;
-    return NULL;
+    return (work && work->prev) ? work->prev->data : NULL;
 }
 
 CollectInfo *collection_get_first(CollectionData *cd)
 {
-    if (cd->list) return cd->list->data;
-
-    return NULL;
+    return cd->list ? cd->list->data : NULL;
 }
 
 CollectInfo *collection_get_last(CollectionData *cd)
 {
-    GList *list;
+    GList *list = g_list_last(cd->list);
 
-    list = g_list_last(cd->list);
-
-    if (list) return list->data;
-
-    return NULL;
+    return list ? list->data : NULL;
 }
 
 void collection_set_sort_method(CollectionData *cd, SortType method)
@@ -550,7 +487,8 @@ void collection_set_sort_method(CollectionData *cd, SortType method)
 
     cd->sort_method = method;
     cd->list = collection_list_sort(cd->list, cd->sort_method);
-    if (cd->list) cd->changed = TRUE;
+    if (cd->list)
+        cd->changed = TRUE;
 
     collection_window_refresh(collection_window_find(cd));
 }
@@ -561,30 +499,35 @@ void collection_randomize(CollectionData *cd)
 
     cd->list = collection_list_randomize(cd->list);
     cd->sort_method = SORT_NONE;
-    if (cd->list) cd->changed = TRUE;
+    if (cd->list)
+        cd->changed = TRUE;
 
     collection_window_refresh(collection_window_find(cd));
 }
 
 void collection_set_update_info_func(CollectionData *cd,
-                     void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data)
+                                     void (*func)(CollectionData *, CollectInfo *, gpointer),
+                                     gpointer data)
 {
     cd->info_updated_func = func;
     cd->info_updated_data = data;
 }
 
-static CollectInfo *collection_info_new_if_not_exists(CollectionData *cd, struct stat *st, FileData *fd)
+static CollectInfo *collection_info_new_if_not_exists(CollectionData *cd,
+                                                      struct stat *st, FileData *fd)
 {
     CollectInfo *ci;
 
     if (g_hash_table_contains(cd->existence, fd->path)) return NULL;
 
     ci = collection_info_new(fd, st, NULL);
-    if (ci) g_hash_table_add(cd->existence, fd->path);
+    if (ci)
+        g_hash_table_add(cd->existence, fd->path);
     return ci;
 }
 
-gboolean collection_add_check(CollectionData *cd, FileData *fd, gboolean sorted, gboolean must_exist)
+gboolean collection_add_check(CollectionData *cd, FileData *fd,
+                              gboolean sorted, gboolean must_exist)
 {
     struct stat st;
     gboolean valid;
@@ -616,15 +559,10 @@ gboolean collection_add_check(CollectionData *cd, FileData *fd, gboolean sorted,
         cd->changed = TRUE;
 
         if (!sorted || cd->sort_method == SORT_NONE)
-        {
             collection_window_add(collection_window_find(cd), ci);
-        }
         else
-        {
             collection_window_insert(collection_window_find(cd), ci);
-        }
     }
-
     return valid;
 }
 
@@ -637,13 +575,12 @@ gboolean collection_insert(CollectionData *cd, FileData *fd, CollectInfo *insert
 {
     struct stat st;
 
-    if (!insert_ci) return collection_add(cd, fd, sorted);
+    if (!insert_ci)
+        return collection_add(cd, fd, sorted);
 
     if (stat_utf8(fd->path, &st) >= 0 && !S_ISDIR(st.st_mode))
     {
-        CollectInfo *ci;
-
-        ci = collection_info_new_if_not_exists(cd, &st, fd);
+        CollectInfo *ci = collection_info_new_if_not_exists(cd, &st, fd);
         if (!ci) return FALSE;
 
         DEBUG_3("insert in collection: %s", fd->path);
@@ -661,10 +598,7 @@ gboolean collection_insert(CollectionData *cd, FileData *fd, CollectInfo *insert
 
 gboolean collection_remove(CollectionData *cd, FileData *fd)
 {
-    CollectInfo *ci;
-
-    ci = collection_list_find_fd(cd->list, fd);
-
+    CollectInfo *ci = collection_list_find_fd(cd->list, fd);
     if (!ci) return FALSE;
 
     g_hash_table_remove(cd->existence, fd->path);
@@ -693,8 +627,6 @@ static void collection_remove_by_info(CollectionData *cd, CollectInfo *info)
 
 void collection_remove_by_info_list(CollectionData *cd, GList *list)
 {
-    GList *work;
-
     if (!list) return;
 
     if (!list->next)
@@ -704,12 +636,9 @@ void collection_remove_by_info_list(CollectionData *cd, GList *list)
         return;
     }
 
-    work = list;
-    while (work)
-    {
+    for (GList *work = list; work; work = work->next)
         cd->list = collection_list_remove(cd->list, work->data);
-        work = work->next;
-    }
+
     cd->changed = (cd->list != NULL);
 
     collection_window_refresh(collection_window_find(cd));
@@ -763,9 +692,7 @@ static void collection_notify_cb(FileData *fd, NotifyType type, gpointer data)
         case FILEDATA_CHANGE_WRITE_METADATA:
             break;
     }
-
 }
-
 
 /*
  *-------------------------------------------------------------------
@@ -784,26 +711,14 @@ static gboolean collection_window_keypress(GtkWidget *widget, GdkEventKey *event
         stop_signal = TRUE;
         switch (event->keyval)
         {
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
+            case '1': case '2': case '3': case '4': case '5':
+            case '6': case '7': case '8': case '9': case '0':
                 break;
             case 'A': case 'a':
                 if (event->state & GDK_SHIFT_MASK)
-                {
                     collection_table_unselect_all(cw->table);
-                }
                 else
-                {
                     collection_table_select_all(cw->table);
-                }
                 break;
             case 'L': case 'l':
                 list = layout_list(NULL);
@@ -851,13 +766,9 @@ static gboolean collection_window_keypress(GtkWidget *widget, GdkEventKey *event
                 break;
             case 'S': case 's':
                 if (!cw->cd->path)
-                {
                     collection_dialog_save_as(NULL, cw->cd);
-                }
                 else if (!collection_save(cw->cd, cw->cd->path))
-                {
                     log_printf("failed saving to collection path: %s\n", cw->cd->path);
-                }
                 break;
             case 'A': case 'a':
                 collection_dialog_append(NULL, cw->cd);
@@ -884,7 +795,7 @@ static gboolean collection_window_keypress(GtkWidget *widget, GdkEventKey *event
                     info = collection_table_get_focus_info(cw->table);
 
                     print_window_new(info->fd, collection_table_selection_get_list(cw->table),
-                             collection_list_to_filelist(cw->cd->list), cw->window);
+                                     collection_list_to_filelist(cw->cd->list), cw->window);
                 }
                 else
                 {
@@ -973,7 +884,8 @@ static void collection_window_add(CollectWindow *cw, CollectInfo *ci)
 {
     if (!cw) return;
 
-    if (!ci->pixbuf) collection_load_thumb_idle(cw->cd);
+    if (!ci->pixbuf)
+        collection_load_thumb_idle(cw->cd);
     collection_table_file_add(cw->table, ci);
 }
 
@@ -981,7 +893,8 @@ static void collection_window_insert(CollectWindow *cw, CollectInfo *ci)
 {
     if (!cw) return;
 
-    if (!ci->pixbuf) collection_load_thumb_idle(cw->cd);
+    if (!ci->pixbuf)
+        collection_load_thumb_idle(cw->cd);
     collection_table_file_insert(cw->table, ci);
     if (!cw) return;
 }
@@ -1069,14 +982,16 @@ static void collection_close_dlg_show(CollectWindow *cw)
     }
 
     gd = generic_dialog_new(_("Close collection"),
-                "close_collection", cw->window, FALSE,
-                collection_close_cancel_cb, cw);
+                            "close_collection", cw->window, FALSE,
+                            collection_close_cancel_cb, cw);
     generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION,
-                   _("Close collection"),
-                   _("Collection has been modified.\nSave first?"));
+                               _("Close collection"),
+                               _("Collection has been modified.\nSave first?"));
 
-    generic_dialog_add_button(gd, GTK_STOCK_SAVE, NULL, collection_close_save_cb, TRUE);
-    generic_dialog_add_button(gd, GTK_STOCK_DELETE, _("_Discard"), collection_close_close_cb, FALSE);
+    generic_dialog_add_button(gd, GTK_STOCK_SAVE, NULL,
+                              collection_close_save_cb, TRUE);
+    generic_dialog_add_button(gd, GTK_STOCK_DELETE, _("_Discard"),
+                              collection_close_close_cb, FALSE);
 
     cw->close_dialog = gd->dialog;
 
@@ -1099,21 +1014,18 @@ void collection_window_close_by_collection(CollectionData *cd)
     CollectWindow *cw;
 
     cw = collection_window_find(cd);
-    if (cw) collection_window_close_final(cw);
+    if (cw)
+        collection_window_close_final(cw);
 }
 
 gboolean collection_window_modified_exists(void)
 {
-    GList *work;
-
-    work = collection_window_list;
-    while (work)
+    for (GList *work = collection_window_list; work; work = work->next)
     {
         CollectWindow *cw = work->data;
-        if (cw->cd->changed) return TRUE;
-        work = work->next;
+        if (cw->cd->changed)
+            return TRUE;
     }
-
     return FALSE;
 }
 
@@ -1128,10 +1040,7 @@ static gboolean collection_window_delete(GtkWidget *widget, GdkEvent *event, gpo
 CollectWindow *collection_window_new(const gchar *path)
 {
     CollectWindow *cw;
-    GtkWidget *vbox;
-    GtkWidget *frame;
-    GtkWidget *status_label;
-    GtkWidget *extra_label;
+    GtkWidget *vbox, *frame, *status_label, *extra_label;
     GdkGeometry geometry;
 
     cw = g_new0(CollectWindow, 1);
@@ -1142,33 +1051,29 @@ CollectWindow *collection_window_new(const gchar *path)
 
     cw->window = window_new(GTK_WINDOW_TOPLEVEL, "collection", PIXBUF_INLINE_ICON_BOOK, NULL, NULL);
 
-    geometry.min_width = DEFAULT_MINIMAL_WINDOW_SIZE;
-    geometry.min_height = DEFAULT_MINIMAL_WINDOW_SIZE;
-    geometry.base_width = COLLECT_DEF_WIDTH;
+    geometry.min_width   = DEFAULT_MINIMAL_WINDOW_SIZE;
+    geometry.min_height  = DEFAULT_MINIMAL_WINDOW_SIZE;
+    geometry.base_width  = COLLECT_DEF_WIDTH;
     geometry.base_height = COLLECT_DEF_HEIGHT;
     gtk_window_set_geometry_hints(GTK_WINDOW(cw->window), NULL, &geometry,
-                      GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
 
     if (options->save_window_positions && path && collection_load_only_geometry(cw->cd, path))
-    {
         /* FIXME: x, y is not implemented */
         gtk_window_set_default_size(GTK_WINDOW(cw->window), cw->cd->window_w, cw->cd->window_h);
-    }
     else
-    {
         gtk_window_set_default_size(GTK_WINDOW(cw->window), COLLECT_DEF_WIDTH, COLLECT_DEF_HEIGHT);
-    }
 
     gtk_window_set_resizable(GTK_WINDOW(cw->window), TRUE);
     collection_window_update_title(cw);
     gtk_container_set_border_width(GTK_CONTAINER(cw->window), 0);
 
     g_signal_connect(G_OBJECT(cw->window), "delete_event",
-             G_CALLBACK(collection_window_delete), cw);
+                     G_CALLBACK(collection_window_delete), cw);
 
     g_signal_connect(G_OBJECT(cw->window), "key_press_event",
-             G_CALLBACK(collection_window_keypress), cw);
+                     G_CALLBACK(collection_window_keypress), cw);
 
     vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(cw->window), vbox);
@@ -1203,7 +1108,8 @@ CollectWindow *collection_window_new(const gchar *path)
 
     collection_set_update_info_func(cw->cd, collection_window_update_info, cw);
 
-    if (path && *path == G_DIR_SEPARATOR) collection_load_begin(cw->cd, NULL, COLLECTION_LOAD_NONE);
+    if (path && *path == G_DIR_SEPARATOR)
+        collection_load_begin(cw->cd, NULL, COLLECTION_LOAD_NONE);
 
     return cw;
 }
