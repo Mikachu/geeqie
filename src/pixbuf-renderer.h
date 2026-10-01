@@ -167,9 +167,12 @@ struct _PixbufRenderer
 
     /*< private >*/
     gboolean in_drag;
+    gboolean drag_moved;
     gint drag_last_x;
     gint drag_last_y;
-    gint drag_moved;
+    gint drag_press_x;
+    gint drag_press_y;
+    guint32 drag_press_ts;
 
     gboolean source_tiles_enabled;
     gint source_tiles_cache_size;
