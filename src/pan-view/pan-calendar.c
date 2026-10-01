@@ -29,31 +29,31 @@
 #include "pan-view-filter.h"
 #include "pixbuf_util.h"
 
-#define PAN_CAL_POPUP_COLOR 220, 220, 220
-#define PAN_CAL_POPUP_ALPHA 255
-#define PAN_CAL_POPUP_BORDER 1
-#define PAN_CAL_POPUP_BORDER_COLOR 0, 0, 0
-#define PAN_CAL_POPUP_TEXT_COLOR 0, 0, 0
+#define PAN_CAL_POPUP_COLOR        220, 220, 220
+#define PAN_CAL_POPUP_ALPHA        255
+#define PAN_CAL_POPUP_BORDER       1
+#define PAN_CAL_POPUP_BORDER_COLOR 0,   0,   0
+#define PAN_CAL_POPUP_TEXT_COLOR   0,   0,   0
 
-#define PAN_CAL_DAY_WIDTH 100
-#define PAN_CAL_DAY_HEIGHT 80
+#define PAN_CAL_DAY_WIDTH          100
+#define PAN_CAL_DAY_HEIGHT         80
 
-#define PAN_CAL_DAY_COLOR 255, 255, 255
-#define PAN_CAL_DAY_ALPHA 220
-#define PAN_CAL_DAY_BORDER 2
-#define PAN_CAL_DAY_BORDER_COLOR 0, 0, 0
-#define PAN_CAL_DAY_TEXT_COLOR 0, 0, 0
+#define PAN_CAL_DAY_COLOR          255, 255, 255
+#define PAN_CAL_DAY_ALPHA          220
+#define PAN_CAL_DAY_BORDER         2
+#define PAN_CAL_DAY_BORDER_COLOR   0,   0,   0
+#define PAN_CAL_DAY_TEXT_COLOR     0,   0,   0
 
-#define PAN_CAL_MONTH_COLOR 255, 255, 255
-#define PAN_CAL_MONTH_ALPHA 200
-#define PAN_CAL_MONTH_BORDER 4
-#define PAN_CAL_MONTH_BORDER_COLOR 0, 0, 0
-#define PAN_CAL_MONTH_TEXT_COLOR 0, 0, 0
+#define PAN_CAL_MONTH_COLOR        255, 255, 255
+#define PAN_CAL_MONTH_ALPHA        200
+#define PAN_CAL_MONTH_BORDER       4
+#define PAN_CAL_MONTH_BORDER_COLOR 0,   0,   0
+#define PAN_CAL_MONTH_TEXT_COLOR   0,   0,   0
 
-#define PAN_CAL_DOT_SIZE 3
-#define PAN_CAL_DOT_GAP 2
-#define PAN_CAL_DOT_COLOR 128, 128, 128
-#define PAN_CAL_DOT_ALPHA 128
+#define PAN_CAL_DOT_SIZE           3
+#define PAN_CAL_DOT_GAP            2
+#define PAN_CAL_DOT_COLOR          128, 128, 128
+#define PAN_CAL_DOT_ALPHA          128
 
 
 /*
@@ -67,33 +67,27 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
     PanItem *pbox;
     PanItem *pi;
     GList *list;
-    GList *work;
     gint x1, y1, x2, y2, x3, y3;
     gint x, y, w, h;
     gint grid;
     gint column;
 
-    while ((pi = pan_item_find_by_key(pw, PAN_ITEM_NONE, "day_bubble"))) pan_item_remove(pw, pi);
+    while ((pi = pan_item_find_by_key(pw, PAN_ITEM_NONE, "day_bubble")))
+        pan_item_remove(pw, pi);
 
     if (!pi_day || pi_day->type != PAN_ITEM_BOX ||
         !pi_day->key || strcmp(pi_day->key, "day") != 0) return;
 
     list = pan_layout_intersect(pw, pi_day->x, pi_day->y, pi_day->width, pi_day->height);
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
-        PanItem *dot;
-        GList *node;
-
-        dot = work->data;
-        node = work;
-        work = work->next;
+        PanItem *dot = work->data;
 
         if (dot->type != PAN_ITEM_BOX || !dot->fd ||
             !dot->key || strcmp(dot->key, "dot") != 0)
         {
-            list = g_list_delete_link(list, node);
+            list = g_list_delete_link(list, work);
         }
     }
 
@@ -103,9 +97,9 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
     y = pi_day->y;
 
     pbox = pan_item_box_new(pw, NULL, x, y, PAN_BOX_BORDER, PAN_BOX_BORDER,
-                PAN_CAL_POPUP_BORDER,
-                PAN_CAL_POPUP_COLOR, PAN_CAL_POPUP_ALPHA,
-                PAN_CAL_POPUP_BORDER_COLOR, PAN_CAL_POPUP_ALPHA);
+                            PAN_CAL_POPUP_BORDER,
+                            PAN_CAL_POPUP_COLOR, PAN_CAL_POPUP_ALPHA,
+                            PAN_CAL_POPUP_BORDER_COLOR, PAN_CAL_POPUP_ALPHA);
     pan_item_set_key(pbox, "day_bubble");
 
     if (pi_day->fd)
@@ -115,8 +109,8 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
 
         buf = pan_date_value_string(pi_day->fd->dat.tv_sec, PAN_DATE_LENGTH_WEEK);
         plabel = pan_item_text_new(pw, x, y, buf, PAN_TEXT_ATTR_BOLD | PAN_TEXT_ATTR_HEADING,
-                       PAN_TEXT_BORDER_SIZE,
-                       PAN_CAL_POPUP_TEXT_COLOR, 255);
+                                   PAN_TEXT_BORDER_SIZE,
+                                   PAN_CAL_POPUP_TEXT_COLOR, 255);
         pan_item_set_key(plabel, "day_bubble");
 
         pan_item_size_by_item(pbox, plabel, 0);
@@ -131,19 +125,13 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
         x += PAN_BOX_BORDER;
         y += PAN_BOX_BORDER;
 
-        work = list;
-        while (work)
+        for (GList *work = list; work; work = work->next)
         {
-            PanItem *dot;
-
-            dot = work->data;
-            work = work->next;
+            PanItem *dot = work->data;
 
             if (dot->fd)
             {
-                PanItem *pimg;
-
-                pimg = pan_item_thumb_new(pw, file_data_ref(dot->fd), x, y);
+                PanItem *pimg = pan_item_thumb_new(pw, file_data_ref(dot->fd), x, y);
                 pan_item_set_key(pimg, "day_bubble");
 
                 pan_item_size_by_item(pbox, pimg, PAN_BOX_BORDER);
@@ -170,12 +158,14 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
     x3 = pbox->x + 1;
     y3 = MAX(pbox->y, y2 - 30);
     util_clip_triangle(x1, y1, x2, y2, x3, y3,
-               &x, &y, &w, &h);
+                       &x, &y, &w, &h);
 
     pi = pan_item_tri_new(pw, NULL, x, y, w, h,
-                  x1, y1, x2, y2, x3, y3,
-                  PAN_CAL_POPUP_COLOR, PAN_CAL_POPUP_ALPHA);
-    pan_item_tri_border(pi, PAN_BORDER_1 | PAN_BORDER_3, PAN_CAL_POPUP_BORDER_COLOR, PAN_CAL_POPUP_ALPHA);
+                          x1, y1, x2, y2, x3, y3,
+                          PAN_CAL_POPUP_COLOR, PAN_CAL_POPUP_ALPHA);
+    pan_item_tri_border(pi, PAN_BORDER_1 | PAN_BORDER_3,
+                            PAN_CAL_POPUP_BORDER_COLOR,
+                            PAN_CAL_POPUP_ALPHA);
     pan_item_set_key(pi, "day_bubble");
     pan_item_added(pw, pi);
 
@@ -188,15 +178,11 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
 void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *height)
 {
     GList *list;
-    GList *work;
     gint x, y;
     time_t tc;
-    gint count;
-    gint day_max;
-    gint grid;
-    gint year = 0;
-    gint month = 0;
-    gint end_year = 0;
+    gint year      = 0;
+    gint month     = 0;
+    gint end_year  = 0;
     gint end_month = 0;
 
     list = pan_list_tree(dir_fd, SORT_NONE, TRUE, pw->ignore_symlinks);
@@ -212,16 +198,14 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
     pw->cache_list = pan_cache_sort(pw->cache_list, SORT_TIME, TRUE);
     list = filelist_sort(list, SORT_TIME, TRUE);
 
-    day_max = 0;
-    count = 0;
-    tc = 0;
-    work = list;
-    while (work)
+    gint day_max = 0;
+    gint count   = 0;
+    day_max      = 0;
+    count        = 0;
+    tc           = 0;
+    for (GList *work = list; work; work = work->next)
     {
-        FileData *fd;
-
-        fd = work->data;
-        work = work->next;
+        FileData *fd = work->data;
 
         if (!pan_date_compare(fd->dat.tv_sec, tc, PAN_DATE_LENGTH_DAY))
         {
@@ -231,37 +215,39 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
         else
         {
             count++;
-            if (day_max < count) day_max = count;
+            if (day_max < count)
+                day_max = count;
         }
     }
 
     DEBUG_1("biggest day contains %d images", day_max);
 
-    grid = (gint)(sqrt((gdouble)day_max) + 0.5) * (PAN_THUMB_SIZE + PAN_SHADOW_OFFSET * 2 + PAN_THUMB_GAP);
+    gint grid = (gint)(sqrt((gdouble)day_max) + 0.5) *
+                (PAN_THUMB_SIZE + PAN_SHADOW_OFFSET * 2 + PAN_THUMB_GAP);
 
     if (list)
     {
         FileData *fd = list->data;
 
-        year = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_YEAR);
+        year =  pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_YEAR);
         month = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_MONTH);
     }
 
-    work = g_list_last(list);
-    if (work)
+    GList *end = g_list_last(list);
+    if (end)
     {
-        FileData *fd = work->data;
+        FileData *fd = end->data;
         end_year = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_YEAR);
         end_month = pan_date_value(fd->dat.tv_sec, PAN_DATE_LENGTH_MONTH);
     }
 
-    *width = PAN_BOX_BORDER * 2;
+    *width  = PAN_BOX_BORDER * 2;
     *height = PAN_BOX_BORDER * 2;
 
     x = PAN_BOX_BORDER;
     y = PAN_BOX_BORDER;
 
-    work = list;
+    GList *work = list;
     while (work && (year < end_year || (year == end_year && month <= end_month)))
     {
         PanItem *pi_month;
