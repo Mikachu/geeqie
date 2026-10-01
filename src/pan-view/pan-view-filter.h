@@ -51,7 +51,6 @@ struct _PanViewFilterUi
 {
     GtkWidget *filter_box;
     GtkWidget *filter_entry;
-    GtkWidget *filter_label;
     GtkWidget *filter_button;
     GtkWidget *filter_button_arrow;
     GtkWidget *filter_kw_hbox;
