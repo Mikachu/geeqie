@@ -365,11 +365,14 @@ static gboolean image_loader_jpeg_load (gpointer loader, const guchar *buf, gsiz
     lj->size_cb(loader, lj->requested_width, lj->requested_height, lj->data);
 
     cinfo.scale_denom = 8;
-    for (cinfo.scale_num = 8; cinfo.scale_num > 1; cinfo.scale_num--) {
+    for (cinfo.scale_num = 1; cinfo.scale_num < 8; cinfo.scale_num++) {
         jpeg_calc_output_dimensions(&cinfo);
-        if (cinfo.output_width <= (lj->stereo ? lj->requested_width / 2 : lj->requested_width) && cinfo.output_height <= lj->requested_height)
+        if (cinfo.output_height >= lj->requested_height ||
+            cinfo.output_width  >= (lj->stereo ? lj->requested_width / 2
+                                               : lj->requested_width))
             break;
     }
+
     struct progress_mgr_data pmgr;
     pmgr.pub.progress_monitor = progress_monitor;
     pmgr.lj = lj;
