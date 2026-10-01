@@ -843,15 +843,16 @@ static SourceTile *pr_source_tile_new(PixbufRenderer *pr, gint x, gint y)
     count = g_list_length(pr->source_tiles);
     if (count >= pr->source_tiles_cache_size)
     {
-        for (GList *work = g_list_last(pr->source_tiles);
+        for (GList *work = g_list_last(pr->source_tiles), *prev;
              work && count >= pr->source_tiles_cache_size;
-             work = work->prev)
+             work = prev)
         {
             SourceTile *needle = work->data;
+            prev = work->prev;
 
             if (!pr_source_tile_visible(pr, needle))
             {
-                pr->source_tiles = g_list_remove(pr->source_tiles, needle);
+                pr->source_tiles = g_list_delete_link(pr->source_tiles, work);
 
                 if (pr->func_tile_dispose)
                     pr->func_tile_dispose(pr, needle->x, needle->y,
