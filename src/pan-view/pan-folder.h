@@ -25,9 +25,13 @@
 #include "main.h"
 #include "pan-types.h"
 
+
 void pan_flower_compute(PanWindow *pw, FileData *dir_fd,
-            gint *width, gint *height,
-            gint *scroll_x, gint *scroll_y);
+                        gint *width, gint *height,
+                        gint *scroll_x, gint *scroll_y);
+void pan_wedge_compute(PanWindow *pw, FileData *dir_fd,
+                       gint *width, gint *height,
+                       gint *scroll_x, gint *scroll_y);
 void pan_folder_tree_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *height);
 
 #endif
