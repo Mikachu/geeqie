@@ -29,25 +29,15 @@
 
 static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
 {
-    GList *work;
-    gint x1, y1, x2, y2;
+    gint x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 
-    x1 = 0;
-    y1 = 0;
-    x2 = 0;
-    y2 = 0;
-
-    work = pw->list;
-    while (work)
+    for (GList *work = pw->list; work; work = work->next)
     {
-        PanItem *pi;
-
-        pi = work->data;
-        work = work->next;
+        PanItem *pi = work->data;
 
         if (x1 > pi->x) x1 = pi->x;
         if (y1 > pi->y) y1 = pi->y;
-        if (x2 < pi->x + pi->width) x2 = pi->x + pi->width;
+        if (x2 < pi->x + pi->width)  x2 = pi->x + pi->width;
         if (y2 < pi->y + pi->height) y2 = pi->y + pi->height;
     }
 
@@ -56,13 +46,9 @@ static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
     x2 += PAN_BOX_BORDER;
     y2 += PAN_BOX_BORDER;
 
-    work = pw->list;
-    while (work)
+    for (GList *work = pw->list; work; work = work->next)
     {
-        PanItem *pi;
-
-        pi = work->data;
-        work = work->next;
+        PanItem *pi = work->data;
 
         pi->x -= x1;
         pi->y -= y1;
@@ -81,7 +67,7 @@ static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
         }
     }
 
-    if (width) *width = x2 - x1;
+    if (width)  *width  = x2 - x1;
     if (height) *height = y2 - y1;
 }
 
@@ -105,15 +91,9 @@ struct _FlowerGroup {
 
 static void pan_flower_move(FlowerGroup *group, gint x, gint y)
 {
-    GList *work;
-
-    work = group->items;
-    while (work)
+    for (GList *work = group->items; work; work = work->next)
     {
-        PanItem *pi;
-
-        pi = work->data;
-        work = work->next;
+        PanItem *pi = work->data;
 
         pi->x += x;
         pi->y += y;
@@ -126,7 +106,7 @@ static void pan_flower_move(FlowerGroup *group, gint x, gint y)
 #define PI 3.14159265
 
 static void pan_flower_position(FlowerGroup *group, FlowerGroup *parent,
-                                 gint *result_x, gint *result_y)
+                                gint *result_x, gint *result_y)
 {
     gint x, y;
     gint radius;
@@ -145,10 +125,10 @@ static void pan_flower_position(FlowerGroup *group, FlowerGroup *parent,
     x += parent->x;
     y += parent->y;
 
-    x += parent->width / 2;
+    x += parent->width  / 2;
     y += parent->height / 2;
 
-    x -= group->width / 2;
+    x -= group->width  / 2;
     y -= group->height / 2;
 
     *result_x = x;
@@ -171,7 +151,7 @@ static void pan_wedge_position(FlowerGroup *group, FlowerGroup *parent,
 
     parent->angle += a;
 
-    x += parent->x + parent->width / 2 - group->width / 2;
+    x += parent->x + parent->width  / 2 - group->width  / 2;
     y += parent->y + parent->height / 2 - group->height / 2;
 
     *result_x = x;
@@ -180,7 +160,6 @@ static void pan_wedge_position(FlowerGroup *group, FlowerGroup *parent,
 
 static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *parent, gboolean wedge)
 {
-    GList *work;
     gint x, y;
 
     if (!group) return;
@@ -206,10 +185,10 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
         gint px, py, gx, gy;
         gint x1, y1, x2, y2;
 
-        px = parent->x + parent->width / 2;
+        px = parent->x + parent->width  / 2;
         py = parent->y + parent->height / 2;
 
-        gx = group->x + group->width / 2;
+        gx = group->x + group->width  / 2;
         gy = group->y + group->height / 2;
 
         x1 = MIN(px, gx);
@@ -219,38 +198,29 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
         y2 = MAX(py, gy + 5);
 
         pi = pan_item_tri_new(pw, NULL, x1, y1, x2 - x1, y2 - y1,
-                      px, py, gx, gy, gx + 5, gy + 5,
-                      255, 40, 40, 128);
+                              px, py, gx, gy, gx + 5, gy + 5,
+                              255, 40, 40, 128);
         pan_item_tri_border(pi, PAN_BORDER_1 | PAN_BORDER_3,
-                    255, 0, 0, 128);
+                            255, 0, 0, 128);
     }
 
-    pw->list = g_list_concat(group->items, pw->list);
-    group->items = NULL;
-
+    pw->list = g_list_concat(g_steal_pointer(&group->items),
+                             pw->list);
     group->circumference = 0;
-    work = group->children;
-    while (work)
-    {
-        FlowerGroup *child;
 
-        child = work->data;
-        work = work->next;
+    for (GList *work = group->children; work; work = work->next)
+    {
+        FlowerGroup *child = work->data;
 
         group->circumference += wedge ? child->span : child->diameter;
     }
 
-    work = g_list_last(group->children);
-    while (work)
+    for (GList *work = g_list_last(group->children); work; work = work->prev)
     {
-        FlowerGroup *child;
-
-        child = work->data;
-        work = work->prev;
+        FlowerGroup *child = work->data;
 
         pan_flower_build(pw, child, group, wedge);
     }
-
     g_list_free(group->children);
     g_free(group);
 }
@@ -258,9 +228,7 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
 static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gint y)
 {
     FlowerGroup *group;
-    GList *f;
-    GList *d;
-    GList *work;
+    GList *f, *d;
     PanItem *pi_box;
     gint x_start;
     gint y_height;
@@ -276,17 +244,17 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
 
     pi_box = pan_item_text_new(pw, x, y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
-                   PAN_TEXT_BORDER_SIZE,
-                   PAN_TEXT_COLOR, 255);
+                               PAN_TEXT_BORDER_SIZE,
+                               PAN_TEXT_COLOR, 255);
 
     y += pi_box->height;
 
     pi_box = pan_item_box_new(pw, file_data_ref(dir_fd),
-                  x, y,
-                  PAN_BOX_BORDER * 2, PAN_BOX_BORDER * 2,
-                  PAN_BOX_OUTLINE_THICKNESS,
-                  PAN_BOX_COLOR, PAN_BOX_ALPHA,
-                  PAN_BOX_OUTLINE_COLOR, PAN_BOX_OUTLINE_ALPHA);
+                              x, y,
+                              PAN_BOX_BORDER * 2, PAN_BOX_BORDER * 2,
+                              PAN_BOX_OUTLINE_THICKNESS,
+                              PAN_BOX_COLOR, PAN_BOX_ALPHA,
+                              PAN_BOX_OUTLINE_COLOR, PAN_BOX_OUTLINE_ALPHA);
 
     x += PAN_BOX_BORDER;
     y += PAN_BOX_BORDER;
@@ -296,14 +264,10 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     x_start = x;
     y_height = y;
 
-    work = f;
-    while (work)
+    for (GList *work = f; work; work = work->next)
     {
-        FileData *fd;
+        FileData *fd = work->data;
         PanItem *pi;
-
-        fd = work->data;
-        work = work->next;
 
         if (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE)
         {
@@ -331,28 +295,24 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     }
 
     group = g_new0(FlowerGroup, 1);
-    group->items = pw->list;
-    pw->list = NULL;
+    group->items = g_steal_pointer(&pw->list);
 
-    group->width = pi_box->width;
+    group->width  = pi_box->width;
     group->height = pi_box->y + pi_box->height;
-    group->diameter = (gint)sqrt(group->width * group->width + group->height * group->height);
+    group->diameter = (gint)sqrt(group->width  * group->width +
+                                 group->height * group->height);
 
     group->children = NULL;
 
-    work = d;
-    while (work)
+    for (GList *work = d; work; work = work->next)
     {
-        FileData *fd;
-        FlowerGroup *child;
-
-        fd = work->data;
-        work = work->next;
+        FileData *fd = work->data;
 
         if (!pan_is_ignored(fd->path, pw->ignore_symlinks))
         {
-            child = pan_flower_group(pw, fd, 0, 0);
-            if (child) group->children = g_list_prepend(group->children, child);
+            FlowerGroup *child = pan_flower_group(pw, fd, 0, 0);
+            if (child)
+                group->children = g_list_prepend(group->children, child);
         }
     }
 
@@ -366,7 +326,7 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
         gint max_span = 0;
         gdouble r;
 
-        for (work = group->children; work; work = work->next)
+        for (GList *work = group->children; work; work = work->next)
         {
             FlowerGroup *child = work->data;
             total += child->span;
@@ -378,7 +338,7 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
          * so children clear this group's own bubble */
         r = total / (2 * PI);
         if (group->children->next)
-            for (work = group->children; work; work = work->next)
+            for (GList *work = group->children; work; work = work->next)
             {
                 FlowerGroup *child = work->data;
                 FlowerGroup *next = work->next ? work->next->data
@@ -386,7 +346,8 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
                 gdouble need = (child->span + next->span) /
                                (4 * sin(PI * (child->span + next->span) / (2 * total)));
 
-                if (need > r) r = need;
+                if (need > r)
+                    r = need;
             }
         r = MAX(r, group->diameter / 2.0 + max_span / 2.0 + PAN_BOX_BORDER);
 
@@ -396,9 +357,8 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
 
     if (!f && !group->children)
     {
-        g_list_free_full(group->items, (GDestroyNotify)pan_item_free);
-        g_free(group);
-        group = NULL;
+        g_clear_list(&group->items, (GDestroyNotify)pan_item_free);
+        g_clear_pointer(&group, g_free);
     }
 
     g_list_free(f);
@@ -411,15 +371,12 @@ void pan_radial_compute(PanWindow *pw, FileData *dir_fd,
                         gint *width, gint *height,
                         gint *scroll_x, gint *scroll_y, gboolean wedge)
 {
-    FlowerGroup *group;
-    GList *list;
-
-    group = pan_flower_group(pw, dir_fd, 0, 0);
+    FlowerGroup *group = pan_flower_group(pw, dir_fd, 0, 0);
     pan_flower_build(pw, group, NULL, wedge);
 
     pan_flower_size(pw, width, height);
 
-    list = pan_item_find_by_fd(pw, PAN_ITEM_BOX, dir_fd, FALSE, FALSE);
+    GList *list = pan_item_find_by_fd(pw, PAN_ITEM_BOX, dir_fd, FALSE, FALSE);
     if (list)
     {
         PanItem *pi = list->data;
@@ -437,20 +394,18 @@ void pan_flower_compute(PanWindow *pw, FileData *dir_fd,
 }
 
 void pan_wedge_compute(PanWindow *pw, FileData *dir_fd,
-            gint *width, gint *height,
-            gint *scroll_x, gint *scroll_y)
+                       gint *width, gint *height,
+                       gint *scroll_x, gint *scroll_y)
 {
     pan_radial_compute(pw, dir_fd, width, height, scroll_x, scroll_y, TRUE);
 }
 
 static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
-                 gint *x, gint *y, gint *level,
-                 PanItem *parent,
-                 gint *width, gint *height)
+                                 gint *x, gint *y, gint *level,
+                                 PanItem *parent,
+                                 gint *width, gint *height)
 {
-    GList *f;
-    GList *d;
-    GList *work;
+    GList *f, *d;
     PanItem *pi_box;
     gint y_height = 0;
 
@@ -465,29 +420,25 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
     *x = PAN_BOX_BORDER + ((*level) * MAX(PAN_BOX_BORDER, PAN_THUMB_GAP));
 
     pi_box = pan_item_text_new(pw, *x, *y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
-                   PAN_TEXT_BORDER_SIZE,
-                   PAN_TEXT_COLOR, 255);
+                               PAN_TEXT_BORDER_SIZE,
+                               PAN_TEXT_COLOR, 255);
 
     *y += pi_box->height;
 
     pi_box = pan_item_box_new(pw, file_data_ref(dir_fd),
-                  *x, *y,
-                  PAN_BOX_BORDER, PAN_BOX_BORDER,
-                  PAN_BOX_OUTLINE_THICKNESS,
-                  PAN_BOX_COLOR, PAN_BOX_ALPHA,
-                  PAN_BOX_OUTLINE_COLOR, PAN_BOX_OUTLINE_ALPHA);
+                              *x, *y,
+                              PAN_BOX_BORDER, PAN_BOX_BORDER,
+                              PAN_BOX_OUTLINE_THICKNESS,
+                              PAN_BOX_COLOR, PAN_BOX_ALPHA,
+                              PAN_BOX_OUTLINE_COLOR, PAN_BOX_OUTLINE_ALPHA);
 
     *x += PAN_BOX_BORDER;
     *y += PAN_BOX_BORDER;
 
-    work = f;
-    while (work)
+    for (GList *work = f; work; work = work->next)
     {
-        FileData *fd;
+        FileData *fd = work->data;
         PanItem *pi;
-
-        fd = work->data;
-        work = work->next;
 
         if (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE)
         {
@@ -505,17 +456,15 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
         pan_item_size_by_item(pi_box, pi, PAN_BOX_BORDER);
     }
 
-    if (f) *y = pi_box->y + pi_box->height;
-
-    g_list_free(f);
-
-    work = d;
-    while (work)
+    if (f)
     {
-        FileData *fd;
+        *y = pi_box->y + pi_box->height;
+        g_list_free(f);
+    }
 
-        fd = work->data;
-        work = work->next;
+    for (GList *work = d; work; work = work->next)
+    {
+        FileData *fd = work->data;
 
         if (!pan_is_ignored(fd->path, pw->ignore_symlinks))
         {
