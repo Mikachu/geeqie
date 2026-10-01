@@ -62,8 +62,10 @@ typedef enum {
 #define PR_ZOOM_MIN (-32.0)
 #define PR_ZOOM_MAX 32.0
 
-/* distance to drag mouse to disable image flip */
-#define PR_DRAG_SCROLL_THRESHHOLD 4
+/* distance to drag mouse to trigger drag */
+#define PR_DRAG_SCROLL_THRESHOLD 3
+/* if you take longer than this, always trigger drag */
+#define PR_DRAG_TIME_THRESHOLD 250
 
 /* increase pan rate when holding down shift */
 #define PR_PAN_SHIFT_MULTIPLIER 6
@@ -1610,10 +1612,18 @@ static gboolean pr_mouse_motion_cb(GtkWidget *widget, GdkEventMotion *event, gpo
 
     if (!pr->in_drag || !gdk_pointer_is_grabbed()) return FALSE;
 
-    if (pr->drag_moved < PR_DRAG_SCROLL_THRESHHOLD)
-        pr->drag_moved++;
-    else
-        widget_set_cursor(widget, GDK_FLEUR);
+    if (!pr->drag_moved)
+    {
+        /* no scroll until the pointer leaves the click slop radius;
+         * drag_last_* still holds the press point at that moment */
+        if (ABS((gint)event->x - pr->drag_press_x) < PR_DRAG_SCROLL_THRESHOLD &&
+            ABS((gint)event->y - pr->drag_press_y) < PR_DRAG_SCROLL_THRESHOLD &&
+            event->time - pr->drag_press_ts < PR_DRAG_TIME_THRESHOLD)
+            return FALSE;
+        pr->drag_moved = TRUE;
+    }
+
+    widget_set_cursor(widget, GDK_FLEUR);
 
     if (event->state & GDK_CONTROL_MASK)
         accel = PR_PAN_SHIFT_MULTIPLIER;
@@ -1675,16 +1685,20 @@ static gboolean pr_mouse_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpo
     {
         case MOUSE_BUTTON_LEFT:
             pr->in_drag = TRUE;
-            pr->drag_last_x = bevent->x;
-            pr->drag_last_y = bevent->y;
-            pr->drag_moved = 0;
+            pr->drag_last_x = pr->drag_press_x = bevent->x;
+            pr->drag_last_y = pr->drag_press_y = bevent->y;
+            pr->drag_press_ts = bevent->time;
+            pr->drag_moved = FALSE;
             gdk_pointer_grab(gtk_widget_get_window(widget), FALSE,
                              GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK,
                              NULL, NULL, bevent->time);
             gtk_grab_add(widget);
             break;
         case MOUSE_BUTTON_MIDDLE:
-            pr->drag_moved = 0;
+            pr->drag_moved = FALSE;
+            pr->drag_press_x = bevent->x;
+            pr->drag_press_y = bevent->y;
+            pr->drag_press_ts = bevent->time;
             break;
         case MOUSE_BUTTON_RIGHT:
             pr_clicked_signal(pr, bevent);
@@ -1725,7 +1739,7 @@ static gboolean pr_mouse_release_cb(GtkWidget *widget, GdkEventButton *bevent, g
         return FALSE;
     }
 
-    if (pr->drag_moved < PR_DRAG_SCROLL_THRESHHOLD)
+    if (!pr->drag_moved)
     {
         if (bevent->button == MOUSE_BUTTON_LEFT && (bevent->state & GDK_CONTROL_MASK))
             pr_scroller_start(pr, bevent->x, bevent->y);
@@ -1747,7 +1761,7 @@ static void pr_mouse_drag_cb(GtkWidget *widget, GdkDragContext *context, gpointe
 
     pr = PIXBUF_RENDERER(widget);
 
-    pr->drag_moved = PR_DRAG_SCROLL_THRESHHOLD;
+    pr->drag_moved = TRUE;
 }
 
 static void pr_signals_connect(PixbufRenderer *pr)
