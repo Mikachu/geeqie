@@ -45,16 +45,16 @@ PanViewFilterUi *pan_filter_ui_new(PanWindow *pw)
         ui->filter_mode_model = gtk_list_store_new(3, G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING);
         gtk_list_store_append(ui->filter_mode_model, &iter);
         gtk_list_store_set(ui->filter_mode_model, &iter,
-                   0, PAN_VIEW_FILTER_REQUIRE, 1, _("Require"), 2, _("R"), -1);
+                           0, PAN_VIEW_FILTER_REQUIRE, 1, _("Require"), 2, _("R"), -1);
         gtk_list_store_append(ui->filter_mode_model, &iter);
         gtk_list_store_set(ui->filter_mode_model, &iter,
-                   0, PAN_VIEW_FILTER_EXCLUDE, 1, _("Exclude"), 2, _("E"), -1);
+                           0, PAN_VIEW_FILTER_EXCLUDE, 1, _("Exclude"), 2, _("E"), -1);
         gtk_list_store_append(ui->filter_mode_model, &iter);
         gtk_list_store_set(ui->filter_mode_model, &iter,
-                   0, PAN_VIEW_FILTER_INCLUDE, 1, _("Include"), 2, _("I"), -1);
+                           0, PAN_VIEW_FILTER_INCLUDE, 1, _("Include"), 2, _("I"), -1);
         gtk_list_store_append(ui->filter_mode_model, &iter);
         gtk_list_store_set(ui->filter_mode_model, &iter,
-                   0, PAN_VIEW_FILTER_GROUP, 1, _("Group"), 2, _("G"), -1);
+                           0, PAN_VIEW_FILTER_GROUP, 1, _("Group"), 2, _("G"), -1);
 
         ui->filter_mode_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(ui->filter_mode_model));
         gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(ui->filter_mode_combo), FALSE);
@@ -78,14 +78,9 @@ PanViewFilterUi *pan_filter_ui_new(PanWindow *pw)
     gtk_widget_show(hbox);
 
     combo = tab_completion_new_with_history(&ui->filter_entry, "", "pan_view_filter", -1,
-                        pan_filter_activate_cb, pw);
+                                            pan_filter_activate_cb, pw);
     gtk_box_pack_start(GTK_BOX(hbox), combo, TRUE, TRUE, 0);
     gtk_widget_show(combo);
-
-    // TODO(xsdg): Figure out whether it's useful to keep this label around.
-    ui->filter_label = gtk_label_new("");
-    //gtk_box_pack_start(GTK_BOX(hbox), ui->filter_label, FALSE, FALSE, 0);
-    //gtk_widget_show(ui->filter_label);
 
     ui->filter_kw_hbox = gtk_hbox_new(FALSE, PREF_PAD_SPACE);
     gtk_box_pack_start(GTK_BOX(hbox), ui->filter_kw_hbox, TRUE, TRUE, 0);
@@ -104,7 +99,7 @@ PanViewFilterUi *pan_filter_ui_new(PanWindow *pw)
     pref_label_new(hbox, _("Filter"));
 
     g_signal_connect(G_OBJECT(ui->filter_button), "clicked",
-             G_CALLBACK(pan_filter_toggle_cb), pw);
+                     G_CALLBACK(pan_filter_toggle_cb), pw);
 
     return ui;
 }
@@ -120,23 +115,20 @@ void pan_filter_ui_destroy(PanViewFilterUi **ui_ptr)
     *ui_ptr = NULL;
 }
 
-static void pan_filter_status(PanWindow *pw, const gchar *text)
-{
-    gtk_label_set_text(GTK_LABEL(pw->filter_ui->filter_label), (text) ? text : "");
-}
-
 static void pan_filter_kw_button_cb(GtkButton *widget, gpointer data)
 {
     PanFilterCallbackState *cb_state = data;
     PanWindow *pw = cb_state->pw;
     PanViewFilterUi *ui = pw->filter_ui;
 
-    // TODO(xsdg): Fix filter element pointed object memory leak.
+    PanViewFilterElement *el = cb_state->filter_element->data;
+    g_free(el->keyword);
+    g_clear_pointer(&el->kw_regex, g_regex_unref);
+    g_free(el);
     ui->filter_elements = g_list_delete_link(ui->filter_elements, cb_state->filter_element);
     gtk_widget_destroy(GTK_WIDGET(widget));
     g_free(cb_state);
 
-    pan_filter_status(pw, _("Removed keyword…"));
     pan_layout_update(pw);
 }
 
@@ -170,7 +162,6 @@ void pan_filter_activate_cb(const gchar *text, gpointer data)
     gtk_tree_model_get(GTK_TREE_MODEL(ui->filter_mode_model), &iter, 2, &short_mode, -1);
 
     // Create the button.
-    // TODO(xsdg): Use MVC so that the button list is an actual representation of the GList
     gchar *label = g_strdup_printf("(%s) %s", short_mode, text);
     kw_button = gtk_button_new_with_label(label);
     g_clear_pointer(&label, g_free);
@@ -183,7 +174,7 @@ void pan_filter_activate_cb(const gchar *text, gpointer data)
     cb_state->filter_element = g_list_last(ui->filter_elements);
 
     g_signal_connect(G_OBJECT(kw_button), "clicked",
-             G_CALLBACK(pan_filter_kw_button_cb), cb_state);
+                     G_CALLBACK(pan_filter_kw_button_cb), cb_state);
 
     pan_layout_update(pw);
 }
@@ -226,22 +217,17 @@ void pan_filter_toggle_visible(PanWindow *pw, gboolean enable)
     if (enable)
     {
         if (gtk_widget_get_visible(ui->filter_box))
-        {
             gtk_widget_grab_focus(ui->filter_entry);
-        }
         else
-        {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ui->filter_button), TRUE);
-        }
     }
     else
     {
         if (gtk_widget_get_visible(ui->filter_entry))
         {
             if (gtk_widget_has_focus(ui->filter_entry))
-            {
                 gtk_widget_grab_focus(GTK_WIDGET(pw->imd->widget));
-            }
+
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ui->filter_button), FALSE);
         }
     }
@@ -252,14 +238,13 @@ static gboolean pan_view_list_contains_kw_pattern(GList *haystack, PanViewFilter
     if (filter->kw_regex)
     {
         // regex compile succeeded; attempt regex match.
-        GList *work = g_list_first(haystack);
-        while (work)
+        for (GList *work = g_list_first(haystack); work; work = work->next)
         {
             gchar *keyword = work->data;
-            work = work->next;
             if (g_regex_match(filter->kw_regex, keyword, 0x0, NULL))
             {
-                if (found_kw) *found_kw = keyword;
+                if (found_kw)
+                    *found_kw = keyword;
                 return TRUE;
             }
         }
@@ -268,15 +253,16 @@ static gboolean pan_view_list_contains_kw_pattern(GList *haystack, PanViewFilter
     else
     {
         // regex compile failed; fall back to exact string match.
-        GList *found_elem = g_list_find_custom(haystack, filter->keyword, (GCompareFunc)g_strcmp0);
-        if (found_elem && found_kw) *found_kw = found_elem->data;
+        GList *found_elem = g_list_find_custom(haystack, filter->keyword,
+                                               (GCompareFunc)g_strcmp0);
+        if (found_elem && found_kw)
+            *found_kw = found_elem->data;
         return !!found_elem;
     }
 }
 
 gboolean pan_filter_fd_list(GList **fd_list, GList *filter_elements)
 {
-    GList *work;
     gboolean modified = FALSE;
     GHashTable *seen_kw_table = NULL;
 
@@ -285,26 +271,20 @@ gboolean pan_filter_fd_list(GList **fd_list, GList *filter_elements)
     // seen_kw_table is only valid in this scope, so don't take ownership of any strings.
     seen_kw_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
 
-    work = *fd_list;
-    while (work)
+    for (GList *work = *fd_list, *next; work; work = next)
     {
         FileData *fd = work->data;
-        GList *last_work = work;
-        work = work->next;
+        next = work->next;
 
         // TODO(xsdg): OPTIMIZATION Do the search inside of metadata.c to avoid a
         // bunch of string list copies.
         GList *img_keywords = metadata_read_list(fd, KEYWORD_KEY, METADATA_PLAIN);
 
-        // TODO(xsdg): OPTIMIZATION Determine a heuristic for when to linear-search the
-        // keywords list, and when to build a hash table for the image's keywords.
         gboolean should_reject = FALSE;
         gchar *group_kw = NULL;
-        GList *filter_element = filter_elements;
-        while (filter_element)
+        for (GList *fe = filter_elements; fe; fe = fe->next)
         {
-            PanViewFilterElement *filter = filter_element->data;
-            filter_element = filter_element->next;
+            PanViewFilterElement *filter = fe->data;
             gchar *found_kw = NULL;
             gboolean has_kw = pan_view_list_contains_kw_pattern(img_keywords, filter, &found_kw);
 
@@ -317,32 +297,30 @@ gboolean pan_filter_fd_list(GList **fd_list, GList *filter_elements)
                     should_reject |= has_kw;
                     break;
                 case PAN_VIEW_FILTER_INCLUDE:
-                    if (has_kw) should_reject = FALSE;
+                    if (has_kw)
+                        should_reject = FALSE;
                     break;
                 case PAN_VIEW_FILTER_GROUP:
                     if (has_kw)
                     {
                         if (g_hash_table_contains(seen_kw_table, found_kw))
-                        {
                             should_reject = TRUE;
-                        }
                         else if (group_kw == NULL)
-                        {
                             group_kw = found_kw;
-                        }
                     }
                     break;
             }
         }
 
-        if (!should_reject && group_kw != NULL) g_hash_table_add(seen_kw_table, group_kw);
+        if (!should_reject && group_kw != NULL)
+            g_hash_table_add(seen_kw_table, group_kw);
 
         group_kw = NULL;  // group_kw references an item from img_keywords.
         string_list_free(img_keywords);
 
         if (should_reject)
         {
-            *fd_list = g_list_delete_link(*fd_list, last_work);
+            *fd_list = g_list_delete_link(*fd_list, work);
             modified = TRUE;
         }
     }
