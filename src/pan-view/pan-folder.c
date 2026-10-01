@@ -97,6 +97,10 @@ struct _FlowerGroup {
     gdouble angle;
     gint circumference;
     gint diameter;
+
+    /* wedge layout: subtree bounding-circle diameter and child ring radius */
+    gint span;
+    gdouble ring;
 };
 
 static void pan_flower_move(FlowerGroup *group, gint x, gint y)
@@ -151,7 +155,30 @@ static void pan_flower_position(FlowerGroup *group, FlowerGroup *parent,
     *result_y = y;
 }
 
-static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *parent)
+/* Places children on a ring at parent->ring, each inside a wedge whose
+ * angle is proportional to the child's whole-subtree span. Wedges are
+ * disjoint by construction, so subtrees can never overlap. */
+static void pan_wedge_position(FlowerGroup *group, FlowerGroup *parent,
+                               gint *result_x, gint *result_y)
+{
+    gdouble a;
+    gint x, y;
+
+    a = 2 * PI * group->span / parent->circumference;
+
+    x = (gint)(parent->ring * cos(parent->angle + a / 2));
+    y = (gint)(parent->ring * sin(parent->angle + a / 2));
+
+    parent->angle += a;
+
+    x += parent->x + parent->width / 2 - group->width / 2;
+    y += parent->y + parent->height / 2 - group->height / 2;
+
+    *result_x = x;
+    *result_y = y;
+}
+
+static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *parent, gboolean wedge)
 {
     GList *work;
     gint x, y;
@@ -160,7 +187,10 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
 
     if (parent && parent->children)
     {
-        pan_flower_position(group, parent, &x, &y);
+        if (wedge)
+            pan_wedge_position(group, parent, &x, &y);
+        else
+            pan_flower_position(group, parent, &x, &y);
     }
     else
     {
@@ -207,7 +237,7 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
         child = work->data;
         work = work->next;
 
-        group->circumference += child->diameter;
+        group->circumference += wedge ? child->span : child->diameter;
     }
 
     work = g_list_last(group->children);
@@ -218,7 +248,7 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
         child = work->data;
         work = work->prev;
 
-        pan_flower_build(pw, child, group);
+        pan_flower_build(pw, child, group, wedge);
     }
 
     g_list_free(group->children);
@@ -326,6 +356,44 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
         }
     }
 
+    /* subtree extent for the wedge layout */
+    group->span = group->diameter;
+    group->ring = 0;
+
+    if (group->children)
+    {
+        gint total = 0;
+        gint max_span = 0;
+        gdouble r;
+
+        for (work = group->children; work; work = work->next)
+        {
+            FlowerGroup *child = work->data;
+            total += child->span;
+            max_span = MAX(max_span, child->span);
+        }
+
+        /* each child occupies angle 2*PI*span/total on the ring; solve
+         * the radius so adjacent bounding circles don't overlap, and
+         * so children clear this group's own bubble */
+        r = total / (2 * PI);
+        if (group->children->next)
+            for (work = group->children; work; work = work->next)
+            {
+                FlowerGroup *child = work->data;
+                FlowerGroup *next = work->next ? work->next->data
+                                               : group->children->data;
+                gdouble need = (child->span + next->span) /
+                               (4 * sin(PI * (child->span + next->span) / (2 * total)));
+
+                if (need > r) r = need;
+            }
+        r = MAX(r, group->diameter / 2.0 + max_span / 2.0 + PAN_BOX_BORDER);
+
+        group->ring = r;
+        group->span = MAX(group->span, (gint)(2 * r + max_span));
+    }
+
     if (!f && !group->children)
     {
         g_list_free_full(group->items, (GDestroyNotify)pan_item_free);
@@ -339,15 +407,15 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     return group;
 }
 
-void pan_flower_compute(PanWindow *pw, FileData *dir_fd,
-            gint *width, gint *height,
-            gint *scroll_x, gint *scroll_y)
+void pan_radial_compute(PanWindow *pw, FileData *dir_fd,
+                        gint *width, gint *height,
+                        gint *scroll_x, gint *scroll_y, gboolean wedge)
 {
     FlowerGroup *group;
     GList *list;
 
     group = pan_flower_group(pw, dir_fd, 0, 0);
-    pan_flower_build(pw, group, NULL);
+    pan_flower_build(pw, group, NULL, wedge);
 
     pan_flower_size(pw, width, height);
 
@@ -359,6 +427,20 @@ void pan_flower_compute(PanWindow *pw, FileData *dir_fd,
         *scroll_y = pi->y + pi->height / 2;
     }
     g_list_free(list);
+}
+
+void pan_flower_compute(PanWindow *pw, FileData *dir_fd,
+                        gint *width, gint *height,
+                        gint *scroll_x, gint *scroll_y)
+{
+    pan_radial_compute(pw, dir_fd, width, height, scroll_x, scroll_y, FALSE);
+}
+
+void pan_wedge_compute(PanWindow *pw, FileData *dir_fd,
+            gint *width, gint *height,
+            gint *scroll_x, gint *scroll_y)
+{
+    pan_radial_compute(pw, dir_fd, width, height, scroll_x, scroll_y, TRUE);
 }
 
 static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,

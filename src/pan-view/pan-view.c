@@ -743,6 +743,9 @@ static void pan_layout_compute(PanWindow *pw, FileData *dir_fd,
         case PAN_LAYOUT_FOLDERS_FLOWER:
             pan_flower_compute(pw, dir_fd, width, height, scroll_x, scroll_y);
             break;
+        case PAN_LAYOUT_FOLDERS_WEDGE:
+            pan_wedge_compute(pw, dir_fd, width, height, scroll_x, scroll_y);
+            break;
         case PAN_LAYOUT_CALENDAR:
             pan_calendar_compute(pw, dir_fd, width, height);
             break;
@@ -1605,6 +1608,7 @@ static void pan_window_new_real(FileData *dir_fd)
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Calendar"));
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Folders"));
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Folders (flower)"));
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Folders (wedge)"));
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), _("Grid"));
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), pw->layout);
