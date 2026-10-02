@@ -29,6 +29,9 @@ struct ImageLoader;
 struct FileData;
 
 typedef struct ThumbLoader ThumbLoader;
+
+typedef void (*ThumbLoaderFunc)(struct ThumbLoader *tl, gpointer data);
+
 struct ThumbLoader
 {
     gboolean standard_loader;
