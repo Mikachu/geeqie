@@ -953,6 +953,17 @@ static void dest_bookmark_select_cb(const gchar *path, gpointer data)
         gtk_entry_set_text(GTK_ENTRY(dd->entry), path);
 }
 
+static void dest_add_bookmark_cb(GtkWidget *widget, gpointer data)
+{
+    Dest_Data *dd = data;
+
+    if (!dd->path || !isdir(dd->path)) return;
+
+    bookmark_list_add(dd->bookmark_list,
+                      filename_from_path(dd->path),
+                      dd->path);
+}
+
 /*
  *-----------------------------------------------------------------------------
  * destination widget setup routines (public)
@@ -985,6 +996,8 @@ GtkWidget *path_selection_new_with_files(GtkWidget *entry, const gchar *path,
                     G_CALLBACK(dest_home_cb), dd);
     pref_button_new(hbox2, NULL, _("New folder"), FALSE,
                     G_CALLBACK(dest_new_dir_cb), dd);
+    pref_button_new(hbox2, GTK_STOCK_ADD, _("Add bookmark"), FALSE,
+                    G_CALLBACK(dest_add_bookmark_cb), dd);
 
     dd->hidden_button = gtk_check_button_new_with_label(_("Show hidden"));
     g_signal_connect(G_OBJECT(dd->hidden_button), "clicked",
