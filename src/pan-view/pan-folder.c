@@ -274,14 +274,16 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
                              pw->list);
     group->circumference = 0;
 
+    GList *last = NULL;
     for (GList *work = group->children; work; work = work->next)
     {
         FlowerGroup *child = work->data;
 
         group->circumference += wedge ? child->span : child->diameter;
+        last = work;
     }
 
-    for (GList *work = g_list_last(group->children); work; work = work->prev)
+    for (GList *work = last; work; work = work->prev)
     {
         FlowerGroup *child = work->data;
 
