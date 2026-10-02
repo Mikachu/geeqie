@@ -1563,7 +1563,7 @@ static void pan_window_new_real(FileData *dir_fd)
     pw = g_new0(PanWindow, 1);
 
     pw->dir_fd     = file_data_ref(dir_fd);
-    pw->layout     = PAN_LAYOUT_TIMELINE;
+    pw->layout     = PAN_LAYOUT_FOLDERS_WEDGE;
     pw->size       = PAN_IMAGE_SIZE_THUMB_NORMAL;
     pw->thumb_size = PAN_THUMB_SIZE_NORMAL;
     pw->thumb_gap  = PAN_THUMB_GAP_NORMAL;

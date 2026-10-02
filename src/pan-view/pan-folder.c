@@ -54,17 +54,7 @@ static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
         pi->y -= y1;
 
         if (pi->type == PAN_ITEM_TRIANGLE && pi->data)
-        {
-            gint *coord;
-
-            coord = pi->data;
-            coord[0] -= x1;
-            coord[1] -= y1;
-            coord[2] -= x1;
-            coord[3] -= y1;
-            coord[4] -= x1;
-            coord[5] -= y1;
-        }
+            pan_item_tri_offset(pi, -x1, -y1);
     }
 
     if (width)  *width  = x2 - x1;
@@ -87,6 +77,7 @@ struct _FlowerGroup {
     /* wedge layout: subtree bounding-circle diameter and child ring radius */
     gint span;
     gdouble ring;
+    gboolean placed;
 };
 
 static void pan_flower_move(FlowerGroup *group, gint x, gint y)
@@ -135,27 +126,101 @@ static void pan_flower_position(FlowerGroup *group, FlowerGroup *parent,
     *result_y = y;
 }
 
-/* Places children on a ring at parent->ring, each inside a wedge whose
- * angle is proportional to the child's whole-subtree span. Wedges are
- * disjoint by construction, so subtrees can never overlap. */
+/* Wedge positioning with collision resolution: the wedge midpoint fixes
+ * each child's angle (slices are proportional to whole-subtree span and
+ * disjoint, so angular order is preserved), but the radius is only a
+ * lower bound. Each child is pulled in as close to the parent as its
+ * bounding circle allows, then pushed back out along its own ray if it
+ * would overlap a sibling that is already placed. Children therefore
+ * fill space across wedge boundaries radially instead of sitting on a
+ * shared ring. */
 static void pan_wedge_position(FlowerGroup *group, FlowerGroup *parent,
                                gint *result_x, gint *result_y)
 {
-    gdouble a;
-    gint x, y;
-
-    a = 2 * PI * group->span / parent->circumference;
-
-    x = (gint)(parent->ring * cos(parent->angle + a / 2));
-    y = (gint)(parent->ring * sin(parent->angle + a / 2));
+    gdouble a = 2 * PI * group->span / parent->circumference;
+    gdouble preferred = parent->angle + a / 2;
+    gint n_siblings = 0;
+    gdouble dist;
 
     parent->angle += a;
 
-    x += parent->x + parent->width  / 2 - group->width  / 2;
-    y += parent->y + parent->height / 2 - group->height / 2;
+    dist = parent->diameter / 2.0 + group->span / 2.0 + PAN_BOX_BORDER;
 
-    *result_x = x;
-    *result_y = y;
+    /* collect placed siblings */
+    for (GList *work = parent->children; work; work = work->next)
+    {
+        FlowerGroup *s = work->data;
+        if (s != group && s->placed)
+            n_siblings++;
+    }
+
+    if (n_siblings == 0)
+    {
+        /* nobody placed: take the preferred ray at minimal distance */
+        *result_x = (gint)(dist * cos(preferred)) + parent->x + parent->width  / 2 - group->width  / 2;
+        *result_y = (gint)(dist * sin(preferred)) + parent->y + parent->height / 2 - group->height / 2;
+        return;
+    }
+
+    typedef gdouble SiblingRel[3];
+    gdouble (*sx)[3] = g_new(SiblingRel, n_siblings);   /* rel-x, rel-y, clearance */
+    gint i = 0;
+    for (GList *work = parent->children; work; work = work->next)
+    {
+        FlowerGroup *s = work->data;
+        if (s == group || !s->placed) continue;
+
+        sx[i][0] = s->x + s->width  / 2.0 - (parent->x + parent->width  / 2.0);
+        sx[i][1] = s->y + s->height / 2.0 - (parent->y + parent->height / 2.0);
+        sx[i][2] = (s->span + group->span) / 2.0 + PAN_BOX_BORDER;
+        i++;
+    }
+
+    /* spiral search: for each ring, try evenly spaced angles starting
+     * at the preferred one */
+    gint found = FALSE;
+    gdouble bx = 0, by = 0;
+
+    for (gdouble d = dist; d < dist + parent->circumference && !found; d += PAN_BOX_BORDER)
+    {
+        for (gint k = 0; k < 24 && !found; k++)
+        {
+            gdouble th = preferred + k * (2 * PI / 24.0);
+            gdouble cx = d * cos(th);
+            gdouble cy = d * sin(th);
+            gboolean free_ = TRUE;
+
+            for (i = 0; i < n_siblings; i++)
+            {
+                gdouble dx = cx - sx[i][0];
+                gdouble dy = cy - sx[i][1];
+                if (dx * dx + dy * dy < sx[i][2] * sx[i][2])
+                {
+                    free_ = FALSE;
+                    break;
+                }
+            }
+
+            if (free_)
+            {
+                bx = cx;
+                by = cy;
+                found = TRUE;
+            }
+        }
+    }
+
+    g_free(sx);
+
+    if (!found)
+    {
+        /* fall back to the preferred ray pushed way out */
+        bx = (dist + parent->circumference) * cos(preferred);
+        by = (dist + parent->circumference) * sin(preferred);
+    }
+
+    *result_x = (gint)bx + parent->x + parent->width  / 2 - group->width  / 2;
+    *result_y = (gint)by + parent->y + parent->height / 2 - group->height / 2;
 }
 
 static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *parent, gboolean wedge)
@@ -178,6 +243,7 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
     }
 
     pan_flower_move(group, x, y);
+    group->placed = TRUE;
 
     if (parent)
     {
@@ -221,8 +287,29 @@ static void pan_flower_build(PanWindow *pw, FlowerGroup *group, FlowerGroup *par
 
         pan_flower_build(pw, child, group, wedge);
     }
-    g_list_free(group->children);
-    g_free(group);
+    /* wedge: now that every child has a final position, tighten this
+     * group's bounding circle to the real extents. Siblings placed after
+     * this group can then trust group->span and only need to be tested
+     * against it — not against the whole subtree. */
+    if (wedge && group->children)
+    {
+        gdouble px = group->x + group->width  / 2.0;
+        gdouble py = group->y + group->height / 2.0;
+
+        group->span = group->diameter;
+        for (GList *work = group->children; work; work = work->next)
+        {
+            FlowerGroup *child = work->data;
+            gdouble dx = child->x + child->width  / 2.0 - px;
+            gdouble dy = child->y + child->height / 2.0 - py;
+            gdouble reach = sqrt(dx * dx + dy * dy) + child->span / 2.0;
+
+            if (2 * reach > group->span)
+                group->span = (gint)(2 * reach + 0.5);
+        }
+    }
+
+    g_clear_list(&group->children, g_free);
 }
 
 static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gint y)
@@ -243,11 +330,11 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
 
     pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
 
-    pi_box = pan_item_text_new(pw, x, y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
-                               PAN_TEXT_BORDER_SIZE,
-                               PAN_TEXT_COLOR, 255);
+    PanItem *pi_label = pan_item_text_new(pw, x, y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
+                                          PAN_TEXT_BORDER_SIZE,
+                                          PAN_TEXT_COLOR, 255);
 
-    y += pi_box->height;
+    y += pi_label->height;
 
     pi_box = pan_item_box_new(pw, file_data_ref(dir_fd),
                               x, y,
@@ -295,9 +382,17 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
     }
 
     group = g_new0(FlowerGroup, 1);
+
+    if (pi_label->width > pi_box->width)
+    {
+        gint align = (pi_label->width - pi_box->width) / 2;
+        pi_label->x -= align;
+        group->x -= align;
+    }
+
     group->items = g_steal_pointer(&pw->list);
 
-    group->width  = pi_box->width;
+    group->width  = MAX(pi_box->width, pi_label->width);
     group->height = pi_box->y + pi_box->height;
     group->diameter = (gint)sqrt(group->width  * group->width +
                                  group->height * group->height);
@@ -373,6 +468,7 @@ void pan_radial_compute(PanWindow *pw, FileData *dir_fd,
 {
     FlowerGroup *group = pan_flower_group(pw, dir_fd, 0, 0);
     pan_flower_build(pw, group, NULL, wedge);
+    g_clear_pointer(&group, g_free);
 
     pan_flower_size(pw, width, height);
 
