@@ -22,6 +22,7 @@
 #ifndef METADATA_H
 #define METADATA_H
 
+#include "utilops.h"
 #include "filedata.h"
 
 #define COMMENT_KEY     "Xmp.dc.description"

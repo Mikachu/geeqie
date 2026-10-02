@@ -37,6 +37,8 @@ GenericDialog *file_util_warning_dialog(const gchar *heading, const gchar *messa
 
 /* all functions takes over the filelist and frees it when done */
 
+typedef void (*FileUtilDoneFunc)(gboolean success, const gchar *done_path, gpointer data);
+
 struct FileData;
 void file_util_delete(struct FileData *source_fd, GList *source_list, GtkWidget *parent);
 void file_util_delete_notify_done(struct FileData *source_fd, GList *source_list, GtkWidget *parent,
