@@ -23,6 +23,7 @@
 
 #include "typedefs.h"
 
+typedef struct PixmapFolders PixmapFolders;
 struct PixmapFolders
 {
     GdkPixbuf *close;
@@ -36,6 +37,10 @@ typedef enum {
     DIRVIEW_TREE
 } DirViewType;
 
+struct LayoutWindow;
+struct FileData;
+
+typedef struct ViewDir ViewDir;
 struct ViewDir
 {
     DirViewType type;
@@ -44,33 +49,35 @@ struct ViewDir
     GtkWidget *widget;
     GtkWidget *view;
 
-    FileData *dir_fd;
+    struct FileData *dir_fd;
 
-    FileData *click_fd;
+    struct FileData *click_fd;
 
-    FileData *drop_fd;
+    struct FileData *drop_fd;
     GList *drop_list;
     guint drop_scroll_id; /* event source id */
 
     /* func list */
-    void (*select_func)(ViewDir *vd, FileData *fd, gpointer data);
+    void (*select_func)(ViewDir *vd, struct FileData *fd, gpointer data);
     gpointer select_data;
 
     void (*dnd_drop_update_func)(ViewDir *vd);
     void (*dnd_drop_leave_func)(ViewDir *vd);
 
-    LayoutWindow *layout;
+    struct LayoutWindow *layout;
 
     GtkWidget *popup;
 
     PixmapFolders *pf;
 };
 
+typedef struct ViewDirInfoList ViewDirInfoList;
 struct ViewDirInfoList
 {
     GList *list;
 };
 
+typedef struct ViewDirInfoTree ViewDirInfoTree;
 struct ViewDirInfoTree
 {
     guint drop_expand_id; /* event source id */
@@ -88,25 +95,25 @@ enum {
 
 #define VIEW_DIR_TYPES_COUNT 2
 
-ViewDir *vd_new(LayoutWindow *lw);
+ViewDir *vd_new(struct LayoutWindow *lw);
 
-void vd_set_select_func(ViewDir *vdl, void (*func)(ViewDir *vdl, FileData *fd, gpointer data), gpointer data);
+void vd_set_select_func(ViewDir *vdl, void (*func)(ViewDir *vdl, struct FileData *fd, gpointer data), gpointer data);
 
-void vd_set_layout(ViewDir *vdl, LayoutWindow *layout);
+void vd_set_layout(ViewDir *vdl, struct LayoutWindow *layout);
 
-gboolean vd_set_fd(ViewDir *vdl, FileData *dir_fd);
+gboolean vd_set_fd(ViewDir *vdl, struct FileData *dir_fd);
 void vd_refresh(ViewDir *vdl);
-gboolean vd_find_row(ViewDir *vd, FileData *fd, GtkTreeIter *iter);
+gboolean vd_find_row(ViewDir *vd, struct FileData *fd, GtkTreeIter *iter);
 
 const gchar *vd_row_get_path(ViewDir *vdl, gint row);
 
-void vd_color_set(ViewDir *vd, FileData *fd, gint color_set);
+void vd_color_set(ViewDir *vd, struct FileData *fd, gint color_set);
 void vd_popup_destroy_cb(GtkWidget *widget, gpointer data);
 
 GtkWidget *vd_drop_menu(ViewDir *vd, gint active);
-GtkWidget *vd_pop_menu(ViewDir *vd, FileData *fd);
+GtkWidget *vd_pop_menu(ViewDir *vd, struct FileData *fd);
 
-void vd_new_folder(ViewDir *vd, FileData *dir_fd);
+void vd_new_folder(ViewDir *vd, struct FileData *dir_fd);
 
 void vd_dnd_drop_scroll_cancel(ViewDir *vd);
 void vd_dnd_init(ViewDir *vd);

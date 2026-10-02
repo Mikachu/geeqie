@@ -25,6 +25,7 @@
 #include "typedefs.h"
 #include "collect.h"
 
+typedef struct CollectTable CollectTable;
 struct CollectTable
 {
     GtkWidget *scrolled;

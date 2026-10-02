@@ -42,6 +42,8 @@ struct GenericDialog
     GtkWidget *cancel_button;
 };
 
+struct FileData;
+
 typedef struct FileDialog FileDialog;
 struct FileDialog
 {
@@ -51,7 +53,7 @@ struct FileDialog
 
     gint type;
 
-    FileData *source_fd;
+    struct FileData *source_fd;
     GList *source_list;
 
     gchar *dest_path;

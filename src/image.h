@@ -45,17 +45,23 @@ typedef enum {
     ALTER_FLIP,
 } AlterType;
 
+struct CollectionData;
+struct CollectInfo;
+struct ImageLoader;
+struct FileData;
+
+typedef struct ImageWindow ImageWindow;
 struct ImageWindow
 {
     GtkWidget *widget;  /* use this to add it and show it */
     GtkWidget *pr;
     GtkWidget *frame;
 
-    FileData *image_fd;
+    struct FileData *image_fd;
 
     gboolean unknown;   /* failed to load image */
 
-    ImageLoader *il;    /* FIXME - image loader should probably go to FileData, but it must first support
+    struct ImageLoader *il;    /* FIXME - image loader should probably go to FileData, but it must first support
                            sending callbacks to multiple ImageWindows in parallel */
 
     gint has_frame;  /* not boolean, see image_new() */
@@ -97,8 +103,8 @@ struct ImageWindow
     gpointer data_scroll_notify;
 
     /* collection info */
-    CollectionData *collection;
-    CollectInfo *collection_info;
+    struct CollectionData *collection;
+    struct CollectInfo *collection_info;
 
     /* color profiles */
     gboolean color_profile_enable;
@@ -109,8 +115,8 @@ struct ImageWindow
 
     AlterType delay_alter_type;
 
-    FileData *read_ahead_fd;
-    ImageLoader *read_ahead_il;
+    struct FileData *read_ahead_fd;
+    struct ImageLoader *read_ahead_il;
 
     gint prev_color_row;
 
@@ -161,16 +167,16 @@ void image_grab_focus(ImageWindow *imd);
 /* path, name */
 const gchar *image_get_path(ImageWindow *imd);
 const gchar *image_get_name(ImageWindow *imd);
-FileData *image_get_fd(ImageWindow *imd);
+struct FileData *image_get_fd(ImageWindow *imd);
 
 /* merely changes path string, does not change the image! */
-void image_set_fd(ImageWindow *imd, FileData *fd);
+void image_set_fd(ImageWindow *imd, struct FileData *fd);
 
 /* load a new image */
-void image_change_fd(ImageWindow *imd, FileData *fd, gdouble zoom);
+void image_change_fd(ImageWindow *imd, struct FileData *fd, gdouble zoom);
 void image_change_pixbuf(ImageWindow *imd, GdkPixbuf *pixbuf, gdouble zoom, gboolean lazy);
-void image_change_from_collection(ImageWindow *imd, CollectionData *cd, CollectInfo *info, gdouble zoom);
-CollectionData *image_get_collection(ImageWindow *imd, CollectInfo **info);
+void image_change_from_collection(ImageWindow *imd, struct CollectionData *cd, struct CollectInfo *info, gdouble zoom);
+struct CollectionData *image_get_collection(ImageWindow *imd, struct CollectInfo **info);
 void image_copy_from_image(ImageWindow *imd, ImageWindow *source);
 void image_move_from_image(ImageWindow *imd, ImageWindow *source);
 
@@ -215,7 +221,7 @@ guint image_get_page_total(ImageWindow *imd);
 void image_set_page(ImageWindow *imd, guint page_num);
 
 /* read ahead, pass NULL to cancel */
-void image_prebuffer_set(ImageWindow *imd, FileData *fd);
+void image_prebuffer_set(ImageWindow *imd, struct FileData *fd);
 
 /* allow top window to be resized ? */
 void image_top_window_set_sync(ImageWindow *imd, gboolean allow_sync);

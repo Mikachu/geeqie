@@ -181,13 +181,18 @@ struct PanViewSearchUi
 // Defined in pan-view-filter.h
 typedef struct PanViewFilterUi PanViewFilterUi;
 
+struct ImageLoader;
+struct ImageWindow;
+struct ThumbLoader;
+struct FullScreenData;
+
 typedef struct PanWindow PanWindow;
 struct PanWindow
 {
     GtkWidget *window;
-    ImageWindow *imd;
-    ImageWindow *imd_normal;
-    FullScreenData *fs;
+    struct ImageWindow *imd;
+    struct ImageWindow *imd_normal;
+    struct FullScreenData *fs;
 
     GtkWidget *path_entry;
 
@@ -226,8 +231,8 @@ struct PanWindow
     gint cache_tick;
     CacheLoader *cache_cl;
 
-    ImageLoader *il;
-    ThumbLoader *tl;
+    struct ImageLoader *il;
+    struct ThumbLoader *tl;
     PanItem *queue_pi;
     GList *queue;
 

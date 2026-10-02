@@ -39,8 +39,10 @@ typedef enum {
 typedef struct ColorMan ColorMan;
 typedef void (* ColorManDoneFunc)(ColorMan *cm, ColorManReturnType success, gpointer data);
 
+struct ImageWindow;
+
 struct ColorMan {
-    ImageWindow *imd;
+    struct ImageWindow *imd;
     GdkPixbuf *pixbuf;
     gint incremental_sync;
     gint row;
@@ -53,11 +55,11 @@ struct ColorMan {
     gpointer func_done_data;
 };
 
-ColorMan *color_man_new(ImageWindow *imd, GdkPixbuf *pixbuf,
+ColorMan *color_man_new(struct ImageWindow *imd, GdkPixbuf *pixbuf,
                         ColorManProfileType input_type, const gchar *input_file,
                         ColorManProfileType screen_type, const gchar *screen_file,
                         guchar *screen_data, guint screen_data_len);
-ColorMan *color_man_new_embedded(ImageWindow *imd, GdkPixbuf *pixbuf,
+ColorMan *color_man_new_embedded(struct ImageWindow *imd, GdkPixbuf *pixbuf,
                                  guchar *input_data, guint input_data_len,
                                  ColorManProfileType screen_type, const gchar *screen_file,
                                  guchar *screen_data, guint screen_data_len);

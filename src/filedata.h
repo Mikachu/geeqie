@@ -92,6 +92,10 @@ typedef enum {
     FILE_FORMAT_CLASSES
 } FileFormatClass;
 
+struct HistMap;
+struct ExifData;
+typedef struct FileDataChangeInfo FileDataChangeInfo;
+typedef struct FileData FileData;
 struct FileData {
     guint magick;
     gint type;
@@ -123,7 +127,7 @@ struct FileData {
     guint page_total;  /* number of sub-images/pages available, as discovered by the
                         * loader backend; 0 or 1 means "not a multi-image file" */
 
-    HistMap *histmap;
+    struct HistMap *histmap;
 
     gint ref;
     gint version;      /* increased when any field in this structure is changed */
@@ -132,7 +136,7 @@ struct FileData {
     gint user_orientation;
     gint exif_orientation;
 
-    ExifData *exif;
+    struct ExifData *exif;
     time_t exifdate;
     GHashTable *modified_xmp; /* hash table which contains unwritten xmp metadata
                                  in format: key->list of string values */

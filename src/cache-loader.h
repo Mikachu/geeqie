@@ -37,8 +37,10 @@ typedef enum {
     CACHE_LOADER_SIMILARITY = 1 << 3
 } CacheDataType;
 
+struct FileData;
+
 struct CacheLoader {
-    FileData *fd;
+    struct FileData *fd;
     CacheData *cd;
 
     CacheDataType todo_mask;
@@ -54,7 +56,7 @@ struct CacheLoader {
 };
 
 
-CacheLoader *cache_loader_new(FileData *fd, CacheDataType load_mask,
+CacheLoader *cache_loader_new(struct FileData *fd, CacheDataType load_mask,
                               CacheLoaderDoneFunc done_func, gpointer done_data);
 
 void cache_loader_free(CacheLoader *cl);

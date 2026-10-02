@@ -32,12 +32,15 @@
 typedef struct ThumbLoaderStd ThumbLoaderStd;
 typedef void (*ThumbLoaderStdFunc)(ThumbLoaderStd *tl, gpointer data);
 
+struct FileData;
+struct ImageLoader;
+
 struct ThumbLoaderStd
 {
     gboolean standard_loader;
 
-    ImageLoader *il;
-    FileData *fd;
+    struct ImageLoader *il;
+    struct FileData *fd;
 
     time_t source_mtime;
     off_t source_size;
@@ -73,7 +76,7 @@ void thumb_loader_std_set_callbacks(ThumbLoaderStd *tl,
                                     ThumbLoaderStdFunc func_progress,
                                     gpointer data);
 void thumb_loader_std_set_cache(ThumbLoaderStd *tl, gboolean enable_cache, gboolean local, gboolean retry_failed);
-gboolean thumb_loader_std_start(ThumbLoaderStd *tl, FileData *fd);
+gboolean thumb_loader_std_start(ThumbLoaderStd *tl, struct FileData *fd);
 void thumb_loader_std_free(ThumbLoaderStd *tl);
 
 GdkPixbuf *thumb_loader_std_get_pixbuf(ThumbLoaderStd *tl);

@@ -37,18 +37,19 @@ GenericDialog *file_util_warning_dialog(const gchar *heading, const gchar *messa
 
 /* all functions takes over the filelist and frees it when done */
 
-void file_util_delete(FileData *source_fd, GList *source_list, GtkWidget *parent);
-void file_util_delete_notify_done(FileData *source_fd, GList *source_list, GtkWidget *parent,
+struct FileData;
+void file_util_delete(struct FileData *source_fd, GList *source_list, GtkWidget *parent);
+void file_util_delete_notify_done(struct FileData *source_fd, GList *source_list, GtkWidget *parent,
                                   FileUtilDoneFunc done_func, gpointer done_data);
-void file_util_move(FileData *source_fd, GList *source_list, const gchar *dest_path, GtkWidget *parent);
-void file_util_copy(FileData *source_fd, GList *source_list, const gchar *dest_path, GtkWidget *parent);
-void file_util_rename(FileData *source_fd, GList *source_list, GtkWidget *parent);
-void file_util_write_metadata(FileData *source_fd, GList *source_list, GtkWidget *parent,
+void file_util_move(struct FileData *source_fd, GList *source_list, const gchar *dest_path, GtkWidget *parent);
+void file_util_copy(struct FileData *source_fd, GList *source_list, const gchar *dest_path, GtkWidget *parent);
+void file_util_rename(struct FileData *source_fd, GList *source_list, GtkWidget *parent);
+void file_util_write_metadata(struct FileData *source_fd, GList *source_list, GtkWidget *parent,
                               gboolean force_dialog, FileUtilDoneFunc done_func, gpointer done_data);
 
-void file_util_create_dir(FileData *dir_fd, GtkWidget *parent, FileUtilDoneFunc done_func, gpointer done_data);
+void file_util_create_dir(struct FileData *dir_fd, GtkWidget *parent, FileUtilDoneFunc done_func, gpointer done_data);
 
-void file_util_rename_dir(FileData *source_fd, const gchar *new_path, GtkWidget *parent,
+void file_util_rename_dir(struct FileData *source_fd, const gchar *new_path, GtkWidget *parent,
                           FileUtilDoneFunc done_func, gpointer done_data);
 
 /* these avoid the location entry dialog, list must be files only and
@@ -56,19 +57,19 @@ void file_util_rename_dir(FileData *source_fd, const gchar *new_path, GtkWidget 
  */
 void file_util_move_simple(GList *list, const gchar *dest_path, GtkWidget *parent);
 void file_util_copy_simple(GList *list, const gchar *dest_path, GtkWidget *parent);
-void file_util_rename_simple(FileData *fd, const gchar *dest_path, GtkWidget *parent);
+void file_util_rename_simple(struct FileData *fd, const gchar *dest_path, GtkWidget *parent);
 
-void file_util_start_editor_from_file(const gchar *key, FileData *fd, GtkWidget *parent);
+void file_util_start_editor_from_file(const gchar *key, struct FileData *fd, GtkWidget *parent);
 
 /* working directory is used only as a fallback when the filelist is empty */
 void file_util_start_editor_from_filelist(const gchar *key, GList *list,
                                           const gchar *working_directory, GtkWidget *parent);
-void file_util_start_filter_from_file(const gchar *key, FileData *fd, const gchar *dest_path, GtkWidget *parent);
+void file_util_start_filter_from_file(const gchar *key, struct FileData *fd, const gchar *dest_path, GtkWidget *parent);
 void file_util_start_filter_from_filelist(const gchar *key, GList *list, const gchar *dest_path, GtkWidget *parent);
 
-void file_util_delete_dir(FileData *source_fd, GtkWidget *parent);
+void file_util_delete_dir(struct FileData *source_fd, GtkWidget *parent);
 
-void file_util_copy_path_to_clipboard(FileData *fd);
+void file_util_copy_path_to_clipboard(struct FileData *fd);
 void file_util_copy_path_list_to_clipboard(GList *list);
 
 gchar *new_folder(GtkWindow *window, gchar *path);

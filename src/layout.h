@@ -57,6 +57,7 @@ typedef enum {
     LAYOUT_BOTTOM = 1 << 3
 } LayoutLocation;
 
+typedef struct LayoutOptions LayoutOptions;
 struct LayoutOptions
 {
     gchar *id;
@@ -117,6 +118,11 @@ struct LayoutOptions
     gboolean exit_on_close;
 };
 
+struct SlideShowData;
+struct ImageWindow;
+struct FullScreenData;
+
+typedef struct LayoutWindow LayoutWindow;
 struct LayoutWindow
 {
     LayoutOptions options;
@@ -149,9 +155,9 @@ struct LayoutWindow
 
     LayoutLocation image_location;
 
-    ImageWindow *image;
+    struct ImageWindow *image;
 
-    ImageWindow *split_images[MAX_SPLIT_IMAGES];
+    struct ImageWindow *split_images[MAX_SPLIT_IMAGES];
     ImageSplitMode split_mode;
     gint active_split_image;
 
@@ -211,11 +217,11 @@ struct LayoutWindow
 
     /* slide show */
 
-    SlideShowData *slideshow;
+    struct SlideShowData *slideshow;
 
     /* full screen */
 
-    FullScreenData *full_screen;
+    struct FullScreenData *full_screen;
 
     /* notebook used to switch between normal layout (page 0) and fullscreen image (page 1) */
     GtkWidget *fs_notebook;
@@ -267,8 +273,8 @@ void layout_load_attributes(LayoutOptions *layout, const gchar **attribute_names
 void layout_write_attributes(LayoutOptions *layout, GString *outstr, gint indent);
 void layout_write_config(LayoutWindow *lw, GString *outstr, gint indent);
 
-LayoutWindow *layout_find_by_image(ImageWindow *imd);
-LayoutWindow *layout_find_by_image_fd(ImageWindow *imd);
+LayoutWindow *layout_find_by_image(struct ImageWindow *imd);
+LayoutWindow *layout_find_by_image_fd(struct ImageWindow *imd);
 LayoutWindow *layout_find_by_layout_id(const gchar *id);
 
 const gchar *layout_get_path(LayoutWindow *lw);

@@ -43,13 +43,19 @@ typedef enum
     DUPE_MATCH_SIM_PHASH  = 1 << 11, /* similarity via perceptual hash (dct) */
 } DupeMatchType;
 
+struct CollectionData;
+struct CollectInfo;
+struct FileData;
+struct ImageLoader;
+struct ThumbLoader;
+
 typedef struct DupeItem DupeItem;
 struct DupeItem
 {
-    CollectionData *collection; /* NULL if from DupeWindow->files */
-    CollectInfo *info;
+    struct CollectionData *collection; /* NULL if from DupeWindow->files */
+    struct CollectInfo *info;
 
-    FileData *fd;
+    struct FileData *fd;
 
     gchar *md5sum;
     gint width;
@@ -119,10 +125,10 @@ struct DupeWindow
 
     DupeItem *click_item;       /* for popup menu */
 
-    ThumbLoader *thumb_loader;
+    struct ThumbLoader *thumb_loader;
     DupeItem *thumb_item;
 
-    ImageLoader *img_loader;
+    struct ImageLoader *img_loader;
 
     /* second set comparison stuff */
 
@@ -141,7 +147,7 @@ DupeWindow *dupe_window_new(DupeMatchType match_mask);
 void dupe_window_clear(DupeWindow *dw);
 void dupe_window_close(DupeWindow *dw);
 
-void dupe_window_add_collection(DupeWindow *dw, CollectionData *collection);
+void dupe_window_add_collection(DupeWindow *dw, struct CollectionData *collection);
 void dupe_window_add_files(DupeWindow *dw, GList *list, gboolean recurse);
 
 /* cell max with/height hack utility */

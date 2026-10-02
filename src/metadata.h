@@ -33,34 +33,36 @@ typedef enum {
     METADATA_FORMATTED  = 1  /* for display only */
 } MetadataFormat;
 
-void metadata_cache_free(FileData *fd);
+struct FileData;
 
-gboolean metadata_write_queue_remove(FileData *fd);
+void metadata_cache_free(struct FileData *fd);
+
+gboolean metadata_write_queue_remove(struct FileData *fd);
 gboolean metadata_write_queue_remove_list(GList *list);
-gboolean metadata_write_perform(FileData *fd);
+gboolean metadata_write_perform(struct FileData *fd);
 gboolean metadata_write_queue_confirm(gboolean force_dialog, FileUtilDoneFunc done_func, gpointer done_data);
-void metadata_notify_cb(FileData *fd, NotifyType type, gpointer data);
+void metadata_notify_cb(struct FileData *fd, NotifyType type, gpointer data);
 
 gint metadata_queue_length(void);
 
-gboolean metadata_write_revert(FileData *fd, const gchar *key);
-gboolean metadata_write_list(FileData *fd, const gchar *key, const GList *values);
-gboolean metadata_write_string(FileData *fd, const gchar *key, const char *value);
-gboolean metadata_write_int(FileData *fd, const gchar *key, guint64 value);
+gboolean metadata_write_revert(struct FileData *fd, const gchar *key);
+gboolean metadata_write_list(struct FileData *fd, const gchar *key, const GList *values);
+gboolean metadata_write_string(struct FileData *fd, const gchar *key, const char *value);
+gboolean metadata_write_int(struct FileData *fd, const gchar *key, guint64 value);
 
-GList *metadata_read_list(FileData *fd, const gchar *key, MetadataFormat format);
-gchar *metadata_read_string(FileData *fd, const gchar *key, MetadataFormat format);
-guint64 metadata_read_int(FileData *fd, const gchar *key, guint64 fallback);
-gdouble metadata_read_GPS_coord(FileData *fd, const gchar *key, gdouble fallback);
-gdouble metadata_read_GPS_direction(FileData *fd, const gchar *key, gdouble fallback);
+GList *metadata_read_list(struct FileData *fd, const gchar *key, MetadataFormat format);
+gchar *metadata_read_string(struct FileData *fd, const gchar *key, MetadataFormat format);
+guint64 metadata_read_int(struct FileData *fd, const gchar *key, guint64 fallback);
+gdouble metadata_read_GPS_coord(struct FileData *fd, const gchar *key, gdouble fallback);
+gdouble metadata_read_GPS_direction(struct FileData *fd, const gchar *key, gdouble fallback);
 
-gboolean metadata_append_string(FileData *fd, const gchar *key, const char *value);
-gboolean metadata_append_list(FileData *fd, const gchar *key, const GList *values);
+gboolean metadata_append_string(struct FileData *fd, const gchar *key, const char *value);
+gboolean metadata_append_list(struct FileData *fd, const gchar *key, const GList *values);
 
 GList *string_to_keywords_list(const gchar *text);
 
-gboolean meta_data_get_keyword_mark(FileData *fd, gint n, gpointer data);
-gboolean meta_data_set_keyword_mark(FileData *fd, gint n, gboolean value, gpointer data);
+gboolean meta_data_get_keyword_mark(struct FileData *fd, gint n, gpointer data);
+gboolean meta_data_set_keyword_mark(struct FileData *fd, gint n, gboolean value, gpointer data);
 
 enum {
     KEYWORD_COLUMN_MARK,
