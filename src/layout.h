@@ -22,7 +22,7 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
-#include "typedefs.h"
+#include "main.h"
 #include "filedata.h"
 #include "view_dir.h"
 #include "view_file.h"
