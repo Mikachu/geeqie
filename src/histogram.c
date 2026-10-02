@@ -34,6 +34,7 @@
 
 #define HISTMAP_SIZE 256
 
+typedef struct HistMap HistMap;
 struct HistMap {
     gulong r[HISTMAP_SIZE];
     gulong g[HISTMAP_SIZE];

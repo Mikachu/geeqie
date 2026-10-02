@@ -24,21 +24,28 @@
 
 #include "typedefs.h"
 
+struct LayoutWindow;
+struct ImageWindow;
+struct CollectionData;
+struct CollectInfo;
+struct FileData;
+
+typedef struct SlideShowData SlideShowData;
 struct SlideShowData
 {
-    LayoutWindow *lw;        /* use this window to display the slideshow */
-    ImageWindow *imd;        /* use this window only if lw is not available,
+    struct LayoutWindow *lw; /* use this window to display the slideshow */
+    struct ImageWindow *imd; /* use this window only if lw is not available,
                                 FIXME: it is probably required only by img-view.c
                                 and should be dropped with it */
 
     GList *filelist;
-    CollectionData *cd;
-    FileData *dir_fd;
+    struct CollectionData *cd;
+    struct FileData *dir_fd;
 
     GList *list;
     GList *list_done;
 
-    FileData *slide_fd;
+    struct FileData *slide_fd;
 
     guint slide_count;
     guint timeout_id; /* event source id */
@@ -69,12 +76,14 @@ gboolean slideshow_should_continue(SlideShowData *ss);
 void slideshow_next(SlideShowData *ss);
 void slideshow_prev(SlideShowData *ss);
 
-SlideShowData *slideshow_start_from_filelist(LayoutWindow *target_lw, ImageWindow *imd, GList *list,
+SlideShowData *slideshow_start_from_filelist(struct LayoutWindow *target_lw,
+                                             struct ImageWindow *imd, GList *list,
                                              void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
-SlideShowData *slideshow_start_from_collection(LayoutWindow *target_lw, ImageWindow *imd, CollectionData *cd,
+SlideShowData *slideshow_start_from_collection(struct LayoutWindow *target_lw,
+                                               struct ImageWindow *imd, struct CollectionData *cd,
                                                void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data,
-                                               CollectInfo *start_info);
-SlideShowData *slideshow_start(LayoutWindow *lw, gint start_point,
+                                               struct CollectInfo *start_info);
+SlideShowData *slideshow_start(struct LayoutWindow *lw, gint start_point,
                                void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
 
 gboolean slideshow_paused(SlideShowData *ss);

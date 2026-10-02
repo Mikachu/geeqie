@@ -24,40 +24,43 @@
 
 #include "filedata.h"
 
-gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, ViewFile *vf);
-gboolean vficon_press_cb(GtkWidget *widget, GdkEventButton *bevent, ViewFile *vf);
-gboolean vficon_release_cb(GtkWidget *widget, GdkEventButton *bevent, ViewFile *vf);
+struct FileData;
+struct ViewFile;
 
-void vficon_destroy_cb(GtkWidget *widget, ViewFile *vf);
-ViewFile *vficon_new(ViewFile *vf, FileData *dir_fd);
+gboolean vficon_press_key_cb(GtkWidget *widget, GdkEventKey *event, struct ViewFile *vf);
+gboolean vficon_press_cb(GtkWidget *widget, GdkEventButton *bevent, struct ViewFile *vf);
+gboolean vficon_release_cb(GtkWidget *widget, GdkEventButton *bevent, struct ViewFile *vf);
 
-gboolean vficon_set_fd(ViewFile *vf, FileData *dir_fd);
-gboolean vficon_refresh(ViewFile *vf);
+void vficon_destroy_cb(GtkWidget *widget, struct ViewFile *vf);
+struct ViewFile *vficon_new(struct ViewFile *vf, struct FileData *dir_fd);
 
-void vficon_sort_set(ViewFile *vf, SortType type, gboolean ascend);
+gboolean vficon_set_fd(struct ViewFile *vf, struct FileData *dir_fd);
+gboolean vficon_refresh(struct ViewFile *vf);
 
-void vficon_marks_set(ViewFile *vf, gboolean enable);
+void vficon_sort_set(struct ViewFile *vf, SortType type, gboolean ascend);
 
-FileData *vficon_clicked_fd(ViewFile *vf);
-gboolean vficon_fd_selected(ViewFile *vf, FileData *fd);
-GList *vficon_selection_get_one(ViewFile *vf, FileData *fd);
-void vficon_clicked_clear(ViewFile *vf);
-void vficon_pop_menu_rename_cb(GtkWidget *widget, ViewFile *vf);
-void vficon_pop_menu_show_names_cb(GtkWidget *widget, ViewFile *vf);
+void vficon_marks_set(struct ViewFile *vf, gboolean enable);
 
-gboolean vficon_index_is_selected(ViewFile *vf, gint row);
-guint vficon_selection_count(ViewFile *vf, gint64 *bytes);
-GList *vficon_selection_get_list(ViewFile *vf);
-GList *vficon_selection_get_list_by_index(ViewFile *vf);
+struct FileData *vficon_clicked_fd(struct ViewFile *vf);
+gboolean vficon_fd_selected(struct ViewFile *vf, struct FileData *fd);
+GList *vficon_selection_get_one(struct ViewFile *vf, struct FileData *fd);
+void vficon_clicked_clear(struct ViewFile *vf);
+void vficon_pop_menu_rename_cb(GtkWidget *widget, struct ViewFile *vf);
+void vficon_pop_menu_show_names_cb(GtkWidget *widget, struct ViewFile *vf);
 
-void vficon_select_all(ViewFile *vf);
-void vficon_select_none(ViewFile *vf);
-void vficon_select_invert(ViewFile *vf);
-void vficon_select_by_fd(ViewFile *vf, FileData *fd);
+gboolean vficon_index_is_selected(struct ViewFile *vf, gint row);
+guint vficon_selection_count(struct ViewFile *vf, gint64 *bytes);
+GList *vficon_selection_get_list(struct ViewFile *vf);
+GList *vficon_selection_get_list_by_index(struct ViewFile *vf);
 
-void vficon_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode);
+void vficon_select_all(struct ViewFile *vf);
+void vficon_select_none(struct ViewFile *vf);
+void vficon_select_invert(struct ViewFile *vf);
+void vficon_select_by_fd(struct ViewFile *vf, struct FileData *fd);
 
-void vficon_set_thumb_fd(ViewFile *vf, FileData *fd);
-FileData *vficon_thumb_next_fd(ViewFile *vf);
+void vficon_mark_to_selection(struct ViewFile *vf, gint mark, MarkToSelectionMode mode);
+
+void vficon_set_thumb_fd(struct ViewFile *vf, struct FileData *fd);
+struct FileData *vficon_thumb_next_fd(struct ViewFile *vf);
 
 #endif

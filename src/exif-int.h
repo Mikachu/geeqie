@@ -70,7 +70,6 @@ struct ExifData
     GList *current; /* for exif_get_next_item */
 };
 
-
 struct ExifItem
 {
     ExifFormatType format;

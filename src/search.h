@@ -22,6 +22,8 @@
 #ifndef SEARCH_H
 #define SEARCH_H
 
-void search_new(FileData *dir_fd, FileData *example_file);
+struct FileData;
+
+void search_new(struct FileData *dir_fd, struct FileData *example_file);
 
 #endif

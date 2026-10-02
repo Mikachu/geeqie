@@ -24,6 +24,8 @@
 
 GtkWidget *advanced_exif_new(void);
 
-void advanced_exif_set_fd(GtkWidget *bar, FileData *fd);
+struct FileData;
+
+void advanced_exif_set_fd(GtkWidget *bar, struct FileData *fd);
 
 #endif

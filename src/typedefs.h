@@ -51,53 +51,15 @@ typedef enum {
     SORT_EXIFTIME
 } SortType;
 
-typedef struct ImageLoader ImageLoader;
-typedef struct ThumbLoader ThumbLoader;
+struct ThumbLoader;
+typedef void (*ThumbLoaderFunc)(struct ThumbLoader *tl, gpointer data);
 
-typedef struct CollectInfo CollectInfo;
-typedef struct CollectionData CollectionData;
-typedef struct CollectTable CollectTable;
-typedef struct CollectWindow CollectWindow;
+typedef void (*FileUtilDoneFunc)(gboolean success, const gchar *done_path, gpointer data);
 
-typedef struct ImageWindow ImageWindow;
-
-typedef struct FileData FileData;
-typedef struct FileDataChangeInfo FileDataChangeInfo;
-
-typedef struct LayoutWindow LayoutWindow;
-typedef struct LayoutOptions LayoutOptions;
-
-typedef struct ViewDir ViewDir;
-typedef struct ViewDirInfoList ViewDirInfoList;
-typedef struct ViewDirInfoTree ViewDirInfoTree;
-
-typedef struct ViewFile ViewFile;
-typedef struct ViewFileInfoList ViewFileInfoList;
-typedef struct ViewFileInfoIcon ViewFileInfoIcon;
-
-typedef struct SlideShowData SlideShowData;
-typedef struct FullScreenData FullScreenData;
-
-typedef struct PixmapFolders PixmapFolders;
-typedef struct HistMap HistMap;
-
-typedef struct SecureSaveInfo SecureSaveInfo;
-
-typedef struct ExifData ExifData;
-
-typedef struct EditorDescription EditorDescription;
-
-typedef struct CommandLine CommandLine;
-
-typedef void (* ThumbLoaderFunc)(ThumbLoader *tl, gpointer data);
-
-typedef void (* FileUtilDoneFunc)(gboolean success, const gchar *done_path, gpointer data);
-
-typedef gint (* ImageTileRequestFunc)(ImageWindow *imd, gint x, gint y,
-                                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
-typedef void (* ImageTileDisposeFunc)(ImageWindow *imd, gint x, gint y,
-                                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
-
-typedef struct ViewFileFuncs ViewFileFuncs;
+struct ImageWindow;
+typedef gint (*ImageTileRequestFunc)(struct ImageWindow *imd, gint x, gint y,
+                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
+typedef void (*ImageTileDisposeFunc)(struct ImageWindow *imd, gint x, gint y,
+                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
 
 #endif

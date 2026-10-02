@@ -24,13 +24,16 @@
 
 #include "typedefs.h"
 
+struct ImageWindow;
+
+typedef struct FullScreenData FullScreenData;
 struct FullScreenData
 {
     GtkWidget *window;
-    ImageWindow *imd;
+    struct ImageWindow *imd;
 
     GtkWidget *normal_window;
-    ImageWindow *normal_imd;
+    struct ImageWindow *normal_imd;
 
     guint hide_mouse_id; /* event source id */
     guint busy_mouse_id; /* event source id */
@@ -46,7 +49,7 @@ struct FullScreenData
 #define FULL_SCREEN_HIDE_MOUSE_DELAY 3000
 #define FULL_SCREEN_BUSY_MOUSE_DELAY 200
 
-FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
+FullScreenData *fullscreen_start(GtkWidget *window, struct ImageWindow *imd,
                                  GtkWidget *fs_container, gboolean force_same_region,
                                  void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data);
 void fullscreen_stop(FullScreenData *fs);

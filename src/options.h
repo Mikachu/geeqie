@@ -34,6 +34,7 @@ typedef struct {
     gchar *action_name;
 } MouseBinding;
 
+typedef struct CommandLine CommandLine;
 struct CommandLine
 {
     int argc;
@@ -268,8 +269,9 @@ void setup_default_options(ConfOptions *options);
 void save_options(ConfOptions *options);
 gboolean load_options(ConfOptions *options);
 
-void copy_layout_options(LayoutOptions *dest, const LayoutOptions *src);
-void free_layout_options_content(LayoutOptions *dest);
-LayoutOptions *init_layout_options(LayoutOptions *options);
+struct LayoutOptions;
+void copy_layout_options(struct LayoutOptions *dest, const struct LayoutOptions *src);
+void free_layout_options_content(struct LayoutOptions *dest);
+struct LayoutOptions *init_layout_options(struct LayoutOptions *options);
 
 #endif /* OPTIONS_H */

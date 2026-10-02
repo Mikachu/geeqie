@@ -31,6 +31,11 @@ typedef enum {
     FILEVIEW_ICON
 } FileViewType;
 
+struct LayoutWindow;
+struct ThumbLoader;
+
+typedef struct ViewFile ViewFile;
+typedef struct ViewFileFuncs ViewFileFuncs;
 struct ViewFile
 {
     FileViewType type;
@@ -60,13 +65,13 @@ struct ViewFile
     void (*func_status)(ViewFile *vf, gpointer data);
     gpointer data_status;
 
-    LayoutWindow *layout;
+    struct LayoutWindow *layout;
 
     GtkWidget *popup;
 
     /* thumbs updates*/
     gboolean thumbs_running;
-    ThumbLoader *thumbs_loader;
+    struct ThumbLoader *thumbs_loader;
     FileData *thumbs_filedata;
 
     /* marks */
@@ -82,6 +87,7 @@ struct ViewFile
     GList *editmenu_fd_list;
 };
 
+typedef struct ViewFileInfoList ViewFileInfoList;
 struct ViewFileInfoList
 {
     FileData *click_fd;
@@ -94,6 +100,7 @@ struct ViewFileInfoList
     guint select_idle_id; /* event source id */
 };
 
+typedef struct ViewFileInfoIcon ViewFileInfoIcon;
 struct ViewFileInfoIcon
 {
     /* table stuff */
@@ -152,7 +159,7 @@ void vf_set_status_func(ViewFile *vf, void (*func)(ViewFile *vf, gpointer data),
 void vf_set_thumb_status_func(ViewFile *vf, void (*func)(ViewFile *vf, gdouble val,
                                                          const gchar *text, gpointer data), gpointer data);
 
-void vf_set_layout(ViewFile *vf, LayoutWindow *layout);
+void vf_set_layout(ViewFile *vf, struct LayoutWindow *layout);
 
 gboolean vf_set_fd(ViewFile *vf, FileData *fd);
 gboolean vf_refresh(ViewFile *vf);

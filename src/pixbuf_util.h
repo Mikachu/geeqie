@@ -28,8 +28,10 @@ gboolean pixbuf_to_file_as_jpg(GdkPixbuf *pixbuf, const gchar *filename, gint qu
 void pixbuf_inline_register_stock_icons(void);
 gboolean register_theme_icon_as_stock(const gchar *key, const gchar *icon);
 
+struct FileData;
+
 GdkPixbuf *pixbuf_inline(const gchar *key);
-GdkPixbuf *pixbuf_fallback(FileData *fd, gint requested_width, gint requested_height);
+GdkPixbuf *pixbuf_fallback(struct FileData *fd, gint requested_width, gint requested_height);
 
 gboolean pixbuf_scale_aspect(gint req_w, gint req_h, gint old_w, gint old_h, gint *new_w, gint *new_h);
 

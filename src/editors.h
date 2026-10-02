@@ -44,6 +44,7 @@ typedef enum {
     EDITOR_ERROR_MASK         = 0xffff0000,
 } EditorFlags;
 
+typedef struct EditorDescription EditorDescription;
 struct EditorDescription {
     gchar *key;         /* desktop file name, not including path, including extension */
     gchar *name;        /* Name, localized name presented to user */
@@ -105,10 +106,12 @@ typedef gint (*EditorCallback) (gpointer ed, EditorFlags flags, GList *list, gpo
 void editor_resume(gpointer ed);
 void editor_skip(gpointer ed);
 
+struct FileData;
+
 EditorFlags start_editor(const gchar *key, const gchar *working_directory);
-EditorFlags start_editor_from_file(const gchar *key, FileData *fd);
+EditorFlags start_editor_from_file(const gchar *key, struct FileData *fd);
 EditorFlags start_editor_from_filelist(const gchar *key, GList *list);
-EditorFlags start_editor_from_file_full(const gchar *key, FileData *fd, EditorCallback cb, gpointer data);
+EditorFlags start_editor_from_file_full(const gchar *key, struct FileData *fd, EditorCallback cb, gpointer data);
 EditorFlags start_editor_from_filelist_full(const gchar *key, GList *list,
                                             const gchar *working_directory, EditorCallback cb, gpointer data);
 gboolean editor_window_flag_set(const gchar *key);

@@ -25,6 +25,9 @@
 #include "image.h"
 #include "layout.h"
 
+struct CollectionData;
+struct CollectInfo;
+
 GtkWidget *layout_image_new(LayoutWindow *lw, gint i);
 void layout_image_activate(LayoutWindow *lw, gint i, gboolean force);
 GtkWidget *layout_image_setup_split_none(LayoutWindow *lw);
@@ -35,7 +38,7 @@ void layout_image_set_fd(LayoutWindow *lw, FileData *fd);
 void layout_image_set_with_ahead(LayoutWindow *lw, FileData *fd, FileData *read_ahead_fd);
 
 void layout_image_set_index(LayoutWindow *lw, gint index);
-void layout_image_set_collection(LayoutWindow *lw, CollectionData *cd, CollectInfo *info);
+void layout_image_set_collection(LayoutWindow *lw, struct CollectionData *cd, struct CollectInfo *info);
 
 void layout_image_refresh(LayoutWindow *lw);
 
@@ -52,7 +55,7 @@ gboolean layout_image_color_profile_get_status(LayoutWindow *lw, gchar **image_p
 const gchar *layout_image_get_path(LayoutWindow *lw);
 const gchar *layout_image_get_name(LayoutWindow *lw);
 FileData *layout_image_get_fd(LayoutWindow *lw);
-CollectionData *layout_image_get_collection(LayoutWindow *lw, CollectInfo **info);
+struct CollectionData *layout_image_get_collection(LayoutWindow *lw, struct CollectInfo **info);
 gint layout_image_get_index(LayoutWindow *lw);
 
 void layout_image_scroll(LayoutWindow *lw, gint x, gint y, gboolean connect_scroll);

@@ -59,13 +59,16 @@ struct ImageLoaderBackend
 //typedef struct ImageLoader ImageLoader;
 typedef struct ImageLoaderClass ImageLoaderClass;
 
+struct FileData;
+
+typedef struct ImageLoader ImageLoader;
 struct ImageLoader
 {
     GObject parent;
 
     /*< private >*/
     GdkPixbuf *pixbuf;
-    FileData *fd;
+    struct FileData *fd;
     gchar *path;
 
     gsize bytes_read;
@@ -128,7 +131,7 @@ struct ImageLoaderClass {
 
 GType image_loader_get_type(void);
 
-ImageLoader *image_loader_new(FileData *fd);
+ImageLoader *image_loader_new(struct FileData *fd);
 
 void image_loader_free(ImageLoader *il);
 void image_loader_free_async(ImageLoader *il, gpointer data);
@@ -155,10 +158,10 @@ gboolean image_loader_start(ImageLoader *il);
 GdkPixbuf *image_loader_get_pixbuf(ImageLoader *il);
 gdouble image_loader_get_percent(ImageLoader *il);
 gboolean image_loader_get_is_done(ImageLoader *il);
-FileData *image_loader_get_fd(ImageLoader *il);
+struct FileData *image_loader_get_fd(ImageLoader *il);
 gboolean image_loader_get_shrunk(ImageLoader *il);
 const gchar *image_loader_get_error(ImageLoader *il);
 
-gboolean image_load_dimensions(FileData *fd, gint *width, gint *height);
+gboolean image_load_dimensions(struct FileData *fd, gint *width, gint *height);
 
 #endif

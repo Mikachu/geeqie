@@ -44,6 +44,8 @@ void remote_help(void);
 void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path,
                     GList *cmd_list, GList *collection_list);
 
-RemoteConnection *remote_server_init(gchar *path, CollectionData *command_collection);
+struct CollectionData;
+
+RemoteConnection *remote_server_init(gchar *path, struct CollectionData *command_collection);
 
 #endif

@@ -24,42 +24,45 @@
 
 #include "filedata.h"
 
+struct FileData;
+struct ViewFile;
+
 gboolean vflist_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);
 gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 gboolean vflist_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 
 void vflist_destroy_cb(GtkWidget *widget, gpointer data);
-ViewFile *vflist_new(ViewFile *vf, FileData *dir_fd);
+struct ViewFile *vflist_new(struct ViewFile *vf, struct FileData *dir_fd);
 
-gboolean vflist_set_fd(ViewFile *vf, FileData *dir_fd);
-gboolean vflist_refresh(ViewFile *vf);
+gboolean vflist_set_fd(struct ViewFile *vf, struct FileData *dir_fd);
+gboolean vflist_refresh(struct ViewFile *vf);
 
-void vflist_thumb_set(ViewFile *vf, gboolean enable);
-void vflist_marks_set(ViewFile *vf, gboolean enable);
-void vflist_sort_set(ViewFile *vf, SortType type, gboolean ascend);
+void vflist_thumb_set(struct ViewFile *vf, gboolean enable);
+void vflist_marks_set(struct ViewFile *vf, gboolean enable);
+void vflist_sort_set(struct ViewFile *vf, SortType type, gboolean ascend);
 
-GList *vflist_selection_get_one(ViewFile *vf, FileData *fd);
+GList *vflist_selection_get_one(struct ViewFile *vf, struct FileData *fd);
 void vflist_pop_menu_rename_cb(GtkWidget *widget, gpointer data);
 void vflist_pop_menu_thumbs_cb(GtkWidget *widget, gpointer data);
-void vflist_clicked_clear(ViewFile *vf);
-gboolean vflist_rename_in_place(ViewFile *vf);
+void vflist_clicked_clear(struct ViewFile *vf);
+gboolean vflist_rename_in_place(struct ViewFile *vf);
 
-gboolean vflist_row_is_selected(ViewFile *vf, FileData *fd);
-gboolean vflist_index_is_selected(ViewFile *vf, gint row);
-guint vflist_selection_count(ViewFile *vf, gint64 *bytes);
-GList *vflist_selection_get_list(ViewFile *vf);
-GList *vflist_selection_get_list_by_index(ViewFile *vf);
+gboolean vflist_row_is_selected(struct ViewFile *vf, struct FileData *fd);
+gboolean vflist_index_is_selected(struct ViewFile *vf, gint row);
+guint vflist_selection_count(struct ViewFile *vf, gint64 *bytes);
+GList *vflist_selection_get_list(struct ViewFile *vf);
+GList *vflist_selection_get_list_by_index(struct ViewFile *vf);
 
-void vflist_select_all(ViewFile *vf);
-void vflist_select_none(ViewFile *vf);
-void vflist_select_invert(ViewFile *vf);
-void vflist_select_by_fd(ViewFile *vf, FileData *fd);
+void vflist_select_all(struct ViewFile *vf);
+void vflist_select_none(struct ViewFile *vf);
+void vflist_select_invert(struct ViewFile *vf);
+void vflist_select_by_fd(struct ViewFile *vf, struct FileData *fd);
 
-void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode);
+void vflist_mark_to_selection(struct ViewFile *vf, gint mark, MarkToSelectionMode mode);
 
-void vflist_color_set(ViewFile *vf, FileData *fd, gboolean color_set);
+void vflist_color_set(struct ViewFile *vf, struct FileData *fd, gboolean color_set);
 
-void vflist_set_thumb_fd(ViewFile *vf, FileData *fd);
-FileData *vflist_thumb_next_fd(ViewFile *vf);
+void vflist_set_thumb_fd(struct ViewFile *vf, struct FileData *fd);
+struct FileData *vflist_thumb_next_fd(struct ViewFile *vf);
 
 #endif

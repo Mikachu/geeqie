@@ -31,16 +31,18 @@ typedef enum {
     COLLECTION_LOAD_GEOMETRY= 1 << 2,
 } CollectionLoadFlags;
 
-gboolean collection_load(CollectionData *cd, const gchar *path, CollectionLoadFlags flags);
+struct CollectionData;
 
-gboolean collection_load_begin(CollectionData *cd, const gchar *path, CollectionLoadFlags flags);
-void collection_load_stop(CollectionData *cd);
+gboolean collection_load(struct CollectionData *cd, const gchar *path, CollectionLoadFlags flags);
 
-void collection_load_thumb_idle(CollectionData *cd);
+gboolean collection_load_begin(struct CollectionData *cd, const gchar *path, CollectionLoadFlags flags);
+void collection_load_stop(struct CollectionData *cd);
 
-gboolean collection_save(CollectionData *cd, const gchar *path);
+void collection_load_thumb_idle(struct CollectionData *cd);
 
-gboolean collection_load_only_geometry(CollectionData *cd, const gchar *path);
+gboolean collection_save(struct CollectionData *cd, const gchar *path);
+
+gboolean collection_load_only_geometry(struct CollectionData *cd, const gchar *path);
 
 /* these are used to update collections contained in user's collection
  * folder when moving or renaming files.

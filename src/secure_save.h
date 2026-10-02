@@ -38,6 +38,7 @@ typedef enum {
     SS_ERR_OTHER,
 } SecureSaveErrno;
 
+typedef struct SecureSaveInfo SecureSaveInfo;
 struct SecureSaveInfo {
     FILE *fp;                 /**< file stream pointer */
     gchar *file_name;         /**< final file name */
