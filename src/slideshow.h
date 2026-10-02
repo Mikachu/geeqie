@@ -22,6 +22,37 @@
 #ifndef SLIDESHOW_H
 #define SLIDESHOW_H
 
+#include "typedefs.h"
+
+struct SlideShowData
+{
+    LayoutWindow *lw;        /* use this window to display the slideshow */
+    ImageWindow *imd;        /* use this window only if lw is not available,
+                                FIXME: it is probably required only by img-view.c
+                                and should be dropped with it */
+
+    GList *filelist;
+    CollectionData *cd;
+    FileData *dir_fd;
+
+    GList *list;
+    GList *list_done;
+
+    FileData *slide_fd;
+
+    guint slide_count;
+    guint timeout_id; /* event source id */
+
+    gboolean from_selection;
+
+    void (*stop_func)(SlideShowData *, gpointer);
+    gpointer stop_data;
+
+    gboolean paused;
+    gboolean stepping;
+    gboolean stop_pending;
+};
+
 #define SLIDESHOW_SUBSECOND_PRECISION 10
 #define SLIDESHOW_MIN_SECONDS        0.1
 #define SLIDESHOW_MAX_SECONDS     3600.0

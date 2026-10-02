@@ -22,6 +22,31 @@
 #ifndef THUMB_H
 #define THUMB_H
 
+#include "typedefs.h"
+
+struct ThumbLoader
+{
+    gboolean standard_loader;
+
+    ImageLoader *il;
+    FileData *fd; /* fd->pixbuf contains final (scaled) image when done */
+
+    gboolean cache_enable;
+    gboolean cache_hit;
+    gdouble percent_done;
+
+    gint max_w;
+    gint max_h;
+
+    ThumbLoaderFunc func_done;
+    ThumbLoaderFunc func_error;
+    ThumbLoaderFunc func_progress;
+
+    gpointer data;
+
+    guint idle_done_id; /* event source id */
+};
+
 ThumbLoader *thumb_loader_new(gint width, gint height);
 void thumb_loader_set_callbacks(ThumbLoader *tl,
                                 ThumbLoaderFunc func_done,

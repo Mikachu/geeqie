@@ -22,6 +22,55 @@
 #ifndef COLLECT_H
 #define COLLECT_H
 
+#include "typedefs.h"
+
+struct CollectWindow
+{
+    GtkWidget *window;
+    CollectTable *table;
+    GtkWidget *status_box;
+    GList *list;
+
+    GtkWidget *close_dialog;
+
+    CollectionData *cd;
+};
+
+struct CollectInfo
+{
+    FileData *fd;
+    GdkPixbuf *pixbuf;
+    guint flag_mask;
+};
+
+struct CollectionData
+{
+    gchar *path;
+    gchar *name;
+    GList *list;
+    SortType sort_method;
+
+    ThumbLoader *thumb_loader;
+    CollectInfo *thumb_info;
+
+    void (*info_updated_func)(CollectionData *, CollectInfo *, gpointer);
+    gpointer info_updated_data;
+
+    gint ref;
+
+    /* geometry */
+    gint window_read;
+    gint window_x;
+    gint window_y;
+    gint window_w;
+    gint window_h;
+
+    /* contents changed since save flag */
+    gboolean changed;
+
+    GHashTable *existence;
+};
+
 CollectInfo *collection_info_new(FileData *fd, struct stat *st, GdkPixbuf *pixbuf);
 
 void collection_info_free_thumb(CollectInfo *ci);

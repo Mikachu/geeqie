@@ -21,7 +21,97 @@
 #ifndef VIEW_FILE_H
 #define VIEW_FILE_H
 
+#include "typedefs.h"
+#include "filedata.h"
+
 #define VIEW_FILE_TYPES_COUNT 2
+
+struct ViewFile
+{
+    FileViewType type;
+    const struct ViewFileFuncs *funcs;
+    gpointer info;
+
+    GtkWidget *widget;
+    GtkWidget *listview;
+    GtkWidget *scrolled;
+    GtkWidget *filter;
+    GtkWidget *filter_check[FILEDATA_MARKS_SIZE];
+
+    FileData *dir_fd;
+    GList *list;
+
+    /* threaded stat data */
+    guint dir_load_generation;   /* incremented on each new load */
+    guint dir_load_idle_id;      /* idle source ID, for cancellation */
+
+    SortType sort_method;
+    gboolean sort_ascend;
+
+    /* func list */
+    void (*func_thumb_status)(ViewFile *vf, gdouble val, const gchar *text, gpointer data);
+    gpointer data_thumb_status;
+
+    void (*func_status)(ViewFile *vf, gpointer data);
+    gpointer data_status;
+
+    LayoutWindow *layout;
+
+    GtkWidget *popup;
+
+    /* thumbs updates*/
+    gboolean thumbs_running;
+    ThumbLoader *thumbs_loader;
+    FileData *thumbs_filedata;
+
+    /* marks */
+    gboolean marks_enabled;
+    gint active_mark;
+    gint clicked_mark;
+
+    /* refresh */
+    guint refresh_idle_id;   /* event source id */
+    time_t time_refresh_set; /* time when refresh_idle_id was set */
+
+    /* file list for edit menu */
+    GList *editmenu_fd_list;
+};
+
+struct ViewFileInfoList
+{
+    FileData *click_fd;
+    FileData *select_fd;
+
+    gboolean thumbs_enabled;
+    gboolean notify_registered;
+
+    guint autosize_idle_id;
+    guint select_idle_id; /* event source id */
+};
+
+struct ViewFileInfoIcon
+{
+    /* table stuff */
+    gint columns;
+    gint rows;
+
+    GList *selection;
+    struct IconData *prev_selection;
+
+    GtkWidget *tip_window;
+    guint tip_delay_id; /* event source id */
+    struct IconData *tip_id;
+
+    gint x, y, x_root, y_root;
+
+    struct IconData *click_id;
+
+    struct IconData *focus_id;
+    gint focus_row;
+    gint focus_column;
+
+    gboolean show_text;
+};
 
 #define VFLIST(_vf_) ((ViewFileInfoList *)(_vf_->info))
 #define VFICON(_vf_) ((ViewFileInfoIcon *)(_vf_->info))

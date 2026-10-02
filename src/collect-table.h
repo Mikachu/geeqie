@@ -22,7 +22,49 @@
 #ifndef COLLECT_TABLE_H
 #define COLLECT_TABLE_H
 
+#include "typedefs.h"
 #include "collect.h"
+
+struct CollectTable
+{
+    GtkWidget *scrolled;
+    GtkWidget *listview;
+    gint columns;
+    gint rows;
+
+    CollectionData *cd;
+
+    GList *selection;
+    CollectInfo *prev_selection;
+
+    CollectInfo *click_info;
+
+    GtkWidget *tip_window;
+    guint tip_delay_id; /* event source id */
+    CollectInfo *tip_info;
+
+    GdkWindow *marker_window;
+    CollectInfo *marker_info;
+
+    GtkWidget *status_label;
+    GtkWidget *extra_label;
+
+    gint focus_row;
+    gint focus_column;
+    CollectInfo *focus_info;
+
+    GtkWidget *popup;
+    CollectInfo *drop_info;
+    GList *drop_list;
+
+    guint sync_idle_id; /* event source id */
+    guint drop_idle_id; /* event source id */
+
+    gboolean show_text;
+
+    /* file list for edit menu */
+    GList *editmenu_fd_list;
+};
 
 void collection_table_select_all(CollectTable *ct);
 void collection_table_unselect_all(CollectTable *ct);

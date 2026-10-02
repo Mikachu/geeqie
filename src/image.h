@@ -22,6 +22,84 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include "typedefs.h"
+
+struct ImageWindow
+{
+    GtkWidget *widget;  /* use this to add it and show it */
+    GtkWidget *pr;
+    GtkWidget *frame;
+
+    FileData *image_fd;
+
+    gboolean unknown;   /* failed to load image */
+
+    ImageLoader *il;    /* FIXME - image loader should probably go to FileData, but it must first support
+                           sending callbacks to multiple ImageWindows in parallel */
+
+    gint has_frame;  /* not boolean, see image_new() */
+
+    /* top level (not necessarily parent) window */
+    gboolean top_window_sync;   /* resize top_window when image dimensions change */
+    GtkWidget *top_window;      /* window that gets title, and window to resize when 'fitting' */
+    gchar *title;               /* window title to display left of file name */
+    gchar *title_right;         /* window title to display right of file name */
+    gboolean title_show_zoom;   /* option to include zoom in window title */
+
+    gboolean completed;
+    ImageState state;
+
+    void (*func_update)(ImageWindow *imd, gpointer data);
+    void (*func_complete)(ImageWindow *imd, gint preload, gpointer data);
+    void (*func_state)(ImageWindow *imd, ImageState state, gpointer data);
+    ImageTileRequestFunc func_tile_request;
+    ImageTileDisposeFunc func_tile_dispose;
+
+    gpointer data_update;
+    gpointer data_complete;
+    gpointer data_state;
+    gpointer data_tile;
+
+    void (*func_button)(ImageWindow *, GdkEventButton *event, gpointer);
+    void (*func_drag)(ImageWindow *, GdkEventMotion *event, gdouble dx, gdouble dy, gpointer);
+    void (*func_scroll)(ImageWindow *, GdkEventScroll *event, gpointer);
+    void (*func_focus_in)(ImageWindow *, gpointer);
+
+    gpointer data_button;
+    gpointer data_drag;
+    gpointer data_scroll;
+    gpointer data_focus_in;
+
+    /* scroll notification (for scroll bar implementation) */
+    void (*func_scroll_notify)(ImageWindow *, gint x, gint y, gint width, gint height, gpointer);
+
+    gpointer data_scroll_notify;
+
+    /* collection info */
+    CollectionData *collection;
+    CollectInfo *collection_info;
+
+    /* color profiles */
+    gboolean color_profile_enable;
+    gint color_profile_input;
+    gboolean color_profile_use_image;
+    gint color_profile_from_image;
+    gpointer cm;
+
+    AlterType delay_alter_type;
+
+    FileData *read_ahead_fd;
+    ImageLoader *read_ahead_il;
+
+    gint prev_color_row;
+
+    gboolean delay_flip;
+    gint orientation;
+    gboolean desaturate;
+    gint user_stereo;
+    gboolean fullscreen; /* only needed to apply the correct stereo settings */
+};
+
 void image_set_frame(ImageWindow *imd, gboolean frame);
 ImageWindow *image_new(gboolean frame);
 

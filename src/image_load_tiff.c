@@ -27,6 +27,7 @@
 
 #include "main.h"
 
+#include "filedata.h"
 #include "image-load.h"
 #include "image_load_tiff.h"
 
