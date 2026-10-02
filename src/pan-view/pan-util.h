@@ -42,6 +42,6 @@ time_t pan_date_to_time(gint year, gint month, gint day);
 gboolean pan_is_link_loop(const gchar *s);
 gboolean pan_is_ignored(const gchar *s, gboolean ignore_symlinks);
 GList *pan_list_tree(FileData *dir_fd, SortType sort, gboolean ascend,
-             gboolean ignore_symlinks);
+                     gboolean ignore_symlinks);
 
 #endif

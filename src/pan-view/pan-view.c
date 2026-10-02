@@ -188,7 +188,7 @@ static gboolean pan_queue_step(PanWindow *pw)
     }
     else if (pi->type == PAN_ITEM_THUMB)
     {
-        pw->tl = thumb_loader_new(PAN_THUMB_SIZE, PAN_THUMB_SIZE);
+        pw->tl = thumb_loader_new(pw->thumb_size, pw->thumb_size);
 
         if (!pw->tl->standard_loader)
             /* The classic loader will recreate a thumbnail any time we
