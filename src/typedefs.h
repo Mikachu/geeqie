@@ -51,15 +51,4 @@ typedef enum {
     SORT_EXIFTIME
 } SortType;
 
-struct ThumbLoader;
-typedef void (*ThumbLoaderFunc)(struct ThumbLoader *tl, gpointer data);
-
-typedef void (*FileUtilDoneFunc)(gboolean success, const gchar *done_path, gpointer data);
-
-struct ImageWindow;
-typedef gint (*ImageTileRequestFunc)(struct ImageWindow *imd, gint x, gint y,
-                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
-typedef void (*ImageTileDisposeFunc)(struct ImageWindow *imd, gint x, gint y,
-                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
-
 #endif

@@ -51,6 +51,12 @@ struct ImageLoader;
 struct FileData;
 
 typedef struct ImageWindow ImageWindow;
+
+typedef gint (*ImageTileRequestFunc)(struct ImageWindow *imd, gint x, gint y,
+                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
+typedef void (*ImageTileDisposeFunc)(struct ImageWindow *imd, gint x, gint y,
+                                     gint width, gint height, GdkPixbuf *pixbuf, gpointer);
+
 struct ImageWindow
 {
     GtkWidget *widget;  /* use this to add it and show it */
