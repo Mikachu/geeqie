@@ -24,25 +24,19 @@
 
 #include "typedefs.h"
 
-struct CollectWindow
-{
-    GtkWidget *window;
-    CollectTable *table;
-    GtkWidget *status_box;
-    GList *list;
+struct CollectTable;
+struct ThumbLoader;
+struct FileData;
 
-    GtkWidget *close_dialog;
-
-    CollectionData *cd;
-};
-
+typedef struct CollectInfo CollectInfo;
 struct CollectInfo
 {
-    FileData *fd;
+    struct FileData *fd;
     GdkPixbuf *pixbuf;
     guint flag_mask;
 };
 
+typedef struct CollectionData CollectionData;
 struct CollectionData
 {
     gchar *path;
@@ -50,7 +44,7 @@ struct CollectionData
     GList *list;
     SortType sort_method;
 
-    ThumbLoader *thumb_loader;
+    struct ThumbLoader *thumb_loader;
     CollectInfo *thumb_info;
 
     void (*info_updated_func)(CollectionData *, CollectInfo *, gpointer);
@@ -71,7 +65,20 @@ struct CollectionData
     GHashTable *existence;
 };
 
-CollectInfo *collection_info_new(FileData *fd, struct stat *st, GdkPixbuf *pixbuf);
+typedef struct CollectWindow CollectWindow;
+struct CollectWindow
+{
+    GtkWidget *window;
+    struct CollectTable *table;
+    GtkWidget *status_box;
+    GList *list;
+
+    GtkWidget *close_dialog;
+
+    CollectionData *cd;
+};
+
+CollectInfo *collection_info_new(struct FileData *fd, struct stat *st, GdkPixbuf *pixbuf);
 
 void collection_info_free_thumb(CollectInfo *ci);
 void collection_info_free(CollectInfo *ci);
@@ -88,7 +95,7 @@ GList *collection_list_sort(GList *list, SortType method);
 GList *collection_list_add(GList *list, CollectInfo *ci, SortType method);
 GList *collection_list_insert(GList *list, CollectInfo *ci, CollectInfo *insert_ci, SortType method);
 GList *collection_list_remove(GList *list, CollectInfo *ci);
-CollectInfo *collection_list_find_fd(GList *list, FileData *fd);
+CollectInfo *collection_list_find_fd(GList *list, struct FileData *fd);
 GList *collection_list_to_filelist(GList *list);
 
 CollectionData *collection_new(const gchar *path);
@@ -122,12 +129,12 @@ void collection_randomize(CollectionData *cd);
 void collection_set_update_info_func(CollectionData *cd,
                                      void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data);
 
-gboolean collection_add(CollectionData *cd, FileData *fd, gboolean sorted);
-gboolean collection_add_check(CollectionData *cd, FileData *fd, gboolean sorted, gboolean must_exist);
-gboolean collection_insert(CollectionData *cd, FileData *fd, CollectInfo *insert_ci, gboolean sorted);
-gboolean collection_remove(CollectionData *cd, FileData *fd);
+gboolean collection_add(CollectionData *cd, struct FileData *fd, gboolean sorted);
+gboolean collection_add_check(CollectionData *cd, struct FileData *fd, gboolean sorted, gboolean must_exist);
+gboolean collection_insert(CollectionData *cd, struct FileData *fd, CollectInfo *insert_ci, gboolean sorted);
+gboolean collection_remove(CollectionData *cd, struct FileData *fd);
 void collection_remove_by_info_list(CollectionData *cd, GList *list);
-gboolean collection_rename(CollectionData *cd, FileData *fd);
+gboolean collection_rename(CollectionData *cd, struct FileData *fd);
 
 void collection_update_geometry(CollectionData *cd);
 

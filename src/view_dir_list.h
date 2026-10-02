@@ -22,16 +22,19 @@
 #ifndef VIEW_DIR_LIST_H
 #define VIEW_DIR_LIST_H
 
-ViewDir *vdlist_new(ViewDir *vd, FileData *dir_fd);
+struct FileData;
+struct ViewDir;
 
-gboolean vdlist_set_fd(ViewDir *vd, FileData *dir_fd);
-void vdlist_refresh(ViewDir *vd);
+struct ViewDir *vdlist_new(struct ViewDir *vd, struct FileData *dir_fd);
 
-const gchar *vdlist_row_get_path(ViewDir *vd, gint row);
-gboolean vdlist_find_row(ViewDir *vd, FileData *fd, GtkTreeIter *iter);
+gboolean vdlist_set_fd(struct ViewDir *vd, struct FileData *dir_fd);
+void vdlist_refresh(struct ViewDir *vd);
 
-void vdlist_rename_by_row(ViewDir *vd, FileData *fd);
-FileData *vdlist_row_by_path(ViewDir *vd, const gchar *path, gint *row);
+const gchar *vdlist_row_get_path(struct ViewDir *vd, gint row);
+gboolean vdlist_find_row(struct ViewDir *vd, struct FileData *fd, GtkTreeIter *iter);
+
+void vdlist_rename_by_row(struct ViewDir *vd, struct FileData *fd);
+struct FileData *vdlist_row_by_path(struct ViewDir *vd, const gchar *path, gint *row);
 
 gboolean vdlist_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);
 gboolean vdlist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);

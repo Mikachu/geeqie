@@ -57,6 +57,7 @@ typedef enum {
  *-----------------------------------------------------------------------------
  */
 
+typedef struct ExifData ExifData;
 typedef struct ExifItem ExifItem;
 
 typedef struct ExifRational ExifRational;
@@ -65,7 +66,6 @@ struct ExifRational
     guint32 num;
     guint32 den;
 };
-
 
 /* enums useful for image manipulation */
 
@@ -88,12 +88,14 @@ typedef enum {
     EXIF_UNIT_CENTIMETER    = 3
 } ExifUnitType;
 
+struct ExifData;
+
 typedef struct ExifFormattedText ExifFormattedText;
 struct ExifFormattedText
 {
     const gchar *key;
     const gchar *description;
-    gchar *(*build_func)(ExifData *exif);
+    gchar *(*build_func)(struct ExifData *exif);
 };
 
 /*
@@ -104,28 +106,30 @@ struct ExifFormattedText
 
 void exif_init(void);
 
-ExifData *exif_read(gchar *path, gchar *sidecar_path, GHashTable *modified_xmp);
+struct ExifData *exif_read(gchar *path, gchar *sidecar_path, GHashTable *modified_xmp);
 
-ExifData *exif_read_fd(FileData *fd);
-void exif_free_fd(FileData *fd, ExifData *exif);
+struct FileData;
+
+struct ExifData *exif_read_fd(struct FileData *fd);
+void exif_free_fd(struct FileData *fd, struct ExifData *exif);
 
 /* exif_read returns processed data (merged from image and sidecar, etc.)
    this function gives access to the original data from the image.
    original data are part of the processed data and should not be freed separately */
-ExifData *exif_get_original(ExifData *processed);
+struct ExifData *exif_get_original(struct ExifData *processed);
 
-gboolean exif_write(ExifData *exif);
-gboolean exif_write_sidecar(ExifData *exif, gchar *path);
+gboolean exif_write(struct ExifData *exif);
+gboolean exif_write_sidecar(struct ExifData *exif, gchar *path);
 
-void exif_free(ExifData *exif);
+void exif_free(struct ExifData *exif);
 
-gchar *exif_get_data_as_text(ExifData *exif, const gchar *key);
-gint exif_get_integer(ExifData *exif, const gchar *key, gint *value);
-ExifRational *exif_get_rational(ExifData *exif, const gchar *key, gint *sign);
+gchar *exif_get_data_as_text(struct ExifData *exif, const gchar *key);
+gint exif_get_integer(struct ExifData *exif, const gchar *key, gint *value);
+ExifRational *exif_get_rational(struct ExifData *exif, const gchar *key, gint *sign);
 
-ExifItem *exif_get_item(ExifData *exif, const gchar *key);
-ExifItem *exif_get_first_item(ExifData *exif);
-ExifItem *exif_get_next_item(ExifData *exif);
+ExifItem *exif_get_item(struct ExifData *exif, const gchar *key);
+ExifItem *exif_get_first_item(struct ExifData *exif);
+ExifItem *exif_get_next_item(struct ExifData *exif);
 
 gchar *exif_item_get_tag_name(ExifItem *item);
 guint exif_item_get_tag_id(ExifItem *item);
@@ -134,7 +138,7 @@ gchar *exif_item_get_data(ExifItem *item, guint *data_len);
 gchar *exif_item_get_description(ExifItem *item);
 guint exif_item_get_format_id(ExifItem *item);
 const gchar *exif_item_get_format_name(ExifItem *item, gboolean brief);
-gchar *exif_item_get_data_as_text(ExifItem *item, ExifData *exif);
+gchar *exif_item_get_data_as_text(ExifItem *item, struct ExifData *exif);
 gint exif_item_get_integer(ExifItem *item, gint *value);
 ExifRational *exif_item_get_rational(ExifItem *item, gint *sign, guint n);
 
@@ -143,23 +147,23 @@ gchar *exif_item_get_string(ExifItem *item, gint idx);
 gchar *exif_get_description_by_key(const gchar *key);
 gchar *exif_get_tag_description_by_key(const gchar *key);
 
-gchar *exif_get_formatted_by_key(ExifData *exif, const gchar *key, gboolean *key_valid);
+gchar *exif_get_formatted_by_key(struct ExifData *exif, const gchar *key, gboolean *key_valid);
 
-gint exif_update_metadata(ExifData *exif, const gchar *key, const GList *values);
-GList *exif_get_metadata(ExifData *exif, const gchar *key, MetadataFormat format);
+gint exif_update_metadata(struct ExifData *exif, const gchar *key, const GList *values);
+GList *exif_get_metadata(struct ExifData *exif, const gchar *key, MetadataFormat format);
 
-guchar *exif_get_color_profile(ExifData *exif, guint *data_len);
+guchar *exif_get_color_profile(struct ExifData *exif, guint *data_len);
 
 /* jpeg embedded icc support */
 
-void exif_add_jpeg_color_profile(ExifData *exif, guchar *cp_data, guint cp_length);
+void exif_add_jpeg_color_profile(struct ExifData *exif, guchar *cp_data, guint cp_length);
 
-gboolean exif_jpeg_parse_color(ExifData *exif, guchar *data, guint size);
+gboolean exif_jpeg_parse_color(struct ExifData *exif, guchar *data, guint size);
 
 /*raw support */
-guchar *exif_get_preview(ExifData *exif, guint *data_len, gint requested_width, gint requested_height);
+guchar *exif_get_preview(struct ExifData *exif, guint *data_len, gint requested_width, gint requested_height);
 void exif_free_preview(guchar *buf);
 
-gchar *metadata_file_info(FileData *fd, const gchar *key, MetadataFormat format);
+gchar *metadata_file_info(struct FileData *fd, const gchar *key, MetadataFormat format);
 
 #endif

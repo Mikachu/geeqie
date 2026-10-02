@@ -25,12 +25,16 @@
 #include "typedefs.h"
 #include "filedata.h"
 
+struct ImageLoader;
+struct FileData;
+
+typedef struct ThumbLoader ThumbLoader;
 struct ThumbLoader
 {
     gboolean standard_loader;
 
-    ImageLoader *il;
-    FileData *fd; /* fd->pixbuf contains final (scaled) image when done */
+    struct ImageLoader *il;
+    struct FileData *fd; /* fd->pixbuf contains final (scaled) image when done */
 
     gboolean cache_enable;
     gboolean cache_hit;
@@ -56,11 +60,11 @@ void thumb_loader_set_callbacks(ThumbLoader *tl,
                                 gpointer data);
 void thumb_loader_set_cache(ThumbLoader *tl, gboolean enable_cache, gboolean local, gboolean retry_failed);
 
-gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd);
+gboolean thumb_loader_start(ThumbLoader *tl, struct FileData *fd);
 void thumb_loader_free(ThumbLoader *tl);
 
 GdkPixbuf *thumb_loader_get_pixbuf(ThumbLoader *tl);
 
-void thumb_notify_cb(FileData *fd, NotifyType type, gpointer data);
+void thumb_notify_cb(struct FileData *fd, NotifyType type, gpointer data);
 
 #endif

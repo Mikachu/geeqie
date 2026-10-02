@@ -30,10 +30,13 @@ typedef enum {
     PANE_KEYWORDS,
 } PaneType;
 
+struct FileData;
+struct LayoutWindow;
+
 typedef struct PaneData PaneData;
 struct PaneData {
     /* filled in by pane */
-    void (*pane_set_fd)(GtkWidget *pane, FileData *fd);
+    void (*pane_set_fd)(GtkWidget *pane, struct FileData *fd);
     void (*pane_notify_selection)(GtkWidget *pane, gint count);
     gint (*pane_event)(GtkWidget *pane, GdkEvent *event);
     void (*pane_write_config)(GtkWidget *pane, GString *outstr, gint indent);
@@ -44,11 +47,11 @@ struct PaneData {
 
     /* filled in by bar */
     GtkWidget *bar;
-    LayoutWindow *lw;
+    struct LayoutWindow *lw;
 };
 
-GtkWidget *bar_new(LayoutWindow *lw);
-GtkWidget *bar_new_from_config(LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values);
+GtkWidget *bar_new(struct LayoutWindow *lw);
+GtkWidget *bar_new_from_config(struct LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values);
 GtkWidget *bar_update_from_config(GtkWidget *bar, const gchar **attribute_names, const gchar **attribute_values);
 
 void bar_close(GtkWidget *bar);
@@ -62,7 +65,7 @@ GtkWidget *bar_find_pane_by_id(GtkWidget *bar, PaneType type, const gchar *id);
 
 void bar_clear(GtkWidget *bar);
 
-void bar_set_fd(GtkWidget *bar, FileData *fd);
+void bar_set_fd(GtkWidget *bar, struct FileData *fd);
 void bar_notify_selection(GtkWidget *bar, gint count);
 gboolean bar_event(GtkWidget *bar, GdkEvent *event);
 

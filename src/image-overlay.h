@@ -46,24 +46,26 @@ void set_image_overlay_template_string(gchar **template_string, const gchar *val
 void set_default_image_overlay_template_string(gchar **template_string);
 void set_image_overlay_font_string(gchar **font_string, const gchar *value);
 
-void image_osd_set(ImageWindow *imd, OsdShowFlags show);
-OsdShowFlags image_osd_get(ImageWindow *imd);
+struct ImageWindow;
 
-Histogram *image_osd_get_histogram(ImageWindow *imd);
+void image_osd_set(struct ImageWindow *imd, OsdShowFlags show);
+OsdShowFlags image_osd_get(struct ImageWindow *imd);
 
-void image_osd_copy_status(ImageWindow *src, ImageWindow *dest);
+Histogram *image_osd_get_histogram(struct ImageWindow *imd);
 
-void image_osd_update(ImageWindow *imd);
+void image_osd_copy_status(struct ImageWindow *src, struct ImageWindow *dest);
 
-void image_osd_icon(ImageWindow *imd, ImageOSDFlag flag, gint duration);
+void image_osd_update(struct ImageWindow *imd);
 
-void image_osd_histogram_toggle_channel(ImageWindow *imd);
-void image_osd_histogram_toggle_mode(ImageWindow *imd);
-void image_osd_histogram_set_channel(ImageWindow *imd, gint chan);
-void image_osd_histogram_set_mode(ImageWindow *imd, gint mode);
-gint image_osd_histogram_get_channel(ImageWindow *imd);
-gint image_osd_histogram_get_mode(ImageWindow *imd);
+void image_osd_icon(struct ImageWindow *imd, ImageOSDFlag flag, gint duration);
 
-void image_osd_toggle(ImageWindow *imd);
+void image_osd_histogram_toggle_channel(struct ImageWindow *imd);
+void image_osd_histogram_toggle_mode(struct ImageWindow *imd);
+void image_osd_histogram_set_channel(struct ImageWindow *imd, gint chan);
+void image_osd_histogram_set_mode(struct ImageWindow *imd, gint mode);
+gint image_osd_histogram_get_channel(struct ImageWindow *imd);
+gint image_osd_histogram_get_mode(struct ImageWindow *imd);
+
+void image_osd_toggle(struct ImageWindow *imd);
 
 #endif
