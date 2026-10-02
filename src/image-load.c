@@ -31,6 +31,7 @@
 #include "filedata.h"
 #include "filefilter.h"
 #include "pixbuf_util.h"
+#include "pixbuf-renderer.h"
 #include "ui_fileops.h"
 #include "gq-marshal.h"
 

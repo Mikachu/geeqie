@@ -26,6 +26,11 @@
 
 #define VIEW_FILE_TYPES_COUNT 2
 
+typedef enum {
+    FILEVIEW_LIST,
+    FILEVIEW_ICON
+} FileViewType;
+
 struct ViewFile
 {
     FileViewType type;

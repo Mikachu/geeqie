@@ -22,6 +22,8 @@
 #ifndef FILEFILTER_H
 #define FILEFILTER_H
 
+#include "filedata.h"
+
 typedef struct FilterEntry FilterEntry;
 struct FilterEntry {
     gchar *key;

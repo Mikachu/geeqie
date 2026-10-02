@@ -29,6 +29,7 @@
 #include "image-load.h"
 #include "image_load_jpeg.h"
 #include "jpeg_parser.h"
+#include "pixbuf-renderer.h"
 
 #ifdef HAVE_JPEG
 

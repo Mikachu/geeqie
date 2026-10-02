@@ -23,6 +23,21 @@
 
 #include "typedefs.h"
 
+typedef enum {
+    SS_ERR_NONE = 0,
+    SS_ERR_DISABLED, /**< secsave is disabled. */
+    SS_ERR_OUT_OF_MEM, /**< memory allocation failure */
+
+    /* see err field in SecureSaveInfo */
+    SS_ERR_OPEN_READ,
+    SS_ERR_OPEN_WRITE,
+    SS_ERR_STAT,
+    SS_ERR_ACCESS,
+    SS_ERR_MKSTEMP,
+    SS_ERR_RENAME,
+    SS_ERR_OTHER,
+} SecureSaveErrno;
+
 struct SecureSaveInfo {
     FILE *fp;                 /**< file stream pointer */
     gchar *file_name;         /**< final file name */
