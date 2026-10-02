@@ -58,6 +58,7 @@ gint pan_item_box_draw(PanWindow *pw, PanItem *pi, GdkPixbuf *pixbuf, PixbufRend
 PanItem *pan_item_tri_new(PanWindow *pw, FileData *fd, gint x, gint y, gint width, gint height,
                           gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
                           guint8 r, guint8 g, guint8 b, guint8 a);
+void pan_item_tri_offset(PanItem *pi, gint x, gint y);
 void pan_item_tri_border(PanItem *pi, gint borders,
                          guint8 r, guint8 g, guint8 b, guint8 a);
 gint pan_item_tri_draw(PanWindow *pw, PanItem *pi, GdkPixbuf *pixbuf, PixbufRenderer *pr,
