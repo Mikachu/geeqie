@@ -139,13 +139,13 @@ void pan_calendar_update(PanWindow *pw, PanItem *pi_day)
                 column++;
                 if (column < grid)
                 {
-                    x += PAN_THUMB_SIZE + PAN_THUMB_GAP;
+                    x += pw->thumb_size + pw->thumb_gap;
                 }
                 else
                 {
                     column = 0;
                     x = pbox->x + PAN_BOX_BORDER;
-                    y += PAN_THUMB_SIZE + PAN_THUMB_GAP;
+                    y += pw->thumb_size + pw->thumb_gap;
                 }
             }
         }
@@ -223,7 +223,7 @@ void pan_calendar_compute(PanWindow *pw, FileData *dir_fd, gint *width, gint *he
     DEBUG_1("biggest day contains %d images", day_max);
 
     gint grid = (gint)(sqrt((gdouble)day_max) + 0.5) *
-                (PAN_THUMB_SIZE + PAN_SHADOW_OFFSET * 2 + PAN_THUMB_GAP);
+                (pw->thumb_size + PAN_SHADOW_OFFSET * 2 + pw->thumb_gap);
 
     if (list)
     {
