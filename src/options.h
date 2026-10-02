@@ -28,9 +28,9 @@ typedef struct {
     gchar *action_name;
 } MouseBinding;
 
-typedef struct _ConfOptions ConfOptions;
+typedef struct ConfOptions ConfOptions;
 
-struct _ConfOptions
+struct ConfOptions
 {
     /* ui */
     gboolean progressive_key_scrolling;

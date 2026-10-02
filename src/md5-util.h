@@ -40,7 +40,6 @@
 
 #include <glib.h>
 
-
 /**
  * @headerfile md5_get_string
  * generate digest from memory buffer as a hexadecimal string
@@ -62,6 +61,5 @@ gchar *md5_get_string_from_file(const gchar *path);
  */
 gchar *md5_digest_to_text(guchar digest[16]);
 gboolean md5_digest_from_text(const gchar *text, guchar digest[16]);
-
 
 #endif  /* MD5_UTILS_H */

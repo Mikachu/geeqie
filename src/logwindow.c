@@ -27,9 +27,9 @@
 #include <gdk/gdkkeysyms.h>
 
 
-typedef struct _LogWindow LogWindow;
+typedef struct LogWindow LogWindow;
 
-struct _LogWindow
+struct LogWindow
 {
     GtkWidget *window;
     GtkWidget *scrolledwin;
@@ -40,8 +40,8 @@ struct _LogWindow
     guint lines;
 };
 
-typedef struct _LogDef LogDef;
-struct _LogDef
+typedef struct LogDef LogDef;
+struct LogDef
 {
     LogType type;
     const gchar *tag;
@@ -190,9 +190,9 @@ void log_window_new(void)
     log_window_show(logwindow);
 }
 
-typedef struct _LogMsg LogMsg;
+typedef struct LogMsg LogMsg;
 
-struct _LogMsg {
+struct LogMsg {
     gchar *text;
     LogType type;
 };

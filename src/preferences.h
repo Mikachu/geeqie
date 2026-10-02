@@ -22,9 +22,7 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
-
 void show_config_window(void);
 void show_about_window(void);
-
 
 #endif

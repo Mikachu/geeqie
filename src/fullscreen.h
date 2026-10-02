@@ -25,10 +25,9 @@
 #define FULL_SCREEN_HIDE_MOUSE_DELAY 3000
 #define FULL_SCREEN_BUSY_MOUSE_DELAY 200
 
-
 FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
-                 GtkWidget *fs_container, gboolean force_same_region,
-                 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data);
+                                 GtkWidget *fs_container, gboolean force_same_region,
+                                 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data);
 void fullscreen_stop(FullScreenData *fs);
 
 
@@ -39,9 +38,8 @@ void fullscreen_stop(FullScreenData *fs);
  * 201  screen 1, monitor 0
  */
 
-
-typedef struct _ScreenData ScreenData;
-struct _ScreenData {
+typedef struct ScreenData ScreenData;
+struct ScreenData {
     gint number;
     gchar *description;
     gint x;
@@ -50,18 +48,16 @@ struct _ScreenData {
     gint height;
 };
 
-
 GList *fullscreen_prefs_list(void);
 void screen_data_free(ScreenData *sd);
 
 ScreenData *fullscreen_prefs_list_find(GList *list, gint screen);
 
 void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget, gint *x, gint *y, gint *width, gint *height,
-                   GdkScreen **dest_screen, gboolean *same_region);
+                                   GdkScreen **dest_screen, gboolean *same_region);
 
 gint fullscreen_prefs_find_screen_for_widget(GtkWidget *widget);
 
 GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value, gboolean *above_value);
-
 
 #endif

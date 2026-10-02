@@ -34,19 +34,19 @@
 #define EXIF_FORMAT_COUNT 13
 
 typedef enum {
-    EXIF_FORMAT_UNKNOWN     = 0,
-    EXIF_FORMAT_BYTE_UNSIGNED   = 1,
-    EXIF_FORMAT_STRING      = 2,
-    EXIF_FORMAT_SHORT_UNSIGNED  = 3,
-    EXIF_FORMAT_LONG_UNSIGNED   = 4,
+    EXIF_FORMAT_UNKNOWN             = 0,
+    EXIF_FORMAT_BYTE_UNSIGNED       = 1,
+    EXIF_FORMAT_STRING              = 2,
+    EXIF_FORMAT_SHORT_UNSIGNED      = 3,
+    EXIF_FORMAT_LONG_UNSIGNED       = 4,
     EXIF_FORMAT_RATIONAL_UNSIGNED   = 5,
-    EXIF_FORMAT_BYTE        = 6,
-    EXIF_FORMAT_UNDEFINED       = 7,
-    EXIF_FORMAT_SHORT       = 8,
-    EXIF_FORMAT_LONG        = 9,
-    EXIF_FORMAT_RATIONAL        = 10,
-    EXIF_FORMAT_FLOAT       = 11,
-    EXIF_FORMAT_DOUBLE      = 12
+    EXIF_FORMAT_BYTE                = 6,
+    EXIF_FORMAT_UNDEFINED           = 7,
+    EXIF_FORMAT_SHORT               = 8,
+    EXIF_FORMAT_LONG                = 9,
+    EXIF_FORMAT_RATIONAL            = 10,
+    EXIF_FORMAT_FLOAT               = 11,
+    EXIF_FORMAT_DOUBLE              = 12
 } ExifFormatType;
 
 
@@ -56,10 +56,10 @@ typedef enum {
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _ExifItem ExifItem;
+typedef struct ExifItem ExifItem;
 
-typedef struct _ExifRational ExifRational;
-struct _ExifRational
+typedef struct ExifRational ExifRational;
+struct ExifRational
 {
     guint32 num;
     guint32 den;
@@ -69,26 +69,26 @@ struct _ExifRational
 /* enums useful for image manipulation */
 
 typedef enum {
-    EXIF_ORIENTATION_UNKNOWN    = 0,
-    EXIF_ORIENTATION_TOP_LEFT   = 1,
-    EXIF_ORIENTATION_TOP_RIGHT  = 2,
+    EXIF_ORIENTATION_UNKNOWN        = 0,
+    EXIF_ORIENTATION_TOP_LEFT       = 1,
+    EXIF_ORIENTATION_TOP_RIGHT      = 2,
     EXIF_ORIENTATION_BOTTOM_RIGHT   = 3,
     EXIF_ORIENTATION_BOTTOM_LEFT    = 4,
-    EXIF_ORIENTATION_LEFT_TOP   = 5,
-    EXIF_ORIENTATION_RIGHT_TOP  = 6,
+    EXIF_ORIENTATION_LEFT_TOP       = 5,
+    EXIF_ORIENTATION_RIGHT_TOP      = 6,
     EXIF_ORIENTATION_RIGHT_BOTTOM   = 7,
     EXIF_ORIENTATION_LEFT_BOTTOM    = 8
 } ExifOrientationType;
 
 typedef enum {
-    EXIF_UNIT_UNKNOWN   = 0,
-    EXIF_UNIT_NOUNIT    = 1,
-    EXIF_UNIT_INCH      = 2,
+    EXIF_UNIT_UNKNOWN       = 0,
+    EXIF_UNIT_NOUNIT        = 1,
+    EXIF_UNIT_INCH          = 2,
     EXIF_UNIT_CENTIMETER    = 3
 } ExifUnitType;
 
-typedef struct _ExifFormattedText ExifFormattedText;
-struct _ExifFormattedText
+typedef struct ExifFormattedText ExifFormattedText;
+struct ExifFormattedText
 {
     const gchar *key;
     const gchar *description;
@@ -113,7 +113,6 @@ void exif_free_fd(FileData *fd, ExifData *exif);
    original data are part of the processed data and should not be freed separately */
 ExifData *exif_get_original(ExifData *processed);
 
-
 gboolean exif_write(ExifData *exif);
 gboolean exif_write_sidecar(ExifData *exif, gchar *path);
 
@@ -126,7 +125,6 @@ ExifRational *exif_get_rational(ExifData *exif, const gchar *key, gint *sign);
 ExifItem *exif_get_item(ExifData *exif, const gchar *key);
 ExifItem *exif_get_first_item(ExifData *exif);
 ExifItem *exif_get_next_item(ExifData *exif);
-
 
 gchar *exif_item_get_tag_name(ExifItem *item);
 guint exif_item_get_tag_id(ExifItem *item);
@@ -154,7 +152,6 @@ guchar *exif_get_color_profile(ExifData *exif, guint *data_len);
 /* jpeg embedded icc support */
 
 void exif_add_jpeg_color_profile(ExifData *exif, guchar *cp_data, guint cp_length);
-
 
 gboolean exif_jpeg_parse_color(ExifData *exif, guchar *data, guint size);
 

@@ -64,8 +64,8 @@
    Use remove_trailing_slash() to strip the trailing G_DIR_SEPARATOR.
    ----------------------------------------------------------------*/
 
-typedef struct _TabCompData TabCompData;
-struct _TabCompData
+typedef struct TabCompData TabCompData;
+struct TabCompData
 {
     GtkWidget *entry;
     gchar *dir_path;

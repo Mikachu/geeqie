@@ -63,8 +63,8 @@ typedef enum {
     SELECTION_FOCUS     = 1 << 2
 } SelectionType;
 
-typedef struct _IconData IconData;
-struct _IconData
+typedef struct IconData IconData;
+struct IconData
 {
     SelectionType selected;
     FileData *fd;
@@ -1554,8 +1554,8 @@ gboolean vficon_refresh(ViewFile *vf)
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _ColumnData ColumnData;
-struct _ColumnData
+typedef struct ColumnData ColumnData;
+struct ColumnData
 {
     ViewFile *vf;
     gint number;

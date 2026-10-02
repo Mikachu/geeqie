@@ -41,8 +41,8 @@
 #define VDTREE(_vd_) ((ViewDirInfoTree *)((_vd_)->info))
 
 
-typedef struct _PathData PathData;
-struct _PathData
+typedef struct PathData PathData;
+struct PathData
 {
     gchar *name;
     FileData *node;

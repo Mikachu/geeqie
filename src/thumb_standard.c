@@ -745,8 +745,8 @@ GdkPixbuf *thumb_loader_std_get_pixbuf(ThumbLoaderStd *tl)
 }
 
 
-typedef struct _ThumbValidate ThumbValidate;
-struct _ThumbValidate
+typedef struct ThumbValidate ThumbValidate;
+struct ThumbValidate
 {
     ThumbLoaderStd *tl;
     gchar *path;
@@ -932,8 +932,8 @@ void thumb_std_maint_removed(const gchar *source)
     g_free(uri);
 }
 
-typedef struct _TMaintMove TMaintMove;
-struct _TMaintMove
+typedef struct TMaintMove TMaintMove;
+struct TMaintMove
 {
     gchar *source;
     gchar *dest;

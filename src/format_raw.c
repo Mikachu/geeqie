@@ -45,8 +45,8 @@
 #include "format_olympus.h"
 
 
-typedef struct _FormatRawEntry FormatRawEntry;
-struct _FormatRawEntry {
+typedef struct FormatRawEntry FormatRawEntry;
+struct FormatRawEntry {
     const gchar *extension;
     FormatRawMatchType magic_type;
     const guint magic_offset;
@@ -72,8 +72,8 @@ static FormatRawEntry format_raw_list[] = {
 };
 
 
-typedef struct _FormatExifEntry FormatExifEntry;
-struct _FormatExifEntry {
+typedef struct FormatExifEntry FormatExifEntry;
+struct FormatExifEntry {
     FormatExifMatchType header_type;
     gconstpointer header_pattern;
     const guint header_length;

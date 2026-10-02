@@ -94,8 +94,8 @@ gboolean pixbuf_to_file_as_jpg(GdkPixbuf *pixbuf, const gchar *filename, gint qu
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _PixbufInline PixbufInline;
-struct _PixbufInline
+typedef struct PixbufInline PixbufInline;
+struct PixbufInline
 {
     const gchar *key;
     const guint8 *data;

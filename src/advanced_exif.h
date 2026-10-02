@@ -22,7 +22,6 @@
 #ifndef ADVANCED_EXIF_H
 #define ADVANCED_EXIF_H
 
-
 GtkWidget *advanced_exif_new(void);
 
 void advanced_exif_set_fd(GtkWidget *bar, FileData *fd);

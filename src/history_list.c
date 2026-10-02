@@ -123,8 +123,8 @@ void image_chain_clear(void)
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _HistoryData HistoryData;
-struct _HistoryData
+typedef struct HistoryData HistoryData;
+struct HistoryData
 {
     gchar *key;
     GList *list;

@@ -84,8 +84,8 @@ enum {
     SEARCH_COLUMN_COUNT /* total columns */
 };
 
-typedef struct _SearchData SearchData;
-struct _SearchData
+typedef struct SearchData SearchData;
+struct SearchData
 {
     GtkWidget *window;
 
@@ -202,8 +202,8 @@ struct _SearchData
     FileData    *thumb_fd;
 };
 
-typedef struct _MatchFileData MatchFileData;
-struct _MatchFileData
+typedef struct MatchFileData MatchFileData;
+struct MatchFileData
 {
     FileData *fd;
     gint width;

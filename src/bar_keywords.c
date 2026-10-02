@@ -103,8 +103,8 @@ static GType filter_keyword_column_types[] = {
     G_TYPE_BOOLEAN
 };
 
-typedef struct _PaneKeywordsData PaneKeywordsData;
-struct _PaneKeywordsData
+typedef struct PaneKeywordsData PaneKeywordsData;
+struct PaneKeywordsData
 {
     PaneData pane;
     GtkWidget *widget;
@@ -124,8 +124,8 @@ struct _PaneKeywordsData
     gint height;
 };
 
-typedef struct _ConfDialogData ConfDialogData;
-struct _ConfDialogData
+typedef struct ConfDialogData ConfDialogData;
+struct ConfDialogData
 {
     PaneKeywordsData *pkd;
     GtkTreePath *click_tpath;

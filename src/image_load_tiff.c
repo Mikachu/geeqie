@@ -34,8 +34,8 @@
 
 #include <tiffio.h>
 
-typedef struct _ImageLoaderTiff ImageLoaderTiff;
-struct _ImageLoaderTiff {
+typedef struct ImageLoaderTiff ImageLoaderTiff;
+struct ImageLoaderTiff {
     ImageLoaderBackendCbAreaUpdated area_updated_cb;
     ImageLoaderBackendCbSize size_cb;
 

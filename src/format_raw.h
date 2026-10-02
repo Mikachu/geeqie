@@ -24,7 +24,6 @@
 
 #include "exif-int.h"
 
-
 typedef enum {
     FORMAT_RAW_MATCH_MAGIC,
     FORMAT_RAW_MATCH_TIFF_MAKE
@@ -40,20 +39,19 @@ typedef enum {
 } FormatRawExifType;
 
 typedef gboolean (* FormatRawParseFunc)(guchar *data, const guint len,
-                        guint *image_offset, guint *exif_offset);
+                                        guint *image_offset, guint *exif_offset);
 
 typedef gboolean (* FormatRawExifParseFunc)(guchar *data, const guint len,
-                        ExifData *exif);
+                                            ExifData *exif);
 
 gboolean format_raw_img_exif_offsets(guchar *data, const guint len,
-                     guint *image_offset, guint *exif_offset);
+                                     guint *image_offset, guint *exif_offset);
 gboolean format_raw_img_exif_offsets_fd(gint fd, const gchar *path,
-                        guchar *header_data, const guint header_len,
-                        guint *image_offset, guint *exif_offset);
+                                        guchar *header_data, const guint header_len,
+                                        guint *image_offset, guint *exif_offset);
 
 FormatRawExifType format_raw_exif_offset(guchar *data, const guint len, guint *exif_offset,
-                     FormatRawExifParseFunc *exif_parse_func);
-
+                                         FormatRawExifParseFunc *exif_parse_func);
 
 typedef enum {
     FORMAT_EXIF_MATCH_MAKE,
@@ -61,28 +59,27 @@ typedef enum {
 } FormatExifMatchType;
 
 typedef gint (* FormatExifParseFunc)(ExifData *exif, guchar *tiff, guint offset,
-                     guint size, ExifByteOrder bo);
+                                     guint size, ExifByteOrder bo);
 
 gboolean format_exif_makernote_parse(ExifData *exif, guchar *tiff, guint offset,
-                     guint size, ExifByteOrder bo);
-
+                                     guint size, ExifByteOrder bo);
 
 #define DEBUG_RAW_TIFF 0
 
 #if DEBUG_RAW_TIFF
 
 #define FORMAT_RAW_DEBUG_TIFF { "", \
-                FORMAT_RAW_MATCH_MAGIC,     0, "II", 2, \
-                FORMAT_RAW_EXIF_NONE, NULL, \
-                "Tiff debugger II", format_debug_tiff_raw }, \
-                  { "", \
-                FORMAT_RAW_MATCH_MAGIC,     0, "MM", 2, \
-                FORMAT_RAW_EXIF_NONE, NULL, \
-                "Tiff debugger MM", format_debug_tiff_raw }
+                                FORMAT_RAW_MATCH_MAGIC,     0, "II", 2, \
+                                FORMAT_RAW_EXIF_NONE,       NULL, \
+                                "Tiff debugger II",         format_debug_tiff_raw }, \
+                              { "", \
+                                FORMAT_RAW_MATCH_MAGIC,     0, "MM", 2, \
+                                FORMAT_RAW_EXIF_NONE,       NULL, \
+                                "Tiff debugger MM",         format_debug_tiff_raw }
 
 /* used for debugging only */
 gint format_debug_tiff_raw(guchar *data, const guint len,
-               guint *image_offset, guint *exif_offset);
+                           guint *image_offset, guint *exif_offset);
 #endif
 
 #endif

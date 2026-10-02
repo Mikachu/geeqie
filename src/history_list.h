@@ -49,5 +49,4 @@ void image_chain_clear(void);
 /* the returned GList is internal, don't free it */
 GList *history_list_get_by_key(const gchar *key);
 
-
 #endif /* HISTORY_LIST_H */

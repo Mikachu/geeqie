@@ -5,7 +5,7 @@
 
 typedef gint (*VPTreeDistFunc)(gconstpointer a, gconstpointer b);
 
-typedef struct _VPTree VPTree;
+typedef struct VPTree VPTree;
 
 /* Build a VP-tree from a GList of items.
  * dist_func: L1 distance between two items (must be a metric).

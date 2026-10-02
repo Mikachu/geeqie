@@ -22,8 +22,8 @@
 #ifndef VIEW_DIR_TREE_H
 #define VIEW_DIR_TREE_H
 
-typedef struct _NodeData NodeData;
-struct _NodeData
+typedef struct NodeData NodeData;
+struct NodeData
 {
     FileData *fd;
     gboolean expanded;

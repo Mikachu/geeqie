@@ -35,8 +35,8 @@ typedef enum {
     EXIF_BYTE_ORDER_MOTOROLA
 } ExifByteOrder;
 
-typedef struct _ExifFormatAttrib ExifFormatAttrib;
-struct _ExifFormatAttrib
+typedef struct ExifFormatAttrib ExifFormatAttrib;
+struct ExifFormatAttrib
 {
     ExifFormatType type;
     guint size;
@@ -54,10 +54,16 @@ extern ExifFormatAttrib ExifFormatList[];
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _ExifMarker ExifMarker;
-typedef struct _ExifTextList ExifTextList;
+typedef struct ExifMarker ExifMarker;
 
-struct _ExifData
+typedef struct ExifTextList ExifTextList;
+struct ExifTextList
+{
+    gint value;
+    const gchar *description;
+};
+
+struct ExifData
 {
     gchar *path;
     GList *items;   /* list of (ExifItem *) */
@@ -65,7 +71,7 @@ struct _ExifData
 };
 
 
-struct _ExifItem
+struct ExifItem
 {
     ExifFormatType format;
     guint tag;
@@ -75,36 +81,25 @@ struct _ExifItem
     guint data_len;
 };
 
-struct _ExifMarker
+struct ExifMarker
 {
-    guint       tag;
-    ExifFormatType  format;
-    gint        components;
-    gchar       *key;
-    gchar       *description;
-    ExifTextList    *list;
+    guint tag;
+    ExifFormatType format;
+    gint components;
+    gchar *key;
+    gchar *description;
+    ExifTextList *list;
 };
 
 #define EXIF_MARKER_LIST_END { 0x0000, EXIF_FORMAT_UNKNOWN, 0, NULL, NULL, NULL }
 
-struct _ExifTextList
-{
-    gint value;
-    const gchar *description;
-};
-
 #define EXIF_TEXT_LIST_END { -1, NULL }
-
-
-
 
 /*
  *-----------------------------------------------------------------------------
  * Data
  *-----------------------------------------------------------------------------
  */
-
-
 
 /* the known exif tags list */
 extern ExifMarker ExifKnownMarkersList[];
@@ -115,18 +110,14 @@ extern ExifMarker ExifUnknownMarkersList[];
 /* the list of specially formatted keys, for human readable output */
 extern ExifFormattedText ExifFormattedList[];
 
-
 /*
  *-----------------------------------------------------------------------------
  * functions
  *-----------------------------------------------------------------------------
  */
 
-
 /* usually for debugging to stdout */
 void exif_write_data_list(ExifData *exif, FILE *f, gint human_readable_list);
-
-
 
 /* These funcs for use by makernote/tiff parsers only */
 
@@ -138,25 +129,24 @@ void exif_write_data_list(ExifData *exif, FILE *f, gint human_readable_list);
 #define EXIF_TIFD_OFFSET_DATA 8
 #define EXIF_TIFD_SIZE 12
 
-
 guint16 exif_byte_get_int16(guchar *f, ExifByteOrder bo);
 guint32 exif_byte_get_int32(guchar *f, ExifByteOrder bo);
 void exif_byte_put_int16(guchar *f, guint16 n, ExifByteOrder bo);
 void exif_byte_put_int32(guchar *f, guint32 n, ExifByteOrder bo);
 
 ExifItem *exif_item_new(ExifFormatType format, guint tag,
-            guint elements, const ExifMarker *marker);
+                        guint elements, const ExifMarker *marker);
 void exif_item_copy_data(ExifItem *item, gpointer src, guint len,
-             ExifFormatType src_format, ExifByteOrder bo);
+                         ExifFormatType src_format, ExifByteOrder bo);
 
 gint exif_parse_IFD_table(ExifData *exif,
-              guchar *tiff, guint offset,
-              guint size, ExifByteOrder bo,
-              gint level,
-              const ExifMarker *list);
+                          guchar *tiff, guint offset,
+                          guint size, ExifByteOrder bo,
+                          gint level,
+                          const ExifMarker *list);
 
 gint exif_tiff_directory_offset(guchar *data, const guint len,
-                guint *offset, ExifByteOrder *bo);
+                                guint *offset, ExifByteOrder *bo);
 gint exif_tiff_parse(ExifData *exif, guchar *tiff, guint size, ExifMarker *list);
 
 gchar *exif_text_list_find_value(ExifTextList *list, guint value);

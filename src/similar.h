@@ -24,8 +24,8 @@
 
 #include "vptree.h"
 
-typedef struct _ImageSimilarityData ImageSimilarityData;
-struct _ImageSimilarityData
+typedef struct ImageSimilarityData ImageSimilarityData;
+struct ImageSimilarityData
 {
     guint8 avg_r[1024];
     guint8 avg_g[1024];
@@ -42,8 +42,8 @@ struct _ImageSimilarityData
     gboolean phash_filled;
 };
 
-typedef struct _SimVPEntry SimVPEntry;
-struct _SimVPEntry
+typedef struct SimVPEntry SimVPEntry;
+struct SimVPEntry
 {
     guint8 coarse_r[16];
     guint8 coarse_g[16];
@@ -71,10 +71,8 @@ ImageSimilarityData *image_sim_new_from_pixbuf(const GdkPixbuf *pixbuf);
 gdouble image_sim_compare(ImageSimilarityData *a, ImageSimilarityData *b);
 gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min);
 
-
 void image_sim_alternate_set(gboolean enable);
 gboolean image_sim_alternate_enabled(void);
 void image_sim_alternate_processing(ImageSimilarityData *sd);
-
 
 #endif

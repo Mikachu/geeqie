@@ -49,8 +49,8 @@
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
 
 
-typedef struct _ViewWindow ViewWindow;
-struct _ViewWindow
+typedef struct ViewWindow ViewWindow;
+struct ViewWindow
 {
     GtkWidget *window;
     ImageWindow *imd;

@@ -40,7 +40,6 @@ gboolean collection_save(CollectionData *cd, const gchar *path);
 
 gboolean collection_load_only_geometry(CollectionData *cd, const gchar *path);
 
-
 /* these are used to update collections contained in user's collection
  * folder when moving or renaming files.
  * also handles:

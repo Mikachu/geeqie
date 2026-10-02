@@ -30,9 +30,8 @@ typedef enum {
     PANE_KEYWORDS,
 } PaneType;
 
-typedef struct _PaneData PaneData;
-
-struct _PaneData {
+typedef struct PaneData PaneData;
+struct PaneData {
     /* filled in by pane */
     void (*pane_set_fd)(GtkWidget *pane, FileData *fd);
     void (*pane_notify_selection)(GtkWidget *pane, gint count);
@@ -47,9 +46,6 @@ struct _PaneData {
     GtkWidget *bar;
     LayoutWindow *lw;
 };
-
-
-
 
 GtkWidget *bar_new(LayoutWindow *lw);
 GtkWidget *bar_new_from_config(LayoutWindow *lw, const gchar **attribute_names, const gchar **attribute_values);

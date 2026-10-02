@@ -1510,8 +1510,8 @@ GList *exif_get_metadata(ExifData *exif, const gchar *key, MetadataFormat format
     return g_list_append(NULL, str);
 }
 
-typedef struct _UnmapData UnmapData;
-struct _UnmapData
+typedef struct UnmapData UnmapData;
+struct UnmapData
 {
     guchar *ptr;
     guchar *map_data;

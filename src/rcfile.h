@@ -22,6 +22,7 @@
 #ifndef RCFILE_H
 #define RCFILE_H
 
+/* hell */
 
 void write_indent(GString *str, gint indent);
 void write_char_option(GString *str, gint indent, const gchar *label, const gchar *text);
@@ -74,15 +75,14 @@ gboolean read_bool_option(const gchar *option, const gchar *label, const gchar *
 
 #define READ_DUMMY(_target_, _name_, _msg_) read_dummy_option(option, #_name_, _msg_)
 
-typedef struct _GQParserFuncData GQParserFuncData;
-typedef struct _GQParserData GQParserData;
+typedef struct GQParserFuncData GQParserFuncData;
+typedef struct GQParserData GQParserData;
 typedef void (* GQParserStartFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names, const gchar **attribute_values, gpointer data, GError **error);
 typedef void (* GQParserEndFunc)(GQParserData *parser_data, GMarkupParseContext *context, const gchar *element_name, gpointer data, GError **error);
 
 void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_func, GQParserEndFunc end_func, gpointer data);
 void options_parse_func_pop(GQParserData *parser_data);
 void options_parse_func_set_data(GQParserData *parser_data, gpointer data);
-
 
 gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options);
 

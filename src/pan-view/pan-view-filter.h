@@ -32,22 +32,22 @@ typedef enum {
     PAN_VIEW_FILTER_GROUP
 } PanViewFilterMode;
 
-typedef struct _PanViewFilterElement PanViewFilterElement;
-struct _PanViewFilterElement
+typedef struct PanViewFilterElement PanViewFilterElement;
+struct PanViewFilterElement
 {
     PanViewFilterMode mode;
     gchar *keyword;
     GRegex *kw_regex;
 };
 
-typedef struct _PanFilterCallbackState PanFilterCallbackState;
-struct _PanFilterCallbackState
+typedef struct PanFilterCallbackState PanFilterCallbackState;
+struct PanFilterCallbackState
 {
     PanWindow *pw;
     GList *filter_element;
 };
 
-struct _PanViewFilterUi
+struct PanViewFilterUi
 {
     GtkWidget *filter_box;
     GtkWidget *filter_entry;

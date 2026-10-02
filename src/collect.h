@@ -22,7 +22,6 @@
 #ifndef COLLECT_H
 #define COLLECT_H
 
-
 CollectInfo *collection_info_new(FileData *fd, struct stat *st, GdkPixbuf *pixbuf);
 
 void collection_info_free_thumb(CollectInfo *ci);
@@ -72,7 +71,7 @@ CollectInfo *collection_get_last(CollectionData *cd);
 void collection_set_sort_method(CollectionData *cd, SortType method);
 void collection_randomize(CollectionData *cd);
 void collection_set_update_info_func(CollectionData *cd,
-                     void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data);
+                                     void (*func)(CollectionData *, CollectInfo *, gpointer), gpointer data);
 
 gboolean collection_add(CollectionData *cd, FileData *fd, gboolean sorted);
 gboolean collection_add_check(CollectionData *cd, FileData *fd, gboolean sorted, gboolean must_exist);
@@ -88,6 +87,5 @@ void collection_window_close_by_collection(CollectionData *cd);
 CollectWindow *collection_window_find(CollectionData *cd);
 CollectWindow *collection_window_find_by_path(const gchar *path);
 gboolean collection_window_modified_exists(void);
-
 
 #endif

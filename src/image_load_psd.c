@@ -24,8 +24,8 @@
 
 #include <string.h>
 
-typedef struct _ImageLoaderPsd ImageLoaderPsd;
-struct _ImageLoaderPsd {
+typedef struct ImageLoaderPsd ImageLoaderPsd;
+struct ImageLoaderPsd {
     ImageLoaderBackendCbAreaUpdated area_updated_cb;
     ImageLoaderBackendCbSize size_cb;
 
@@ -65,8 +65,8 @@ static guint16 psd_read_u16(const guchar *p) { guint16 v; memcpy(&v, p, 2); retu
 
 /* PSD header fields needed by both the embedded-thumbnail path and the
  * composite-image fallback. */
-typedef struct _PsdHeader PsdHeader;
-struct _PsdHeader {
+typedef struct PsdHeader PsdHeader;
+struct PsdHeader {
     guint16 version; /* 1 for PSD, 2 for PSB */
     guint16 channels;
     guint32 height;

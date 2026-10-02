@@ -36,7 +36,7 @@
 #define GQ_COLLECTION_FAIL_PERCENT 98
 #define GQ_COLLECTION_READ_BUFSIZE 4096
 
-typedef struct _CollectManagerEntry CollectManagerEntry;
+typedef struct CollectManagerEntry CollectManagerEntry;
 
 static void collection_load_thumb_step(CollectionData *cd);
 static gboolean collection_save_private(CollectionData *cd, const gchar *path);
@@ -432,7 +432,7 @@ gboolean collection_load_only_geometry(CollectionData *cd, const gchar *path)
 #define COLLECT_MANAGER_ACTIONS_PER_IDLE 1000
 #define COLLECT_MANAGER_FLUSH_DELAY      10000
 
-struct _CollectManagerEntry
+struct CollectManagerEntry
 {
     gchar *path;
     GList *add_list;
@@ -447,8 +447,8 @@ typedef enum {
     COLLECTION_MANAGER_REMOVE
 } CollectManagerType;
 
-typedef struct _CollectManagerAction CollectManagerAction;
-struct _CollectManagerAction
+typedef struct CollectManagerAction CollectManagerAction;
+struct CollectManagerAction
 {
     gchar *oldpath;
     gchar *newpath;

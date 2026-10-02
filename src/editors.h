@@ -22,12 +22,11 @@
 #ifndef EDITORS_H
 #define EDITORS_H
 
-
 typedef enum {
     EDITOR_KEEP_FS            = 0x00000001,
     EDITOR_VERBOSE            = 0x00000002,
     EDITOR_VERBOSE_MULTI      = 0x00000004,
-    EDITOR_TERMINAL       = 0x00000008,
+    EDITOR_TERMINAL           = 0x00000008,
 
     EDITOR_DEST               = 0x00000100,
     EDITOR_FOR_EACH           = 0x00000200,
@@ -45,7 +44,7 @@ typedef enum {
     EDITOR_ERROR_MASK         = 0xffff0000,
 } EditorFlags;
 
-struct _EditorDescription {
+struct EditorDescription {
     gchar *key;         /* desktop file name, not including path, including extension */
     gchar *name;        /* Name, localized name presented to user */
     gchar *icon;        /* Icon */
@@ -63,13 +62,12 @@ struct _EditorDescription {
 #define EDITOR_ERRORS(flags) ((flags) & EDITOR_ERROR_MASK)
 #define EDITOR_ERRORS_BUT_SKIPPED(flags) (!!(((flags) & EDITOR_ERROR_MASK) && !((flags) & EDITOR_ERROR_SKIPPED)))
 
-
 /* return values from callback function */
 enum {
     EDITOR_CB_CONTINUE = 0, /* continue multiple editor execution on remaining files*/
     EDITOR_CB_SKIP,         /* skip the remaining files */
     EDITOR_CB_SUSPEND       /* suspend execution, one of editor_resume or editor_skip
-                   must be called later */
+                               must be called later */
 };
 
 enum {
@@ -82,8 +80,6 @@ enum {
 };
 
 extern GtkListStore *desktop_file_list;
-
-
 extern GHashTable *editors;
 
 void editor_table_finish(void);
@@ -93,29 +89,28 @@ gboolean editor_read_desktop_file(const gchar *path);
 
 GList *editor_list_get(void);
 
-
 /*
 Callback is called even on skipped files, with the EDITOR_ERROR_SKIPPED flag set.
 It is a good place to call file_data_change_info_free().
 
-ed - pointer that can be used for editor_resume/editor_skip or NULL if all files were already processed
+ed - pointer that can be used for editor_resume/editor_skip
+     or NULL if all files were already processed
 flags - flags above
-list - list of procesed FileData structures, typically single file or whole list passed to start_editor_*
+list - list of procesed FileData structures, typically
+       single file or whole list passed to start_editor_*
 data - generic pointer
 */
 typedef gint (*EditorCallback) (gpointer ed, EditorFlags flags, GList *list, gpointer data);
 
-
 void editor_resume(gpointer ed);
 void editor_skip(gpointer ed);
-
-
 
 EditorFlags start_editor(const gchar *key, const gchar *working_directory);
 EditorFlags start_editor_from_file(const gchar *key, FileData *fd);
 EditorFlags start_editor_from_filelist(const gchar *key, GList *list);
 EditorFlags start_editor_from_file_full(const gchar *key, FileData *fd, EditorCallback cb, gpointer data);
-EditorFlags start_editor_from_filelist_full(const gchar *key, GList *list, const gchar *working_directory, EditorCallback cb, gpointer data);
+EditorFlags start_editor_from_filelist_full(const gchar *key, GList *list,
+                                            const gchar *working_directory, EditorCallback cb, gpointer data);
 gboolean editor_window_flag_set(const gchar *key);
 gboolean editor_is_filter(const gchar *key);
 gboolean editor_no_param(const gchar *key);
@@ -126,6 +121,7 @@ const gchar *editor_get_name(const gchar *key);
 gboolean is_valid_editor_command(const gchar *key);
 gboolean editor_blocks_file(const gchar *key);
 
-EditorFlags editor_command_parse(const EditorDescription *editor, GList *list, gboolean consider_sidecars, gchar **output);
+EditorFlags editor_command_parse(const EditorDescription *editor, GList *list,
+                                 gboolean consider_sidecars, gchar **output);
 
 #endif

@@ -23,21 +23,21 @@
 #define TYPEDEFS_H
 
 typedef enum {
-    ZOOM_RESET_ORIGINAL = 0,
-    ZOOM_RESET_FIT_WINDOW   = 1,
-    ZOOM_RESET_NONE     = 2
+    ZOOM_RESET_ORIGINAL   = 0,
+    ZOOM_RESET_FIT_WINDOW = 1,
+    ZOOM_RESET_NONE       = 2
 } ZoomMode;
 
 typedef enum {
-    MOUSE_BUTTON_LEFT   = 1,
-    MOUSE_BUTTON_MIDDLE = 2,
-    MOUSE_BUTTON_RIGHT  = 3,
-    MOUSE_BUTTON_WHEEL_UP   = 4,
-    MOUSE_BUTTON_WHEEL_DOWN = 5,
-    MOUSE_BUTTON_WHEEL_LEFT = 6,
-    MOUSE_BUTTON_WHEEL_RIGHT= 7,
-    MOUSE_BUTTON_BACK    = 8,
-    MOUSE_BUTTON_FORWARD = 9,
+    MOUSE_BUTTON_LEFT        = 1,
+    MOUSE_BUTTON_MIDDLE      = 2,
+    MOUSE_BUTTON_RIGHT       = 3,
+    MOUSE_BUTTON_WHEEL_UP    = 4,
+    MOUSE_BUTTON_WHEEL_DOWN  = 5,
+    MOUSE_BUTTON_WHEEL_LEFT  = 6,
+    MOUSE_BUTTON_WHEEL_RIGHT = 7,
+    MOUSE_BUTTON_BACK        = 8,
+    MOUSE_BUTTON_FORWARD     = 9,
 } MouseButton;
 
 typedef enum {
@@ -68,9 +68,9 @@ typedef enum {
 } SortType;
 
 typedef enum {
-    ALTER_NONE,     /* do nothing */
+    ALTER_NONE,
     ALTER_ROTATE_90,
-    ALTER_ROTATE_90_CC, /* counterclockwise */
+    ALTER_ROTATE_90_CC,
     ALTER_ROTATE_180,
     ALTER_MIRROR,
     ALTER_FLIP,
@@ -86,10 +86,10 @@ typedef enum {
 
 
 typedef enum {
-    IMAGE_STATE_NONE    = 0,
-    IMAGE_STATE_IMAGE   = 1 << 0,
-    IMAGE_STATE_LOADING = 1 << 1,
-    IMAGE_STATE_ERROR   = 1 << 2,
+    IMAGE_STATE_NONE        = 0,
+    IMAGE_STATE_IMAGE       = 1 << 0,
+    IMAGE_STATE_LOADING     = 1 << 1,
+    IMAGE_STATE_ERROR       = 1 << 2,
     IMAGE_STATE_COLOR_ADJ   = 1 << 3,
     IMAGE_STATE_ROTATE_AUTO = 1 << 4,
     IMAGE_STATE_ROTATE_USER = 1 << 5,
@@ -192,7 +192,7 @@ typedef enum {
 } MetadataFormat;
 
 typedef enum {
-    STARTUP_PATH_CURRENT    = 0,
+    STARTUP_PATH_CURRENT = 0,
     STARTUP_PATH_LAST,
     STARTUP_PATH_HOME,
 } StartUpPath;
@@ -251,73 +251,54 @@ typedef enum {
 
 #define MAX_SPLIT_IMAGES 4
 
-typedef struct _ImageLoader ImageLoader;
-typedef struct _ThumbLoader ThumbLoader;
+typedef struct ImageLoader ImageLoader;
+typedef struct ThumbLoader ThumbLoader;
 
-typedef struct _CollectInfo CollectInfo;
-typedef struct _CollectionData CollectionData;
-typedef struct _CollectTable CollectTable;
-typedef struct _CollectWindow CollectWindow;
+typedef struct CollectInfo CollectInfo;
+typedef struct CollectionData CollectionData;
+typedef struct CollectTable CollectTable;
+typedef struct CollectWindow CollectWindow;
 
-typedef struct _ImageWindow ImageWindow;
+typedef struct ImageWindow ImageWindow;
 
-typedef struct _FileData FileData;
-typedef struct _FileDataChangeInfo FileDataChangeInfo;
+typedef struct FileData FileData;
+typedef struct FileDataChangeInfo FileDataChangeInfo;
 
-typedef struct _LayoutWindow LayoutWindow;
-typedef struct _LayoutOptions LayoutOptions;
+typedef struct LayoutWindow LayoutWindow;
+typedef struct LayoutOptions LayoutOptions;
 
-typedef struct _ViewDir ViewDir;
-typedef struct _ViewDirInfoList ViewDirInfoList;
-typedef struct _ViewDirInfoTree ViewDirInfoTree;
+typedef struct ViewDir ViewDir;
+typedef struct ViewDirInfoList ViewDirInfoList;
+typedef struct ViewDirInfoTree ViewDirInfoTree;
 
-typedef struct _ViewFile ViewFile;
-typedef struct _ViewFileInfoList ViewFileInfoList;
-typedef struct _ViewFileInfoIcon ViewFileInfoIcon;
+typedef struct ViewFile ViewFile;
+typedef struct ViewFileInfoList ViewFileInfoList;
+typedef struct ViewFileInfoIcon ViewFileInfoIcon;
 
-typedef struct _SlideShowData SlideShowData;
-typedef struct _FullScreenData FullScreenData;
+typedef struct SlideShowData SlideShowData;
+typedef struct FullScreenData FullScreenData;
 
-typedef struct _PixmapFolders PixmapFolders;
-typedef struct _Histogram Histogram;
-typedef struct _HistMap HistMap;
+typedef struct PixmapFolders PixmapFolders;
+typedef struct HistMap HistMap;
 
-typedef struct _SecureSaveInfo SecureSaveInfo;
+typedef struct SecureSaveInfo SecureSaveInfo;
 
-typedef struct _ExifData ExifData;
+typedef struct ExifData ExifData;
 
-typedef struct _EditorDescription EditorDescription;
+typedef struct EditorDescription EditorDescription;
 
-typedef struct _CommandLine CommandLine;
-
-struct _Histogram {
-    gint histogram_channel; /* drawing mode for histogram */
-    gint histogram_mode;     /* logarithmical or not */
-    guint vgrid; /* number of vertical divisions, 0 for none */
-    guint hgrid; /* number of horizontal divisions, 0 for none */
-    struct {
-        int R; /* red */
-        int G; /* green */
-        int B; /* blue */
-        int A; /* alpha */
-    } grid_color;  /* grid color */
-
-};
-
-
-
-struct _ImageLoader;
+typedef struct CommandLine CommandLine;
 
 typedef void (* ThumbLoaderFunc)(ThumbLoader *tl, gpointer data);
 
 typedef void (* FileUtilDoneFunc)(gboolean success, const gchar *done_path, gpointer data);
 
-struct _ThumbLoader
+struct ThumbLoader
 {
     gboolean standard_loader;
 
     ImageLoader *il;
-    FileData *fd;           /* fd->pixbuf contains final (scaled) image when done */
+    FileData *fd; /* fd->pixbuf contains final (scaled) image when done */
 
     gboolean cache_enable;
     gboolean cache_hit;
@@ -335,14 +316,14 @@ struct _ThumbLoader
     guint idle_done_id; /* event source id */
 };
 
-struct _CollectInfo
+struct CollectInfo
 {
     FileData *fd;
     GdkPixbuf *pixbuf;
     guint flag_mask;
 };
 
-struct _CollectionData
+struct CollectionData
 {
     gchar *path;
     gchar *name;
@@ -370,7 +351,7 @@ struct _CollectionData
     GHashTable *existence;
 };
 
-struct _CollectTable
+struct CollectTable
 {
     GtkWidget *scrolled;
     GtkWidget *listview;
@@ -411,7 +392,7 @@ struct _CollectTable
     GList *editmenu_fd_list;
 };
 
-struct _CollectWindow
+struct CollectWindow
 {
     GtkWidget *window;
     CollectTable *table;
@@ -424,11 +405,11 @@ struct _CollectWindow
 };
 
 typedef gint (* ImageTileRequestFunc)(ImageWindow *imd, gint x, gint y,
-                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
+                                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
 typedef void (* ImageTileDisposeFunc)(ImageWindow *imd, gint x, gint y,
-                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
+                                      gint width, gint height, GdkPixbuf *pixbuf, gpointer);
 
-struct _ImageWindow
+struct ImageWindow
 {
     GtkWidget *widget;  /* use this to add it and show it */
     GtkWidget *pr;
@@ -436,22 +417,22 @@ struct _ImageWindow
 
     FileData *image_fd;
 
-    gboolean unknown;       /* failed to load image */
+    gboolean unknown;   /* failed to load image */
 
-    ImageLoader *il;        /* FIXME - image loader should probably go to FileData, but it must first support
-                   sending callbacks to multiple ImageWindows in parallel */
+    ImageLoader *il;    /* FIXME - image loader should probably go to FileData, but it must first support
+                           sending callbacks to multiple ImageWindows in parallel */
 
     gint has_frame;  /* not boolean, see image_new() */
 
     /* top level (not necessarily parent) window */
     gboolean top_window_sync;   /* resize top_window when image dimensions change */
-    GtkWidget *top_window;  /* window that gets title, and window to resize when 'fitting' */
-    gchar *title;       /* window title to display left of file name */
-    gchar *title_right; /* window title to display right of file name */
+    GtkWidget *top_window;      /* window that gets title, and window to resize when 'fitting' */
+    gchar *title;               /* window title to display left of file name */
+    gchar *title_right;         /* window title to display right of file name */
     gboolean title_show_zoom;   /* option to include zoom in window title */
 
     gboolean completed;
-    ImageState state;   /* mask of IMAGE_STATE_* flags about current image */
+    ImageState state;
 
     void (*func_update)(ImageWindow *imd, gpointer data);
     void (*func_complete)(ImageWindow *imd, gint preload, gpointer data);
@@ -464,7 +445,6 @@ struct _ImageWindow
     gpointer data_state;
     gpointer data_tile;
 
-    /* button, scroll functions */
     void (*func_button)(ImageWindow *, GdkEventButton *event, gpointer);
     void (*func_drag)(ImageWindow *, GdkEventMotion *event, gdouble dx, gdouble dy, gpointer);
     void (*func_scroll)(ImageWindow *, GdkEventScroll *event, gpointer);
@@ -507,7 +487,7 @@ struct _ImageWindow
 
 #define FILEDATA_MARKS_SIZE 6
 
-struct _FileDataChangeInfo {
+struct FileDataChangeInfo {
     FileDataChangeType type;
     gchar *source;
     gchar *dest;
@@ -515,7 +495,7 @@ struct _FileDataChangeInfo {
     gboolean regroup_when_finished;
 };
 
-struct _FileData {
+struct FileData {
     guint magick;
     gint type;
     gchar *original_path; /* key to file_data_pool hash table */
@@ -527,29 +507,30 @@ struct _FileData {
     gint64 size;
     struct timespec dat;
     struct timespec cdat;
-    mode_t mode; /* this is needed at least for notification in view_dir because it is preserved after the file/directory is deleted */
+    mode_t mode;       /* this is needed at least for notification in view_dir
+                          because it is preserved after the file/directory is deleted */
     gint sidecar_priority;
 
-    guint marks; /* each bit represents one mark */
+    guint marks;       /* each bit represents one mark */
     guint valid_marks; /* zero bit means that the corresponding mark needs to be reread */
 
 
     GList *sidecar_files;
-    FileData *parent; /* parent file if this is a sidecar file, NULL otherwise */
+    FileData *parent;  /* parent file if this is a sidecar file, NULL otherwise */
     FileDataChangeInfo *change; /* for rename, move ... */
     GdkPixbuf *thumb_pixbuf;
 
     GdkPixbuf *pixbuf; /* full-size image, only complete images, NULL during loading
-                  all FileData with non-NULL pixbuf are referenced by image_cache */
-    guint page_num;   /* requested sub-image/page index for multi-image files
-                       * (TIFF pages, MKV image attachments, ...); 0 by default */
-    guint page_total; /* number of sub-images/pages available, as discovered by the
-                       * loader backend; 0 or 1 means "not a multi-image file" */
+                          all FileData with non-NULL pixbuf are referenced by image_cache */
+    guint page_num;    /* requested sub-image/page index for multi-image files
+                        * (TIFF pages, MKV image attachments, ...); 0 by default */
+    guint page_total;  /* number of sub-images/pages available, as discovered by the
+                        * loader backend; 0 or 1 means "not a multi-image file" */
 
     HistMap *histmap;
 
     gint ref;
-    gint version; /* increased when any field in this structure is changed */
+    gint version;      /* increased when any field in this structure is changed */
     gboolean disable_grouping;
 
     gint user_orientation;
@@ -557,7 +538,8 @@ struct _FileData {
 
     ExifData *exif;
     time_t exifdate;
-    GHashTable *modified_xmp; // hash table which contains unwritten xmp metadata in format: key->list of string values
+    GHashTable *modified_xmp; /* hash table which contains unwritten xmp metadata
+                                 in format: key->list of string values */
     GHashTable *cached_metadata;
 };
 
@@ -577,7 +559,7 @@ typedef struct {
     gpointer done_data;
 } DirLoadData;
 
-struct _LayoutOptions
+struct LayoutOptions
 {
     gchar *id;
 
@@ -637,7 +619,7 @@ struct _LayoutOptions
     gboolean exit_on_close;
 };
 
-struct _LayoutWindow
+struct LayoutWindow
 {
     LayoutOptions options;
 
@@ -749,7 +731,7 @@ struct _LayoutWindow
 
     /* misc */
 
-    GtkWidget *utility_box; /* referenced by lw, exist during whole lw lifetime */
+    GtkWidget *utility_box;   /* referenced by lw, exist during whole lw lifetime */
     GtkWidget *utility_paned; /* between image and bar */
     GtkWidget *bar_sort;
     GtkWidget *bar;
@@ -762,7 +744,7 @@ struct _LayoutWindow
     GtkWidget *exif_window;
 };
 
-struct _ViewDir
+struct ViewDir
 {
     DirViewType type;
     gpointer info;
@@ -792,24 +774,23 @@ struct _ViewDir
     PixmapFolders *pf;
 };
 
-struct _ViewDirInfoList
+struct ViewDirInfoList
 {
     GList *list;
 };
 
-struct _ViewDirInfoTree
+struct ViewDirInfoTree
 {
     guint drop_expand_id; /* event source id */
     gint busy_ref;
 };
 
+typedef struct ViewFileFuncs ViewFileFuncs;
 
-typedef struct _ViewFileFuncs ViewFileFuncs;
-
-struct _ViewFile
+struct ViewFile
 {
     FileViewType type;
-    const struct _ViewFileFuncs *funcs;
+    const struct ViewFileFuncs *funcs;
     gpointer info;
 
     GtkWidget *widget;
@@ -850,14 +831,14 @@ struct _ViewFile
     gint clicked_mark;
 
     /* refresh */
-    guint refresh_idle_id; /* event source id */
+    guint refresh_idle_id;   /* event source id */
     time_t time_refresh_set; /* time when refresh_idle_id was set */
 
     /* file list for edit menu */
     GList *editmenu_fd_list;
 };
 
-struct _ViewFileInfoList
+struct ViewFileInfoList
 {
     FileData *click_fd;
     FileData *select_fd;
@@ -869,37 +850,38 @@ struct _ViewFileInfoList
     guint select_idle_id; /* event source id */
 };
 
-struct _IconData;
+struct IconData;
 
-struct _ViewFileInfoIcon
+struct ViewFileInfoIcon
 {
     /* table stuff */
     gint columns;
     gint rows;
 
     GList *selection;
-    struct _IconData *prev_selection;
+    struct IconData *prev_selection;
 
     GtkWidget *tip_window;
     guint tip_delay_id; /* event source id */
-    struct _IconData *tip_id;
+    struct IconData *tip_id;
 
     gint x, y, x_root, y_root;
 
-    struct _IconData *click_id;
+    struct IconData *click_id;
 
-    struct _IconData *focus_id;
+    struct IconData *focus_id;
     gint focus_row;
     gint focus_column;
 
     gboolean show_text;
 };
 
-struct _SlideShowData
+struct SlideShowData
 {
     LayoutWindow *lw;        /* use this window to display the slideshow */
     ImageWindow *imd;        /* use this window only if lw is not available,
-                                FIXME: it is probably required only by img-view.c and should be dropped with it */
+                                FIXME: it is probably required only by img-view.c
+                                and should be dropped with it */
 
     GList *filelist;
     CollectionData *cd;
@@ -923,7 +905,7 @@ struct _SlideShowData
     gboolean stop_pending;
 };
 
-struct _FullScreenData
+struct FullScreenData
 {
     GtkWidget *window;
     ImageWindow *imd;
@@ -942,7 +924,7 @@ struct _FullScreenData
     gboolean same_region; /* the returned region will overlap the current location of widget. */
 };
 
-struct _PixmapFolders
+struct PixmapFolders
 {
     GdkPixbuf *close;
     GdkPixbuf *open;
@@ -950,18 +932,18 @@ struct _PixmapFolders
     GdkPixbuf *parent;
 };
 
-struct _SecureSaveInfo {
-    FILE *fp; /**< file stream pointer */
-    gchar *file_name; /**< final file name */
-    gchar *tmp_file_name; /**< temporary file name */
-    gint err; /**< set to non-zero value in case of error */
-    gboolean secure_save; /**< use secure save for this file, internal use only */
-    gboolean preserve_perms; /**< whether to preserve perms, TRUE by default */
-    gboolean preserve_mtime; /**< whether to preserve mtime, FALSE by default */
+struct SecureSaveInfo {
+    FILE *fp;                 /**< file stream pointer */
+    gchar *file_name;         /**< final file name */
+    gchar *tmp_file_name;     /**< temporary file name */
+    gint err;                 /**< set to non-zero value in case of error */
+    gboolean secure_save;     /**< use secure save for this file, internal use only */
+    gboolean preserve_perms;  /**< whether to preserve perms, TRUE by default */
+    gboolean preserve_mtime;  /**< whether to preserve mtime, FALSE by default */
     gboolean unlink_on_error; /**< whether to remove temporary file on save failure, TRUE by default */
 };
 
-struct _CommandLine
+struct CommandLine
 {
     int argc;
     gchar **argv;

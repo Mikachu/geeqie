@@ -24,10 +24,10 @@
 
 #define TYPE_PIXBUF_RENDERER            (pixbuf_renderer_get_type())
 #define PIXBUF_RENDERER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TYPE_PIXBUF_RENDERER, PixbufRenderer))
-#define PIXBUF_RENDERER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), TYPE_PIXBUF_RENDERER, PixbufRendererClass))
+#define PIXBUF_RENDERER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass),  TYPE_PIXBUF_RENDERER, PixbufRendererClass))
 #define IS_PIXBUF_RENDERER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), TYPE_PIXBUF_RENDERER))
-#define IS_PIXBUF_RENDERER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), TYPE_PIXBUF_RENDERER))
-#define PIXBUF_RENDERER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), TYPE_PIXBUF_RENDERER, PixbufRendererClass))
+#define IS_PIXBUF_RENDERER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass),  TYPE_PIXBUF_RENDERER))
+#define PIXBUF_RENDERER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),  TYPE_PIXBUF_RENDERER, PixbufRendererClass))
 
 /* alpha channel checkerboard background (same as gimp) */
 #define PR_ALPHA_CHECK1 0x00999999
@@ -46,10 +46,10 @@
 #define ROUND_DOWN(A,B) ((gint)(((A))/(B))*(B))
 
 
-typedef struct _RendererFuncs RendererFuncs;
+typedef struct RendererFuncs RendererFuncs;
 
-typedef struct _PixbufRenderer PixbufRenderer;
-typedef struct _PixbufRendererClass PixbufRendererClass;
+typedef struct PixbufRenderer PixbufRenderer;
+typedef struct PixbufRendererClass PixbufRendererClass;
 
 
 typedef gint (* PixbufRendererTileRequestFunc)(PixbufRenderer *pr, gint x, gint y,
@@ -71,26 +71,26 @@ typedef enum {
 
 typedef enum {
     TILE_RENDER_NONE = 0,   /* do nothing */
-    TILE_RENDER_AREA,   /* render an area of the tile */
-    TILE_RENDER_ALL     /* render the whole tile */
+    TILE_RENDER_AREA,       /* render an area of the tile */
+    TILE_RENDER_ALL         /* render the whole tile */
 } ImageRenderType;
 
 typedef enum {
-    OVL_NORMAL  = 0,
+    OVL_NORMAL      = 0,
     OVL_RELATIVE    = 1 << 0, /* x,y coordinates are relative, negative values start bottom right */
     /* OVL_HIDE_ON_SCROLL = 1 << 1*/ /* hide temporarily when scrolling (not yet implemented) */
 } OverlayRendererFlags;
 
-struct _RendererFuncs
+struct RendererFuncs
 {
 //  void (*redraw)(void *renderer, gint x, gint y, gint w, gint h,
 //                 gint clamp, ImageRenderType render, gboolean new_data, gboolean only_existing);
-    void (*area_changed)(void *renderer, gint src_x, gint src_y, gint src_w, gint src_h); /* pixbuf area changed */
+    void (*area_changed)(void *renderer, gint src_x, gint src_y, gint src_w, gint src_h);
     void (*invalidate_region)(void *renderer, gint x, gint y, gint w, gint h);
-    void (*scroll)(void *renderer, gint x_off, gint y_off); /* scroll */
-    void (*update_viewport)(void *renderer); /* window / wiewport / border color has changed */
+    void (*scroll)(void *renderer, gint x_off, gint y_off);
+    void (*update_viewport)(void *renderer);              /* window / viewport / border color has changed */
     void (*update_pixbuf)(void *renderer, gboolean lazy); /* pixbuf has changed */
-    void (*update_zoom)(void *renderer, gboolean lazy); /* zoom has changed */
+    void (*update_zoom)(void *renderer, gboolean lazy);   /* zoom has changed */
 
     gint (*overlay_add)(void *renderer, GdkPixbuf *pixbuf, gint x, gint y, OverlayRendererFlags flags);
     void (*overlay_set)(void *renderer, gint id, GdkPixbuf *pixbuf, gint x, gint y);
@@ -101,33 +101,33 @@ struct _RendererFuncs
     void (*free)(void *renderer);
 };
 
-struct _PixbufRenderer
+struct PixbufRenderer
 {
     GtkEventBox eventbox;
 
     gint image_width;   /* image actual dimensions (pixels) */
     gint image_height;
     gint stereo_pixbuf_offset_right; /* offset of the right part of the stereo image in pixbuf */
-    gint stereo_pixbuf_offset_left; /* offset of the left part of the stereo image in pixbuf */
+    gint stereo_pixbuf_offset_left;  /* offset of the left part of the stereo image in pixbuf */
 
     GdkPixbuf *pixbuf;
 
     gint window_width;  /* allocated size of window (drawing area) */
     gint window_height;
 
-    gint viewport_width;    /* allocated size of viewport (same as window for normal mode, half of window for SBS mode) */
+    gint viewport_width;/* allocated size of viewport (same as window for normal mode, half of window for SBS mode) */
     gint viewport_height;
 
     gint x_offset;      /* offset of image start (non-zero when viewport < window) */
     gint y_offset;
 
-    gint x_mouse; /* coordinates of the mouse taken from GtkEvent */
+    gint x_mouse;       /* coordinates of the mouse taken from GtkEvent */
     gint y_mouse;
 
     gint vis_width;     /* dimensions of visible part of image */
     gint vis_height;
 
-    gint width;     /* size of scaled image (result) */
+    gint width;         /* size of scaled image (result) */
     gint height;
 
     gint x_scroll;      /* scroll offset of image (into width, height to start drawing) */
@@ -221,7 +221,7 @@ struct _PixbufRenderer
     RendererFuncs *renderer2;
 };
 
-struct _PixbufRendererClass
+struct PixbufRendererClass
 {
     GtkEventBoxClass parent_class;
 
@@ -234,9 +234,6 @@ struct _PixbufRendererClass
     void (*drag)(PixbufRenderer *pr, GdkEventMotion *event);
 };
 
-
-
-
 GType pixbuf_renderer_get_type(void);
 
 PixbufRenderer *pixbuf_renderer_new(void);
@@ -248,7 +245,8 @@ void pixbuf_renderer_set_parent(PixbufRenderer *pr, GtkWindow *window);
 void pixbuf_renderer_set_pixbuf(PixbufRenderer *pr, GdkPixbuf *pixbuf, gdouble zoom);
 
 /* same as pixbuf_renderer_set_pixbuf but waits with redrawing for pixbuf_renderer_area_changed */
-void pixbuf_renderer_set_pixbuf_lazy(PixbufRenderer *pr, GdkPixbuf *pixbuf, gdouble zoom, gint orientation, StereoPixbufData stereo_data);
+void pixbuf_renderer_set_pixbuf_lazy(PixbufRenderer *pr, GdkPixbuf *pixbuf,
+                                     gdouble zoom, gint orientation, StereoPixbufData stereo_data);
 
 
 GdkPixbuf *pixbuf_renderer_get_pixbuf(PixbufRenderer *pr);
@@ -259,7 +257,8 @@ gint pixbuf_renderer_get_orientation(PixbufRenderer *pr);
 /* sets the format of stereo data in the input pixbuf */
 void pixbuf_renderer_set_stereo_data(PixbufRenderer *pr, StereoPixbufData stereo_data);
 
-void pixbuf_renderer_set_post_process_func(PixbufRenderer *pr, PixbufRendererPostProcessFunc func, gpointer user_data, gboolean slow);
+void pixbuf_renderer_set_post_process_func(PixbufRenderer *pr, PixbufRendererPostProcessFunc func,
+                                           gpointer user_data, gboolean slow);
 
 /* display an on-request array of pixbuf tiles */
 
@@ -333,19 +332,19 @@ void pixbuf_renderer_set_size_early(PixbufRenderer *pr, gint width, gint height)
 /* stereo */
 void pixbuf_renderer_stereo_set(PixbufRenderer *pr, gint stereo_mode);
 gint pixbuf_renderer_stereo_get(PixbufRenderer *pr);
-void pixbuf_renderer_stereo_fixed_set(PixbufRenderer *pr, gint width, gint height, gint x1, gint y1, gint x2, gint y2);
+void pixbuf_renderer_stereo_fixed_set(PixbufRenderer *pr, gint width, gint height,
+                                      gint x1, gint y1, gint x2, gint y2);
 
-/* protected - for renderer use only*/
+/* protected - for renderer use only */
 
-typedef struct _SourceTile SourceTile;
-struct _SourceTile
+typedef struct SourceTile SourceTile;
+struct SourceTile
 {
     gint x;
     gint y;
     GdkPixbuf *pixbuf;
     gboolean blank;
 };
-
 
 gboolean pr_clip_region(gint x, gint y, gint w, gint h,
                         gint clip_x, gint clip_y, gint clip_w, gint clip_h,
@@ -373,4 +372,5 @@ void pr_coords_map_orientation_reverse(gint orientation,
 GList *pr_source_tile_compute_region(PixbufRenderer *pr, gint x, gint y, gint w, gint h, gboolean request);
 
 void pr_create_anaglyph(guint mode, GdkPixbuf *pixbuf, GdkPixbuf *right, gint x, gint y, gint w, gint h);
+
 #endif

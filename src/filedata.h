@@ -58,7 +58,8 @@ gboolean file_data_check_changed_files(FileData *fd);
 
 void file_data_increment_version(FileData *fd);
 
-gboolean file_data_add_change_info(FileData *fd, FileDataChangeType type, const gchar *src, const gchar *dest);
+gboolean file_data_add_change_info(FileData *fd, FileDataChangeType type,
+                                   const gchar *src, const gchar *dest);
 void file_data_change_info_free(FileDataChangeInfo *fdci, FileData *fd);
 
 void file_data_disable_grouping(FileData *fd, gboolean disable);
@@ -87,9 +88,10 @@ GList *filelist_recursive_full(FileData *dir_fd, SortType method, gboolean ascen
 
 typedef gboolean (* FileDataGetMarkFunc)(FileData *fd, gint n, gpointer data);
 typedef gboolean (* FileDataSetMarkFunc)(FileData *fd, gint n, gboolean value, gpointer data);
-gboolean file_data_register_mark_func(gint n, FileDataGetMarkFunc get_mark_func, FileDataSetMarkFunc set_mark_func, gpointer data, GDestroyNotify notify);
-void file_data_get_registered_mark_func(gint n, FileDataGetMarkFunc *get_mark_func, FileDataSetMarkFunc *set_mark_func, gpointer *data);
-
+gboolean file_data_register_mark_func(gint n, FileDataGetMarkFunc get_mark_func,
+                                      FileDataSetMarkFunc set_mark_func, gpointer data, GDestroyNotify notify);
+void file_data_get_registered_mark_func(gint n, FileDataGetMarkFunc *get_mark_func,
+                                        FileDataSetMarkFunc *set_mark_func, gpointer *data);
 
 gboolean file_data_get_mark(FileData *fd, gint n);
 guint file_data_get_marks(FileData *fd);
@@ -103,7 +105,6 @@ void file_data_set_user_orientation(FileData *fd, gint value);
 gchar *file_data_sc_list_to_string(FileData *fd);
 
 gchar *file_data_get_sidecar_path(FileData *fd, gboolean existing_only);
-
 
 gboolean file_data_add_ci(FileData *fd, FileDataChangeType type, const gchar *src, const gchar *dest);
 gboolean file_data_sc_add_ci_copy(FileData *fd, const gchar *dest_path);
@@ -149,7 +150,6 @@ void file_data_sc_free_ci(FileData *fd);
 void file_data_sc_free_ci_list(GList *fd_list);
 
 GList *file_data_process_groups_in_selection(GList *list, gboolean ungroup, GList **ungrouped);
-
 
 typedef void (*FileDataNotifyFunc)(FileData *fd, NotifyType type, gpointer data);
 gboolean file_data_register_notify_func(FileDataNotifyFunc func, gpointer data, NotifyPriority priority);

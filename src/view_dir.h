@@ -57,8 +57,10 @@ void vd_dnd_init(ViewDir *vd);
 
 void vd_menu_position_cb(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data);
 
-void vd_activate_cb(GtkTreeView *tview, GtkTreePath *tpath, GtkTreeViewColumn *column, gpointer data);
-void vd_color_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
+void vd_activate_cb(GtkTreeView *tview, GtkTreePath *tpath,
+                    GtkTreeViewColumn *column, gpointer data);
+void vd_color_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell,
+                 GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 
 gboolean vd_release_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer data);
 gboolean vd_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);

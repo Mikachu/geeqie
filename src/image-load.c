@@ -259,8 +259,8 @@ ImageLoader *image_loader_new(FileData *fd)
 /**************************************************************************************/
 /* send signals via idle calbacks - the callback are executed in the main thread */
 
-typedef struct _ImageLoaderAreaParam ImageLoaderAreaParam;
-struct _ImageLoaderAreaParam {
+typedef struct ImageLoaderAreaParam ImageLoaderAreaParam;
+struct ImageLoaderAreaParam {
     ImageLoader *il;
     gint x;
     gint y;

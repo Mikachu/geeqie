@@ -36,8 +36,8 @@
 #endif
 
 
-typedef struct _ColorManCache ColorManCache;
-struct _ColorManCache {
+typedef struct ColorManCache ColorManCache;
+struct ColorManCache {
     cmsHPROFILE   profile_in;
     cmsHPROFILE   profile_out;
     cmsHTRANSFORM transform;

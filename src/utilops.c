@@ -261,8 +261,8 @@ enum {
     UTILITY_RENAME_FORMATTED
 };
 
-typedef struct _UtilityDataMessages UtilityDataMessages;
-struct _UtilityDataMessages {
+typedef struct UtilityDataMessages UtilityDataMessages;
+struct UtilityDataMessages {
     gchar *title;
     gchar *question;
     gchar *desc_flist;
@@ -270,8 +270,8 @@ struct _UtilityDataMessages {
     gchar *fail;
 };
 
-typedef struct _UtilityData UtilityData;
-struct _UtilityData {
+typedef struct UtilityData UtilityData;
+struct UtilityData {
     UtilityType type;
     UtilityPhase phase;
 
@@ -334,8 +334,8 @@ enum {
     UTILITY_COLUMN_COUNT
 };
 
-typedef struct _UtilityDelayData UtilityDelayData;
-struct _UtilityDelayData {
+typedef struct UtilityDelayData UtilityDelayData;
+struct UtilityDelayData {
     UtilityType type;
     UtilityPhase phase;
     GList *flist;

@@ -813,7 +813,7 @@ static void options_load_profile(GQParserData *parser_data, GMarkupParseContext 
  * xml file structure (private)
  *-----------------------------------------------------------------------------
  */
-struct _GQParserData
+struct GQParserData
 {
     GList *parse_func_stack;
     gboolean startup; /* reading config for the first time - add commandline and defaults */
@@ -1227,7 +1227,7 @@ static void options_parse_toplevel(GQParserData *parser_data, GMarkupParseContex
  */
 
 
-struct _GQParserFuncData
+struct GQParserFuncData
 {
     GQParserStartFunc start_func;
     GQParserEndFunc end_func;
