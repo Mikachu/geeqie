@@ -22,7 +22,7 @@
 #ifndef FULLSCREEN_H
 #define FULLSCREEN_H
 
-#include "typedefs.h"
+#include "main.h"
 
 struct ImageWindow;
 

@@ -22,7 +22,7 @@
 #ifndef FILEDATA_H
 #define FILEDATA_H
 
-#include "typedefs.h"
+#include "main.h"
 
 typedef enum {
     FILEDATA_CHANGE_DELETE,

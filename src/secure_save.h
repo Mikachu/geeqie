@@ -21,7 +21,7 @@
 #ifndef SECURE_SAVE_H
 #define SECURE_SAVE_H
 
-#include "typedefs.h"
+#include "main.h"
 
 typedef enum {
     SS_ERR_NONE = 0,
