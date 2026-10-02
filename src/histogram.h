@@ -21,6 +21,8 @@
 #ifndef HISTOGRAM_H
 #define HISTOGRAM_H
 
+#include "filedata.h"
+
 /* Note: The order is important */
 #define HCHAN_R     0
 #define HCHAN_G     1

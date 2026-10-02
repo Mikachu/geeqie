@@ -23,6 +23,7 @@
 #define THUMB_H
 
 #include "typedefs.h"
+#include "filedata.h"
 
 struct ThumbLoader
 {
