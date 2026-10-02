@@ -264,6 +264,19 @@ PanItem *pan_item_tri_new(PanWindow *pw, FileData *fd,
     return pi;
 }
 
+void pan_item_tri_offset(PanItem *pi, gint x, gint y)
+{
+    if (!pi || pi->type != PAN_ITEM_TRIANGLE || !pi->data) return;
+
+    gint *coord = pi->data;
+    coord[0] += x;
+    coord[1] += y;
+    coord[2] += x;
+    coord[3] += y;
+    coord[4] += x;
+    coord[5] += y;
+}
+
 void pan_item_tri_border(PanItem *pi, gint borders,
                          guint8 r, guint8 g, guint8 b, guint8 a)
 {
