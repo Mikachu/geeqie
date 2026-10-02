@@ -22,11 +22,85 @@
 #ifndef FILEDATA_H
 #define FILEDATA_H
 
+#include "typedefs.h"
+
+struct FileData {
+    guint magick;
+    gint type;
+    gchar *original_path; /* key to file_data_pool hash table */
+    gchar *path;
+    const gchar *name;
+    const gchar *extension;
+    gchar *collate_key_name;
+    gchar *collate_key_name_nocase;
+    gint64 size;
+    struct timespec dat;
+    struct timespec cdat;
+    mode_t mode;       /* this is needed at least for notification in view_dir
+                          because it is preserved after the file/directory is deleted */
+    gint sidecar_priority;
+
+    guint marks;       /* each bit represents one mark */
+    guint valid_marks; /* zero bit means that the corresponding mark needs to be reread */
+
+    GList *sidecar_files;
+    FileData *parent;  /* parent file if this is a sidecar file, NULL otherwise */
+    FileDataChangeInfo *change; /* for rename, move ... */
+    GdkPixbuf *thumb_pixbuf;
+
+    GdkPixbuf *pixbuf; /* full-size image, only complete images, NULL during loading
+                          all FileData with non-NULL pixbuf are referenced by image_cache */
+    guint page_num;    /* requested sub-image/page index for multi-image files
+                        * (TIFF pages, MKV image attachments, ...); 0 by default */
+    guint page_total;  /* number of sub-images/pages available, as discovered by the
+                        * loader backend; 0 or 1 means "not a multi-image file" */
+
+    HistMap *histmap;
+
+    gint ref;
+    gint version;      /* increased when any field in this structure is changed */
+    gboolean disable_grouping;
+
+    gint user_orientation;
+    gint exif_orientation;
+
+    ExifData *exif;
+    time_t exifdate;
+    GHashTable *modified_xmp; /* hash table which contains unwritten xmp metadata
+                                 in format: key->list of string values */
+    GHashTable *cached_metadata;
+};
+
+struct FileDataChangeInfo {
+    FileDataChangeType type;
+    gchar *source;
+    gchar *dest;
+    gint error;
+    gboolean regroup_when_finished;
+};
+
+typedef struct {
+    gchar *dir_path;
+    gboolean follow_symlinks;
+    gboolean want_files;
+    gboolean want_dirs;
+    gint cancel;            /* atomic: set to 1 to cancel */
+    GArray *entries;        /* output: array of DirEntry, NULL until thread fills it */
+    gboolean success;
+    GList *files;           /* filled by filelist_read_done_cb */
+    GList *dirs;            /* filled by filelist_read_done_cb */
+    guint generation;       /* vf->dir_load_generation at launch time */
+    GList *old_list;        /* old vf->list to free after update */
+    GSourceFunc done_cb;
+    gpointer done_data;
+} DirLoadData;
+
 #ifdef DEBUG
 #define DEBUG_FILEDATA
 #endif
 
 #define FD_MAGICK 0x12345678u
+#define FILEDATA_MARKS_SIZE 6
 
 gchar *text_from_size(gint64 size);
 gchar *text_from_size_abrev(gint64 size);

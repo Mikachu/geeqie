@@ -28,6 +28,23 @@ typedef struct {
     gchar *action_name;
 } MouseBinding;
 
+struct CommandLine
+{
+    int argc;
+    gchar **argv;
+    gboolean startup_blank;
+    gboolean startup_full_screen;
+    gboolean startup_in_slideshow;
+    gboolean startup_command_line_collection;
+    gboolean tools_hide;
+    gboolean tools_show;
+    gchar *path;
+    gchar *file;
+    GList *cmd_list;
+    GList *collection_list;
+    gchar *geometry;
+};
+
 typedef struct ConfOptions ConfOptions;
 
 struct ConfOptions

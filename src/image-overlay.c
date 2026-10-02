@@ -30,6 +30,7 @@
 #include "img-view.h"
 #include "layout.h"
 #include "metadata.h"
+#include "slideshow.h"
 #include "pixbuf-renderer.h"
 #include "pixbuf_util.h"
 #include "ui_fileops.h"
