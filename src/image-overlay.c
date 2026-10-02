@@ -43,7 +43,6 @@
  *----------------------------------------------------------------------------
  */
 
-
 typedef struct OverlayStateData OverlayStateData;
 struct OverlayStateData {
     ImageWindow *imd;
@@ -62,11 +61,10 @@ struct OverlayStateData {
     gint icon_time[IMAGE_OSD_COUNT];
     gint icon_id[IMAGE_OSD_COUNT];
 
-    guint idle_id; /* event source id */
+    guint idle_id;  /* event source id */
     guint timer_id; /* event source id */
     gulong destroy_id;
 };
-
 
 typedef struct OSDIcon OSDIcon;
 struct OSDIcon {
@@ -77,13 +75,13 @@ struct OSDIcon {
 };
 
 static OSDIcon osd_icons[] = {
-    {  TRUE,   0,   0, NULL },          /* none */
-    {  TRUE, -10, -10, NULL },          /* auto rotated */
-    {  TRUE, -10, -10, NULL },          /* user rotated */
-    {  TRUE, -40, -10, NULL },          /* color embedded */
-    {  TRUE, -70, -10, NULL },          /* first image */
-    {  TRUE, -70, -10, NULL },          /* last image */
-    { FALSE, -70, -10, NULL },          /* osd enabled */
+    {  TRUE,   0,   0, NULL }, /* none */
+    {  TRUE, -10, -10, NULL }, /* auto rotated */
+    {  TRUE, -10, -10, NULL }, /* user rotated */
+    {  TRUE, -40, -10, NULL }, /* color embedded */
+    {  TRUE, -70, -10, NULL }, /* first image */
+    {  TRUE, -70, -10, NULL }, /* last image */
+    { FALSE, -70, -10, NULL }, /* osd enabled */
     { FALSE, 0, 0, NULL }
 };
 
@@ -104,7 +102,6 @@ void set_image_overlay_template_string(gchar **template_string, const gchar *val
     *template_string = g_strdup(value);
 }
 
-
 void set_default_image_overlay_template_string(gchar **template_string)
 {
     set_image_overlay_template_string(template_string, DEFAULT_OVERLAY_INFO);
@@ -120,13 +117,11 @@ void set_image_overlay_font_string(gchar **font_string, const gchar *value)
 
 static OverlayStateData *image_get_osd_data(ImageWindow *imd)
 {
-    OverlayStateData *osd;
-
     if (!imd) return NULL;
 
     g_assert(imd->pr);
 
-    osd = g_object_get_data(G_OBJECT(imd->pr), "IMAGE_OVERLAY_DATA");
+    OverlayStateData *osd = g_object_get_data(G_OBJECT(imd->pr), "IMAGE_OVERLAY_DATA");
     return osd;
 }
 
@@ -204,11 +199,10 @@ gint image_osd_histogram_get_mode(ImageWindow *imd)
 
 void image_osd_toggle(ImageWindow *imd)
 {
-    OsdShowFlags show;
-
     if (!imd) return;
 
-    show = image_osd_get(imd);
+    OsdShowFlags show = image_osd_get(imd);
+
     if (show == OSD_SHOW_NOTHING)
     {
         image_osd_set(imd, OSD_SHOW_INFO | OSD_SHOW_STATUS);
@@ -217,36 +211,29 @@ void image_osd_toggle(ImageWindow *imd)
     else
     {
         if (show & OSD_SHOW_HISTOGRAM)
-        {
             image_osd_set(imd, OSD_SHOW_NOTHING);
-        }
         else
-        {
             image_osd_set(imd, show | OSD_SHOW_HISTOGRAM);
-        }
     }
 }
 
 static gchar *keywords_to_string(FileData *fd)
 {
-    GList *keywords;
     GString *kwstr = NULL;
     gchar *ret = NULL;
 
     g_assert(fd);
 
-    keywords = metadata_read_list(fd, KEYWORD_KEY, METADATA_PLAIN);
+    GList *keywords = metadata_read_list(fd, KEYWORD_KEY, METADATA_PLAIN);
 
     if (keywords)
     {
-        GList *work = keywords;
-
-        while (work)
+        for (GList *work = keywords; work; work = work->next)
         {
             gchar *kw = work->data;
-            work = work->next;
 
             if (!kw) continue;
+
             if (!kwstr)
                 kwstr = g_string_new("");
             else
@@ -256,12 +243,8 @@ static gchar *keywords_to_string(FileData *fd)
         }
         string_list_free(keywords);
     }
-
     if (kwstr)
-    {
-        ret = kwstr->str;
-        g_string_free(kwstr, FALSE);
-    }
+        ret = g_string_free(kwstr, FALSE);
 
     return ret;
 }
@@ -274,7 +257,6 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
     gboolean want_separator = FALSE;
     gchar *name, *data;
     GString *new;
-    gchar *ret;
 
     if (!str || !*str) return g_strdup("");
 
@@ -383,11 +365,12 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
                  * Any \n is replaced by a newline
                  * Examples:
                  * "<i>*</i>\n" -> data is displayed in italics ended with a newline
-                 * "\n"     -> ended with newline
-                 * "ISO *"  -> prefix data with "ISO " (ie. "ISO 100")
-                 * "\**\*"  -> prefix data with a star, and append a star (ie. "*100*")
-                 * "\\*"    -> prefix data with an anti slash (ie "\100")
-                 * "Collection <b>*</b>\n" -> display data in bold prefixed by "Collection " and a newline is appended
+                 * "\n"         -> ended with newline
+                 * "ISO *"      -> prefix data with "ISO " (ie. "ISO 100")
+                 * "\**\*"      -> prefix data with a star, and append a star (ie. "*100*")
+                 * "\\*"        -> prefix data with an anti slash (ie "\100")
+                 * "Collection <b>*</b>\n" -> display data in bold prefixed by
+                 *                            "Collection " and a newline is appended
                  *
                  * FIXME: using background / foreground colors lead to weird results.
                  */
@@ -437,7 +420,7 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
 
             g_string_insert(new, pos, data);
             pos += strlen(data);
-    }
+        }
 
         if (pos-prev >= 1 && new->str[pos] == imp)
         {
@@ -447,7 +430,8 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
             want_separator |= (data && *data);
         }
 
-        if (new->str[pos] == '\n') want_separator = FALSE;
+        if (new->str[pos] == '\n')
+            want_separator = FALSE;
 
         prev = pos - 1;
 
@@ -462,15 +446,12 @@ static gchar *image_osd_mkinfo(const gchar *str, ImageWindow *imd, GHashTable *v
         end = start;
         while (*++(end) == '\n')
             ;
-        g_string_erase(new, start-new->str, end-start-1);
+        g_string_erase(new, start - new->str, end - start - 1);
     }
 
     g_strchomp(new->str);
 
-    ret = new->str;
-    g_string_free(new, FALSE);
-
-    return ret;
+    return g_string_free(new, FALSE);
 }
 
 typedef enum {
@@ -478,7 +459,8 @@ typedef enum {
     OSDT_NO_DUP,
 } OsdTemplateFlags;
 
-static void osd_template_insert(GHashTable *vars, gchar *keyword, gchar *value, OsdTemplateFlags flags)
+static void osd_template_insert(GHashTable *vars, gchar *keyword, gchar *value,
+                                OsdTemplateFlags flags)
 {
     if (!value)
         value = g_strdup("");
@@ -493,17 +475,17 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
     GdkPixbuf *pixbuf = NULL;
     gint width, height;
     PangoLayout *layout;
-    const gchar *name;
     gchar *text;
     gboolean with_hist;
     const HistMap *histmap = NULL;
     ImageWindow *imd = osd->imd;
-    FileData *fd = image_get_fd(imd);
     PangoFontDescription *font_desc;
+    FileData *fd = image_get_fd(imd);
 
     if (!fd) return NULL;
 
-    name = image_get_name(imd);
+    const gchar *name = image_get_name(imd);
+
     if (name)
     {
         gint n, t;
@@ -521,13 +503,16 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
             if (cd->name)
             {
                 if (file_extension_match(cd->name, GQ_COLLECTION_EXT))
-                    osd_template_insert(vars, "collection", remove_extension_from_path(cd->name), OSDT_NO_DUP);
+                    osd_template_insert(vars, "collection",
+                                        remove_extension_from_path(cd->name), OSDT_NO_DUP);
                 else
-                    osd_template_insert(vars, "collection", cd->name, OSDT_NONE);
+                    osd_template_insert(vars, "collection",
+                                        cd->name, OSDT_NONE);
             }
             else
             {
-                osd_template_insert(vars, "collection", _("Untitled"), OSDT_NONE);
+                osd_template_insert(vars, "collection",
+                                    _("Untitled"), OSDT_NONE);
             }
         }
         else
@@ -563,18 +548,28 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
             osd_template_insert(vars, "collection", NULL, OSDT_NONE);
         }
 
-        osd_template_insert(vars, "number", g_strdup_printf("%d", n), OSDT_NO_DUP);
-        osd_template_insert(vars, "total", g_strdup_printf("%d", t), OSDT_NO_DUP);
-        osd_template_insert(vars, "name", (gchar *) name, OSDT_NONE);
-        osd_template_insert(vars, "date", (gchar *) text_from_time(fd->dat.tv_sec), OSDT_NO_DUP);
-        osd_template_insert(vars, "size", text_from_size_abrev(fd->size), OSDT_NO_DUP);
-        osd_template_insert(vars, "zoom", image_zoom_get_as_text(imd), OSDT_NO_DUP);
+        osd_template_insert(vars, "number",
+                            g_strdup_printf("%d", n), OSDT_NO_DUP);
+        osd_template_insert(vars, "total",
+                            g_strdup_printf("%d", t), OSDT_NO_DUP);
+        osd_template_insert(vars, "name",
+                            (gchar *) name, OSDT_NONE);
+        osd_template_insert(vars, "date",
+                            (gchar *) text_from_time(fd->dat.tv_sec), OSDT_NO_DUP);
+        osd_template_insert(vars, "size",
+                            text_from_size_abrev(fd->size), OSDT_NO_DUP);
+        osd_template_insert(vars, "zoom",
+                            image_zoom_get_as_text(imd), OSDT_NO_DUP);
         if (image_get_page_total(imd) > 1) {
-            osd_template_insert(vars, "page", g_strdup_printf("%d", image_get_page(imd) + 1), OSDT_NO_DUP);
-            osd_template_insert(vars, "page_total", g_strdup_printf("%d", image_get_page_total(imd)), OSDT_NO_DUP);
+            osd_template_insert(vars, "page",
+                                g_strdup_printf("%d", image_get_page(imd) + 1), OSDT_NO_DUP);
+            osd_template_insert(vars, "page_total",
+                                g_strdup_printf("%d", image_get_page_total(imd)), OSDT_NO_DUP);
         } else {
-            osd_template_insert(vars, "page", NULL, OSDT_NO_DUP);
-            osd_template_insert(vars, "page_total", NULL, OSDT_NO_DUP);
+            osd_template_insert(vars, "page",
+                                NULL, OSDT_NO_DUP);
+            osd_template_insert(vars, "page_total",
+                                NULL, OSDT_NO_DUP);
         }
 
         if (!imd->unknown)
@@ -594,16 +589,21 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
                 image_get_image_size(imd, &w, &h);
             }
 
-
-            osd_template_insert(vars, "width", g_strdup_printf("%d", w), OSDT_NO_DUP);
-            osd_template_insert(vars, "height", g_strdup_printf("%d", h), OSDT_NO_DUP);
-            osd_template_insert(vars, "res", g_strdup_printf("%d × %d", w, h), OSDT_NO_DUP);
+            osd_template_insert(vars, "width",
+                                g_strdup_printf("%d", w), OSDT_NO_DUP);
+            osd_template_insert(vars, "height",
+                                g_strdup_printf("%d", h), OSDT_NO_DUP);
+            osd_template_insert(vars, "res",
+                                g_strdup_printf("%d × %d", w, h), OSDT_NO_DUP);
             }
         else
         {
-            osd_template_insert(vars, "width", NULL, OSDT_NONE);
-            osd_template_insert(vars, "height", NULL, OSDT_NONE);
-            osd_template_insert(vars, "res", NULL, OSDT_NONE);
+            osd_template_insert(vars, "width",
+                                NULL, OSDT_NONE);
+            osd_template_insert(vars, "height",
+                                NULL, OSDT_NONE);
+            osd_template_insert(vars, "res",
+                                NULL, OSDT_NONE);
         }
 
         text = image_osd_mkinfo(options->image_overlay.template_string, imd, vars);
@@ -625,46 +625,41 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
         }
     }
 
+    gint active_marks = 0;
+    gint mark;
+    gchar *text2;
 
+    for (mark = 0; mark < FILEDATA_MARKS_SIZE; mark++)
+        active_marks += file_data_get_mark(fd, mark);
+
+    if (active_marks > 0)
     {
-        gint active_marks = 0;
-        gint mark;
-        gchar *text2;
+        GString *buf = g_string_sized_new(FILEDATA_MARKS_SIZE * 2);
 
         for (mark = 0; mark < FILEDATA_MARKS_SIZE; mark++)
-        {
-            active_marks += file_data_get_mark(fd, mark);
-        }
+            g_string_append_printf(buf, file_data_get_mark(fd, mark)
+                                        ? " <span background='#FF00FF'>%c</span>"
+                                        : " %c", '1' + mark);
 
-        if (active_marks > 0)
-        {
-            GString *buf = g_string_sized_new(FILEDATA_MARKS_SIZE * 2);
+        if (*text)
+            text2 = g_strdup_printf("%s\n%s", text, buf->str);
+        else
+            text2 = g_strdup(buf->str);
+        g_string_free(buf, TRUE);
+        g_free(text);
+        text = text2;
+    }
 
-            for (mark = 0; mark < FILEDATA_MARKS_SIZE; mark++)
-            {
-                g_string_append_printf(buf, file_data_get_mark(fd, mark) ? " <span background='#FF00FF'>%c</span>" : " %c", '1' + mark);
-            }
-
-            if (*text)
-                text2 = g_strdup_printf("%s\n%s", text, buf->str);
-            else
-                text2 = g_strdup(buf->str);
-            g_string_free(buf, TRUE);
-            g_free(text);
-            text = text2;
-        }
-
-        if (with_hist)
-        {
-            gchar *escaped_histogram_label = g_markup_escape_text(histogram_label(osd->histogram), -1);
-            if (*text)
-                text2 = g_strdup_printf("%s\n%s", text, escaped_histogram_label);
-            else
-                text2 = g_strdup(escaped_histogram_label);
-            g_free(escaped_histogram_label);
-            g_free(text);
-            text = text2;
-        }
+    if (with_hist)
+    {
+        gchar *escaped_histogram_label = g_markup_escape_text(histogram_label(osd->histogram), -1);
+        if (*text)
+            text2 = g_strdup_printf("%s\n%s", text, escaped_histogram_label);
+        else
+            text2 = g_strdup(escaped_histogram_label);
+        g_free(escaped_histogram_label);
+        g_free(text);
+        text = text2;
     }
 
     font_desc = pango_font_description_from_string(options->image_overlay.font);
@@ -685,23 +680,26 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
 
     if (with_hist)
     {
-        if (width < HISTOGRAM_WIDTH + 10) width = HISTOGRAM_WIDTH + 10;
+        if (width < HISTOGRAM_WIDTH + 10)
+            width = HISTOGRAM_WIDTH + 10;
         height += HISTOGRAM_HEIGHT + 5;
     }
 
     if (width > 0 && height > 0)
     {
         pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
-        pixbuf_set_rect_fill(pixbuf, 3, 3, width-6, height-6, options->image_overlay.background.c.red,
-                                                              options->image_overlay.background.c.green,
-                                                              options->image_overlay.background.c.blue,
-                                                              options->image_overlay.background.a);
-        pixbuf_set_rect(pixbuf, 0, 0, width, height, 240, 240, 240, 80, 1, 1, 1, 1);
+        pixbuf_set_rect_fill(pixbuf, 3, 3,
+                             width - 6, height - 6,
+                             options->image_overlay.background.c.red,
+                             options->image_overlay.background.c.green,
+                             options->image_overlay.background.c.blue,
+                             options->image_overlay.background.a);
+        pixbuf_set_rect(pixbuf, 0, 0, width,   height,   240, 240, 240, 80,  1, 1, 1, 1);
         pixbuf_set_rect(pixbuf, 1, 1, width-2, height-2, 240, 240, 240, 130, 1, 1, 1, 1);
         pixbuf_set_rect(pixbuf, 2, 2, width-4, height-4, 240, 240, 240, 180, 1, 1, 1, 1);
-        pixbuf_pixel_set(pixbuf, 0, 0, 0, 0, 0, 0);
-        pixbuf_pixel_set(pixbuf, width - 1, 0, 0, 0, 0, 0);
-        pixbuf_pixel_set(pixbuf, 0, height - 1, 0, 0, 0, 0);
+        pixbuf_pixel_set(pixbuf, 0,         0,          0, 0, 0, 0);
+        pixbuf_pixel_set(pixbuf, width - 1, 0,          0, 0, 0, 0);
+        pixbuf_pixel_set(pixbuf, 0,         height - 1, 0, 0, 0, 0);
         pixbuf_pixel_set(pixbuf, width - 1, height - 1, 0, 0, 0, 0);
 
         if (with_hist)
@@ -719,7 +717,6 @@ static GdkPixbuf *image_osd_info_render(OverlayStateData *osd)
                            options->image_overlay.text.c.blue,
                            options->image_overlay.text.a);
     }
-
     g_object_unref(G_OBJECT(layout));
 
     return pixbuf;
@@ -730,13 +727,13 @@ static GdkPixbuf *image_osd_icon_pixbuf(ImageOSDFlag flag)
     static GdkPixbuf **icons = NULL;
     GdkPixbuf *icon = NULL;
 
-    if (!icons) icons = g_new0(GdkPixbuf *, IMAGE_OSD_COUNT);
-    if (icons[flag]) return icons[flag];
+    if (!icons)
+        icons = g_new0(GdkPixbuf *, IMAGE_OSD_COUNT);
+    if (icons[flag])
+        return icons[flag];
 
     if (osd_icons[flag].key)
-    {
         icon = pixbuf_inline(osd_icons[flag].key);
-    }
 
     if (!icon)
     {
@@ -746,35 +743,39 @@ static GdkPixbuf *image_osd_icon_pixbuf(ImageOSDFlag flag)
         switch (flag)
         {
             case IMAGE_OSD_ROTATE_AUTO:
-                pixbuf_set_rect(icon, 3, 8, 11, 12,
-                        0, 0, 0, 255,
-                        3, 0, 3, 0);
-                pixbuf_draw_triangle(icon, 14, 3, 6, 12,
-                             20, 9, 14, 15, 14, 3,
-                             0, 0, 0, 255);
+                pixbuf_set_rect(icon,
+                                3, 8, 11, 12,
+                                0, 0, 0, 255,
+                                3, 0, 3, 0);
+                pixbuf_draw_triangle(icon,
+                                     14, 3, 6, 12,
+                                     20, 9, 14, 15, 14, 3,
+                                     0, 0, 0, 255);
                 break;
             case IMAGE_OSD_ROTATE_USER:
                 break;
             case IMAGE_OSD_COLOR:
-                pixbuf_set_rect_fill(icon, 3, 3, 18, 6, 200, 0, 0, 255);
-                pixbuf_set_rect_fill(icon, 3, 9, 18, 6, 0, 200, 0, 255);
-                pixbuf_set_rect_fill(icon, 3, 15, 18, 6, 0, 0, 200, 255);
+                pixbuf_set_rect_fill(icon, 3, 3,  18, 6, 200, 0,   0,   255);
+                pixbuf_set_rect_fill(icon, 3, 9,  18, 6, 0,   200, 0,   255);
+                pixbuf_set_rect_fill(icon, 3, 15, 18, 6, 0,   0,   200, 255);
                 break;
             case IMAGE_OSD_FIRST:
                 pixbuf_set_rect(icon, 3, 3, 18, 18, 0, 0, 0, 200, 3, 3, 3, 0);
-                pixbuf_draw_triangle(icon, 6, 5, 12, 6,
-                             12, 5, 18, 11, 6, 11,
-                             0, 0, 0, 255);
+                pixbuf_draw_triangle(icon,
+                                     6, 5, 12, 6,
+                                     12, 5, 18, 11, 6, 11,
+                                     0, 0, 0, 255);
                 break;
             case IMAGE_OSD_LAST:
                 pixbuf_set_rect(icon, 3, 3, 18, 18, 0, 0, 0, 200, 3, 3, 0, 3);
-                pixbuf_draw_triangle(icon, 6, 12, 12, 6,
-                             12, 18, 6, 12, 18, 12,
-                             0, 0, 0, 255);
+                pixbuf_draw_triangle(icon,
+                                     6, 12, 12, 6,
+                                     12, 18, 6, 12, 18, 12,
+                                     0, 0, 0, 255);
                 break;
             case IMAGE_OSD_ICON:
-                pixbuf_set_rect_fill(icon, 11, 3, 3, 12, 0, 0, 0, 255);
-                pixbuf_set_rect_fill(icon, 11, 17, 3, 3, 0, 0, 0, 255);
+                pixbuf_set_rect_fill(icon, 11, 3,  3, 12, 0, 0, 0, 255);
+                pixbuf_set_rect_fill(icon, 11, 17, 3, 3,  0, 0, 0, 255);
                 break;
             default:
                 break;
@@ -786,13 +787,15 @@ static GdkPixbuf *image_osd_icon_pixbuf(ImageOSDFlag flag)
     return icon;
 }
 
-static gint image_overlay_add(ImageWindow *imd, GdkPixbuf *pixbuf, gint x, gint y,
-                  OverlayRendererFlags flags)
+static gint image_overlay_add(ImageWindow *imd, GdkPixbuf *pixbuf,
+                              gint x, gint y,
+                              OverlayRendererFlags flags)
 {
     return pixbuf_renderer_overlay_add((PixbufRenderer *)imd->pr, pixbuf, x, y, flags);
 }
 
-static void image_overlay_set(ImageWindow *imd, gint id, GdkPixbuf *pixbuf, gint x, gint y)
+static void image_overlay_set(ImageWindow *imd, gint id, GdkPixbuf *pixbuf,
+                              gint x, gint y)
 {
     pixbuf_renderer_overlay_set((PixbufRenderer *)imd->pr, id, pixbuf, x, y);
 }
@@ -812,8 +815,8 @@ static void image_osd_icon_show(OverlayStateData *osd, ImageOSDFlag flag)
     if (!pixbuf) return;
 
     osd->icon_id[flag] = image_overlay_add(osd->imd, pixbuf,
-                           osd_icons[flag].x, osd_icons[flag].y,
-                           OVL_RELATIVE);
+                                           osd_icons[flag].x, osd_icons[flag].y,
+                                           OVL_RELATIVE);
 }
 
 static void image_osd_icon_hide(OverlayStateData *osd, ImageOSDFlag flag)
@@ -827,54 +830,34 @@ static void image_osd_icon_hide(OverlayStateData *osd, ImageOSDFlag flag)
 
 static void image_osd_icons_reset_time(OverlayStateData *osd)
 {
-    gint i;
-
-    for (i = 0; i < IMAGE_OSD_COUNT; i++)
-    {
+    for (gint i = 0; i < IMAGE_OSD_COUNT; i++)
         if (osd_icons[i].reset)
-        {
             osd->icon_time[i] = 0;
-        }
-    }
 }
 
 static void image_osd_icons_update(OverlayStateData *osd)
 {
-    gint i;
-
-    for (i = 0; i < IMAGE_OSD_COUNT; i++)
-    {
+    for (gint i = 0; i < IMAGE_OSD_COUNT; i++)
         if (osd->icon_time[i] > 0)
-        {
             image_osd_icon_show(osd, i);
-        }
         else
-        {
             image_osd_icon_hide(osd, i);
-        }
-    }
 }
 
 static void image_osd_icons_hide(OverlayStateData *osd)
 {
-    gint i;
-
-    for (i = 0; i < IMAGE_OSD_COUNT; i++)
-    {
+    for (gint i = 0; i < IMAGE_OSD_COUNT; i++)
         image_osd_icon_hide(osd, i);
-    }
 }
 
 static void image_osd_info_show(OverlayStateData *osd, GdkPixbuf *pixbuf)
 {
     if (osd->ovl_info == 0)
-    {
-        osd->ovl_info = image_overlay_add(osd->imd, pixbuf, osd->x, osd->y, OVL_RELATIVE);
-    }
+        osd->ovl_info = image_overlay_add(osd->imd, pixbuf,
+                                          osd->x, osd->y, OVL_RELATIVE);
     else
-    {
-        image_overlay_set(osd->imd, osd->ovl_info, pixbuf, osd->x, osd->y);
-    }
+        image_overlay_set(osd->imd, osd->ovl_info, pixbuf,
+                          osd->x, osd->y);
 }
 
 static void image_osd_info_hide(OverlayStateData *osd)
@@ -897,9 +880,7 @@ static gboolean image_osd_update_cb(gpointer data)
             (osd->changed_states & IMAGE_STATE_LOADING && osd->show & OSD_SHOW_HISTOGRAM) ||
             osd->notify & NOTIFY_HISTMAP)
         {
-            GdkPixbuf *pixbuf;
-
-            pixbuf = image_osd_info_render(osd);
+            GdkPixbuf *pixbuf = image_osd_info_render(osd);
             if (pixbuf)
             {
                 image_osd_info_show(osd, pixbuf);
@@ -934,13 +915,13 @@ static gboolean image_osd_update_cb(gpointer data)
             if (osd->imd->state & IMAGE_STATE_ROTATE_AUTO)
             {
                 n = 1;
-                if (!osd->imd->cm) n += IMAGE_OSD_DEFAULT_DURATION;
+                if (!osd->imd->cm)
+                    n += IMAGE_OSD_DEFAULT_DURATION;
             }
 
             osd->icon_time[IMAGE_OSD_ROTATE_AUTO] = n;
             image_osd_timer_schedule(osd);
         }
-
         image_osd_icons_update(osd);
     }
     else
@@ -951,17 +932,17 @@ static gboolean image_osd_update_cb(gpointer data)
     osd->changed_states = IMAGE_STATE_NONE;
     osd->notify = 0;
     osd->idle_id = 0;
+
     return FALSE;
 }
 
 static void image_osd_update_schedule(OverlayStateData *osd, gboolean force)
 {
-    if (force) osd->changed_states |= IMAGE_STATE_IMAGE;
+    if (force)
+        osd->changed_states |= IMAGE_STATE_IMAGE;
 
     if (!osd->idle_id)
-    {
         osd->idle_id = g_idle_add_full(G_PRIORITY_HIGH, image_osd_update_cb, osd, NULL);
-    }
 }
 
 void image_osd_update(ImageWindow *imd)
@@ -978,9 +959,8 @@ static gboolean image_osd_timer_cb(gpointer data)
     OverlayStateData *osd = data;
     gboolean done = TRUE;
     gboolean changed = FALSE;
-    gint i;
 
-    for (i = 0; i < IMAGE_OSD_COUNT; i++)
+    for (gint i = 0; i < IMAGE_OSD_COUNT; i++)
     {
         if (osd->icon_time[i] > 1)
         {
@@ -997,7 +977,8 @@ static gboolean image_osd_timer_cb(gpointer data)
         }
     }
 
-    if (changed) image_osd_update_schedule(osd, FALSE);
+    if (changed)
+        image_osd_update_schedule(osd, FALSE);
 
     if (done)
     {
@@ -1011,9 +992,7 @@ static gboolean image_osd_timer_cb(gpointer data)
 static void image_osd_timer_schedule(OverlayStateData *osd)
 {
     if (!osd->timer_id)
-    {
         osd->timer_id = g_timeout_add(100, image_osd_timer_cb, osd);
-    }
 }
 
 static void image_osd_state_cb(ImageWindow *imd, ImageState state, gpointer data)
@@ -1041,8 +1020,8 @@ static void image_osd_free(OverlayStateData *osd)
 {
     if (!osd) return;
 
-    if (osd->idle_id) g_source_remove(osd->idle_id);
-    if (osd->timer_id) g_source_remove(osd->timer_id);
+    g_clear_handle_id(&osd->idle_id, g_source_remove);
+    g_clear_handle_id(&osd->timer_id, g_source_remove);
 
     file_data_unregister_notify_func(image_osd_notify_cb, osd);
 
@@ -1056,8 +1035,7 @@ static void image_osd_free(OverlayStateData *osd)
         image_osd_info_hide(osd);
         image_osd_icons_hide(osd);
     }
-
-    if (osd->histogram) histogram_free(osd->histogram);
+    g_clear_pointer(&osd->histogram, histogram_free);
 
     g_free(osd);
 }
@@ -1066,7 +1044,7 @@ static void image_osd_destroy_cb(GtkWidget *widget, gpointer data)
 {
     OverlayStateData *osd = data;
 
-    osd->imd = NULL;
+    osd->imd = NULL; /* don't run set_osd_data etc in above */
     image_osd_free(osd);
 }
 
@@ -1077,6 +1055,7 @@ static void image_osd_enable(ImageWindow *imd, OsdShowFlags show)
     if (!osd)
     {
         osd = g_new0(OverlayStateData, 1);
+
         osd->imd = imd;
         osd->show = OSD_SHOW_NOTHING;
         osd->x = options->image_overlay.x;
@@ -1085,7 +1064,7 @@ static void image_osd_enable(ImageWindow *imd, OsdShowFlags show)
         osd->histogram = histogram_new();
 
         osd->destroy_id = g_signal_connect(G_OBJECT(imd->pr), "destroy",
-                           G_CALLBACK(image_osd_destroy_cb), osd);
+                                           G_CALLBACK(image_osd_destroy_cb), osd);
         image_set_osd_data(imd, osd);
 
         image_set_state_func(osd->imd, image_osd_state_cb, osd);
