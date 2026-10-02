@@ -24,18 +24,20 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define GQV_TYPE_CELL_RENDERER_ICON             (gqv_cell_renderer_icon_get_type())
+#define GQV_CELL_RENDERER_ICON(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
+                                                 GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIcon))
+#define GQV_CELL_RENDERER_ICON_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), \
+                                                 GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIconClass))
+#define GQV_IS_CELL_RENDERER_ICON(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
+                                                 GQV_TYPE_CELL_RENDERER_ICON))
+#define GQV_IS_CELL_RENDERER_ICON_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), \
+                                                 GQV_TYPE_CELL_RENDERER_ICON))
+#define GQV_CELL_RENDERER_ICON_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), \
+                                                 GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIconClass))
 
-#define GQV_TYPE_CELL_RENDERER_ICON     (gqv_cell_renderer_icon_get_type())
-#define GQV_CELL_RENDERER_ICON(obj)     (G_TYPE_CHECK_INSTANCE_CAST ((obj), GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIcon))
-#define GQV_CELL_RENDERER_ICON_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIconClass))
-#define GQV_IS_CELL_RENDERER_ICON(obj)      (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GQV_TYPE_CELL_RENDERER_ICON))
-#define GQV_IS_CELL_RENDERER_ICON_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), GQV_TYPE_CELL_RENDERER_ICON))
-#define GQV_CELL_RENDERER_ICON_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), GQV_TYPE_CELL_RENDERER_ICON, GQvCellRendererIconClass))
-
-typedef struct _GQvCellRendererIcon GQvCellRendererIcon;
-typedef struct _GQvCellRendererIconClass GQvCellRendererIconClass;
-
-struct _GQvCellRendererIcon
+typedef struct GQvCellRendererIcon GQvCellRendererIcon;
+struct GQvCellRendererIcon
 {
     GtkCellRenderer parent;
 
@@ -59,20 +61,14 @@ struct _GQvCellRendererIcon
 
     guint marks;
     guint toggled_mark;
-
 };
 
-struct _GQvCellRendererIconClass
+typedef struct GQvCellRendererIconClass GQvCellRendererIconClass;
+struct GQvCellRendererIconClass
 {
     GtkCellRendererClass parent_class;
 
     void (*toggled)(GQvCellRendererIcon *cell_renderer, const gchar *path);
-
-    /* Padding for future expansion */
-    void (*_gtk_reserved1)(void);
-    void (*_gtk_reserved2)(void);
-    void (*_gtk_reserved3)(void);
-    void (*_gtk_reserved4)(void);
 };
 
 GType            gqv_cell_renderer_icon_get_type(void);

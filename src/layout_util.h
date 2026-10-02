@@ -22,7 +22,6 @@
 #ifndef LAYOUT_UTIL_H
 #define LAYOUT_UTIL_H
 
-
 #include "layout.h"
 
 gboolean layout_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);

@@ -22,8 +22,6 @@
 #ifndef SEARCH_H
 #define SEARCH_H
 
-
 void search_new(FileData *dir_fd, FileData *example_file);
-
 
 #endif

@@ -52,15 +52,15 @@ static RemoteConnection *remote_client_open(const gchar *path);
 static gint remote_client_send(RemoteConnection *rc, const gchar *text);
 
 
-typedef struct _RemoteClient RemoteClient;
-struct _RemoteClient {
+typedef struct RemoteClient RemoteClient;
+struct RemoteClient {
     gint fd;
     guint channel_id; /* event source id */
     RemoteConnection *rc;
 };
 
-typedef struct _RemoteData RemoteData;
-struct _RemoteData {
+typedef struct RemoteData RemoteData;
+struct RemoteData {
     CollectionData *command_collection;
 };
 
@@ -639,8 +639,8 @@ static void gr_raise(const gchar *text, GIOChannel *channel, gpointer data)
     }
 }
 
-typedef struct _RemoteCommandEntry RemoteCommandEntry;
-struct _RemoteCommandEntry {
+typedef struct RemoteCommandEntry RemoteCommandEntry;
+struct RemoteCommandEntry {
     gchar *opt_s;
     gchar *opt_l;
     void (*func)(const gchar *text, GIOChannel *channel, gpointer data);

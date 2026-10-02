@@ -22,19 +22,17 @@
 #ifndef CACHE_H
 #define CACHE_H
 
-
 #include "similar.h"
 
+#define GQ_CACHE_THUMB              "thumbnails"
+#define GQ_CACHE_METADATA           "metadata"
 
-#define GQ_CACHE_THUMB      "thumbnails"
-#define GQ_CACHE_METADATA       "metadata"
+#define GQ_CACHE_LOCAL_THUMB        ".thumbnails"
+#define GQ_CACHE_LOCAL_METADATA     ".metadata"
 
-#define GQ_CACHE_LOCAL_THUMB    ".thumbnails"
-#define GQ_CACHE_LOCAL_METADATA ".metadata"
-
-#define GQ_CACHE_EXT_THUMB      ".png"
-#define GQ_CACHE_EXT_SIM        ".sim"
-#define GQ_CACHE_EXT_METADATA   ".meta"
+#define GQ_CACHE_EXT_THUMB          ".png"
+#define GQ_CACHE_EXT_SIM            ".sim"
+#define GQ_CACHE_EXT_METADATA       ".meta"
 #define GQ_CACHE_EXT_XMP_METADATA   ".gq.xmp"
 
 
@@ -45,8 +43,8 @@ typedef enum {
     CACHE_TYPE_XMP_METADATA
 } CacheType;
 
-typedef struct _CacheData CacheData;
-struct _CacheData
+typedef struct CacheData CacheData;
+struct CacheData
 {
     gchar *path;
     gint width;
@@ -62,7 +60,6 @@ struct _CacheData
 };
 
 gboolean cache_time_valid(const gchar *cache, const gchar *path);
-
 
 CacheData *cache_sim_data_new(void);
 void cache_sim_data_free(CacheData *cd);

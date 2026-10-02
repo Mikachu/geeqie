@@ -26,15 +26,15 @@ const gboolean debug_file_cache = FALSE;
 
 /* this implements a simple LRU algorithm */
 
-struct _FileCacheData {
+struct FileCacheData {
     FileCacheReleaseFunc release;
     GList *list;
     gulong max_size;
     gulong size;
 };
 
-typedef struct _FileCacheEntry FileCacheEntry;
-struct _FileCacheEntry {
+typedef struct FileCacheEntry FileCacheEntry;
+struct FileCacheEntry {
     FileData *fd;
     gulong size;
 };

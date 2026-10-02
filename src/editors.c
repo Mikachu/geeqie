@@ -39,8 +39,8 @@
 
 
 
-typedef struct _EditorVerboseData EditorVerboseData;
-struct _EditorVerboseData {
+typedef struct EditorVerboseData EditorVerboseData;
+struct EditorVerboseData {
     GenericDialog *gd;
     GtkWidget *button_close;
     GtkWidget *button_stop;
@@ -49,8 +49,8 @@ struct _EditorVerboseData {
     GtkWidget *spinner;
 };
 
-typedef struct _EditorData EditorData;
-struct _EditorData {
+typedef struct EditorData EditorData;
+struct EditorData {
     EditorFlags flags;
     GPid pid;
     GList *list;

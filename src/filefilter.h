@@ -22,9 +22,8 @@
 #ifndef FILEFILTER_H
 #define FILEFILTER_H
 
-
-typedef struct _FilterEntry FilterEntry;
-struct _FilterEntry {
+typedef struct FilterEntry FilterEntry;
+struct FilterEntry {
     gchar *key;
     gchar *description;
     gchar *extensions;
@@ -53,7 +52,6 @@ gboolean filter_name_allow_sidecar(const gchar *name);
 
 void filter_write_list(GString *outstr, gint indent);
 void filter_load_file_type(const gchar **attribute_names, const gchar **attribute_values);
-
 
 void sidecar_ext_parse(const gchar *text);
 gchar *sidecar_ext_to_string(void);

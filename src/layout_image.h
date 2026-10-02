@@ -22,7 +22,6 @@
 #ifndef LAYOUT_IMAGE_H
 #define LAYOUT_IMAGE_H
 
-
 GtkWidget *layout_image_new(LayoutWindow *lw, gint i);
 void layout_image_activate(LayoutWindow *lw, gint i, gboolean force);
 GtkWidget *layout_image_setup_split_none(LayoutWindow *lw);
@@ -38,22 +37,20 @@ void layout_image_set_collection(LayoutWindow *lw, CollectionData *cd, CollectIn
 void layout_image_refresh(LayoutWindow *lw);
 
 void layout_image_color_profile_set(LayoutWindow *lw,
-                    gint input_type,
-                    gboolean use_image);
+                                    gint input_type,
+                                    gboolean use_image);
 gboolean layout_image_color_profile_get(LayoutWindow *lw,
-                    gint *input_type,
-                    gboolean *use_image);
+                                        gint *input_type,
+                                        gboolean *use_image);
 void layout_image_color_profile_set_use(LayoutWindow *lw, gint enable);
 gboolean layout_image_color_profile_get_use(LayoutWindow *lw);
 gboolean layout_image_color_profile_get_status(LayoutWindow *lw, gchar **image_profile, gchar **screen_profile);
-
 
 const gchar *layout_image_get_path(LayoutWindow *lw);
 const gchar *layout_image_get_name(LayoutWindow *lw);
 FileData *layout_image_get_fd(LayoutWindow *lw);
 CollectionData *layout_image_get_collection(LayoutWindow *lw, CollectInfo **info);
 gint layout_image_get_index(LayoutWindow *lw);
-
 
 void layout_image_scroll(LayoutWindow *lw, gint x, gint y, gboolean connect_scroll);
 void layout_image_zoom_adjust(LayoutWindow *lw, gdouble increment, gboolean connect_zoom);
@@ -98,7 +95,6 @@ void layout_image_slideshow_toggle(LayoutWindow *lw);
 gboolean layout_image_slideshow_active(LayoutWindow *lw);
 void layout_image_slideshow_pause_toggle(LayoutWindow *lw);
 gboolean layout_image_slideshow_paused(LayoutWindow *lw);
-
 
 void layout_image_overlay_toggle(LayoutWindow *lw);
 

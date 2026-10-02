@@ -135,8 +135,8 @@ typedef enum {
 #define PAN_BORDER_LEFT     PAN_BORDER_4
 
 
-typedef struct _PanItem PanItem;
-struct _PanItem {
+typedef struct PanItem PanItem;
+struct PanItem {
     PanItemType type;
     gint x;
     gint y;
@@ -168,8 +168,8 @@ struct _PanItem {
     gboolean queued;
 };
 
-typedef struct _PanViewSearchUi PanViewSearchUi;
-struct _PanViewSearchUi
+typedef struct PanViewSearchUi PanViewSearchUi;
+struct PanViewSearchUi
 {
     GtkWidget *search_box;
     GtkWidget *search_entry;
@@ -179,10 +179,10 @@ struct _PanViewSearchUi
 };
 
 // Defined in pan-view-filter.h
-typedef struct _PanViewFilterUi PanViewFilterUi;
+typedef struct PanViewFilterUi PanViewFilterUi;
 
-typedef struct _PanWindow PanWindow;
-struct _PanWindow
+typedef struct PanWindow PanWindow;
+struct PanWindow
 {
     GtkWidget *window;
     ImageWindow *imd;
@@ -237,8 +237,8 @@ struct _PanWindow
     gint idle_id;
 };
 
-typedef struct _PanGrid PanGrid;
-struct _PanGrid {
+typedef struct PanGrid PanGrid;
+struct PanGrid {
     gint x;
     gint y;
     gint w;
@@ -246,8 +246,8 @@ struct _PanGrid {
     GList *list;
 };
 
-typedef struct _PanCacheData PanCacheData;
-struct _PanCacheData {
+typedef struct PanCacheData PanCacheData;
+struct PanCacheData {
     FileData *fd;
     CacheData *cd;
 };

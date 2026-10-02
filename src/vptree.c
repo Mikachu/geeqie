@@ -1,8 +1,8 @@
 #include "main.h"
 #include "vptree.h"
 
-typedef struct _VPNode VPNode;
-struct _VPNode
+typedef struct VPNode VPNode;
+struct VPNode
 {
     gpointer  item;
     gint      mu;      /* partition radius (median distance to children) */
@@ -10,7 +10,7 @@ struct _VPNode
     VPNode   *right;   /* items with dist(vp, x) > mu */
 };
 
-struct _VPTree
+struct VPTree
 {
     VPNode        *root;
     VPTreeDistFunc dist;

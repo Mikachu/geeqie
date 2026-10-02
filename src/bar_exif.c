@@ -44,10 +44,10 @@
  *-------------------------------------------------------------------
  */
 
-typedef struct _ExifEntry ExifEntry;
-typedef struct _PaneExifData PaneExifData;
+typedef struct ExifEntry ExifEntry;
+typedef struct PaneExifData PaneExifData;
 
-struct _ExifEntry
+struct ExifEntry
 {
     GtkWidget *ebox;
     GtkWidget *box;
@@ -64,7 +64,7 @@ struct _ExifEntry
 };
 
 
-struct _PaneExifData
+struct PaneExifData
 {
     PaneData pane;
     GtkWidget *vbox;
@@ -79,8 +79,8 @@ struct _PaneExifData
     FileData *fd;
 };
 
-typedef struct _ConfDialogData ConfDialogData;
-struct _ConfDialogData
+typedef struct ConfDialogData ConfDialogData;
+struct ConfDialogData
 {
     GtkWidget *widget; /* pane or entry, devidet by presenceof "pane_data" or "entry_data" */
 

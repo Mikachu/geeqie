@@ -210,8 +210,8 @@ typedef enum {
 } PaperOrientation;
 
 
-typedef struct _PrintWindow PrintWindow;
-struct _PrintWindow
+typedef struct PrintWindow PrintWindow;
+struct PrintWindow
 {
     GenericDialog *dialog;
 
@@ -362,8 +362,8 @@ static const gchar *print_output_name(PrintOutput output)
  */
 
 
-typedef struct _PaperSize PaperSize;
-struct _PaperSize {
+typedef struct PaperSize PaperSize;
+struct PaperSize {
     gchar *description;
     gint width;
     gint height;
@@ -899,8 +899,8 @@ static GList *print_window_list_printers(void)
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _PipeError PipeError;
-struct _PipeError {
+typedef struct PipeError PipeError;
+struct PipeError {
     struct sigaction old_action;
     sig_atomic_t *error;
 };

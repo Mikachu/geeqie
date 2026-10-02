@@ -22,15 +22,18 @@
 #ifndef IMAGE_LOAD_H
 #define IMAGE_LOAD_H
 
-#define TYPE_IMAGE_LOADER       (image_loader_get_type())
+#define TYPE_IMAGE_LOADER (image_loader_get_type())
 
 typedef void (*ImageLoaderBackendCbSize)(gpointer loader, gint width, gint height, gpointer data);
 typedef void (*ImageLoaderBackendCbAreaUpdated)(gpointer loader, gint x, gint y, gint w, gint h, gpointer data);
 
-typedef gpointer (*ImageLoaderBackendFuncLoaderNew)(ImageLoaderBackendCbAreaUpdated, ImageLoaderBackendCbSize, gpointer data);
+typedef gpointer (*ImageLoaderBackendFuncLoaderNew)(ImageLoaderBackendCbAreaUpdated,
+                                                    ImageLoaderBackendCbSize, gpointer data);
 typedef void (*ImageLoaderBackendFuncSetSize)(gpointer loader, int width, int height);
-typedef gboolean (*ImageLoaderBackendFuncLoad)(gpointer loader, const guchar *buf, gsize count, GError **error); /* optional, load whole image at once */
-typedef gboolean (*ImageLoaderBackendFuncWrite)(gpointer loader, const guchar *buf, gsize count, GError **error);
+typedef gboolean (*ImageLoaderBackendFuncLoad)(gpointer loader, const guchar *buf,
+                                               gsize count, GError **error); /* optional, load whole image at once */
+typedef gboolean (*ImageLoaderBackendFuncWrite)(gpointer loader, const guchar *buf,
+                                                gsize count, GError **error);
 typedef GdkPixbuf* (*ImageLoaderBackendFuncGetPixbuf)(gpointer loader);
 typedef gboolean (*ImageLoaderBackendFuncClose)(gpointer loader, GError **error);
 typedef void (*ImageLoaderBackendFuncAbort)(gpointer loader);
@@ -38,8 +41,8 @@ typedef void (*ImageLoaderBackendFuncFree)(gpointer loader);
 typedef gchar* (*ImageLoaderBackendFuncGetFormatName)(gpointer loader);
 typedef gchar** (*ImageLoaderBackendFuncGetFormatMimeTypes)(gpointer loader);
 
-typedef struct _ImageLoaderBackend ImageLoaderBackend;
-struct _ImageLoaderBackend
+typedef struct ImageLoaderBackend ImageLoaderBackend;
+struct ImageLoaderBackend
 {
     ImageLoaderBackendFuncLoaderNew loader_new;
     ImageLoaderBackendFuncSetSize set_size;
@@ -53,11 +56,10 @@ struct _ImageLoaderBackend
     ImageLoaderBackendFuncGetFormatMimeTypes get_format_mime_types;
 };
 
+//typedef struct ImageLoader ImageLoader;
+typedef struct ImageLoaderClass ImageLoaderClass;
 
-//typedef struct _ImageLoader ImageLoader;
-typedef struct _ImageLoaderClass ImageLoaderClass;
-
-struct _ImageLoader
+struct ImageLoader
 {
     GObject parent;
 
@@ -113,7 +115,7 @@ struct _ImageLoader
     guint idle_read_loop_count;
 };
 
-struct _ImageLoaderClass {
+struct ImageLoaderClass {
     GObjectClass parent;
 
     /* class members */
@@ -149,7 +151,6 @@ void image_loader_set_buffer_size(ImageLoader *il, guint size);
 void image_loader_set_priority(ImageLoader *il, gint priority);
 
 gboolean image_loader_start(ImageLoader *il);
-
 
 GdkPixbuf *image_loader_get_pixbuf(ImageLoader *il);
 gdouble image_loader_get_percent(ImageLoader *il);

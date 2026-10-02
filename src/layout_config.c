@@ -34,14 +34,14 @@ enum {
 };
 
 
-typedef struct _LayoutStyle LayoutStyle;
-struct _LayoutStyle
+typedef struct LayoutStyle LayoutStyle;
+struct LayoutStyle
 {
     LayoutLocation a, b, c;
 };
 
-typedef struct _LayoutConfig LayoutConfig;
-struct _LayoutConfig
+typedef struct LayoutConfig LayoutConfig;
+struct LayoutConfig
 {
     GtkWidget *box;
 

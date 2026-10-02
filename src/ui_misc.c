@@ -677,8 +677,8 @@ GtkWidget *pref_toolbar_spacer(GtkWidget *toolbar)
 #define DATE_SELECTION_KEY "date_selection_data"
 
 
-typedef struct _DateSelection DateSelection;
-struct _DateSelection
+typedef struct DateSelection DateSelection;
+struct DateSelection
 {
     GtkWidget *box;
 
@@ -988,8 +988,8 @@ time_t date_selection_time_get(GtkWidget *widget)
 
 #define SIZER_DATA_KEY "sizer_data"
 
-typedef struct _SizerData SizerData;
-struct _SizerData
+typedef struct SizerData SizerData;
+struct SizerData
 {
     GtkWidget *sizer;
     GtkWidget *parent;

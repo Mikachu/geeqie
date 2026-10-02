@@ -22,10 +22,9 @@
 #ifndef SLIDESHOW_H
 #define SLIDESHOW_H
 
-
 #define SLIDESHOW_SUBSECOND_PRECISION 10
-#define SLIDESHOW_MIN_SECONDS    0.1
-#define SLIDESHOW_MAX_SECONDS 3600.0
+#define SLIDESHOW_MIN_SECONDS        0.1
+#define SLIDESHOW_MAX_SECONDS     3600.0
 
 /*
  * It works like this, it uses path_list, if that does not exist, it uses
@@ -40,12 +39,12 @@ void slideshow_next(SlideShowData *ss);
 void slideshow_prev(SlideShowData *ss);
 
 SlideShowData *slideshow_start_from_filelist(LayoutWindow *target_lw, ImageWindow *imd, GList *list,
-                          void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
+                                             void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
 SlideShowData *slideshow_start_from_collection(LayoutWindow *target_lw, ImageWindow *imd, CollectionData *cd,
-                           void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data,
-                           CollectInfo *start_info);
+                                               void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data,
+                                               CollectInfo *start_info);
 SlideShowData *slideshow_start(LayoutWindow *lw, gint start_point,
-                   void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
+                               void (*stop_func)(SlideShowData *, gpointer), gpointer stop_data);
 
 gboolean slideshow_paused(SlideShowData *ss);
 void slideshow_pause_toggle(SlideShowData *ss);

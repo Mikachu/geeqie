@@ -59,8 +59,8 @@
 #define EDITOR_NAME_MAX_LENGTH 32
 #define EDITOR_COMMAND_MAX_LENGTH 1024
 
-typedef struct _ThumbSize ThumbSize;
-struct _ThumbSize
+typedef struct ThumbSize ThumbSize;
+struct ThumbSize
 {
     gint w;
     gint h;

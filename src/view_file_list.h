@@ -22,7 +22,6 @@
 #ifndef VIEW_FILE_LIST_H
 #define VIEW_FILE_LIST_H
 
-
 #include "filedata.h"
 
 gboolean vflist_press_key_cb(GtkWidget *widget, GdkEventKey *event, gpointer data);
