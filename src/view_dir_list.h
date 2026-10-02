@@ -22,7 +22,6 @@
 #ifndef VIEW_DIR_LIST_H
 #define VIEW_DIR_LIST_H
 
-
 ViewDir *vdlist_new(ViewDir *vd, FileData *dir_fd);
 
 gboolean vdlist_set_fd(ViewDir *vd, FileData *dir_fd);

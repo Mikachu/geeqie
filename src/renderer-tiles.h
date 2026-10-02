@@ -24,7 +24,6 @@
 
 #include <pixbuf-renderer.h>
 
-
 RendererFuncs *renderer_tiles_new(PixbufRenderer *pr);
 
 #endif

@@ -58,10 +58,10 @@ typedef enum {
 } ExifOrientationType;
 #endif
 
-typedef struct _ImageTile ImageTile;
-typedef struct _QueueData QueueData;
+typedef struct ImageTile ImageTile;
+typedef struct QueueData QueueData;
 
-struct _ImageTile
+struct ImageTile
 {
     cairo_surface_t *surface;   /* off screen buffer */
     GdkPixbuf *pixbuf;          /* pixbuf area for zooming */
@@ -88,7 +88,7 @@ struct _ImageTile
     guint size;     /* est. memory used by pixmap and pixbuf */
 };
 
-struct _QueueData
+struct QueueData
 {
     ImageTile *it;
     GList *dq_link;
@@ -99,8 +99,8 @@ struct _QueueData
     gboolean new_data;
 };
 
-typedef struct _OverlayData OverlayData;
-struct _OverlayData
+typedef struct OverlayData OverlayData;
+struct OverlayData
 {
     gint id;
 
@@ -114,9 +114,9 @@ struct _OverlayData
     cairo_surface_t *surface;
 };
 
-typedef struct _RendererTiles RendererTiles;
+typedef struct RendererTiles RendererTiles;
 
-struct _RendererTiles
+struct RendererTiles
 {
     RendererFuncs f;
     PixbufRenderer *pr;

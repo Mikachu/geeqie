@@ -62,8 +62,8 @@ typedef enum {
     BAR_SORT_SELECTION_COUNT
 } SortSelectionType;
 
-typedef struct _SortData SortData;
-struct _SortData
+typedef struct SortData SortData;
+struct SortData
 {
     GtkWidget *vbox;
     GtkWidget *bookmarks;

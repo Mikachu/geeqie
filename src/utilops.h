@@ -22,7 +22,6 @@
 #ifndef UTILOPS_H
 #define UTILOPS_H
 
-
 #include "ui_utildlg.h"
 
 GenericDialog *file_util_gen_dlg(const gchar *title,
@@ -54,7 +53,7 @@ void file_util_rename_dir(FileData *source_fd, const gchar *new_path, GtkWidget 
 
 /* these avoid the location entry dialog, list must be files only and
  * dest_path must be a valid directory path
-*/
+ */
 void file_util_move_simple(GList *list, const gchar *dest_path, GtkWidget *parent);
 void file_util_copy_simple(GList *list, const gchar *dest_path, GtkWidget *parent);
 void file_util_rename_simple(FileData *fd, const gchar *dest_path, GtkWidget *parent);
@@ -73,4 +72,5 @@ void file_util_copy_path_to_clipboard(FileData *fd);
 void file_util_copy_path_list_to_clipboard(GList *list);
 
 gchar *new_folder(GtkWindow *window, gchar *path);
+
 #endif

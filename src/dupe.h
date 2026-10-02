@@ -28,23 +28,23 @@
 /* match methods */
 typedef enum
 {
-    DUPE_MATCH_NONE = 0,
-    DUPE_MATCH_NAME = 1 << 0,
-    DUPE_MATCH_SIZE = 1 << 1,
-    DUPE_MATCH_DATE = 1 << 2,
-    DUPE_MATCH_DIM  = 1 << 3,   /* image dimensions */
-    DUPE_MATCH_SUM  = 1 << 4,   /* MD5sum */
-    DUPE_MATCH_PATH = 1 << 5,
-    DUPE_MATCH_SIM_HIGH = 1 << 6,   /* similarity */
-    DUPE_MATCH_SIM_MED  = 1 << 7,
-    DUPE_MATCH_SIM_LOW  = 1 << 8,
+    DUPE_MATCH_NONE       = 0,
+    DUPE_MATCH_NAME       = 1 << 0,
+    DUPE_MATCH_SIZE       = 1 << 1,
+    DUPE_MATCH_DATE       = 1 << 2,
+    DUPE_MATCH_DIM        = 1 << 3,  /* image dimensions */
+    DUPE_MATCH_SUM        = 1 << 4,  /* MD5sum */
+    DUPE_MATCH_PATH       = 1 << 5,
+    DUPE_MATCH_SIM_HIGH   = 1 << 6,  /* similarity */
+    DUPE_MATCH_SIM_MED    = 1 << 7,
+    DUPE_MATCH_SIM_LOW    = 1 << 8,
     DUPE_MATCH_SIM_CUSTOM = 1 << 9,
-    DUPE_MATCH_NAME_CI = 1 << 10,   /* same as name, but case insensitive */
-    DUPE_MATCH_SIM_PHASH = 1 << 11, /* similarity via perceptual hash (dct) */
+    DUPE_MATCH_NAME_CI    = 1 << 10, /* same as name, but case insensitive */
+    DUPE_MATCH_SIM_PHASH  = 1 << 11, /* similarity via perceptual hash (dct) */
 } DupeMatchType;
 
-typedef struct _DupeItem DupeItem;
-struct _DupeItem
+typedef struct DupeItem DupeItem;
+struct DupeItem
 {
     CollectionData *collection; /* NULL if from DupeWindow->files */
     CollectInfo *info;
@@ -67,24 +67,24 @@ struct _DupeItem
     gint second;
 };
 
-typedef struct _DupeMatch DupeMatch;
-struct _DupeMatch
+typedef struct DupeMatch DupeMatch;
+struct DupeMatch
 {
     DupeItem *di;
     gdouble rank;
 };
 
-typedef struct _DupeWindow DupeWindow;
-struct _DupeWindow
+typedef struct DupeWindow DupeWindow;
+struct DupeWindow
 {
-    GList *list;            /* dropped files (DupeItem) */
-    GList *dupes;           /* list of dupes (DupeItem, grouping the DupeMatches) */
-    GHashTable *dupes_set;  /* hash set mirror of dupes */
+    GList *list;              /* dropped files (DupeItem) */
+    GList *dupes;             /* list of dupes (DupeItem, grouping the DupeMatches) */
+    GHashTable *dupes_set;    /* hash set mirror of dupes */
     GHashTable *item_to_rowref;
-    DupeMatchType match_mask;   /* mask of things to check for match */
-    VPTree *vptree;         /* NULL when not in use */
-    GList *vptree_entries;  /* GList of SimVPEntry*, owned, freed on clear */
-    guint *vptree_seen_gen; /* array[n_items], parallel to list order */
+    DupeMatchType match_mask; /* mask of things to check for match */
+    VPTree *vptree;           /* NULL when not in use */
+    GList *vptree_entries;    /* GList of SimVPEntry*, owned, freed on clear */
+    guint *vptree_seen_gen;   /* array[n_items], parallel to list order */
     guint  vptree_current_gen;
 
     GtkWidget *window;
@@ -107,12 +107,12 @@ struct _DupeWindow
     guint duplicates_neartime_threshold;
     gboolean rot_invariant_sim;
 
-    guint idle_id; /* event source id */
+    guint idle_id;              /* event source id */
     GList *working;
     gint setup_done;
     gint setup_count;
-    gint setup_n;           /* these are merely for speed optimization */
-    GList *setup_point;     /* ditto */
+    gint setup_n;               /* these are merely for speed optimization */
+    GList *setup_point;         /* ditto */
     DupeMatchType setup_mask;   /* ditto */
     guint64 setup_time;
     guint64 setup_time_count;
@@ -127,7 +127,7 @@ struct _DupeWindow
     /* second set comparison stuff */
 
     gboolean second_set;        /* second set enabled ? */
-    GList *second_list;     /* second set dropped files */
+    GList *second_list;         /* second set dropped files */
     gboolean second_drop;       /* drop is on second set */
 
     GtkWidget *second_vbox;     /* box of second widgets */
@@ -146,6 +146,5 @@ void dupe_window_add_files(DupeWindow *dw, GList *list, gboolean recurse);
 
 /* cell max with/height hack utility */
 void cell_renderer_height_override(GtkCellRenderer *renderer);
-
 
 #endif

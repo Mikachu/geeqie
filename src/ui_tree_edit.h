@@ -22,9 +22,8 @@
 #ifndef UI_TREE_EDIT_H
 #define UI_TREE_EDIT_H
 
-
-typedef struct _TreeEditData TreeEditData;
-struct _TreeEditData
+typedef struct TreeEditData TreeEditData;
+struct TreeEditData
 {
     GtkWidget *window;
     GtkWidget *entry;
@@ -41,20 +40,18 @@ struct _TreeEditData
     GtkCellRenderer *cell;
 };
 
-
 /*
  * edit_func: return TRUE if rename successful, FALSE on failure.
  */
 gboolean tree_edit_by_path(GtkTreeView *tree, GtkTreePath *tpath, gint column, const gchar *text,
-                   gboolean (*edit_func)(TreeEditData *, const gchar *, const gchar *, gpointer), gpointer data);
-
+                           gboolean (*edit_func)(TreeEditData *, const gchar *, const gchar *, gpointer), gpointer data);
 
 /* returns location of cell in screen coordinates */
 gboolean tree_view_get_cell_origin(GtkTreeView *widget, GtkTreePath *tpath, gint column, gboolean text_cell_only,
-                       gint *x, gint *y, gint *width, gint *height);
+                                   gint *x, gint *y, gint *width, gint *height);
 /* similar to above, but limits the returned area to that of the tree window */
 void tree_view_get_cell_clamped(GtkTreeView *widget, GtkTreePath *tpath, gint column, gboolean text_cell_only,
-                   gint *x, gint *y, gint *width, gint *height);
+                                gint *x, gint *y, gint *width, gint *height);
 
 /* return 0 = row visible, -1 = row is above, 1 = row is below visible region
  * if fully_visible is TRUE, the bahavior changes to return -1/1 if _any_ part of the cell is out of view */
@@ -71,7 +68,6 @@ gboolean tree_view_move_cursor_away(GtkTreeView *widget, GtkTreeIter *iter, gboo
 /* utility to return row position of given GtkTreePath
  */
 gint tree_path_to_row(GtkTreePath *tpath);
-
 
 /* shifts a GdkColor values lighter or darker
  * val is percent from 1 to 100, or -1 for default (usually 10%)
@@ -97,9 +93,9 @@ void style_shift_color(GtkStyle *style, GtkStateType type, gshort shift_value, g
  * notify_func will be called before a scroll, return FALSE to turn off autoscroll
  */
 gint widget_auto_scroll_start(GtkWidget *widget, GtkAdjustment *v_adj, gint scroll_speed, gint region_size,
-                  gint (*notify_func)(GtkWidget *widget, gint x, gint y, gpointer data), gpointer notify_data);
+                              gint (*notify_func)(GtkWidget *widget, gint x, gint y, gpointer data),
+                              gpointer notify_data);
 void widget_auto_scroll_stop(GtkWidget *widget);
-
 
 /*
  * Various g_list utils, do not really fit anywhere, so they are here.

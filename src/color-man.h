@@ -24,8 +24,8 @@
 
 typedef enum {
     COLOR_PROFILE_NONE = -1,
-    COLOR_PROFILE_MEM = -2,
-    COLOR_PROFILE_SRGB = 0,
+    COLOR_PROFILE_MEM  = -2,
+    COLOR_PROFILE_SRGB =  0,
     COLOR_PROFILE_ADOBERGB,
     COLOR_PROFILE_FILE,
 } ColorManProfileType;
@@ -36,11 +36,10 @@ typedef enum {
     COLOR_RETURN_IMAGE_CHANGED
 } ColorManReturnType;
 
-typedef struct _ColorMan ColorMan;
+typedef struct ColorMan ColorMan;
 typedef void (* ColorManDoneFunc)(ColorMan *cm, ColorManReturnType success, gpointer data);
 
-
-struct _ColorMan {
+struct ColorMan {
     ImageWindow *imd;
     GdkPixbuf *pixbuf;
     gint incremental_sync;
@@ -54,15 +53,14 @@ struct _ColorMan {
     gpointer func_done_data;
 };
 
-
 ColorMan *color_man_new(ImageWindow *imd, GdkPixbuf *pixbuf,
-            ColorManProfileType input_type, const gchar *input_file,
-            ColorManProfileType screen_type, const gchar *screen_file,
-            guchar *screen_data, guint screen_data_len);
+                        ColorManProfileType input_type, const gchar *input_file,
+                        ColorManProfileType screen_type, const gchar *screen_file,
+                        guchar *screen_data, guint screen_data_len);
 ColorMan *color_man_new_embedded(ImageWindow *imd, GdkPixbuf *pixbuf,
-                 guchar *input_data, guint input_data_len,
-                 ColorManProfileType screen_type, const gchar *screen_file,
-                 guchar *screen_data, guint screen_data_len);
+                                 guchar *input_data, guint input_data_len,
+                                 ColorManProfileType screen_type, const gchar *screen_file,
+                                 guchar *screen_data, guint screen_data_len);
 void color_man_free(ColorMan *cm);
 
 void color_man_update(void);

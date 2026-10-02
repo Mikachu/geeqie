@@ -44,8 +44,8 @@
  *-------------------------------------------------------------------
  */
 
-typedef struct _ExifWin ExifWin;
-struct _ExifWin
+typedef struct ExifWin ExifWin;
+struct ExifWin
 {
     GtkWidget *window;
     GtkWidget *vbox;

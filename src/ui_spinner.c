@@ -46,8 +46,8 @@
  *-----------------------------------------------------------------------------
  */
 
-typedef struct _SpinnerData SpinnerData;
-struct _SpinnerData {
+typedef struct SpinnerData SpinnerData;
+struct SpinnerData {
     GtkWidget *image;
     GList *list;        /* list of pixbufs */
     guint frame;

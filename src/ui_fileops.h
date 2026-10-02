@@ -28,8 +28,6 @@
 #include <sys/types.h>
 #include <time.h>
 
-
-
 void print_term(const gchar *text_utf8);
 
 #define printf_term(...) \
@@ -79,9 +77,6 @@ gboolean move_file(const gchar *s, const gchar *t);
 gboolean rename_file(const gchar *s, const gchar *t);
 gchar *get_current_dir(void);
 
-/* return True on success, it is up to you to free
- * the lists with string_list_free()
- */
 inline void string_list_free(GList *list)
 {
     g_list_free_full(list, g_free);
@@ -106,10 +101,8 @@ gboolean file_in_path(const gchar *name);
 
 gboolean recursive_mkdir_if_not_exists(const gchar *path, mode_t mode);
 
-
 /* generate md5 string from file,
- * on failure returns newly allocated copy of error_text, error_text may be NULL
-  */
+ * on failure returns newly allocated copy of error_text, error_text may be NULL */
 gchar *md5_text_from_file_utf8(const gchar *path, const gchar *error_text);
 gboolean md5_get_digest_from_file_utf8(const gchar *path, guchar digest[16]);
 

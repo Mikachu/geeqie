@@ -38,8 +38,8 @@
 #include "histogram.h"
 #include "rcfile.h"
 
-typedef struct _KnownPanes KnownPanes;
-struct _KnownPanes
+typedef struct KnownPanes KnownPanes;
+struct KnownPanes
 {
     PaneType type;
     gchar *id;
@@ -166,8 +166,8 @@ static const KnownPanes known_panes[] = {
     {PANE_UNDEF,        NULL,       NULL,           NULL}
 };
 
-typedef struct _BarData BarData;
-struct _BarData
+typedef struct BarData BarData;
+struct BarData
 {
     GtkWidget *widget;
     GtkWidget *vbox;

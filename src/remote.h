@@ -22,12 +22,11 @@
 #ifndef REMOTE_H
 #define REMOTE_H
 
-
-typedef struct _RemoteConnection RemoteConnection;
+typedef struct RemoteConnection RemoteConnection;
 
 typedef void RemoteReadFunc(RemoteConnection *rc, const gchar *text, GIOChannel *channel, gpointer data);
 
-struct _RemoteConnection {
+struct RemoteConnection {
     gint server;
     gint fd;
     gchar *path;
@@ -39,14 +38,12 @@ struct _RemoteConnection {
     GList *clients;
 };
 
-
 void remote_close(RemoteConnection *rc);
 GList *remote_build_list(GList *list, gint argc, gchar *argv[], GList **errors);
 void remote_help(void);
 void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path,
-            GList *cmd_list, GList *collection_list);
+                    GList *cmd_list, GList *collection_list);
 
 RemoteConnection *remote_server_init(gchar *path, CollectionData *command_collection);
-
 
 #endif

@@ -22,15 +22,28 @@
 #define HISTOGRAM_H
 
 /* Note: The order is important */
-#define HCHAN_R 0
-#define HCHAN_G 1
-#define HCHAN_B 2
-#define HCHAN_MAX 3
-#define HCHAN_RGB 4
+#define HCHAN_R     0
+#define HCHAN_G     1
+#define HCHAN_B     2
+#define HCHAN_MAX   3
+#define HCHAN_RGB   4
 #define HCHAN_COUNT 5
 #define HCHAN_DEFAULT HCHAN_RGB
 
+typedef struct Histogram Histogram;
+struct Histogram {
+    gint histogram_channel; /* drawing mode for histogram */
+    gint histogram_mode;     /* logarithmical or not */
+    guint vgrid; /* number of vertical divisions, 0 for none */
+    guint hgrid; /* number of horizontal divisions, 0 for none */
+    struct {
+        int R; /* red */
+        int G; /* green */
+        int B; /* blue */
+        int A; /* alpha */
+    } grid_color;  /* grid color */
 
+};
 Histogram *histogram_new(void);
 void histogram_free(Histogram *histogram);
 gint histogram_set_channel(Histogram *histogram, gint chan);
@@ -46,7 +59,8 @@ void histmap_free(HistMap *histmap);
 const HistMap *histmap_get(FileData *fd);
 gboolean histmap_start_idle(FileData *fd);
 
-gboolean histogram_draw(Histogram *histogram, const HistMap *histmap, GdkPixbuf *pixbuf, gint x, gint y, gint width, gint height);
+gboolean histogram_draw(Histogram *histogram, const HistMap *histmap, GdkPixbuf *pixbuf,
+                        gint x, gint y, gint width, gint height);
 
 void histogram_notify_cb(FileData *fd, NotifyType type, gpointer data);
 

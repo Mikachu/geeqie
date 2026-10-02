@@ -22,6 +22,8 @@
 #ifndef IMAGE_OVERLAY_H
 #define IMAGE_OVERLAY_H
 
+#include "histogram.h"
+
 typedef enum {
     IMAGE_OSD_NONE = 0,
     IMAGE_OSD_ROTATE_USER,
@@ -63,6 +65,5 @@ gint image_osd_histogram_get_channel(ImageWindow *imd);
 gint image_osd_histogram_get_mode(ImageWindow *imd);
 
 void image_osd_toggle(ImageWindow *imd);
-
 
 #endif

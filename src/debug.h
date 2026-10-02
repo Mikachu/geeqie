@@ -71,5 +71,4 @@ void init_exec_time(void);
 #define DEBUG_3(...) DEBUG_N(3, __VA_ARGS__)
 #define DEBUG_4(...) DEBUG_N(4, __VA_ARGS__)
 
-
 #endif /* _DEBUG_H */

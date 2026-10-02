@@ -1721,8 +1721,8 @@ void layout_info_pixel_set(LayoutWindow *lw, gboolean show)
 #define CONFIG_WINDOW_DEF_WIDTH     600
 #define CONFIG_WINDOW_DEF_HEIGHT    400
 
-typedef struct _LayoutConfig LayoutConfig;
-struct _LayoutConfig
+typedef struct LayoutConfig LayoutConfig;
+struct LayoutConfig
 {
     LayoutWindow *lw;
 

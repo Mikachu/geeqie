@@ -61,8 +61,8 @@ static void pan_flower_size(PanWindow *pw, gint *width, gint *height)
     if (height) *height = y2 - y1;
 }
 
-typedef struct _FlowerGroup FlowerGroup;
-struct _FlowerGroup {
+typedef struct FlowerGroup FlowerGroup;
+struct FlowerGroup {
     GList *items;
     GList *children;
     gint x;

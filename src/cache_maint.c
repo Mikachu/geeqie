@@ -34,8 +34,8 @@
 #include "ui_utildlg.h"
 
 
-typedef struct _CMData CMData;
-struct _CMData
+typedef struct CMData CMData;
+struct CMData
 {
     GList *list;
     GList *done_list;
@@ -481,8 +481,8 @@ void cache_notify_cb(FileData *fd, NotifyType type, gpointer data)
  *-------------------------------------------------------------------
  */
 
-typedef struct _CacheManager CacheManager;
-struct _CacheManager
+typedef struct CacheManager CacheManager;
+struct CacheManager
 {
     GenericDialog *dialog;
     GtkWidget *folder_entry;
@@ -494,8 +494,8 @@ struct _CacheManager
     gint count_done;
 };
 
-typedef struct _CleanData CleanData;
-struct _CleanData
+typedef struct CleanData CleanData;
+struct CleanData
 {
     GenericDialog *gd;
     ThumbLoaderStd *tl;

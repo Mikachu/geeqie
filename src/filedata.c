@@ -2412,8 +2412,8 @@ GList *file_data_process_groups_in_selection(GList *list, gboolean ungroup, GLis
  */
 
 
-typedef struct _NotifyData NotifyData;
-struct _NotifyData {
+typedef struct NotifyData NotifyData;
+struct NotifyData {
     FileDataNotifyFunc func;
     gpointer data;
     NotifyPriority priority;

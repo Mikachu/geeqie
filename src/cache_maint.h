@@ -22,10 +22,8 @@
 #ifndef CACHE_MAINT_H
 #define CACHE_MAINT_H
 
-
 void cache_maintain_home(gboolean metadata, gboolean clear, GtkWidget *parent);
 void cache_notify_cb(FileData *fd, NotifyType type, gpointer data);
 void cache_manager_show(void);
-
 
 #endif

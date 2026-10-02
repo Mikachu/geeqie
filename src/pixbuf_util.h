@@ -22,7 +22,6 @@
 #ifndef PIXBUF_UTIL_H
 #define PIXBUF_UTIL_H
 
-
 gboolean pixbuf_to_file_as_png (GdkPixbuf *pixbuf, const gchar *filename);
 gboolean pixbuf_to_file_as_jpg(GdkPixbuf *pixbuf, const gchar *filename, gint quality);
 
@@ -100,7 +99,6 @@ void pixbuf_draw_shadow(GdkPixbuf *pb,
 void pixbuf_desaturate_rect(GdkPixbuf *pb,
                             gint x, gint y, gint w, gint h);
 
-
 /* clipping utils */
 
 gboolean util_clip_region(gint x, gint y, gint w, gint h,
@@ -108,6 +106,5 @@ gboolean util_clip_region(gint x, gint y, gint w, gint h,
                           gint *rx, gint *ry, gint *rw, gint *rh);
 void util_clip_triangle(gint x1, gint y1, gint x2, gint y2, gint x3, gint y3,
                         gint *rx, gint *ry, gint *rw, gint *rh);
-
 
 #endif

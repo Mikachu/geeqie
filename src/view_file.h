@@ -28,7 +28,7 @@
 
 /* per-view-type operations; populated by view_file_list.c / view_file_icon.c
    and reached through vf->funcs, avoiding switch(vf->type) forks */
-struct _ViewFileFuncs
+struct ViewFileFuncs
 {
     /* unwrap a vf->list node's payload to FileData* */
     FileData *(*item_fd)(gpointer item);
@@ -44,8 +44,8 @@ struct _ViewFileFuncs
 
     void      (*color_set)(ViewFile *vf, FileData *fd, gboolean enable);
 
-    void (*drag_started)(ViewFile *vf);   /* per-type drag-begin extras */
-    void (*drag_ended)(ViewFile *vf);     /* per-type drag-end extras */
+    void      (*drag_started)(ViewFile *vf);   /* per-type drag-begin extras */
+    void      (*drag_ended)(ViewFile *vf);     /* per-type drag-end extras */
 };
 
 void vf_send_update(ViewFile *vf);
@@ -54,7 +54,8 @@ void vf_dnd_init(ViewFile *vf);
 ViewFile *vf_new(FileViewType type, FileData *dir_fd);
 
 void vf_set_status_func(ViewFile *vf, void (*func)(ViewFile *vf, gpointer data), gpointer data);
-void vf_set_thumb_status_func(ViewFile *vf, void (*func)(ViewFile *vf, gdouble val, const gchar *text, gpointer data), gpointer data);
+void vf_set_thumb_status_func(ViewFile *vf, void (*func)(ViewFile *vf, gdouble val,
+                                                         const gchar *text, gpointer data), gpointer data);
 
 void vf_set_layout(ViewFile *vf, LayoutWindow *layout);
 
