@@ -21,7 +21,7 @@
 #ifndef VIEW_FILE_H
 #define VIEW_FILE_H
 
-#include "typedefs.h"
+#include "main.h"
 #include "filedata.h"
 
 #define VIEW_FILE_TYPES_COUNT 2

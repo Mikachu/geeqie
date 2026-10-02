@@ -22,7 +22,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include "typedefs.h"
+#include "main.h"
 #include "pixbuf-renderer.h"
 
 typedef enum {

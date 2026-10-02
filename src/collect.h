@@ -22,7 +22,7 @@
 #ifndef COLLECT_H
 #define COLLECT_H
 
-#include "typedefs.h"
+#include "main.h"
 
 struct CollectTable;
 struct ThumbLoader;

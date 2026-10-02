@@ -22,7 +22,7 @@
 #ifndef THUMB_H
 #define THUMB_H
 
-#include "typedefs.h"
+#include "main.h"
 #include "filedata.h"
 
 struct ImageLoader;

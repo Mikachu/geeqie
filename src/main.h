@@ -117,9 +117,38 @@
                                 "%formatted.Camera:40%|%formatted.Flash%"
 
 #define GQ_LINK_STR "↗"
-#include "typedefs.h"
 #include "debug.h"
+
+typedef enum {
+    MOUSE_BUTTON_LEFT        = 1,
+    MOUSE_BUTTON_MIDDLE      = 2,
+    MOUSE_BUTTON_RIGHT       = 3,
+    MOUSE_BUTTON_WHEEL_UP    = 4,
+    MOUSE_BUTTON_WHEEL_DOWN  = 5,
+    MOUSE_BUTTON_WHEEL_LEFT  = 6,
+    MOUSE_BUTTON_WHEEL_RIGHT = 7,
+    MOUSE_BUTTON_BACK        = 8,
+    MOUSE_BUTTON_FORWARD     = 9,
+} MouseButton;
+
+typedef enum {
+    SORT_NONE,
+    SORT_NAME,
+    SORT_SIZE,
+    SORT_TIME,
+    SORT_CTIME,
+    SORT_PATH,
+    SORT_NUMBER,
+    SORT_EXIFTIME
+} SortType;
+
 #include "options.h"
+
+#define CMD_COPY     "geeqie-copy-command.desktop"
+#define CMD_MOVE     "geeqie-move-command.desktop"
+#define CMD_RENAME   "geeqie-rename-command.desktop"
+#define CMD_DELETE   "geeqie-delete-command.desktop"
+#define CMD_FOLDER   "geeqie-folder-command.desktop"
 
 #define DESKTOP_FILE_TEMPLATE GQ_APP_DIR "/template.desktop"
 

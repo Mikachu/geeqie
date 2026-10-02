@@ -21,7 +21,7 @@
 #ifndef VIEW_DIR_H
 #define VIEW_DIR_H
 
-#include "typedefs.h"
+#include "main.h"
 
 typedef struct PixmapFolders PixmapFolders;
 struct PixmapFolders

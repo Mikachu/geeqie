@@ -22,7 +22,7 @@
 #ifndef SLIDESHOW_H
 #define SLIDESHOW_H
 
-#include "typedefs.h"
+#include "main.h"
 
 struct LayoutWindow;
 struct ImageWindow;
