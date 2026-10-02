@@ -415,7 +415,7 @@ static void pan_window_zoom_limit(PanWindow *pw)
             break;
 #endif
         case PAN_IMAGE_SIZE_THUMB_LARGE:
-            min = -6.0;
+            min = -8.0;
             break;
         case PAN_IMAGE_SIZE_10:
         case PAN_IMAGE_SIZE_25:
