@@ -22,9 +22,16 @@
 #ifndef METADATA_H
 #define METADATA_H
 
+#include "filedata.h"
+
 #define COMMENT_KEY     "Xmp.dc.description"
 #define KEYWORD_KEY     "Xmp.dc.subject"
 #define ORIENTATION_KEY "Xmp.tiff.Orientation"
+
+typedef enum {
+    METADATA_PLAIN      = 0, /* format that can be edited and written back */
+    METADATA_FORMATTED  = 1  /* for display only */
+} MetadataFormat;
 
 void metadata_cache_free(FileData *fd);
 

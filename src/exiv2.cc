@@ -58,6 +58,7 @@ extern "C" {
 #include "main.h"
 #include "exif.h"
 
+#include "filedata.h"
 #include "filefilter.h"
 #include "ui_fileops.h"
 

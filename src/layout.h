@@ -23,9 +23,39 @@
 #define LAYOUT_H
 
 #include "typedefs.h"
+#include "filedata.h"
+#include "view_dir.h"
+#include "view_file.h"
 
 #define LAYOUT_ID_CURRENT "_current_"
 #define MAX_SPLIT_IMAGES 4
+
+typedef enum {
+    SPLIT_NONE = 0,
+    SPLIT_VERT,
+    SPLIT_HORZ,
+    SPLIT_QUAD,
+} ImageSplitMode;
+
+typedef enum {
+    STARTUP_PATH_CURRENT = 0,
+    STARTUP_PATH_LAST,
+    STARTUP_PATH_HOME,
+} StartUpPath;
+
+typedef enum {
+    TOOLBAR_MAIN,
+    TOOLBAR_STATUS,
+    TOOLBAR_COUNT
+} ToolbarType;
+
+typedef enum {
+    LAYOUT_HIDE   = 0,
+    LAYOUT_LEFT   = 1 << 0,
+    LAYOUT_RIGHT  = 1 << 1,
+    LAYOUT_TOP    = 1 << 2,
+    LAYOUT_BOTTOM = 1 << 3
+} LayoutLocation;
 
 struct LayoutOptions
 {

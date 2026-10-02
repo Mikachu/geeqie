@@ -28,6 +28,7 @@
 #include "dupe.h"
 #include "editors.h"
 #include "filedata.h"
+#include "image.h"
 #include "img-view.h"
 #include "pixbuf_util.h"
 #include "slideshow.h"
@@ -325,7 +326,7 @@ GtkWidget *submenu_add_zoom(GtkWidget *menu, GCallback func, gpointer data,
  *-----------------------------------------------------------------------------
  */
 
-gchar *alter_type_get_text(AlterType type)
+static gchar *alter_type_get_text(AlterType type)
 {
     switch (type)
     {

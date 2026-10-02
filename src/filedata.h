@@ -24,6 +24,74 @@
 
 #include "typedefs.h"
 
+typedef enum {
+    FILEDATA_CHANGE_DELETE,
+    FILEDATA_CHANGE_MOVE,
+    FILEDATA_CHANGE_RENAME,
+    FILEDATA_CHANGE_COPY,
+    FILEDATA_CHANGE_UNSPECIFIED,
+    FILEDATA_CHANGE_WRITE_METADATA
+} FileDataChangeType;
+
+typedef enum {
+    MTS_MODE_MINUS,
+    MTS_MODE_SET,
+    MTS_MODE_OR,
+    MTS_MODE_AND
+} MarkToSelectionMode;
+
+typedef enum {
+    NOTIFY_PRIORITY_HIGH = 0,
+    NOTIFY_PRIORITY_MEDIUM,
+    NOTIFY_PRIORITY_LOW
+} NotifyPriority;
+
+typedef enum {
+    NOTIFY_MARKS        = 1 << 1, /* changed marks */
+    NOTIFY_PIXBUF       = 1 << 2, /* image was read into fd->pixbuf */
+    NOTIFY_HISTMAP      = 1 << 3, /* histmap was read into fd->histmap */
+    NOTIFY_ORIENTATION  = 1 << 4, /* image was rotated */
+    NOTIFY_METADATA     = 1 << 5, /* changed image metadata, not yet written */
+    NOTIFY_GROUPING     = 1 << 6, /* change in fd->sidecar_files or fd->parent */
+    NOTIFY_REREAD       = 1 << 7, /* changed file size, date, etc., file name remains unchanged */
+    NOTIFY_CHANGE       = 1 << 8  /* generic change described by fd->change */
+} NotifyType;
+
+typedef enum {
+    CHANGE_OK                      = 0,
+    CHANGE_WARN_DEST_EXISTS        = 1 << 0,
+    CHANGE_WARN_NO_WRITE_PERM      = 1 << 1,
+    CHANGE_WARN_SAME               = 1 << 2,
+    CHANGE_WARN_CHANGED_EXT        = 1 << 3,
+    CHANGE_WARN_UNSAVED_META       = 1 << 4,
+    CHANGE_WARN_NO_WRITE_PERM_DEST_DIR  = 1 << 5,
+    CHANGE_ERROR_MASK              = (~0U) << 8, /* the values below are fatal errors */
+    CHANGE_NO_READ_PERM            = 1 << 8,
+    CHANGE_NO_WRITE_PERM_DIR       = 1 << 9,
+    CHANGE_NO_DEST_DIR             = 1 << 10,
+    CHANGE_DUPLICATE_DEST          = 1 << 11,
+    CHANGE_NO_WRITE_PERM_DEST      = 1 << 12,
+    CHANGE_DEST_EXISTS             = 1 << 13,
+    CHANGE_NO_SRC                  = 1 << 14,
+    CHANGE_GENERIC_ERROR           = 1 << 16
+} ChangeError;
+#define CHANGE_NUM_ERRORS 17
+
+typedef enum {
+    STM_MODE_RESET,
+    STM_MODE_SET,
+    STM_MODE_TOGGLE
+} SelectionToMarkMode;
+
+typedef enum {
+    FORMAT_CLASS_UNKNOWN,
+    FORMAT_CLASS_IMAGE,
+    FORMAT_CLASS_RAWIMAGE,
+    FORMAT_CLASS_META,
+    FORMAT_CLASS_VIDEO,
+    FILE_FORMAT_CLASSES
+} FileFormatClass;
+
 struct FileData {
     guint magick;
     gint type;

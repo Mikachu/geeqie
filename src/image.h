@@ -23,6 +23,27 @@
 #define IMAGE_H
 
 #include "typedefs.h"
+#include "pixbuf-renderer.h"
+
+typedef enum {
+    IMAGE_STATE_NONE        = 0,
+    IMAGE_STATE_IMAGE       = 1 << 0,
+    IMAGE_STATE_LOADING     = 1 << 1,
+    IMAGE_STATE_ERROR       = 1 << 2,
+    IMAGE_STATE_COLOR_ADJ   = 1 << 3,
+    IMAGE_STATE_ROTATE_AUTO = 1 << 4,
+    IMAGE_STATE_ROTATE_USER = 1 << 5,
+    IMAGE_STATE_DELAY_FLIP  = 1 << 6
+} ImageState;
+
+typedef enum {
+    ALTER_NONE,
+    ALTER_ROTATE_90,
+    ALTER_ROTATE_90_CC,
+    ALTER_ROTATE_180,
+    ALTER_MIRROR,
+    ALTER_FLIP,
+} AlterType;
 
 struct ImageWindow
 {

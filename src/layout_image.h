@@ -22,6 +22,9 @@
 #ifndef LAYOUT_IMAGE_H
 #define LAYOUT_IMAGE_H
 
+#include "image.h"
+#include "layout.h"
+
 GtkWidget *layout_image_new(LayoutWindow *lw, gint i);
 void layout_image_activate(LayoutWindow *lw, gint i, gboolean force);
 GtkWidget *layout_image_setup_split_none(LayoutWindow *lw);

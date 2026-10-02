@@ -37,6 +37,7 @@
 #include "layout_config.h"
 #include "layout_util.h"
 #include "pixbuf_util.h"
+#include "pixbuf-renderer.h"
 #include "slideshow.h"
 #include "trash.h"
 #include "utilops.h"

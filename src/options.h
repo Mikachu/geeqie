@@ -21,6 +21,12 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
+typedef enum {
+    ZOOM_RESET_ORIGINAL   = 0,
+    ZOOM_RESET_FIT_WINDOW = 1,
+    ZOOM_RESET_NONE       = 2
+} ZoomMode;
+
 /* mouse bindings */
 typedef struct {
     guint button;

@@ -22,6 +22,8 @@
 #ifndef __EXIF_H
 #define __EXIF_H
 
+#include "metadata.h"
+
 #define EXIF_FORMATTED() "formatted."
 #define EXIF_FORMATTED_LEN (sizeof(EXIF_FORMATTED()) - 1)
 
@@ -48,7 +50,6 @@ typedef enum {
     EXIF_FORMAT_FLOAT               = 11,
     EXIF_FORMAT_DOUBLE              = 12
 } ExifFormatType;
-
 
 /*
  *-----------------------------------------------------------------------------

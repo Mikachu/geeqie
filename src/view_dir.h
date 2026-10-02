@@ -31,6 +31,11 @@ struct PixmapFolders
     GdkPixbuf *parent;
 };
 
+typedef enum {
+    DIRVIEW_LIST,
+    DIRVIEW_TREE
+} DirViewType;
+
 struct ViewDir
 {
     DirViewType type;
