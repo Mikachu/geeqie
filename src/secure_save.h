@@ -21,6 +21,19 @@
 #ifndef SECURE_SAVE_H
 #define SECURE_SAVE_H
 
+#include "typedefs.h"
+
+struct SecureSaveInfo {
+    FILE *fp;                 /**< file stream pointer */
+    gchar *file_name;         /**< final file name */
+    gchar *tmp_file_name;     /**< temporary file name */
+    gint err;                 /**< set to non-zero value in case of error */
+    gboolean secure_save;     /**< use secure save for this file, internal use only */
+    gboolean preserve_perms;  /**< whether to preserve perms, TRUE by default */
+    gboolean preserve_mtime;  /**< whether to preserve mtime, FALSE by default */
+    gboolean unlink_on_error; /**< whether to remove temporary file on save failure, TRUE by default */
+};
+
 extern SecureSaveErrno secsave_errno; /**< internal secsave error number */
 
 SecureSaveInfo *secure_open(const gchar *);

@@ -20,9 +20,10 @@
  */
 
 #include "main.h"
+
+#include "filedata.h"
 #include "image-load.h"
 #include "image_load_gdk.h"
-
 
 static gchar* image_loader_gdk_get_format_name(gpointer loader)
 {
@@ -38,6 +39,7 @@ static gchar* image_loader_gdk_get_format_name(gpointer loader)
         return NULL;
     }
 }
+
 static gchar** image_loader_gdk_get_format_mime_types(gpointer loader)
 {
     return gdk_pixbuf_format_get_mime_types(gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader)));

@@ -22,7 +22,195 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
+#include "typedefs.h"
+
 #define LAYOUT_ID_CURRENT "_current_"
+#define MAX_SPLIT_IMAGES 4
+
+struct LayoutOptions
+{
+    gchar *id;
+
+    gchar *order;
+    gint style;
+
+    DirViewType dir_view_type;
+    FileViewType file_view_type;
+
+    struct {
+        SortType method;
+        gboolean ascend;
+    } dir_view_list_sort;
+
+    gboolean show_thumbnails;
+    gboolean show_marks;
+    gboolean show_directory_date;
+    gboolean show_info_pixel;
+
+    struct {
+        gint w;
+        gint h;
+        gint x;
+        gint y;
+        gboolean maximized;
+        gint hdivider_pos;
+        gint vdivider_pos;
+    } main_window;
+
+    struct {
+        gint w;
+        gint h;
+        gint x;
+        gint y;
+        gint vdivider_pos;
+    } float_window;
+
+    struct {
+        gint w;
+        gint h;
+    } properties_window;
+
+    struct {
+        guint state;
+        gint histogram_channel;
+        gint histogram_mode;
+    } image_overlay;
+
+    gboolean tools_float;
+    gboolean tools_hidden;
+    gboolean toolbar_hidden;
+
+    gchar *home_path;
+
+    StartUpPath startup_path;
+
+    gboolean exit_on_close;
+};
+
+struct LayoutWindow
+{
+    LayoutOptions options;
+
+    FileData *dir_fd;
+    FileData *image_pending_fd;
+    guint image_pending_idle_id;
+
+    /* base */
+
+    GtkWidget *window;
+
+    GtkWidget *main_box;
+
+    GtkWidget *group_box;
+    GtkWidget *h_pane;
+    GtkWidget *v_pane;
+
+    /* menus, path selector */
+
+    GtkActionGroup *action_group;
+    GtkActionGroup *action_group_editors;
+    guint ui_editors_id;
+    GtkUIManager *ui_manager;
+    GList *toolbar_actions[TOOLBAR_COUNT];
+
+    GtkWidget *path_entry;
+
+    /* image */
+
+    LayoutLocation image_location;
+
+    ImageWindow *image;
+
+    ImageWindow *split_images[MAX_SPLIT_IMAGES];
+    ImageSplitMode split_mode;
+    gint active_split_image;
+
+    GtkWidget *split_image_widget;
+    GtkSizeGroup *split_image_sizegroup;
+
+    /* tools window (float) */
+
+    GtkWidget *tools;
+    GtkWidget *tools_pane;
+
+//  gint tools_float;
+//  gint tools_hidden;
+
+    GtkWidget *menu_bar; /* referenced by lw, exist during whole lw lifetime */
+    /* toolbar */
+
+    GtkWidget *toolbar[TOOLBAR_COUNT]; /* referenced by lw, exist during whole lw lifetime */
+//  gint toolbar_hidden;
+
+//  GtkWidget *thumb_button;
+//  gint thumbs_enabled;
+//  gint marks_enabled;
+
+    GtkWidget *back_button;
+
+    /* dir view */
+
+    LayoutLocation dir_location;
+
+    ViewDir *vd;
+    GtkWidget *dir_view;
+
+//  DirViewType dir_view_type;
+
+    /* file view */
+
+    LayoutLocation file_location;
+
+    ViewFile *vf;
+//  FileViewType file_view_type;
+
+    GtkWidget *file_view;
+
+    SortType sort_method;
+    gboolean sort_ascend;
+
+    /* status bar */
+
+    GtkWidget *info_box;
+    GtkWidget *info_progress_bar;
+    GtkWidget *info_sort;
+    GtkWidget *info_status;
+    GtkWidget *info_details;
+    GtkWidget *info_zoom;
+    GtkWidget *info_pixel;
+
+    /* slide show */
+
+    SlideShowData *slideshow;
+
+    /* full screen */
+
+    FullScreenData *full_screen;
+
+    /* notebook used to switch between normal layout (page 0) and fullscreen image (page 1) */
+    GtkWidget *fs_notebook;
+    GtkWidget *fs_page;
+
+    /* dividers */
+
+//  gint div_h;
+//  gint div_v;
+//  gint div_float;
+
+    /* misc */
+
+    GtkWidget *utility_box;   /* referenced by lw, exist during whole lw lifetime */
+    GtkWidget *utility_paned; /* between image and bar */
+    GtkWidget *bar_sort;
+    GtkWidget *bar;
+
+//  gint bar_sort_enabled;
+//  gint bar_enabled;
+
+//  gint bar_width;
+
+    GtkWidget *exif_window;
+};
 
 extern GList *layout_window_list;
 
