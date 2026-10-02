@@ -272,14 +272,14 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
         if (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE)
         {
             pi = pan_item_image_new(pw, fd, x, y, 10, 10);
-            x += pi->width + PAN_THUMB_GAP;
+            x += pi->width + pw->thumb_gap;
             if (pi->height > y_height) y_height = pi->height;
         }
         else
         {
             pi = pan_item_thumb_new(pw, fd, x, y);
-            x += PAN_THUMB_SIZE + PAN_THUMB_GAP;
-            y_height = PAN_THUMB_SIZE;
+            x += pw->thumb_size + pw->thumb_gap;
+            y_height = pw->thumb_size;
         }
 
         grid_count++;
@@ -287,7 +287,7 @@ static FlowerGroup *pan_flower_group(PanWindow *pw, FileData *dir_fd, gint x, gi
         {
             grid_count = 0;
             x = x_start;
-            y += y_height + PAN_THUMB_GAP;
+            y += y_height + pw->thumb_gap;
             y_height = 0;
         }
 
@@ -417,7 +417,7 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
 
     pan_filter_fd_list(&f, pw->filter_ui->filter_elements);
 
-    *x = PAN_BOX_BORDER + ((*level) * MAX(PAN_BOX_BORDER, PAN_THUMB_GAP));
+    *x = PAN_BOX_BORDER + ((*level) * MAX(PAN_BOX_BORDER, pw->thumb_gap));
 
     pi_box = pan_item_text_new(pw, *x, *y, g_strdup(dir_fd->path), PAN_TEXT_ATTR_NONE,
                                PAN_TEXT_BORDER_SIZE,
@@ -443,14 +443,14 @@ static void pan_folder_tree_path(PanWindow *pw, FileData *dir_fd,
         if (pw->size > PAN_IMAGE_SIZE_THUMB_LARGE)
         {
             pi = pan_item_image_new(pw, fd, *x, *y, 10, 10);
-            *x += pi->width + PAN_THUMB_GAP;
+            *x += pi->width + pw->thumb_gap;
             if (pi->height > y_height) y_height = pi->height;
         }
         else
         {
             pi = pan_item_thumb_new(pw, fd, *x, *y);
-            *x += PAN_THUMB_SIZE + PAN_THUMB_GAP;
-            y_height = PAN_THUMB_SIZE;
+            *x += pw->thumb_size + pw->thumb_gap;
+            y_height = pw->thumb_size;
         }
 
         pan_item_size_by_item(pi_box, pi, PAN_BOX_BORDER);

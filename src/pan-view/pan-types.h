@@ -27,56 +27,54 @@
 
 /* thumbnail sizes and spacing */
 
-#define PAN_THUMB_SIZE_DOTS 4
-#define PAN_THUMB_SIZE_NONE 24
-#define PAN_THUMB_SIZE_SMALL 64
+#define PAN_THUMB_SIZE_DOTS   4
+#define PAN_THUMB_SIZE_NONE   24
+#define PAN_THUMB_SIZE_SMALL  64
 #define PAN_THUMB_SIZE_NORMAL 128
-#define PAN_THUMB_SIZE_LARGE 256
-#define PAN_THUMB_SIZE pw->thumb_size
+#define PAN_THUMB_SIZE_LARGE  256
 
-#define PAN_THUMB_GAP_DOTS 2
-#define PAN_THUMB_GAP_SMALL 14
+#define PAN_THUMB_GAP_DOTS   2
+#define PAN_THUMB_GAP_SMALL  14
 #define PAN_THUMB_GAP_NORMAL 30
-#define PAN_THUMB_GAP_LARGE 40
-#define PAN_THUMB_GAP_HUGE 50
-#define PAN_THUMB_GAP pw->thumb_gap
+#define PAN_THUMB_GAP_LARGE  40
+#define PAN_THUMB_GAP_HUGE   50
 
 /* basic sizes, colors, spacings */
 
 #define PAN_SHADOW_OFFSET 6
-#define PAN_SHADOW_FADE 5
-#define PAN_SHADOW_COLOR 0, 0, 0
-#define PAN_SHADOW_ALPHA 64
+#define PAN_SHADOW_FADE   5
+#define PAN_SHADOW_COLOR  0, 0, 0
+#define PAN_SHADOW_ALPHA  64
 
 #define PAN_OUTLINE_THICKNESS 1
-#define PAN_OUTLINE_COLOR_1 255, 255, 255
-#define PAN_OUTLINE_COLOR_2 64, 64, 64
-#define PAN_OUTLINE_ALPHA 180
+#define PAN_OUTLINE_COLOR_1   255, 255, 255
+#define PAN_OUTLINE_COLOR_2   64,  64,  64
+#define PAN_OUTLINE_ALPHA     180
 
 #define PAN_BACKGROUND_COLOR 150, 150, 150
 
-#define PAN_GRID_SIZE 60
+#define PAN_GRID_SIZE  60
 #define PAN_GRID_COLOR 0, 0, 0
 #define PAN_GRID_ALPHA 20
 
-#define PAN_BOX_COLOR 255, 255, 255
-#define PAN_BOX_ALPHA 100
+#define PAN_BOX_COLOR  255, 255, 255
+#define PAN_BOX_ALPHA  100
 #define PAN_BOX_BORDER 20
 
 #define PAN_BOX_OUTLINE_THICKNESS 4
-#define PAN_BOX_OUTLINE_COLOR 0, 0, 0
-#define PAN_BOX_OUTLINE_ALPHA 128
+#define PAN_BOX_OUTLINE_COLOR     0, 0, 0
+#define PAN_BOX_OUTLINE_ALPHA     128
 
 #define PAN_TEXT_BORDER_SIZE 4
-#define PAN_TEXT_COLOR 0, 0, 0
+#define PAN_TEXT_COLOR       0, 0, 0
 
 /* popup info box */
 
-#define PAN_POPUP_COLOR 255, 255, 225
-#define PAN_POPUP_ALPHA 255
-#define PAN_POPUP_BORDER 1
-#define PAN_POPUP_BORDER_COLOR 0, 0, 0
-#define PAN_POPUP_TEXT_COLOR 0, 0, 0
+#define PAN_POPUP_COLOR        255, 255, 225
+#define PAN_POPUP_ALPHA        255
+#define PAN_POPUP_BORDER       1
+#define PAN_POPUP_BORDER_COLOR 0,   0,   0
+#define PAN_POPUP_TEXT_COLOR   0,   0,   0
 
 
 #define PAN_GROUP_MAX 16
