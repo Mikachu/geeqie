@@ -470,6 +470,28 @@ void pan_radial_compute(PanWindow *pw, FileData *dir_fd,
     pan_flower_build(pw, group, NULL, wedge);
     g_clear_pointer(&group, g_free);
 
+    /* reorder: images/thumbs on top, connectors under them, rest below */
+    GList *top = NULL, *tri = NULL, *rest = NULL;
+    for (GList *work = pw->list; work; work = work->next)
+    {
+        PanItem *pi = work->data;
+        GList **dst;
+
+        if (pi->type == PAN_ITEM_IMAGE ||
+            pi->type == PAN_ITEM_THUMB ||
+            pi->type == PAN_ITEM_BOX ||
+            pi->type == PAN_ITEM_TEXT)
+            dst = &top;
+        else if (pi->type == PAN_ITEM_TRIANGLE)
+            dst = &tri;
+        else
+            dst = &rest;
+
+        *dst = g_list_prepend(*dst, pi);
+    }
+    g_list_free(pw->list);
+    pw->list = g_list_reverse(g_list_concat(rest, g_list_concat(tri, top)));
+
     pan_flower_size(pw, width, height);
 
     GList *list = pan_item_find_by_fd(pw, PAN_ITEM_BOX, dir_fd, FALSE, FALSE);
