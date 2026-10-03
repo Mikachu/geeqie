@@ -146,6 +146,7 @@ struct LayoutWindow
     GtkActionGroup *action_group;
     GtkActionGroup *action_group_editors;
     guint ui_editors_id;
+    guint ui_bookmarks_id;
     GtkUIManager *ui_manager;
     GList *toolbar_actions[TOOLBAR_COUNT];
 

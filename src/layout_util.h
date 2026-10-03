@@ -36,6 +36,8 @@ void layout_util_status_update_write_all(void);
 
 //void layout_edit_update_all(void);
 
+void layout_bookmarks_update_all(gpointer data);
+
 void layout_recent_update_all(void);
 void layout_recent_add_path(const gchar *path);
 
