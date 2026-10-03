@@ -97,6 +97,11 @@ struct BookPropData
     BookButtonData *bb;
 };
 
+typedef struct {
+    BookmarkUpdateFunc func;
+    gpointer           data;
+} BookmarkNotify;
+
 enum {
     TARGET_URI_LIST,
     TARGET_X_URL,
@@ -118,6 +123,7 @@ static GtkTargetEntry bookmark_drag_types[] = {
 
 static GList *bookmark_widget_list = NULL;
 static GList *bookmark_default_list = NULL;
+static GList *bookmark_notify_list = NULL;
 
 static void bookmark_populate_all(const gchar *key);
 
@@ -192,6 +198,27 @@ static void bookmark_free(BookButtonData *b)
     g_free(b);
 }
 
+void bookmark_parse_entry(const gchar *text, gchar **name, gchar **path, gchar **icon)
+{
+    BookButtonData *b = bookmark_from_string(text);
+
+    if (name)
+        *name = NULL;
+    if (path)
+        *path = NULL;
+    if (icon)
+        *icon = NULL;
+    if (!b) return;
+
+    if (name)
+        *name = g_steal_pointer(&b->name);
+    if (path)
+        *path = g_steal_pointer(&b->path);
+    if (icon)
+        *icon = g_steal_pointer(&b->icon);
+    bookmark_free(b);
+}
+
 static gchar *bookmark_string(const gchar *name, const gchar *path, const gchar *icon)
 {
     if (!name) name = _("New Bookmark");
@@ -224,6 +251,7 @@ static void bookmark_edit_destroy_cb(GtkWidget *widget, gpointer data)
 
 static void bookmark_edit_cancel_cb(GenericDialog *gd, gpointer data)
 {
+    generic_dialog_close(gd);
 }
 
 static void bookmark_edit_ok_cb(GenericDialog *gd, gpointer data)
@@ -237,6 +265,18 @@ static void bookmark_edit_ok_cb(GenericDialog *gd, gpointer data)
     name = gtk_entry_get_text(GTK_ENTRY(p->name_entry));
     path = remove_trailing_slash(gtk_entry_get_text(GTK_ENTRY(p->path_entry)));
     icon = gtk_entry_get_text(GTK_ENTRY(p->icon_entry));
+
+    /* reject empty fields instead of writing a broken entry;
+     * an empty name produces an unlabeled button and an empty
+     * path stores a useless "[path]" line in history */
+    if (!name || !*name || !path || !*path)
+    {
+        warning_dialog(_("Invalid bookmark"),
+                       _("The bookmark requires a name and a path."),
+                       NULL, gd->dialog);
+        g_free(path);
+        return;
+    }
 
     new = bookmark_string(name, path, icon);
 
@@ -252,11 +292,21 @@ static void bookmark_edit_ok_cb(GenericDialog *gd, gpointer data)
     g_free(new);
 
     bookmark_populate_all(p->bb->parent);
+    generic_dialog_close(gd);
+}
+
+static void bookmark_edit_delete_cb(GenericDialog *gd, gpointer data)
+{
+    BookPropData *p = data;
+
+    history_list_item_remove(p->bb->parent, p->bb->key);
+    bookmark_populate_all(p->bb->parent);
+    generic_dialog_close(gd);
 }
 
 /* simply pass NULL for text to turn this into a 'new bookmark' dialog */
 
-static void bookmark_edit(const gchar *key, const gchar *text, GtkWidget *parent)
+void bookmark_edit(const gchar *key, const gchar *text, GtkWidget *parent)
 {
     BookPropData *p;
     GenericDialog *gd;
@@ -272,7 +322,7 @@ static void bookmark_edit(const gchar *key, const gchar *text, GtkWidget *parent
     p->bb->parent = g_strdup(key);
 
     gd = generic_dialog_new(_("Edit Bookmark"), "bookmark_edit",
-                            parent, TRUE,
+                            parent, FALSE,
                             bookmark_edit_cancel_cb, p);
     g_signal_connect(G_OBJECT(gd->dialog), "destroy",
                      G_CALLBACK(bookmark_edit_destroy_cb), p);
@@ -281,6 +331,10 @@ static void bookmark_edit(const gchar *key, const gchar *text, GtkWidget *parent
 
     generic_dialog_add_button(gd, GTK_STOCK_OK, NULL,
                               bookmark_edit_ok_cb, TRUE);
+
+    if (p->bb->key)
+        generic_dialog_add_button(gd, GTK_STOCK_DELETE, NULL,
+                                  bookmark_edit_delete_cb, FALSE);
 
     table = pref_table_new(gd->vbox, 3, 2, FALSE, TRUE);
     pref_table_label(table, 0, 0, _("Name:"), 1.0);
@@ -512,6 +566,38 @@ static void bookmark_drag_begin(GtkWidget *button, GdkDragContext *context, gpoi
     g_object_unref(pixbuf);
 }
 
+GtkWidget *bookmark_icon_image(const gchar *icon_path, GtkIconSize size)
+{
+    GtkWidget *image;
+    GdkPixbuf *pixbuf = NULL;
+
+    if (icon_path)
+    {
+        gchar *iconl = path_from_utf8(icon_path);
+        pixbuf = gdk_pixbuf_new_from_file(iconl, NULL);
+        g_free(iconl);
+    }
+
+    if (pixbuf)
+    {
+        GdkPixbuf *scaled;
+        gint w = 16, h = 16;
+
+        gtk_icon_size_lookup(size, &w, &h);
+        scaled = gdk_pixbuf_scale_simple(pixbuf, w, h, GDK_INTERP_BILINEAR);
+        image = gtk_image_new_from_pixbuf(scaled);
+        g_object_unref(scaled);
+        g_object_unref(pixbuf);
+    }
+    else
+    {
+        const gchar *img = icon_path ? GTK_STOCK_MISSING_IMAGE : GTK_STOCK_JUMP_TO;
+        image = gtk_image_new_from_stock(img, size);
+    }
+
+    return image;
+}
+
 static void bookmark_populate(BookMarkData *bm)
 {
     GtkBox *box;
@@ -593,38 +679,7 @@ static void bookmark_populate(BookMarkData *bm)
             gtk_container_add(GTK_CONTAINER(b->button), box);
             gtk_widget_show(box);
 
-            if (b->icon)
-            {
-                GdkPixbuf *pixbuf;
-                gchar *iconl;
-
-                iconl = path_from_utf8(b->icon);
-                pixbuf = gdk_pixbuf_new_from_file(iconl, NULL);
-                g_free(iconl);
-                if (pixbuf)
-                {
-                    GdkPixbuf *scaled;
-                    gint w, h;
-
-                    w = h = 16;
-                    gtk_icon_size_lookup(GTK_ICON_SIZE_BUTTON, &w, &h);
-
-                    scaled = gdk_pixbuf_scale_simple(pixbuf, w, h,
-                                                     GDK_INTERP_BILINEAR);
-                    b->image = gtk_image_new_from_pixbuf(scaled);
-                    g_object_unref(scaled);
-                    g_object_unref(pixbuf);
-                }
-                else
-                {
-                    b->image = gtk_image_new_from_stock(GTK_STOCK_MISSING_IMAGE,
-                                                        GTK_ICON_SIZE_BUTTON);
-                }
-            }
-            else
-            {
-                b->image = gtk_image_new_from_stock(GTK_STOCK_JUMP_TO, GTK_ICON_SIZE_BUTTON);
-            }
+            b->image = bookmark_icon_image(b->icon, GTK_ICON_SIZE_BUTTON);
             gtk_box_pack_start(GTK_BOX(box), b->image, FALSE, FALSE, 0);
             gtk_widget_show(b->image);
 
@@ -660,6 +715,11 @@ static void bookmark_populate_all(const gchar *key)
 
         if (strcmp(bm->key, key) == 0)
             bookmark_populate(bm);
+    }
+    for (GList *work = bookmark_notify_list; work; work = work->next)
+    {
+        BookmarkNotify *bn = work->data;
+        bn->func(bn->data);
     }
 }
 
@@ -828,6 +888,14 @@ void bookmark_add_default(const gchar *name, const gchar *path)
     if (!name || !path) return;
     bookmark_default_list = g_list_append(bookmark_default_list, g_strdup(name));
     bookmark_default_list = g_list_append(bookmark_default_list, g_strdup(path));
+}
+
+void bookmark_register_update(BookmarkUpdateFunc func, gpointer data)
+{
+    BookmarkNotify *bn = g_new(BookmarkNotify, 1);
+    bn->func = func;
+    bn->data = data;
+    bookmark_notify_list = g_list_prepend(bookmark_notify_list, bn);
 }
 
 /*

@@ -46,6 +46,7 @@
 #include "remote.h"
 #include "secure_save.h"
 #include "similar.h"
+#include "ui_bookmark.h"
 #include "ui_fileops.h"
 #include "ui_utildlg.h"
 #include "cache_maint.h"
@@ -787,6 +788,7 @@ gint main(gint argc, gchar *argv[])
     file_data_register_notify_func(collect_manager_notify_cb, NULL, NOTIFY_PRIORITY_LOW);
     file_data_register_notify_func(metadata_notify_cb, NULL, NOTIFY_PRIORITY_LOW);
 
+    bookmark_register_update(layout_bookmarks_update_all, NULL);
 
     gtkrc_load();
 

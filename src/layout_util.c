@@ -48,6 +48,7 @@
 #include "preferences.h"
 #include "print.h"
 #include "search.h"
+#include "ui_bookmark.h"
 #include "ui_fileops.h"
 #include "ui_menu.h"
 #include "ui_misc.h"
@@ -487,7 +488,6 @@ static void layout_menu_connect_zoom_1_4_cb(GtkAction *action, LayoutWindow *lw)
     layout_image_zoom_set(lw, -4.0, TRUE);
 }
 
-
 static void layout_menu_split_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
     ImageSplitMode mode;
@@ -497,12 +497,10 @@ static void layout_menu_split_cb(GtkRadioAction *action, GtkRadioAction *current
     layout_split_change(lw, mode);
 }
 
-
 static void layout_menu_thumb_cb(GtkToggleAction *action, LayoutWindow *lw)
 {
     layout_thumb_set(lw, gtk_toggle_action_get_active(action));
 }
-
 
 static void layout_menu_list_cb(GtkRadioAction *action, GtkRadioAction *current, LayoutWindow *lw)
 {
@@ -716,6 +714,21 @@ static void layout_menu_notes_cb(GtkAction *action, LayoutWindow *lw)
 {
     layout_exit_fullscreen(lw);
     help_window_show("release_notes");
+}
+
+static void layout_menu_bookmark_add_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+
+    bookmark_edit("bookmarks", NULL, lw->window);
+}
+
+static void layout_menu_bookmark_cb(GtkAction *action, gpointer data)
+{
+    LayoutWindow *lw = data;
+    const gchar *path = g_object_get_data(G_OBJECT(action), "bookmark_path");
+
+    if (path) layout_set_path(lw, path);
 }
 
 static char *keyboard_map_hardcoded[][2] = {
@@ -1249,6 +1262,118 @@ void layout_recent_add_path(const gchar *path)
 
 /*
  *-----------------------------------------------------------------------------
+ * bookmark menu
+ *-----------------------------------------------------------------------------
+ */
+
+static gboolean bookmark_item_button_press_cb(GtkWidget *item,
+                                              GdkEventButton *event,
+                                              gpointer data)
+{
+    if (event->button != 3) return FALSE;
+
+    LayoutWindow *lw = data;
+    GtkAction *action = gtk_activatable_get_related_action(GTK_ACTIVATABLE(item));
+    /* stash the packed entry string on the action when creating it, or
+     * reconstruct from the stored name/path/icon */
+    const gchar *entry = g_object_get_data(G_OBJECT(action), "bookmark_entry");
+
+    gtk_menu_shell_deselect(GTK_MENU_SHELL(item->parent));
+    gtk_menu_popdown(GTK_MENU(item->parent));
+
+    bookmark_edit("bookmarks", entry, lw->window);   /* key, packed text, parent */
+    return TRUE;
+}
+
+static void layout_menu_bookmarks_update(LayoutWindow *lw)
+{
+    gint i = 0;
+
+    if (!lw->action_group || !lw->ui_manager) return;
+
+    /* drop the previous menu nodes; the merge id covers all of
+     * them, so one remove_ui clears the whole submenu */
+    if (lw->ui_bookmarks_id)
+    {
+        gtk_ui_manager_remove_ui(lw->ui_manager, lw->ui_bookmarks_id);
+        lw->ui_bookmarks_id = 0;
+    }
+
+    /* drop the previous generation of actions; removing them from the
+     * group removes their menu proxies too */
+    while (TRUE)
+    {
+        gchar *name = g_strdup_printf("Bookmark%d", i);
+        GtkAction *action = gtk_action_group_get_action(lw->action_group, name);
+        g_free(name);
+        if (!action) break;
+        gtk_action_group_remove_action(lw->action_group, action);
+        i++;
+    }
+
+    lw->ui_bookmarks_id = gtk_ui_manager_new_merge_id(lw->ui_manager);
+
+    i = 0;
+    for (GList *work = history_list_get_by_key("bookmarks"); work; work = work->next)
+    {
+        gchar *name, *path, *icon, *aname, *label;
+        GtkAction *action;
+
+        bookmark_parse_entry(work->data, &name, &path, &icon);
+        if (!name || !path || !*path)
+        {
+            g_free(name);
+            g_free(path);
+            continue;
+        }
+
+        aname = g_strdup_printf("Bookmark%d", i++);
+        /* '_' in the name would become a mnemonic; defuse it */
+        label = g_strdelimit(g_strdup(name), "_", '-');
+
+        action = gtk_action_new(aname, label, path, NULL);
+        g_object_set_data_full(G_OBJECT(action), "bookmark_path",
+                               g_strdup(path), (GDestroyNotify)g_free);
+        g_object_set_data_full(G_OBJECT(action), "bookmark_entry",
+                               g_strdup((gchar *)work->data), g_free);
+        g_signal_connect(G_OBJECT(action), "activate",
+                         G_CALLBACK(layout_menu_bookmark_cb), lw);
+        gtk_action_group_add_action(lw->action_group, action);
+        g_object_unref(action);
+
+        gtk_ui_manager_add_ui(lw->ui_manager, lw->ui_bookmarks_id,
+                              "/MainMenu/GoMenu/BookmarksMenu/BookmarksSection",
+                              aname, aname,
+                              GTK_UI_MANAGER_MENUITEM, FALSE);
+        gchar *wpath = g_strconcat("/MainMenu/GoMenu/BookmarksMenu/BookmarksSection/", aname, NULL);
+        GtkWidget *item;
+
+        gtk_ui_manager_ensure_update(lw->ui_manager);
+        item = gtk_ui_manager_get_widget(lw->ui_manager, wpath);
+        if (item)
+        {
+            gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item),
+                                          bookmark_icon_image(icon, GTK_ICON_SIZE_MENU));
+            g_signal_connect(G_OBJECT(item), "button-press-event",
+                             G_CALLBACK(bookmark_item_button_press_cb), lw);
+        }
+        g_free(wpath);
+        g_free(aname);
+        g_free(label);
+        g_free(name);
+        g_free(path);
+        g_free(icon);
+    }
+}
+
+void layout_bookmarks_update_all(gpointer data)
+{
+    for (GList *work = layout_window_list; work; work = work->next)
+        layout_menu_bookmarks_update(work->data);
+}
+
+/*
+ *-----------------------------------------------------------------------------
  * menu
  *-----------------------------------------------------------------------------
  */
@@ -1258,6 +1383,8 @@ void layout_recent_add_path(const gchar *path)
 static GtkActionEntry menu_entries[] = {
   { "FileMenu",           NULL,                      N_("_File"),                            NULL,                    NULL,                                    NULL },
   { "GoMenu",             NULL,                      N_("_Go"),                              NULL,                    NULL,                                    NULL },
+  { "BookmarksMenu",      GTK_STOCK_JUMP_TO,         N_("_Bookmarks"),                       NULL,                    NULL,                                    NULL },
+  { "AddBookmark",        GTK_STOCK_ADD,             N_("_Add Bookmark"),                    NULL,                    N_("Add bookmark"),                      CB(layout_menu_bookmark_add_cb) },
   { "EditMenu",           NULL,                      N_("_Edit"),                            NULL,                    NULL,                                    NULL },
   { "SelectMenu",         NULL,                      N_("_Select"),                          NULL,                    NULL,                                    NULL },
   { "OrientationMenu",    NULL,                      N_("_Orientation"),                     NULL,                    NULL,                                    NULL },
@@ -1496,6 +1623,11 @@ static const gchar *menu_ui_description =
 "      <menuitem action='NextFolder'/>"
 "      <menuitem action='Home'/>"
 "      <separator/>"
+"      <menu action='BookmarksMenu'>"
+"        <placeholder name='BookmarksSection'/>"
+"        <separator/>"
+"        <menuitem action='AddBookmark'/>"
+"      </menu>"
 "    </menu>"
 "    <menu action='SelectMenu'>"
 "      <menuitem action='SelectAll'/>"
@@ -1984,6 +2116,8 @@ void layout_actions_setup(LayoutWindow *lw)
 
     DEBUG_1("%s layout_actions_setup: editors", get_exec_time());
     layout_actions_setup_editors(lw);
+
+    layout_menu_bookmarks_update(lw);
 
     DEBUG_1("%s layout_actions_setup: status_update_write", get_exec_time());
     layout_util_status_update_write(lw);

@@ -24,6 +24,8 @@
 
 /* bookmarks */
 
+void bookmark_edit(const gchar *key, const gchar *text, GtkWidget *parent);
+GtkWidget *bookmark_icon_image(const gchar *icon_path, GtkIconSize size);
 GtkWidget *bookmark_list_new(const gchar *key,
                              void (*select_func)(const gchar *path, gpointer data), gpointer select_data);
 void bookmark_list_set_key(GtkWidget *list, const gchar *key);
@@ -32,8 +34,15 @@ void bookmark_list_set_editable(GtkWidget *list, gint editable);
 void bookmark_list_set_only_directories(GtkWidget *list, gint only_directories);
 void bookmark_list_add(GtkWidget *list, const gchar *name, const gchar *path);
 
+typedef void (*BookmarkUpdateFunc)(gpointer data);
+void bookmark_register_update(BookmarkUpdateFunc func, gpointer data);
+//void bookmark_unregister_update(BookmarkUpdateFunc func, gpointer data);
+
 /* allows apps to set up the defaults */
 void bookmark_add_default(const gchar *name, const gchar *path);
+
+/* parses a history-list bookmark entry into name/path/icon; results must be g_free'd */
+void bookmark_parse_entry(const gchar *text, gchar **name, gchar **path, gchar **icon);
 
 /* history combo entry */
 
