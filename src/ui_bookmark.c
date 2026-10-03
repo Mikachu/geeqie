@@ -192,6 +192,27 @@ static void bookmark_free(BookButtonData *b)
     g_free(b);
 }
 
+void bookmark_parse_entry(const gchar *text, gchar **name, gchar **path, gchar **icon)
+{
+    BookButtonData *b = bookmark_from_string(text);
+
+    if (name)
+        *name = NULL;
+    if (path)
+        *path = NULL;
+    if (icon)
+        *icon = NULL;
+    if (!b) return;
+
+    if (name)
+        *name = g_steal_pointer(&b->name);
+    if (path)
+        *path = g_steal_pointer(&b->path);
+    if (icon)
+        *icon = g_steal_pointer(&b->icon);
+    bookmark_free(b);
+}
+
 static gchar *bookmark_string(const gchar *name, const gchar *path, const gchar *icon)
 {
     if (!name) name = _("New Bookmark");

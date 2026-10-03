@@ -35,6 +35,9 @@ void bookmark_list_add(GtkWidget *list, const gchar *name, const gchar *path);
 /* allows apps to set up the defaults */
 void bookmark_add_default(const gchar *name, const gchar *path);
 
+/* parses a history-list bookmark entry into name/path/icon; results must be g_free'd */
+void bookmark_parse_entry(const gchar *text, gchar **name, gchar **path, gchar **icon);
+
 /* history combo entry */
 
 GtkWidget *history_combo_new(GtkWidget **entry, const gchar *text,
