@@ -269,6 +269,11 @@ static void layout_menu_rename_cb(GtkAction *action, LayoutWindow *lw)
 
 static void layout_menu_delete_cb(GtkAction *action, LayoutWindow *lw)
 {
+    if (lw->vf && lw->vf->refresh_idle_id)
+    {
+        vf_refresh_idle_cancel(lw->vf);
+        vf_refresh(lw->vf);
+    }
     file_util_delete(NULL, layout_selection_list(lw), layout_window(lw));
 }
 
