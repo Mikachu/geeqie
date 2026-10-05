@@ -739,11 +739,10 @@ void vficon_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
     {
         IconData *id = work->data;
         FileData *fd = id->fd;
-        gboolean mark_val, selected;
+        gboolean selected;
 
         g_assert(fd->magick == FD_MAGICK);
 
-        mark_val = file_data_get_mark(fd, n);
         selected = (id->selected & SELECTION_SELECTED);
 
         selected = vf_mts_select(fd, n, selected, mode);
@@ -1172,7 +1171,7 @@ static void vficon_populate(ViewFile *vf, gboolean resize, gboolean keep_positio
 {
     GtkTreePath *tpath;
     IconData *visible_id = NULL;
-    gint r, c;
+    gint r;
     gboolean valid;
     GtkTreeIter iter;
 

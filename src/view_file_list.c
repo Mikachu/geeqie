@@ -1234,12 +1234,11 @@ void vflist_mark_to_selection(ViewFile *vf, gint mark, MarkToSelectionMode mode)
     while (valid)
     {
         FileData *fd;
-        gboolean mark_val, selected, new_selected;
+        gboolean selected, new_selected;
         GtkTreePath *path;
 
         gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, FILE_COLUMN_POINTER, &fd, -1);
 
-        mark_val = file_data_get_mark(fd, n);
         path = gtk_tree_path_new_from_indices(row, -1);
         selected = gtk_tree_selection_path_is_selected(selection, path);
 

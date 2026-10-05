@@ -1158,35 +1158,6 @@ VIEW_ACCEL_CHAIN_CB(view_accel_copy_path_cb,        view_copy_path_cb)
 VIEW_ACCEL_CHAIN_CB(view_accel_new_window_cb,       view_new_window_cb)
 VIEW_ACCEL_CHAIN_CB(view_accel_close_cb,            view_close_cb)
 
-static LayoutWindow *view_new_layout_with_fd(FileData *fd)
-{
-    LayoutWindow *nw;
-
-    nw = layout_new(NULL, NULL);
-    layout_sort_set(nw, options->file_sort.method, options->file_sort.ascending);
-    layout_set_fd(nw, fd);
-    return nw;
-}
-
-
-static void view_set_layout_path_cb(GtkWidget *widget, gpointer data)
-{
-    ViewWindow *vw = data;
-    LayoutWindow *lw;
-    ImageWindow *imd;
-
-    imd = view_window_active_image(vw);
-
-    if (!imd || !image_get_fd(imd)) return;
-
-    lw = layout_find_by_image_fd(imd);
-    if (lw)
-        layout_set_fd(lw, image_get_fd(imd));
-    else
-        view_new_layout_with_fd(image_get_fd(imd));
-    view_window_close(vw);
-}
-
 static void view_popup_menu_destroy_cb(GtkWidget *widget, gpointer data)
 {
     GList *editmenu_fd_list = data;
@@ -1408,7 +1379,7 @@ static gboolean mouse_binding_activate(ViewWindow *vw,
         if (mb->button != button ||
             mb->state  != state) continue;
 
-        for (gint i = 0; i < G_N_ELEMENTS(view_accels); i++)  
+        for (guint i = 0; i < G_N_ELEMENTS(view_accels); i++)  
             if (strcmp(mb->action_name, view_accels[i].path +
                                         strlen("<Actions>/MenuActions/")) == 0)  
             {  
