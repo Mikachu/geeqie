@@ -103,11 +103,9 @@ static gboolean cache_sim_write_date(SecureSaveInfo *ssi, CacheData *cd)
 
 static gboolean cache_sim_write_md5sum(SecureSaveInfo *ssi, CacheData *cd)
 {
-    gchar *text;
-
     if (!cd || !cd->have_md5sum) return FALSE;
 
-    text = md5_digest_to_text(cd->md5sum);
+    gchar *text = md5_digest_to_text(cd->md5sum);
     secure_fprintf(ssi, "MD5sum=[%s]\n", text);
     g_free(text);
 
@@ -147,13 +145,10 @@ static gboolean cache_sim_write_similarity(SecureSaveInfo *ssi, CacheData *cd)
 
 gboolean cache_sim_data_save(CacheData *cd)
 {
-    SecureSaveInfo *ssi;
-    gchar *pathl;
-
     if (!cd || !cd->path) return FALSE;
 
-    pathl = path_from_utf8(cd->path);
-    ssi = secure_open(pathl);
+    gchar *pathl = path_from_utf8(cd->path);
+    SecureSaveInfo *ssi = secure_open(pathl);
     g_free(pathl);
 
     if (!ssi)
@@ -171,7 +166,7 @@ gboolean cache_sim_data_save(CacheData *cd)
     if (secure_close(ssi))
     {
         log_printf(_("error saving sim cache data: %s\nerror: %s\n"), cd->path,
-                secsave_strerror(secsave_errno));
+                   secsave_strerror(secsave_errno));
         return FALSE;
     }
 
@@ -192,9 +187,8 @@ static gboolean cache_sim_read_skipline(FILE *f, gint s)
     {
         gchar b;
         while (fread(&b, sizeof(b), 1, f) == 1)
-        {
-            if (b == '\n') return TRUE;
-        }
+            if (b == '\n')
+                break;
         return TRUE;
     }
 
@@ -218,30 +212,29 @@ static gboolean cache_sim_read_dimensions(FILE *f, gchar *buf, gint s, CacheData
 
     if (fseek(f, - s, SEEK_CUR) == 0)
     {
-        gchar b;
         gchar buf[1024];
         gsize p = 0;
         gint w, h;
 
-        b = 'X';
+        gchar b = 'X';
         while (b != '[')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+
         while (b != ']' && p < sizeof(buf) - 1)
         {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-            buf[p] = b;
-            p++;
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+            buf[p++] = b;
         }
 
         while (b != '\n')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) break;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                break;
 
         buf[p] = '\0';
-        if (sscanf(buf, "%d x %d", &w, &h) != 2) return FALSE;
+        if (sscanf(buf, "%d x %d", &w, &h) != 2)
+            return FALSE;
 
         cd->width = w;
         cd->height = h;
@@ -267,20 +260,19 @@ static gboolean cache_sim_read_date(FILE *f, gchar *buf, gint s, CacheData *cd)
 
         b = 'X';
         while (b != '[')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+
         while (b != ']' && p < sizeof(buf) - 1)
         {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-            buf[p] = b;
-            p++;
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+            buf[p++] = b;
         }
 
         while (b != '\n')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) break;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                break;
 
         buf[p] = '\0';
         cd->dat.tv_sec = strtol(buf, NULL, 10);
@@ -301,25 +293,24 @@ static gboolean cache_sim_read_md5sum(FILE *f, gchar *buf, gint s, CacheData *cd
 
     if (fseek(f, - s, SEEK_CUR) == 0)
     {
-        gchar b;
         gchar buf[64];
         gsize p = 0;
 
-        b = 'X';
+        gchar b = 'X';
         while (b != '[')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+
         while (b != ']' && p < sizeof(buf) - 1)
         {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-            buf[p] = b;
-            p++;
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
+            buf[p++] = b;
         }
+
         while (b != '\n')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) break;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                break;
 
         buf[p] = '\0';
         cd->have_md5sum = md5_digest_from_text(buf, cd->md5sum);
@@ -340,16 +331,12 @@ static gboolean cache_sim_read_similarity(FILE *f, gchar *buf, gint s, CacheData
 
     if (fseek(f, - s, SEEK_CUR) == 0)
     {
-        gchar b;
-        guint8 pixel_buf[3];
         ImageSimilarityData *sd;
-        gint x, y;
 
-        b = 'X';
+        gchar b = 'X';
         while (b != '=')
-        {
-            if (fread(&b, sizeof(b), 1, f) != 1) return FALSE;
-        }
+            if (fread(&b, sizeof(b), 1, f) != 1)
+                return FALSE;
 
         if (cd->sim)
         {
@@ -363,26 +350,21 @@ static gboolean cache_sim_read_similarity(FILE *f, gchar *buf, gint s, CacheData
             sd = image_sim_new();
         }
 
-        for (y = 0; y < 32; y++)
+        for (gint p = 0; p < 32*32; p++)
         {
-            gint s = y * 32;
-            for (x = 0; x < 32; x++)
+            guint8 pixel_buf[3];
+            if (fread(&pixel_buf, sizeof(pixel_buf), 1, f) != 1)
             {
-                if (fread(&pixel_buf, sizeof(pixel_buf), 1, f) != 1)
-                {
-                    image_sim_free(sd);
-                    return FALSE;
-                }
-                sd->avg_r[s + x] = pixel_buf[0];
-                sd->avg_g[s + x] = pixel_buf[1];
-                sd->avg_b[s + x] = pixel_buf[2];
+                image_sim_free(sd);
+                return FALSE;
             }
+            sd->avg_r[p] = pixel_buf[0];
+            sd->avg_g[p] = pixel_buf[1];
+            sd->avg_b[p] = pixel_buf[2];
         }
 
         if (fread(&b, sizeof(b), 1, f) == 1)
-        {
             if (b != '\n') fseek(f, -1, SEEK_CUR);
-        }
 
         cd->sim = sd;
         cd->sim->filled = TRUE;
@@ -398,21 +380,18 @@ static gboolean cache_sim_read_similarity(FILE *f, gchar *buf, gint s, CacheData
 
 CacheData *cache_sim_data_load(const gchar *path)
 {
-    FILE *f;
-    CacheData *cd = NULL;
     gchar buf[32];
     gint success = CACHE_LOAD_LINE_NOISE;
-    gchar *pathl;
 
     if (!path) return NULL;
 
-    pathl = path_from_utf8(path);
-    f = fopen(pathl, "r");
+    gchar *pathl = path_from_utf8(path);
+    FILE *f = fopen(pathl, "r");
     g_free(pathl);
 
     if (!f) return NULL;
 
-    cd = cache_sim_data_new();
+    CacheData *cd = cache_sim_data_new();
     cd->path = g_strdup(path);
 
     if (fread(&buf, sizeof(gchar), 9, f) != 9 ||
@@ -424,8 +403,7 @@ CacheData *cache_sim_data_load(const gchar *path)
 
     while (success > 0)
     {
-        gint s;
-        s = fread(&buf, sizeof(gchar), sizeof(buf), f);
+        gint s = fread(&buf, sizeof(gchar), sizeof(buf), f);
 
         if (s < 1)
         {
@@ -433,25 +411,19 @@ CacheData *cache_sim_data_load(const gchar *path)
         }
         else
         {
-            if (!cache_sim_read_comment(f, buf, s, cd) &&
+            if (!cache_sim_read_comment   (f, buf, s, cd) &&
                 !cache_sim_read_dimensions(f, buf, s, cd) &&
-                !cache_sim_read_date(f, buf, s, cd) &&
-                !cache_sim_read_md5sum(f, buf, s, cd) &&
+                !cache_sim_read_date      (f, buf, s, cd) &&
+                !cache_sim_read_md5sum    (f, buf, s, cd) &&
                 !cache_sim_read_similarity(f, buf, s, cd))
             {
                 if (!cache_sim_read_skipline(f, s))
-                {
                     success = 0;
-                }
                 else
-                {
                     success--;
-                }
             }
             else
-            {
                 success = CACHE_LOAD_LINE_NOISE;
-            }
         }
     }
 
@@ -479,7 +451,7 @@ void cache_sim_data_set_dimensions(CacheData *cd, gint w, gint h)
 {
     if (!cd) return;
 
-    cd->width = w;
+    cd->width  = w;
     cd->height = h;
     cd->dimensions = TRUE;
 }
@@ -488,21 +460,18 @@ void cache_sim_data_set_date(CacheData *cd, struct timespec dat)
 {
     if (!cd) return;
 
-    cd->dat.tv_sec = dat.tv_sec;
+    cd->dat.tv_sec  = dat.tv_sec;
     cd->dat.tv_nsec = dat.tv_nsec;
     cd->have_date = TRUE;
 }
 
 void cache_sim_data_set_md5sum(CacheData *cd, guchar digest[16])
 {
-    gint i;
-
     if (!cd) return;
 
-    for (i = 0; i < 16; i++)
-    {
+    for (gint i = 0; i < 16; i++)
         cd->md5sum[i] = digest[i];
-    }
+
     cd->have_md5sum = TRUE;
 }
 
@@ -522,8 +491,7 @@ void cache_sim_data_set_similarity(CacheData *cd, ImageSimilarityData *sd)
 
 gboolean cache_sim_data_filled(ImageSimilarityData *sd)
 {
-    if (!sd) return FALSE;
-    return sd->filled;
+    return sd && sd->filled;
 }
 
 /*
@@ -534,37 +502,39 @@ gboolean cache_sim_data_filled(ImageSimilarityData *sd)
 
 
 static void cache_path_parts(CacheType type,
-                 const gchar **cache_rc, const gchar **cache_local, const gchar **cache_ext)
+                             const gchar **cache_rc,
+                             const gchar **cache_local,
+                             const gchar **cache_ext)
 {
     switch (type)
     {
         case CACHE_TYPE_THUMB:
-            *cache_rc = get_thumbnails_cache_dir();
+            *cache_rc    = get_thumbnails_cache_dir();
             *cache_local = GQ_CACHE_LOCAL_THUMB;
-            *cache_ext = GQ_CACHE_EXT_THUMB;
+            *cache_ext   = GQ_CACHE_EXT_THUMB;
             break;
         case CACHE_TYPE_SIM:
-            *cache_rc = get_thumbnails_cache_dir();
+            *cache_rc    = get_thumbnails_cache_dir();
             *cache_local = GQ_CACHE_LOCAL_THUMB;
-            *cache_ext = GQ_CACHE_EXT_SIM;
+            *cache_ext   = GQ_CACHE_EXT_SIM;
             break;
         case CACHE_TYPE_METADATA:
-            *cache_rc = get_metadata_cache_dir();
+            *cache_rc    = get_metadata_cache_dir();
             *cache_local = GQ_CACHE_LOCAL_METADATA;
-            *cache_ext = GQ_CACHE_EXT_METADATA;
+            *cache_ext   = GQ_CACHE_EXT_METADATA;
             break;
         case CACHE_TYPE_XMP_METADATA:
-            *cache_rc = get_metadata_cache_dir();
+            *cache_rc    = get_metadata_cache_dir();
             *cache_local = GQ_CACHE_LOCAL_METADATA;
-            *cache_ext = GQ_CACHE_EXT_XMP_METADATA;
+            *cache_ext   = GQ_CACHE_EXT_XMP_METADATA;
             break;
     }
 }
 
-gchar *cache_get_location(CacheType type, const gchar *source, gint include_name, mode_t *mode)
+gchar *cache_get_location(CacheType type, const gchar *source,
+                          gint include_name, mode_t *mode)
 {
     gchar *path = NULL;
-    gchar *base;
     gchar *name = NULL;
     const gchar *cache_rc;
     const gchar *cache_local;
@@ -574,14 +544,16 @@ gchar *cache_get_location(CacheType type, const gchar *source, gint include_name
 
     cache_path_parts(type, &cache_rc, &cache_local, &cache_ext);
 
-    base = remove_level_from_path(source);
+    gchar *base = remove_level_from_path(source);
     if (include_name)
-    {
         name = g_strconcat(filename_from_path(source), cache_ext, NULL);
-    }
 
-    if (((type != CACHE_TYPE_METADATA && type != CACHE_TYPE_XMP_METADATA && options->thumbnails.cache_into_dirs) ||
-         ((type == CACHE_TYPE_METADATA || type == CACHE_TYPE_XMP_METADATA) && options->metadata.enable_metadata_dirs)) &&
+    if (((type != CACHE_TYPE_METADATA &&
+          type != CACHE_TYPE_XMP_METADATA &&
+          options->thumbnails.cache_into_dirs) ||
+         ((type == CACHE_TYPE_METADATA ||
+           type == CACHE_TYPE_XMP_METADATA)
+          && options->metadata.enable_metadata_dirs)) &&
         access_file(base, W_OK))
     {
         path = g_build_filename(base, cache_local, name, NULL);
@@ -600,23 +572,25 @@ gchar *cache_get_location(CacheType type, const gchar *source, gint include_name
     return path;
 }
 
-static gchar *cache_build_path_local(const gchar *source, const gchar *cache_local, const gchar *cache_ext)
+static gchar *cache_build_path_local(const gchar *source,
+                                     const gchar *cache_local,
+                                     const gchar *cache_ext)
 {
-    gchar *path;
     gchar *base = remove_level_from_path(source);
     gchar *name = g_strconcat(filename_from_path(source), cache_ext, NULL);
-    path = g_build_filename(base, cache_local, name, NULL);
+    gchar *path = g_build_filename(base, cache_local, name, NULL);
     g_free(name);
     g_free(base);
 
     return path;
 }
 
-static gchar *cache_build_path_rc(const gchar *source, const gchar *cache_rc, const gchar *cache_ext)
+static gchar *cache_build_path_rc(const gchar *source,
+                                  const gchar *cache_rc,
+                                  const gchar *cache_ext)
 {
-    gchar *path;
     gchar *name = g_strconcat(source, cache_ext, NULL);
-    path = g_build_filename(cache_rc, name, NULL);
+    gchar *path = g_build_filename(cache_rc, name, NULL);
     g_free(name);
 
     return path;
@@ -635,22 +609,14 @@ gchar *cache_find_location(CacheType type, const gchar *source)
     cache_path_parts(type, &cache_rc, &cache_local, &cache_ext);
 
     if (type == CACHE_TYPE_METADATA || type == CACHE_TYPE_XMP_METADATA)
-    {
         prefer_local = options->metadata.enable_metadata_dirs;
-    }
     else
-    {
         prefer_local = options->thumbnails.cache_into_dirs;
-    }
 
     if (prefer_local)
-    {
         path = cache_build_path_local(source, cache_local, cache_ext);
-    }
     else
-    {
         path = cache_build_path_rc(source, cache_rc, cache_ext);
-    }
 
     if (!isfile(path))
     {
@@ -658,19 +624,12 @@ gchar *cache_find_location(CacheType type, const gchar *source)
 
         /* try the opposite method if not found */
         if (!prefer_local)
-        {
             path = cache_build_path_local(source, cache_local, cache_ext);
-        }
         else
-        {
             path = cache_build_path_rc(source, cache_rc, cache_ext);
-        }
 
         if (!isfile(path))
-        {
-            g_free(path);
-            path = NULL;
-        }
+            g_clear_pointer(&path, g_free);
     }
 
     return path;
@@ -680,17 +639,15 @@ gboolean cache_time_valid(const gchar *cache, const gchar *path)
 {
     struct stat cache_st;
     struct stat path_st;
-    gchar *cachel;
-    gchar *pathl;
     gboolean ret = FALSE;
 
     if (!cache || !path) return FALSE;
 
-    cachel = path_from_utf8(cache);
-    pathl = path_from_utf8(path);
+    gchar *cachel = path_from_utf8(cache);
+    gchar *pathl  = path_from_utf8(path);
 
     if (stat(cachel, &cache_st) == 0 &&
-        stat(pathl, &path_st) == 0)
+        stat(pathl,  &path_st)  == 0)
     {
         if (cache_st.st_mtime == path_st.st_mtime)
         {
@@ -720,16 +677,15 @@ const gchar *get_thumbnails_cache_dir(void)
 {
     static gchar *thumbnails_cache_dir = NULL;
 
-    if (thumbnails_cache_dir) return thumbnails_cache_dir;
+    if (thumbnails_cache_dir)
+        return thumbnails_cache_dir;
 
     if (USE_XDG)
-    {
-        thumbnails_cache_dir = g_build_filename(xdg_cache_home_get(), GQ_APPNAME_LC, GQ_CACHE_THUMB, NULL);
-    }
+        thumbnails_cache_dir = g_build_filename(xdg_cache_home_get(), GQ_APPNAME_LC,
+                                                GQ_CACHE_THUMB, NULL);
     else
-    {
-        thumbnails_cache_dir = g_build_filename(get_rc_dir(), GQ_CACHE_THUMB, NULL);
-    }
+        thumbnails_cache_dir = g_build_filename(get_rc_dir(),
+                                                GQ_CACHE_THUMB, NULL);
 
     return thumbnails_cache_dir;
 }
@@ -738,21 +694,18 @@ const gchar *get_metadata_cache_dir(void)
 {
     static gchar *metadata_cache_dir = NULL;
 
-    if (metadata_cache_dir) return metadata_cache_dir;
+    if (metadata_cache_dir)
+        return metadata_cache_dir;
 
     if (USE_XDG)
-    {
         /* Metadata go to $XDG_DATA_HOME.
-         * "Keywords and comments, among other things, are irreplaceable and cannot be auto-generated,
-         * so I don't think they'd be appropriate for the cache directory." -- Omari Stephens on geeqie-devel ml
-         */
-        metadata_cache_dir = g_build_filename(xdg_data_home_get(), GQ_APPNAME_LC, GQ_CACHE_METADATA, NULL);
-    }
+           "Keywords and comments, among other things, are irreplaceable and
+           cannot be auto-generated, so I don't think they'd be appropriate for
+           the cache directory." -- Omari Stephens on geeqie-devel ml */
+        metadata_cache_dir = g_build_filename(xdg_data_home_get(), GQ_APPNAME_LC,
+                                              GQ_CACHE_METADATA, NULL);
     else
-    {
         metadata_cache_dir = g_build_filename(get_rc_dir(), GQ_CACHE_METADATA, NULL);
-    }
 
     return metadata_cache_dir;
 }
-
