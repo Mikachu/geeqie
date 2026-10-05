@@ -30,7 +30,8 @@
 #include "thumb.h"
 #include "ui_fileops.h"
 
-#define GQ_COLLECTION_MARKER "#" GQ_APPNAME
+#define GQ_COLLECTIONV2_MARKER "#" GQ_APPNAME " collection v2"
+#define GQ_COLLECTIONV1_MARKER "#" GQ_APPNAME " collection"
 
 #define GQ_COLLECTION_FAIL_MIN     300
 #define GQ_COLLECTION_FAIL_PERCENT 98
@@ -71,6 +72,7 @@ static gboolean collection_load_private(CollectionData *cd, const gchar *path, C
     gboolean has_geometry_header = FALSE;
     gboolean has_gqview_header = FALSE;
     gboolean need_header = TRUE;
+    gboolean uses_escape = FALSE;
     guint total = 0;
     guint fail = 0;
     gboolean changed = FALSE;
@@ -125,13 +127,21 @@ static gboolean collection_load_private(CollectionData *cd, const gchar *path, C
         /* Parse comments */
         if (*p == '#')
         {
+            if (strcmp(p, "#end\n") == 0) break;
             if (!need_header) continue;
-            if (g_ascii_strncasecmp(p, GQ_COLLECTION_MARKER, strlen(GQ_COLLECTION_MARKER)) == 0)
+            if (g_ascii_strcasecmp(p, GQ_COLLECTIONV2_MARKER "\n") == 0)
             {
                 /* Looks like an official collection, allow unchecked input.
                  * All this does is allow adding files that may not exist,
                  * which is needed for the collection manager to work.
                  * Also unofficial files abort after too many invalid entries. */
+                uses_escape = TRUE;
+                has_official_header = TRUE;
+                limit_failures = FALSE;
+            }
+            else if (g_ascii_strcasecmp(p, GQ_COLLECTIONV1_MARKER "\n") == 0)
+            {
+                /* Previous version, doesn't have escaped entries */
                 has_official_header = TRUE;
                 limit_failures = FALSE;
             }
@@ -156,21 +166,39 @@ static gboolean collection_load_private(CollectionData *cd, const gchar *path, C
         if (only_geometry) continue;
 
         /* Read filenames */
-        /* TODO: This is not safe! */
-        // XXX someone forgot filenames can have " in them (see below also)
+        /* find opening quote */
         while (*p && *p != '"') p++;
         if (*p) p++;
         buf = p;
-        while (*p && *p != '"') p++;
-        *p = 0;
+        if (uses_escape)
+        {
+            while (*p)
+            {
+                if (*p == '\\' && p[1])
+                    p++;
+                else if (*p == '"')
+                    break;
+                p++;
+            }
+            *p = '\0';
+            buf = g_strcompress(buf);
+        }
+        else
+        {
+            while (*p && *p != '"') p++;
+            *p = '\0';
+        }
         if (*buf)
         {
             gboolean valid;
             gchar *tmp = NULL;
 
+            if (uses_escape)
+                tmp = g_steal_pointer(&buf);
             if (!flush)
             {
-                tmp = g_strdup(buf);
+                if (!uses_escape)
+                    tmp = g_strdup(buf);
                 changed |= collect_manager_process_action(entry, &tmp);
             }
             const gchar *tmporbuf = tmp ? tmp : buf;
@@ -192,7 +220,8 @@ static gboolean collection_load_private(CollectionData *cd, const gchar *path, C
                     break;
                 }
             }
-        }
+        } else if (uses_escape)
+            g_free(buf);
     }
 
     DEBUG_1("collection files: total = %d fail = %d official=%d gqview=%d geometry=%d",
@@ -355,7 +384,7 @@ static gboolean collection_save_private(CollectionData *cd, const gchar *path)
         return FALSE;
     }
 
-    secure_fprintf(ssi, "%s collection\n", GQ_COLLECTION_MARKER);
+    secure_fprintf(ssi, "%s\n", GQ_COLLECTIONV2_MARKER);
     secure_fprintf(ssi, "#created with %s version %s\n", GQ_APPNAME, VERSION);
 
     collection_update_geometry(cd);
@@ -365,8 +394,9 @@ static gboolean collection_save_private(CollectionData *cd, const gchar *path)
     for (GList *work = cd->list; work; work = work->next)
     {
         CollectInfo *ci = work->data;
-        // XXX someone forgot filenames can have " and newlines in them (see above also)
-        secure_fprintf(ssi, "\"%s\"\n", ci->fd->path);
+        gchar *esc = g_strescape(ci->fd->path, NULL);
+        secure_fprintf(ssi, "\"%s\"\n", esc);
+        g_free(esc);
         if (secsave_errno)
             break;
     }
