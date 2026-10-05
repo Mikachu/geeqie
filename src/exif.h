@@ -124,7 +124,7 @@ gboolean exif_write_sidecar(struct ExifData *exif, gchar *path);
 void exif_free(struct ExifData *exif);
 
 gchar *exif_get_data_as_text(struct ExifData *exif, const gchar *key);
-gint exif_get_integer(struct ExifData *exif, const gchar *key, gint *value);
+gboolean exif_get_integer(struct ExifData *exif, const gchar *key, gint *value);
 ExifRational *exif_get_rational(struct ExifData *exif, const gchar *key, gint *sign);
 
 ExifItem *exif_get_item(struct ExifData *exif, const gchar *key);
