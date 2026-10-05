@@ -47,17 +47,14 @@
  *-----------------------------------------------------------------------------
  */
 
-
-
 void print_term(const gchar *text_utf8)
 {
-    gchar *text_l;
-
-    text_l = g_locale_from_utf8(text_utf8, -1, NULL, NULL, NULL);
+    gchar *text_l = g_locale_from_utf8(text_utf8, -1, NULL, NULL, NULL);
     fputs((text_l) ? text_l : text_utf8, stderr);
     g_free(text_l);
 }
 
+/* XXX this is stupid */
 static void encoding_dialog(const gchar *path)
 {
     static gboolean warned_user = FALSE;
@@ -110,6 +107,7 @@ static void encoding_dialog(const gchar *path)
     g_string_free(string, TRUE);
 }
 
+/* XXX this is wrong and bad */
 #if GQ_DEBUG_PATH_UTF8
 gchar *path_to_utf8_debug(const gchar *path, const gchar *file, gint line)
 #else
@@ -133,14 +131,13 @@ gchar *path_to_utf8(const gchar *path)
         encoding_dialog(path);
     }
     if (!utf8)
-    {
         /* just let it through, but bad things may happen */
         utf8 = g_strdup(path);
-    }
 
     return utf8;
 }
 
+/* XXX this is wrong and bad */
 #if GQ_DEBUG_PATH_UTF8
 gchar *path_from_utf8_debug(const gchar *utf8, const gchar *file, gint line)
 #else
@@ -163,10 +160,8 @@ gchar *path_from_utf8(const gchar *utf8)
         g_error_free(error);
     }
     if (!path)
-    {
         /* if invalid UTF-8, text probaby still in original form, so just copy it */
         path = g_strdup(utf8);
-    }
 
     return path;
 }
@@ -190,9 +185,7 @@ static gchar *xdg_dir_get(const gchar *key, const gchar *fallback)
     gchar *dir = getenv(key);
 
     if (!dir || dir[0] == '\0')
-    {
         return g_build_filename(homedir(), fallback, NULL);
-    }
 
     return path_to_utf8(dir);
 }
@@ -201,7 +194,8 @@ const gchar *xdg_data_home_get(void)
 {
     static const gchar *xdg_data_home = NULL;
 
-    if (xdg_data_home) return xdg_data_home;
+    if (xdg_data_home)
+        return xdg_data_home;
 
     xdg_data_home = xdg_dir_get("XDG_DATA_HOME", ".local/share");
 
@@ -212,7 +206,8 @@ const gchar *xdg_config_home_get(void)
 {
     static const gchar *xdg_config_home = NULL;
 
-    if (xdg_config_home) return xdg_config_home;
+    if (xdg_config_home)
+        return xdg_config_home;
 
     xdg_config_home = xdg_dir_get("XDG_CONFIG_HOME", ".config");
 
@@ -223,7 +218,8 @@ const gchar *xdg_cache_home_get(void)
 {
     static const gchar *xdg_cache_home = NULL;
 
-    if (xdg_cache_home) return xdg_cache_home;
+    if (xdg_cache_home)
+        return xdg_cache_home;
 
     xdg_cache_home = xdg_dir_get("XDG_CACHE_HOME", ".cache");
 
@@ -234,16 +230,13 @@ const gchar *get_rc_dir(void)
 {
     static gchar *rc_dir = NULL;
 
-    if (rc_dir) return rc_dir;
+    if (rc_dir)
+        return rc_dir;
 
     if (USE_XDG)
-    {
         rc_dir = g_build_filename(xdg_config_home_get(), GQ_APPNAME_LC, NULL);
-    }
     else
-    {
         rc_dir = g_build_filename(homedir(), GQ_RC_DIR, NULL);
-    }
 
     return rc_dir;
 }
@@ -252,16 +245,13 @@ const gchar *get_collections_dir(void)
 {
     static gchar *collections_dir = NULL;
 
-    if (collections_dir) return collections_dir;
+    if (collections_dir)
+        return collections_dir;
 
     if (USE_XDG)
-    {
         collections_dir = g_build_filename(xdg_data_home_get(), GQ_APPNAME_LC, GQ_COLLECTIONS_DIR, NULL);
-    }
     else
-    {
         collections_dir = g_build_filename(get_rc_dir(), GQ_COLLECTIONS_DIR, NULL);
-    }
 
     return collections_dir;
 }
@@ -273,13 +263,9 @@ const gchar *get_trash_dir(void)
     if (trash_dir) return trash_dir;
 
     if (USE_XDG)
-    {
-        trash_dir = g_build_filename(xdg_data_home_get(), GQ_APPNAME_LC, GQ_TRASH_DIR, NULL);
-    }
+        trash_dir = g_build_filename(xdg_cache_home_get(), GQ_APPNAME_LC, GQ_TRASH_DIR, NULL);
     else
-    {
         trash_dir = g_build_filename(get_rc_dir(), GQ_TRASH_DIR, NULL);
-    }
 
     return trash_dir;
 }
@@ -381,13 +367,10 @@ gboolean is_readable_file(const gchar *s)
 
 gboolean access_file(const gchar *s, gint mode)
 {
-    gchar *sl;
-    gint ret;
-
     if (!s || !s[0]) return FALSE;
 
-    sl = path_from_utf8(s);
-    ret = (access(sl, mode) == 0);
+    gchar *sl = path_from_utf8(s);
+    gint ret = (access(sl, mode) == 0);
     g_free(sl);
 
     return ret;
@@ -395,13 +378,10 @@ gboolean access_file(const gchar *s, gint mode)
 
 gboolean unlink_file(const gchar *s)
 {
-    gchar *sl;
-    gboolean ret;
-
     if (!s) return FALSE;
 
-    sl = path_from_utf8(s);
-    ret = (unlink(sl) == 0);
+    gchar *sl = path_from_utf8(s);
+    gboolean ret = (unlink(sl) == 0);
     g_free(sl);
 
     return ret;
@@ -409,16 +389,12 @@ gboolean unlink_file(const gchar *s)
 
 gboolean symlink_utf8(const gchar *source, const gchar *target)
 {
-    gchar *sl;
-    gchar *tl;
-    gboolean ret;
-
     if (!source || !target) return FALSE;
 
-    sl = path_from_utf8(source);
-    tl = path_from_utf8(target);
+    gchar *sl = path_from_utf8(source);
+    gchar *tl = path_from_utf8(target);
 
-    ret = (symlink(sl, tl) == 0);
+    gboolean ret = (symlink(sl, tl) == 0);
 
     g_free(sl);
     g_free(tl);
@@ -428,26 +404,20 @@ gboolean symlink_utf8(const gchar *source, const gchar *target)
 
 gboolean mkdir_utf8(const gchar *s, gint mode)
 {
-    gchar *sl;
-    gboolean ret;
-
     if (!s) return FALSE;
 
-    sl = path_from_utf8(s);
-    ret = (mkdir(sl, mode) == 0);
+    gchar *sl = path_from_utf8(s);
+    gboolean ret = (mkdir(sl, mode) == 0);
     g_free(sl);
     return ret;
 }
 
 gboolean rmdir_utf8(const gchar *s)
 {
-    gchar *sl;
-    gboolean ret;
-
     if (!s) return FALSE;
 
-    sl = path_from_utf8(s);
-    ret = (rmdir(sl) == 0);
+    gchar *sl = path_from_utf8(s);
+    gboolean ret = (rmdir(sl) == 0);
     g_free(sl);
 
     return ret;
@@ -455,14 +425,13 @@ gboolean rmdir_utf8(const gchar *s)
 
 gboolean copy_file_attributes(const gchar *s, const gchar *t, gint perms, gint mtime)
 {
-    struct stat st;
-    gchar *sl, *tl;
-    gboolean ret = FALSE;
-
     if (!s || !t) return FALSE;
 
-    sl = path_from_utf8(s);
-    tl = path_from_utf8(t);
+    gchar *sl = path_from_utf8(s);
+    gchar *tl = path_from_utf8(t);
+
+    gboolean ret = FALSE;
+    struct stat st;
 
     if (stat(sl, &st) == 0)
     {
@@ -506,18 +475,14 @@ static gboolean hard_linked(const gchar *a, const gchar *b)
 
 gboolean copy_file(const gchar *s, const gchar *t)
 {
-    FILE *fi = NULL;
-    FILE *fo = NULL;
-    gchar *sl = NULL;
-    gchar *tl = NULL;
-    gchar *randname = NULL;
     gchar buf[16384];
     size_t b;
     gint ret = FALSE;
-    gint fd = -1;
+    FILE *fi = NULL, *fo = NULL;
+    gchar *randname = NULL;
 
-    sl = path_from_utf8(s);
-    tl = path_from_utf8(t);
+    gchar *sl = path_from_utf8(s);
+    gchar *tl = path_from_utf8(t);
 
     if (hard_linked(sl, tl))
     {
@@ -535,7 +500,7 @@ gboolean copy_file(const gchar *s, const gchar *t)
     g_free(tl_dir);
     if (!randname) goto end;
 
-    fd = g_mkstemp(randname);
+    gint fd = g_mkstemp(randname);
     if (fd == -1) goto end;
 
     fo = fdopen(fd, "wb");
@@ -553,8 +518,8 @@ gboolean copy_file(const gchar *s, const gchar *t)
         }
     }
 
-    fclose(fi); fi = NULL;
-    fclose(fo); fo = NULL;
+    g_clear_pointer(&fi, fclose);
+    g_clear_pointer(&fo, fclose);
 
     if (rename(randname, tl) < 0) {
         unlink(randname);
@@ -588,10 +553,8 @@ gboolean move_file(const gchar *s, const gchar *t)
         if (errno == EXDEV && copy_file(s, t))
         {
             if (unlink(sl) < 0)
-            {
                 /* err, now we can't delete the source file so return FALSE */
                 ret = FALSE;
-            }
         }
         else
         {
@@ -606,14 +569,11 @@ gboolean move_file(const gchar *s, const gchar *t)
 
 gboolean rename_file(const gchar *s, const gchar *t)
 {
-    gchar *sl, *tl;
-    gboolean ret;
-
     if (!s || !t) return FALSE;
 
-    sl = path_from_utf8(s);
-    tl = path_from_utf8(t);
-    ret = (rename(sl, tl) == 0);
+    gchar *sl = path_from_utf8(s);
+    gchar *tl = path_from_utf8(t);
+    gboolean ret = (rename(sl, tl) == 0);
     g_free(sl);
     g_free(tl);
 
@@ -622,11 +582,8 @@ gboolean rename_file(const gchar *s, const gchar *t)
 
 gchar *get_current_dir(void)
 {
-    gchar *pathl;
-    gchar *path8;
-
-    pathl = g_get_current_dir();
-    path8 = path_to_utf8(pathl);
+    gchar *pathl = g_get_current_dir();
+    gchar *path8 = path_to_utf8(pathl);
     g_free(pathl);
 
     return path8;
@@ -637,17 +594,9 @@ extern inline void string_list_free(GList *list);
 GList *string_list_copy(const GList *list)
 {
     GList *new_list = NULL;
-    GList *work = (GList *) list;
 
-    while (work)
-    {
-        gchar *path;
-
-        path = work->data;
-        work = work->next;
-
-        new_list = g_list_prepend(new_list, g_strdup(path));
-    }
+    for (const GList *work = list; work; work = work->next)
+        new_list = g_list_prepend(new_list, g_strdup(work->data));
 
     return g_list_reverse(new_list);
 }
@@ -672,40 +621,33 @@ gchar *unique_filename(const gchar *path, const gchar *ext, const gchar *divider
         {
             unique = g_strdup_printf("%s%s%d%s", path, divider, n, ext);
         }
-        n++;
-        if (n > 999)
+        if (++n > 999)
         {
             /* well, we tried */
-            g_free(unique);
-            return NULL;
+            g_clear_pointer(&unique, g_free);
+            break;
         }
     }
-
     return unique;
 }
 
 gchar *unique_filename_simple(const gchar *path)
 {
-    gchar *unique;
-    const gchar *name;
-    const gchar *ext;
-
     if (!path) return NULL;
 
-    name = filename_from_path(path);
+    const gchar *name = filename_from_path(path);
     if (!name) return NULL;
 
-    ext = extension_from_path(name);
+    const gchar *ext = extension_from_path(name);
 
+    gchar *unique;
     if (!ext)
     {
         unique = unique_filename(path, NULL, "_", TRUE);
     }
     else
     {
-        gchar *base;
-
-        base = remove_extension_from_path(path);
+        gchar *base = remove_extension_from_path(path);
         unique = unique_filename(base, ext, "_", TRUE);
         g_free(base);
     }
@@ -715,14 +657,11 @@ gchar *unique_filename_simple(const gchar *path)
 
 const gchar *filename_from_path(const gchar *path)
 {
-    const gchar *base;
-
     if (!path) return NULL;
 
-    base = strrchr(path, G_DIR_SEPARATOR);
-    if (base) return base + 1;
+    const gchar *base = strrchr(path, G_DIR_SEPARATOR);
 
-    return path;
+    return base ? base + 1 : path;
 }
 
 gchar *remove_level_from_path(const gchar *path)
@@ -733,30 +672,28 @@ gchar *remove_level_from_path(const gchar *path)
 
     while (path[p])
     {
-        if (path[p] == G_DIR_SEPARATOR) n = p;
+        if (path[p] == G_DIR_SEPARATOR)
+            n = p;
         p++;
     }
-    if (n <= 0) n++;
+    if (n <= 0)
+        n++;
 
     return g_strndup(path, (gsize) n);
 }
 
 const gchar *extension_from_path(const gchar *path)
 {
-    if (!path) return NULL;
-    return strrchr(path, '.');
+    return path ? strrchr(path, '.') : NULL;
 }
 
 gboolean file_extension_match(const gchar *path, const gchar *ext)
 {
-    gint p;
-    gint e;
-
     if (!path) return FALSE;
     if (!ext) return TRUE;
 
-    p = strlen(path);
-    e = strlen(ext);
+    gint p = strlen(path);
+    gint e = strlen(ext);
 
     /* FIXME: utf8 */
     return (p > e && g_ascii_strncasecmp(path + p - e, ext, e) == 0);
@@ -770,21 +707,21 @@ gchar *remove_extension_from_path(const gchar *path)
 
     while (path[p])
     {
-        if (path[p] == '.') n = p;
+        if (path[p] == '.')
+            n = p;
         p++;
     }
-    if (n < 0) n = p;
+    if (n < 0)
+        n = p;
 
     return g_strndup(path, (gsize) n);
 }
 
 void parse_out_relatives(gchar *path)
 {
-    gint s, t;
-
     if (!path) return;
 
-    s = t = 0;
+    gint s = 0, t = 0;
 
     while (path[s] != '\0')
     {
@@ -801,6 +738,7 @@ void parse_out_relatives(gchar *path)
             }
             else if (path[p] == '.' && (path[p+1] == G_DIR_SEPARATOR || path[p+1] == '\0'))
             {
+                /* XXX this is wrong, b could be a symlink */
                 /* /../ or /.., remove previous part, ie. /a/b/../ becomes /a/ */
                 s = p + 1;
                 if (t > 0) t--;
@@ -809,39 +747,40 @@ void parse_out_relatives(gchar *path)
             }
         }
 
-        if (s != t) path[t] = path[s];
+        if (s != t)
+            path[t] = path[s];
         t++;
         s++;
     }
 
-    if (t == 0 && path[t] == G_DIR_SEPARATOR) t++;
-    if (t > 1 && path[t-1] == G_DIR_SEPARATOR) t--;
+    if (t == 0 && path[t] == G_DIR_SEPARATOR)
+        t++;
+    if (t > 1 && path[t-1] == G_DIR_SEPARATOR)
+        t--;
     path[t] = '\0';
 }
 
 gboolean file_in_path(const gchar *name)
 {
-    gchar *path;
-    gchar *namel;
-    gint p, l;
     gboolean ret = FALSE;
 
     if (!name) return FALSE;
-    path = g_strdup(getenv("PATH"));
+    gchar *path = g_strdup(getenv("PATH"));
     if (!path) return FALSE;
-    namel = path_from_utf8(name);
+    gchar *namel = path_from_utf8(name);
 
-    p = 0;
-    l = strlen(path);
+    gint p = 0,
+         l = strlen(path);
     while (p < l && !ret)
     {
-        gchar *f;
         gint e = p;
-        while (path[e] != ':' && path[e] != '\0') e++;
+        while (path[e] != ':' && path[e] != '\0')
+            e++;
         path[e] = '\0';
         e++;
-        f = g_build_filename(path + p, namel, NULL);
-        if (isfile(f)) ret = TRUE;
+        gchar *f = g_build_filename(path + p, namel, NULL);
+        if (isfile(f))
+            ret = TRUE;
         g_free(f);
         p = e;
     }
@@ -883,8 +822,8 @@ gboolean recursive_mkdir_if_not_exists(const gchar *path, mode_t mode)
                         return FALSE;
                     }
                 }
-
-                if (!end) p[0] = G_DIR_SEPARATOR;
+                if (!end)
+                    p[0] = G_DIR_SEPARATOR;
             }
         }
         g_free(npath);
@@ -896,11 +835,8 @@ gboolean recursive_mkdir_if_not_exists(const gchar *path, mode_t mode)
 /* does filename utf8 to filesystem encoding first */
 gboolean md5_get_digest_from_file_utf8(const gchar *path, guchar digest[16])
 {
-    gboolean success;
-    gchar *pathl;
-
-    pathl = path_from_utf8(path);
-    success = md5_get_digest_from_file(pathl, digest);
+    gchar *pathl = path_from_utf8(path);
+    gboolean success = md5_get_digest_from_file(pathl, digest);
     g_free(pathl);
 
     return success;
