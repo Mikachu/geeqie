@@ -337,7 +337,7 @@ static gchar *exif_build_formatted_SubjectDistance(ExifData *exif)
     if ((glong)r->num == 0) return g_strdup(_("unknown"));
 
     gdouble n = exif_rational_to_double(r, sign);
-    if (n == 0.0) return _("unknown");
+    if (n == 0.0) return g_strdup(_("unknown"));
     return g_strdup_printf("%.3f m", n);
 }
 
@@ -575,7 +575,7 @@ gchar *exif_get_description_by_key(const gchar *key)
     return exif_get_tag_description_by_key(key);
 }
 
-gint exif_get_integer(ExifData *exif, const gchar *key, gint *value)
+gboolean exif_get_integer(ExifData *exif, const gchar *key, gint *value)
 {
     ExifItem *item = exif_get_item(exif, key);
     return exif_item_get_integer(item, value);

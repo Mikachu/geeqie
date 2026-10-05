@@ -1360,7 +1360,7 @@ gchar *exif_item_get_data_as_text(ExifItem *item, ExifData *exif)
     return exif_item_get_data_as_text_full(item, METADATA_FORMATTED);
 }
 
-gint exif_item_get_integer(ExifItem *item, gint *value)
+gboolean exif_item_get_integer(ExifItem *item, gint *value)
 {
     if (!item) return FALSE;
     if (!item->elements) return FALSE;

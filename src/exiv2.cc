@@ -809,7 +809,7 @@ gchar *exif_item_get_string(ExifItem *item, int idx)
 }
 
 
-gint exif_item_get_integer(ExifItem *item, gint *value)
+gboolean exif_item_get_integer(ExifItem *item, gint *value)
 {
 	try {
 		if (!item || exif_item_get_elements(item) == 0) return 0;
