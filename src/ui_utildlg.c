@@ -64,21 +64,20 @@ static void generic_dialog_click_cb(GtkWidget *widget, gpointer data)
     auto_close = gd->auto_close;
 
     if (func) func(gd, gd->data);
-    if (auto_close) generic_dialog_close(gd);
+    if (auto_close)
+        generic_dialog_close(gd);
 }
 
 static gboolean generic_dialog_default_key_press_cb(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
     GenericDialog *gd = data;
 
-    if (event->keyval == GDK_KEY_Return && gtk_widget_has_focus(widget)
-        && gd->default_cb)
+    if (event->keyval == GDK_KEY_Return && gtk_widget_has_focus(widget) && gd->default_cb)
     {
-        gboolean auto_close;
-
-        auto_close = gd->auto_close;
+        gboolean auto_close = gd->auto_close;
         gd->default_cb(gd, gd->data);
-        if (auto_close) generic_dialog_close(gd);
+        if (auto_close)
+            generic_dialog_close(gd);
 
         return TRUE;
     }
@@ -102,11 +101,13 @@ static gboolean generic_dialog_key_press_cb(GtkWidget *widget, GdkEventKey *even
         if (gd->cancel_cb)
         {
             gd->cancel_cb(gd, gd->data);
-            if (auto_close) generic_dialog_close(gd);
+            if (auto_close)
+                generic_dialog_close(gd);
         }
         else
         {
-            if (auto_close) generic_dialog_click_cb(widget, data);
+            if (auto_close)
+                generic_dialog_click_cb(widget, data);
         }
         return TRUE;
     }
@@ -121,7 +122,8 @@ static gboolean generic_dialog_delete_cb(GtkWidget *w, GdkEventAny *event, gpoin
     auto_close = gd->auto_close;
 
     if (gd->cancel_cb) gd->cancel_cb(gd, gd->data);
-    if (auto_close) generic_dialog_close(gd);
+    if (auto_close)
+        generic_dialog_close(gd);
 
     return TRUE;
 }
@@ -129,39 +131,34 @@ static gboolean generic_dialog_delete_cb(GtkWidget *w, GdkEventAny *event, gpoin
 static void generic_dialog_show_cb(GtkWidget *widget, gpointer data)
 {
     GenericDialog *gd = data;
+
     if (gd->cancel_button)
-    {
         gtk_box_reorder_child(GTK_BOX(gd->hbox), gd->cancel_button, -1);
-    }
 
     g_signal_handlers_disconnect_by_func(G_OBJECT(widget),
-                         G_CALLBACK(generic_dialog_show_cb), gd);
+                                         G_CALLBACK(generic_dialog_show_cb), gd);
 }
 
 gboolean generic_dialog_get_alternative_button_order(GtkWidget *widget)
 {
-    GtkSettings *settings;
-    GObjectClass *klass;
+    GtkSettings *settings = gtk_settings_get_for_screen(gtk_widget_get_screen(widget));
+    GObjectClass *klass = G_OBJECT_CLASS(GTK_SETTINGS_GET_CLASS(settings));
     gboolean alternative_order = FALSE;
 
-    settings = gtk_settings_get_for_screen(gtk_widget_get_screen(widget));
-    klass = G_OBJECT_CLASS(GTK_SETTINGS_GET_CLASS(settings));
     if (g_object_class_find_property(klass, "gtk-alternative-button-order"))
-    {
         g_object_get(settings, "gtk-alternative-button-order", &alternative_order, NULL);
-    }
 
     return alternative_order;
 }
 
 GtkWidget *generic_dialog_add_button(GenericDialog *gd, const gchar *stock_id, const gchar *text,
-                     void (*func_cb)(GenericDialog *, gpointer), gboolean is_default)
+                                     void (*func_cb)(GenericDialog *, gpointer), gboolean is_default)
 {
     GtkWidget *button;
     gboolean alternative_order;
 
     button = pref_button_new(NULL, stock_id, text, FALSE,
-                 G_CALLBACK(generic_dialog_click_cb), gd);
+                             G_CALLBACK(generic_dialog_click_cb), gd);
 
     gtk_widget_set_can_default(button, TRUE);
     g_object_set_data(G_OBJECT(button), "dialog_function", func_cb);
@@ -176,31 +173,28 @@ GtkWidget *generic_dialog_add_button(GenericDialog *gd, const gchar *stock_id, c
         gtk_widget_grab_focus(button);
         gd->default_cb = func_cb;
 
-        if (!alternative_order) gtk_box_reorder_child(GTK_BOX(gd->hbox), button, -1);
+        if (!alternative_order)
+            gtk_box_reorder_child(GTK_BOX(gd->hbox), button, -1);
     }
     else
     {
-        if (!alternative_order) gtk_box_reorder_child(GTK_BOX(gd->hbox), button, 0);
+        if (!alternative_order)
+            gtk_box_reorder_child(GTK_BOX(gd->hbox), button, 0);
     }
-
     gtk_widget_show(button);
 
     return button;
 }
 
 GtkWidget *generic_dialog_add_message(GenericDialog *gd, const gchar *icon_stock_id,
-                      const gchar *heading, const gchar *text)
+                                      const gchar *heading, const gchar *text)
 {
-    GtkWidget *hbox;
-    GtkWidget *vbox;
-    GtkWidget *label;
+    GtkWidget *hbox, *vbox, *label;
 
     hbox = pref_box_new(gd->vbox, TRUE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
     if (icon_stock_id)
     {
-        GtkWidget *image;
-
-        image = gtk_image_new_from_stock(icon_stock_id, GTK_ICON_SIZE_DIALOG);
+        GtkWidget *image = gtk_image_new_from_stock(icon_stock_id, GTK_ICON_SIZE_DIALOG);
         gtk_misc_set_alignment(GTK_MISC(image), 0.5, 0.0);
         gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
         gtk_widget_show(image);
@@ -224,10 +218,11 @@ GtkWidget *generic_dialog_add_message(GenericDialog *gd, const gchar *icon_stock
 }
 
 static void generic_dialog_setup(GenericDialog *gd,
-                 const gchar *title,
-                 const gchar *role,
-                 GtkWidget *parent, gboolean auto_close,
-                 void (*cancel_cb)(GenericDialog *, gpointer), gpointer data)
+                                 const gchar *title,
+                                 const gchar *role,
+                                 GtkWidget *parent, gboolean auto_close,
+                                 void (*cancel_cb)(GenericDialog *, gpointer),
+                                 gpointer data)
 {
     GtkWidget *vbox;
 
@@ -248,19 +243,19 @@ static void generic_dialog_setup(GenericDialog *gd,
         }
         else
         {
-            GtkWidget *top;
-
-            top = gtk_widget_get_toplevel(parent);
-            if (GTK_IS_WINDOW(top) && gtk_widget_is_toplevel(top)) window = GTK_WINDOW(top);
+            GtkWidget *top = gtk_widget_get_toplevel(parent);
+            if (GTK_IS_WINDOW(top) && gtk_widget_is_toplevel(top))
+                window = GTK_WINDOW(top);
         }
 
-        if (window) gtk_window_set_transient_for(GTK_WINDOW(gd->dialog), window);
+        if (window)
+            gtk_window_set_transient_for(GTK_WINDOW(gd->dialog), window);
     }
 
     g_signal_connect(G_OBJECT(gd->dialog), "delete_event",
-             G_CALLBACK(generic_dialog_delete_cb), gd);
+                     G_CALLBACK(generic_dialog_delete_cb), gd);
     g_signal_connect(G_OBJECT(gd->dialog), "key_press_event",
-             G_CALLBACK(generic_dialog_key_press_cb), gd);
+                     G_CALLBACK(generic_dialog_key_press_cb), gd);
 
     gtk_window_set_resizable(GTK_WINDOW(gd->dialog), TRUE);
     gtk_container_set_border_width(GTK_CONTAINER(gd->dialog), PREF_PAD_BORDER);
@@ -279,34 +274,26 @@ static void generic_dialog_setup(GenericDialog *gd,
     gtk_box_pack_start(GTK_BOX(vbox), gd->hbox, FALSE, FALSE, 0);
     gtk_widget_show(gd->hbox);
 
-    if (gd->cancel_cb)
-    {
-        gd->cancel_button = generic_dialog_add_button(gd, GTK_STOCK_CANCEL, NULL, gd->cancel_cb, TRUE);
-    }
-    else
-    {
-        gd->cancel_button = NULL;
-    }
+    gd->cancel_button = gd->cancel_cb ? generic_dialog_add_button(gd, GTK_STOCK_CANCEL, NULL, gd->cancel_cb, TRUE) : NULL;
 
     if (generic_dialog_get_alternative_button_order(gd->hbox))
-    {
         g_signal_connect(G_OBJECT(gd->dialog), "show",
-                 G_CALLBACK(generic_dialog_show_cb), gd);
-    }
+                         G_CALLBACK(generic_dialog_show_cb), gd);
 
     gd->default_cb = NULL;
 }
 
 GenericDialog *generic_dialog_new(const gchar *title,
-                  const gchar *role,
-                  GtkWidget *parent, gboolean auto_close,
-                  void (*cancel_cb)(GenericDialog *, gpointer), gpointer data)
+                                  const gchar *role,
+                                  GtkWidget *parent, gboolean auto_close,
+                                  void (*cancel_cb)(GenericDialog *, gpointer),
+                                  gpointer data)
 {
     GenericDialog *gd;
 
     gd = g_new0(GenericDialog, 1);
     generic_dialog_setup(gd, title, role,
-                 parent, auto_close, cancel_cb, data);
+                         parent, auto_close, cancel_cb, data);
     return gd;
 }
 /*
@@ -321,7 +308,7 @@ static void warning_dialog_ok_cb(GenericDialog *gd, gpointer data)
 }
 
 GenericDialog *warning_dialog(const gchar *heading, const gchar *text,
-                  const gchar *icon_stock_id, GtkWidget *parent)
+                              const gchar *icon_stock_id, GtkWidget *parent)
 {
     GenericDialog *gd;
 
@@ -345,32 +332,35 @@ void file_dialog_close(FileDialog *fdlg)
 {
     file_data_unref(fdlg->source_fd);
     g_free(fdlg->dest_path);
-    if (fdlg->source_list) filelist_free(fdlg->source_list);
+    if (fdlg->source_list)
+        filelist_free(fdlg->source_list);
 
     generic_dialog_close(GENERIC_DIALOG(fdlg));
 }
 
 FileDialog *file_dialog_new(const gchar *title,
-                const gchar *role,
-                GtkWidget *parent,
-                void (*cancel_cb)(FileDialog *, gpointer), gpointer data)
+                            const gchar *role,
+                            GtkWidget *parent,
+                            void (*cancel_cb)(FileDialog *, gpointer),
+                            gpointer data)
 {
-    FileDialog *fdlg = NULL;
+    FileDialog *fdlg;
 
     fdlg = g_new0(FileDialog, 1);
 
     generic_dialog_setup(GENERIC_DIALOG(fdlg), title,
-                 role, parent, FALSE,
-                 (gpointer)cancel_cb, data);
+                         role, parent, FALSE,
+                         (gpointer)cancel_cb, data);
 
     return fdlg;
 }
 
 GtkWidget *file_dialog_add_button(FileDialog *fdlg, const gchar *stock_id, const gchar *text,
-                  void (*func_cb)(FileDialog *, gpointer), gboolean is_default)
+                                  void (*func_cb)(FileDialog *, gpointer),
+                                  gboolean is_default)
 {
     return generic_dialog_add_button(GENERIC_DIALOG(fdlg), stock_id, text,
-                     (gpointer)func_cb, is_default);
+                                     (gpointer)func_cb, is_default);
 }
 
 static void file_dialog_entry_cb(GtkWidget *widget, gpointer data)
@@ -389,16 +379,17 @@ static void file_dialog_entry_enter_cb(const gchar *path, gpointer data)
     if (gd->default_cb) gd->default_cb(gd, gd->data);
 }
 
-void file_dialog_add_path_widgets(FileDialog *fdlg, const gchar *default_path, const gchar *path,
-                  const gchar *history_key, const gchar *filter, const gchar *filter_desc)
+void file_dialog_add_path_widgets(FileDialog *fdlg, const gchar *default_path,
+                                  const gchar *path, const gchar *history_key,
+                                  const gchar *filter, const gchar *filter_desc)
 {
-    GtkWidget *tabcomp;
-    GtkWidget *list;
+    GtkWidget *tabcomp, *list;
 
     if (fdlg->entry) return;
 
     tabcomp = tab_completion_new_with_history(&fdlg->entry, NULL,
-          history_key, -1, file_dialog_entry_enter_cb, fdlg);
+                                              history_key, -1, file_dialog_entry_enter_cb,
+                                              fdlg);
     gtk_box_pack_end(GTK_BOX(GENERIC_DIALOG(fdlg)->vbox), tabcomp, FALSE, FALSE, 0);
     generic_dialog_attach_default(GENERIC_DIALOG(fdlg), fdlg->entry);
     gtk_widget_show(tabcomp);
@@ -409,21 +400,15 @@ void file_dialog_add_path_widgets(FileDialog *fdlg, const gchar *default_path, c
     }
     else
     {
-        const gchar *base;
+        const gchar *base = tab_completion_set_to_last_history(fdlg->entry);
 
-        base = tab_completion_set_to_last_history(fdlg->entry);
+        if (!base)
+            base = default_path;
+        if (!base)
+            base = homedir();
 
-        if (!base) base = default_path;
-        if (!base) base = homedir();
-
-        if (path)
-        {
-            fdlg->dest_path = g_build_filename(base, path, NULL);
-        }
-        else
-        {
-            fdlg->dest_path = g_strdup(base);
-        }
+        fdlg->dest_path = path ? g_build_filename(base, path, NULL)
+                               : g_strdup(base);
     }
 
     list = path_selection_new_with_files(fdlg->entry, fdlg->dest_path, filter, filter_desc);
@@ -439,18 +424,21 @@ void file_dialog_add_path_widgets(FileDialog *fdlg, const gchar *default_path, c
     }
 
     g_signal_connect(G_OBJECT(fdlg->entry), "changed",
-             G_CALLBACK(file_dialog_entry_cb), fdlg);
+                     G_CALLBACK(file_dialog_entry_cb), fdlg);
 }
 
-void file_dialog_add_filter(FileDialog *fdlg, const gchar *filter, const gchar *filter_desc, gboolean set)
+void file_dialog_add_filter(FileDialog *fdlg, const gchar *filter,
+                            const gchar *filter_desc, gboolean set)
 {
     if (!fdlg->entry) return;
+
     path_selection_add_filter(fdlg->entry, filter, filter_desc, set);
 }
 
 void file_dialog_clear_filter(FileDialog *fdlg)
 {
     if (!fdlg->entry) return;
+
     path_selection_clear_filter(fdlg->entry);
 }
 
@@ -458,8 +446,7 @@ void file_dialog_sync_history(FileDialog *fdlg, gboolean dir_only)
 {
     if (!fdlg->dest_path) return;
 
-    if (!dir_only ||
-        (dir_only && isdir(fdlg->dest_path)) )
+    if (!dir_only || isdir(fdlg->dest_path))
     {
         tab_completion_append_to_history(fdlg->entry, fdlg->dest_path);
     }
