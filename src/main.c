@@ -320,12 +320,6 @@ static void parse_command_line(gint argc, gchar *argv[])
                 printf_term("%s %s\n", GQ_APPNAME, VERSION);
                 exit(0);
             }
-            else if (strcmp(cmd_line, "--alternate") == 0)
-            {
-                /* enable faster experimental algorithm */
-                log_printf("Alternate similarity algorithm enabled\n");
-                image_sim_alternate_set(TRUE);
-            }
             else if (strcmp(cmd_line, "-h") == 0 ||
                  strcmp(cmd_line, "--help") == 0)
             {
@@ -346,13 +340,6 @@ static void parse_command_line(gint argc, gchar *argv[])
 #endif
                 print_term(_("  -v, --version                    print version info\n"));
                 print_term(_("  -h, --help                       show this message\n\n"));
-
-#if 0
-                /* these options are not officially supported!
-                 * only for testing new features, no need to translate them */
-                print_term(  "  --alternate                use alternate similarity algorithm\n");
-#endif
-
 
                 exit(0);
             }

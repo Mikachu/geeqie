@@ -1411,8 +1411,6 @@ static void dupe_loader_done_cb(ImageLoader *il, gpointer data)
         if (options->thumbnails.enable_sim_caching)
             dupe_item_write_cache(di);
 
-        image_sim_alternate_processing(di->simd);
-
         if (!pixbuf) {
             dw->setup_point = dupe_setup_point_step(dw, dw->setup_point);
             dw->setup_n++;
@@ -1539,10 +1537,7 @@ static gboolean dupe_check_cb(gpointer data)
                     {
                         dupe_item_read_cache(di);
                         if (cache_sim_data_filled(di->simd))
-                        {
-                            image_sim_alternate_processing(di->simd);
                             return TRUE;
-                        }
                     }
 
                     dw->img_loader = image_loader_new(di->fd);
