@@ -50,9 +50,7 @@ static void clear_mouse_cursor(GtkWidget *widget, gint state)
 
     if (state & FULLSCREEN_CURSOR_BUSY)
     {
-        GdkCursor *cursor;
-
-        cursor = gdk_cursor_new(GDK_WATCH);
+        GdkCursor *cursor = gdk_cursor_new(GDK_WATCH);
         gdk_window_set_cursor(window, cursor);
         gdk_cursor_unref(cursor);
     }
@@ -62,9 +60,7 @@ static void clear_mouse_cursor(GtkWidget *widget, gint state)
     }
     else
     {
-        GdkCursor *cursor;
-
-        cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
+        GdkCursor *cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
         gdk_window_set_cursor(window, cursor);
         gdk_cursor_unref(cursor);
     }
@@ -77,7 +73,8 @@ static gboolean fullscreen_hide_mouse_cb(gpointer data)
     if (!fs->hide_mouse_id) return FALSE;
 
     fs->cursor_state &= ~FULLSCREEN_CURSOR_NORMAL;
-    if (!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY)) clear_mouse_cursor(fs->window, fs->cursor_state);
+    if (!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY))
+        clear_mouse_cursor(fs->window, fs->cursor_state);
 
     g_clear_handle_id(&fs->hide_mouse_id, g_source_remove);
     return FALSE;
@@ -91,7 +88,8 @@ static void fullscreen_hide_mouse_disable(FullScreenData *fs)
 static void fullscreen_hide_mouse_reset(FullScreenData *fs)
 {
     fullscreen_hide_mouse_disable(fs);
-    fs->hide_mouse_id = g_timeout_add(FULL_SCREEN_HIDE_MOUSE_DELAY, fullscreen_hide_mouse_cb, fs);
+    fs->hide_mouse_id = g_timeout_add(FULL_SCREEN_HIDE_MOUSE_DELAY,
+                                      fullscreen_hide_mouse_cb, fs);
 }
 
 static gboolean fullscreen_mouse_moved(GtkWidget *widget, GdkEventMotion *event, gpointer data)
@@ -101,7 +99,8 @@ static gboolean fullscreen_mouse_moved(GtkWidget *widget, GdkEventMotion *event,
     if (!(fs->cursor_state & FULLSCREEN_CURSOR_NORMAL))
     {
         fs->cursor_state |= FULLSCREEN_CURSOR_NORMAL;
-        if (!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY)) clear_mouse_cursor(fs->window, fs->cursor_state);
+        if (!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY))
+            clear_mouse_cursor(fs->window, fs->cursor_state);
     }
     fullscreen_hide_mouse_reset(fs);
 
@@ -117,16 +116,12 @@ static void fullscreen_mouse_set_busy(FullScreenData *fs, gboolean busy)
 {
     fullscreen_busy_mouse_disable(fs);
 
-    if (!!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY) == (busy)) return;
+    if (!!(fs->cursor_state & FULLSCREEN_CURSOR_BUSY) == busy) return;
 
     if (busy)
-    {
         fs->cursor_state |= FULLSCREEN_CURSOR_BUSY;
-    }
     else
-    {
         fs->cursor_state &= ~FULLSCREEN_CURSOR_BUSY;
-    }
 
     clear_mouse_cursor(fs->window, fs->cursor_state);
 }
@@ -143,10 +138,8 @@ static gboolean fullscreen_mouse_set_busy_cb(gpointer data)
 static void fullscreen_mouse_set_busy_idle(FullScreenData *fs)
 {
     if (!fs->busy_mouse_id)
-    {
         fs->busy_mouse_id = g_timeout_add(FULL_SCREEN_BUSY_MOUSE_DELAY,
-                          fullscreen_mouse_set_busy_cb, fs);
-    }
+                                          fullscreen_mouse_set_busy_cb, fs);
 }
 
 static void fullscreen_image_update_cb(ImageWindow *imd, gpointer data)
@@ -164,7 +157,8 @@ static void fullscreen_image_complete_cb(ImageWindow *imd, gboolean preload, gpo
 {
     FullScreenData *fs = data;
 
-    if (!preload) fullscreen_mouse_set_busy(fs, FALSE);
+    if (!preload)
+        fullscreen_mouse_set_busy(fs, FALSE);
 }
 
 static gboolean fullscreen_delete_cb(GtkWidget *widget, GdkEventAny *event, gpointer data)
@@ -176,10 +170,10 @@ static gboolean fullscreen_delete_cb(GtkWidget *widget, GdkEventAny *event, gpoi
 }
 
 FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
-                 GtkWidget *fs_container, gboolean force_same_region,
-                 void (*stop_func)(FullScreenData *, gpointer), gpointer stop_data)
+                                 GtkWidget *fs_container, gboolean force_same_region,
+                                 void (*stop_func)(FullScreenData *, gpointer),
+                                 gpointer stop_data)
 {
-    FullScreenData *fs;
     GdkScreen *screen;
     gint x, y;
     gint w, h;
@@ -187,19 +181,20 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 
     if (!window || !imd) return NULL;
 
-    fs = g_new0(FullScreenData, 1);
+    FullScreenData *fs = g_new0(FullScreenData, 1);
 
     fs->cursor_state = FULLSCREEN_CURSOR_HIDDEN;
 
     fs->normal_window = window;
-    fs->normal_imd = imd;
+    fs->normal_imd    = imd;
 
     fs->stop_func = stop_func;
     fs->stop_data = stop_data;
 
     DEBUG_1("full screen requests screen %d", options->fullscreen.screen);
-    fullscreen_prefs_get_geometry(options->fullscreen.screen, window, &x, &y, &w, &h,
-                      &screen, &fs->same_region);
+    fullscreen_prefs_get_geometry(options->fullscreen.screen,
+                                  window, &x, &y, &w, &h,
+                                  &screen, &fs->same_region);
 
     fs->same_region = fs->same_region || force_same_region;
     if (fs_container && fs->same_region)
@@ -209,7 +204,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
             /* simple window case (e.g. img-view): the window contains only the
              * imd widget, so just fullscreen the window itself and reuse imd */
             fs->window = window;
-            fs->imd = imd;
+            fs->imd    = imd;
             fs->imd->fullscreen = TRUE;
 
             if (options->fullscreen.above)
@@ -218,7 +213,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
             gtk_window_fullscreen(GTK_WINDOW(fs->window));
 
             g_signal_connect(G_OBJECT(fs->imd->pr), "motion_notify_event",
-                       G_CALLBACK(fullscreen_mouse_moved), fs);
+                             G_CALLBACK(fullscreen_mouse_moved), fs);
             clear_mouse_cursor(fs->window, fs->cursor_state);
 
             return fs;
@@ -251,7 +246,7 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
 
         /* for hiding the mouse */
         g_signal_connect(G_OBJECT(fs->imd->pr), "motion_notify_event",
-                   G_CALLBACK(fullscreen_mouse_moved), fs);
+                         G_CALLBACK(fullscreen_mouse_moved), fs);
         clear_mouse_cursor(fs->window, fs->cursor_state);
 
         return fs;
@@ -260,10 +255,11 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
     /* fall through: create a new toplevel window (used for multi-monitor
      * presentation mode, or callers that don't provide fs_container) */
 
-    fs->window = window_new(GTK_WINDOW_TOPLEVEL, "fullscreen", NULL, NULL, _("Full screen"));
+    fs->window = window_new(GTK_WINDOW_TOPLEVEL, "fullscreen",
+                            NULL, NULL, _("Full screen"));
 
     g_signal_connect(G_OBJECT(fs->window), "delete_event",
-             G_CALLBACK(fullscreen_delete_cb), fs);
+                     G_CALLBACK(fullscreen_delete_cb), fs);
 
     /* few cosmetic details */
     gtk_window_set_decorated(GTK_WINDOW(fs->window), FALSE);
@@ -273,14 +269,12 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
     gtk_window_fullscreen(GTK_WINDOW(fs->window));
 
     /* move it to requested screen */
-    if (options->fullscreen.screen >= 0) {
+    if (options->fullscreen.screen >= 0)
         gtk_window_set_screen(GTK_WINDOW(fs->window), screen);
-    }
 
     /* keep window above others, if requested */
-    if (options->fullscreen.above) {
+    if (options->fullscreen.above)
         gtk_window_set_keep_above(GTK_WINDOW(fs->window), TRUE);
-    }
 
     /* set default size and position, so the window appears where it was before */
     gtk_window_set_default_size(GTK_WINDOW(fs->window), w, h);
@@ -298,8 +292,11 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
     geometry.base_width = w;
     geometry.base_height = h;
     geometry.win_gravity = GDK_GRAVITY_STATIC;
-    gtk_window_set_geometry_hints(GTK_WINDOW(fs->window), fs->window, &geometry,
-            GDK_HINT_WIN_GRAVITY | GDK_HINT_USER_POS | GDK_HINT_USER_SIZE);
+    gtk_window_set_geometry_hints(GTK_WINDOW(fs->window),
+                                  fs->window, &geometry,
+                                  GDK_HINT_WIN_GRAVITY |
+                                  GDK_HINT_USER_POS |
+                                  GDK_HINT_USER_SIZE);
 
     gtk_widget_realize(fs->window);
 
@@ -330,22 +327,19 @@ FullScreenData *fullscreen_start(GtkWidget *window, ImageWindow *imd,
         image_copy_from_image(fs->imd, fs->normal_imd);
     }
 
-    if (options->stereo.enable_fsmode) {
+    if (options->stereo.enable_fsmode)
         image_stereo_set(fs->imd, options->stereo.fs.mode);
-    }
 
     gtk_widget_show(fs->window);
 
     /* for hiding the mouse */
     g_signal_connect(G_OBJECT(fs->imd->pr), "motion_notify_event",
-               G_CALLBACK(fullscreen_mouse_moved), fs);
+                     G_CALLBACK(fullscreen_mouse_moved), fs);
     clear_mouse_cursor(fs->window, fs->cursor_state);
 
     /* hide normal window */
     if (fs->same_region)
-    {
         image_change_fd(fs->normal_imd, NULL, image_zoom_get(fs->normal_imd));
-    }
 
     return fs;
 }
@@ -362,9 +356,7 @@ void fullscreen_stop(FullScreenData *fs)
     {
         image_move_from_image(fs->normal_imd, fs->imd);
         if (options->stereo.enable_fsmode)
-        {
             image_stereo_set(fs->normal_imd, options->stereo.window.mode);
-        }
     }
 
 
@@ -402,36 +394,26 @@ void fullscreen_stop(FullScreenData *fs)
 GList *fullscreen_prefs_list(void)
 {
     GList *list = NULL;
-    GdkDisplay *display;
-    gint number;
-    gint i;
 
-    display = gdk_display_get_default();
-    number = gdk_display_get_n_screens(display);
+    GdkDisplay *display = gdk_display_get_default();
+    gint number = gdk_display_get_n_screens(display);
 
-    for (i = 0; i < number; i++)
+    for (gint i = 0; i < number; i++)
     {
-        GdkScreen *screen;
-        gint monitors;
-        gint j;
+        GdkScreen *screen = gdk_display_get_screen(display, i);
+        gint monitors = gdk_screen_get_n_monitors(screen);
 
-        screen = gdk_display_get_screen(display, i);
-        monitors = gdk_screen_get_n_monitors(screen);
-
-        for (j = -1; j < monitors; j++)
+        for (gint j = -1; j < monitors; j++)
         {
-            ScreenData *sd;
+            gchar *name = gdk_screen_make_display_name(screen);
             GdkRectangle rect;
-            gchar *name;
             gchar *subname;
-
-            name = gdk_screen_make_display_name(screen);
 
             if (j < 0)
             {
                 rect.x = 0;
                 rect.y = 0;
-                rect.width = gdk_screen_get_width(screen);
+                rect.width  = gdk_screen_get_width(screen);
                 rect.height = gdk_screen_get_height(screen);
                 subname = g_strdup(_("Full size"));
             }
@@ -440,21 +422,19 @@ GList *fullscreen_prefs_list(void)
                 gdk_screen_get_monitor_geometry(screen, j, &rect);
                 subname = gdk_screen_get_monitor_plug_name(screen, j);
                 if (subname == NULL)
-                {
                     subname = g_strdup_printf("%s %d", _("Monitor"), j + 1);
-                }
             }
 
-            sd = g_new0(ScreenData, 1);
+            ScreenData *sd = g_new0(ScreenData, 1);
             sd->number = (i+1) * 100 + j + 1;
             sd->description = g_strdup_printf("%s %s, %s", _("Screen"), name, subname);
             sd->x = rect.x;
             sd->y = rect.y;
-            sd->width = rect.width;
+            sd->width  = rect.width;
             sd->height = rect.height;
 
             DEBUG_1("Screen %d %30s %4d,%4d (%4dx%4d)",
-                      sd->number, sd->description, sd->x, sd->y, sd->width, sd->height);
+                    sd->number, sd->description, sd->x, sd->y, sd->width, sd->height);
 
             list = g_list_append(list, sd);
 
@@ -462,7 +442,6 @@ GList *fullscreen_prefs_list(void)
             g_free(subname);
         }
     }
-
     return list;
 }
 
@@ -476,15 +455,12 @@ void screen_data_free(ScreenData *sd)
 
 ScreenData *fullscreen_prefs_list_find(GList *list, gint screen)
 {
-    GList *work;
-
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         ScreenData *sd = work->data;
-        work = work->next;
 
-        if (sd->number == screen) return sd;
+        if (sd->number == screen)
+            return sd;
     }
 
     return NULL;
@@ -501,13 +477,13 @@ ScreenData *fullscreen_prefs_list_find(GList *list, gint screen)
  * dest_screen: screen to place widget [use gtk_window_set_screen()]
  * same_region: the returned region will overlap the current location of widget.
  */
-void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget, gint *x, gint *y, gint *width, gint *height,
-                   GdkScreen **dest_screen, gboolean *same_region)
+void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget,
+                                   gint *x, gint *y, gint *width, gint *height,
+                                   GdkScreen **dest_screen, gboolean *same_region)
 {
-    GList *list;
     ScreenData *sd;
+    GList *list = fullscreen_prefs_list();
 
-    list = fullscreen_prefs_list();
     if (screen >= 100)
     {
         sd = fullscreen_prefs_list_find(list, screen);
@@ -515,36 +491,35 @@ void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget, gint *x, gint
     else
     {
         sd = NULL;
-        if (screen < 0) screen = 1;
+        if (screen < 0)
+            screen = 1;
     }
 
     if (sd)
     {
-        GdkDisplay *display;
         GdkScreen *screen;
-        gint n;
+        GdkDisplay *display = gdk_display_get_default();
+        gint n = sd->number / 100 - 1;
 
-        display = gdk_display_get_default();
-        n = sd->number / 100 - 1;
         if (n >= 0 && n < gdk_display_get_n_screens(display))
-        {
             screen = gdk_display_get_screen(display, n);
-        }
         else
-        {
             screen = gdk_display_get_default_screen(display);
-        }
 
         if (x) *x = sd->x;
         if (y) *y = sd->y;
-        if (width) *width = sd->width;
+        if (width)  *width  = sd->width;
         if (height) *height = sd->height;
 
-        if (dest_screen) *dest_screen = screen;
-        if (same_region) *same_region = (!widget || !gtk_widget_get_window(widget) ||
-                    (screen == gtk_widget_get_screen(widget) &&
-                    (sd->number%100 == 0 ||
-                     sd->number%100 == gdk_screen_get_monitor_at_window(screen, gtk_widget_get_window(widget))+1)));
+        if (dest_screen)
+            *dest_screen = screen;
+        if (same_region)
+            *same_region = (!widget || !gtk_widget_get_window(widget) ||
+                            (screen == gtk_widget_get_screen(widget) &&
+                             (sd->number%100 == 0 ||
+                              sd->number%100 ==
+                              gdk_screen_get_monitor_at_window(screen,
+                                                               gtk_widget_get_window(widget))+1)));
 
     }
     else if (screen != 1 || !widget || !gtk_widget_get_window(widget))
@@ -552,17 +527,13 @@ void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget, gint *x, gint
         GdkScreen *screen;
 
         if (widget)
-        {
             screen = gtk_widget_get_screen(widget);
-        }
         else
-        {
             screen = gdk_screen_get_default();
-        }
 
         if (x) *x = 0;
         if (y) *y = 0;
-        if (width) *width = gdk_screen_get_width(screen);
+        if (width)  *width  = gdk_screen_get_width(screen);
         if (height) *height = gdk_screen_get_height(screen);
 
         if (dest_screen) *dest_screen = screen;
@@ -570,52 +541,42 @@ void fullscreen_prefs_get_geometry(gint screen, GtkWidget *widget, gint *x, gint
     }
     else
     {
-        GdkScreen *screen;
-        gint monitor;
+        GdkScreen *screen = gtk_widget_get_screen(widget);
+        gint monitor = gdk_screen_get_monitor_at_window(screen, gtk_widget_get_window(widget));
         GdkRectangle rect;
-
-        screen = gtk_widget_get_screen(widget);
-        monitor = gdk_screen_get_monitor_at_window(screen, gtk_widget_get_window(widget));
 
         gdk_screen_get_monitor_geometry(screen, monitor, &rect);
 
         if (x) *x = rect.x;
         if (y) *y = rect.y;
-        if (width) *width = rect.width;
+        if (width)  *width  = rect.width;
         if (height) *height = rect.height;
 
         if (dest_screen) *dest_screen = screen;
         if (same_region) *same_region = TRUE;
     }
-
     g_list_free_full(list, (GDestroyNotify)screen_data_free);
 }
 
 gint fullscreen_prefs_find_screen_for_widget(GtkWidget *widget)
 {
-    GdkScreen *screen;
-    gint monitor;
-    gint n;
-
     if (!widget || !gtk_widget_get_window(widget)) return 0;
 
-    screen = gtk_widget_get_screen(widget);
-    monitor = gdk_screen_get_monitor_at_window(screen, gtk_widget_get_window(widget));
+    GdkScreen *screen = gtk_widget_get_screen(widget);
+    gint monitor = gdk_screen_get_monitor_at_window(screen, gtk_widget_get_window(widget));
 
-    n = (gdk_screen_get_number(screen)+1) * 100 + monitor + 1;
+    gint n = (gdk_screen_get_number(screen)+1) * 100 + monitor + 1;
 
     DEBUG_1("Screen appears to be %d", n);
 
     return n;
 }
 
-GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value, gboolean *above_value)
+GtkWidget *fullscreen_prefs_selection_new(const gchar *text,
+                                          gint *screen_value,
+                                          gboolean *above_value)
 {
-    GtkWidget *vbox;
-    GtkWidget *hbox;
-    GtkWidget *combo;
-    GList *list;
-    GList *work;
+    GtkWidget *vbox, *hbox, *combo;
     PrefComboItem *items;
     gint current = 0;
     guint n;
@@ -626,7 +587,7 @@ GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value,
     hbox = pref_box_new(vbox, FALSE, GTK_ORIENTATION_HORIZONTAL, PREF_PAD_SPACE);
     if (text) pref_label_new(hbox, text);
 
-    list = fullscreen_prefs_list();
+    GList *list = fullscreen_prefs_list();
     n = g_list_length(list);
     items = g_new0(PrefComboItem, 3 + n + 1);
 
@@ -637,17 +598,16 @@ GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value,
     if (*screen_value == 1) current = 2;
 
     n = 3;
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         ScreenData *sd = work->data;
 
         items[n].text = sd->description;
         items[n].value = sd->number;
 
-        if (*screen_value == sd->number) current = n;
+        if (*screen_value == sd->number)
+            current = n;
 
-        work = work->next;
         n++;
     }
     items[n].text = NULL;
@@ -660,7 +620,7 @@ GtkWidget *fullscreen_prefs_selection_new(const gchar *text, gint *screen_value,
     gtk_widget_show(combo);
 
     g_signal_connect(G_OBJECT(combo), "changed",
-             G_CALLBACK(pref_combo_get_int), screen_value);
+                     G_CALLBACK(pref_combo_get_int), screen_value);
 
     return vbox;
 }
