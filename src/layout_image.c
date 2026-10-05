@@ -913,7 +913,12 @@ const gchar *layout_image_get_name(LayoutWindow *lw)
 
 FileData *layout_image_get_fd(LayoutWindow *lw)
 {
-    return layout_valid(&lw) ? image_get_fd(lw->image) : NULL;
+    if (layout_valid(&lw))
+    {
+        FileData *pfd = lw->image_pending_fd;
+        return pfd ? pfd : image_get_fd(lw->image);
+    }
+    return NULL;
 }
 
 CollectionData *layout_image_get_collection(LayoutWindow *lw, CollectInfo **info)
@@ -925,8 +930,8 @@ gint layout_image_get_index(LayoutWindow *lw)
 {
     if (layout_valid(&lw))
     {
-        FileData *fd = lw->image_pending_fd ? lw->image_pending_fd : image_get_fd(lw->image);
-        return layout_list_get_index(lw, fd);
+        FileData *pfd = lw->image_pending_fd;
+        return layout_list_get_index(lw, pfd ? pfd : image_get_fd(lw->image));
     }
     return -1;
 }
