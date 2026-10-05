@@ -164,8 +164,6 @@ static gboolean image_zoom_rect_motion_cb(GtkWidget *widget,
     ZoomRectData *rd = g_object_get_data(G_OBJECT(imd->pr), "zoom_rect_data");
     if (!rd) return FALSE;
 
-    PixbufRenderer *pr = PIXBUF_RENDERER(imd->pr);
-
     rd->cur_x = (gint)event->x;
     rd->cur_y = (gint)event->y;
 

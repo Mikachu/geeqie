@@ -81,7 +81,7 @@ static guint tree_key_overrides[] = {
 
 static gboolean layout_key_match(guint keyval)
 {
-    for (gint i = 0; i < G_N_ELEMENTS(tree_key_overrides); i++)
+    for (guint i = 0; i < G_N_ELEMENTS(tree_key_overrides); i++)
         if (keyval == tree_key_overrides[i]) return TRUE;
 
     return FALSE;
@@ -838,9 +838,9 @@ static void layout_menu_kbd_map_cb(GtkAction *action, gpointer data)
                 post_key = g_strsplit(pre_key[1], "<", 2);
 
                 key_name = " ";
-                for (gint index = 0; index < array->len - 1; index += 2)
+                for (guint index = 0; index < array->len - 1; index += 2)
                 {
-                    if (!(g_ascii_strcasecmp(g_ptr_array_index(array,index+1), post_key[0])))
+                    if (!(g_ascii_strcasecmp(g_ptr_array_index(array, index + 1), post_key[0])))
                     {
                         key_name = g_ptr_array_index(array, index + 0);
                         break;
