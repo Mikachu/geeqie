@@ -66,7 +66,7 @@ static RemoteConnection *remote_connection = NULL;
 
 /*
  *-----------------------------------------------------------------------------
- * keyboard functions
+ * keyboard functions XXX should probably be in a util file
  *-----------------------------------------------------------------------------
  */
 
@@ -118,10 +118,11 @@ void keyboard_scroll_calc(gint *x, gint *y, GdkEventKey *event)
  */
 
 static void parse_command_line_add_file(const gchar *file_path, gchar **path, gchar **file,
-                    GList **list, GList **collection_list)
+                                        GList **list, GList **collection_list)
 {
     gchar *path_parsed;
 
+    /* XXX mishandling of symlink/../foo relative paths, but this isn't the only spot */
     path_parsed = g_strdup(file_path);
     parse_out_relatives(path_parsed);
 
@@ -138,7 +139,7 @@ static void parse_command_line_add_file(const gchar *file_path, gchar **path, gc
 }
 
 static void parse_command_line_add_dir(const gchar *dir, gchar **path, gchar **file,
-                       GList **list)
+                                       GList **list)
 {
 #if 0
     /* This is broken because file filter is not initialized yet.
@@ -181,7 +182,7 @@ static void parse_command_line_add_dir(const gchar *dir, gchar **path, gchar **f
 }
 
 static void parse_command_line_process_dir(const gchar *dir, gchar **path, gchar **file,
-                       GList **list, gchar **first_dir)
+                                           GList **list, gchar **first_dir)
 {
 
     if (!*list && !*first_dir)
@@ -201,7 +202,7 @@ static void parse_command_line_process_dir(const gchar *dir, gchar **path, gchar
 }
 
 static void parse_command_line_process_file(const gchar *file_path, gchar **path, gchar **file,
-                        GList **list, GList **collection_list, gchar **first_dir)
+                                            GList **list, GList **collection_list, gchar **first_dir)
 {
 
     if (*first_dir)
@@ -238,23 +239,26 @@ static void parse_command_line(gint argc, gchar *argv[])
 
             if (cmd_line[0] == G_DIR_SEPARATOR && isdir(cmd_line))
             {
-                parse_command_line_process_dir(cmd_line, &command_line->path, &command_line->file, &list, &first_dir);
+                parse_command_line_process_dir(cmd_line, &command_line->path, &command_line->file,
+                                               &list, &first_dir);
             }
             else if (isdir(cmd_all))
             {
-                parse_command_line_process_dir(cmd_all, &command_line->path, &command_line->file, &list, &first_dir);
+                parse_command_line_process_dir(cmd_all, &command_line->path, &command_line->file,
+                                               &list, &first_dir);
             }
             else if (cmd_line[0] == G_DIR_SEPARATOR && isfile(cmd_line))
             {
                 parse_command_line_process_file(cmd_line, &command_line->path, &command_line->file,
-                                &list, &command_line->collection_list, &first_dir);
+                                                &list, &command_line->collection_list, &first_dir);
             }
             else if (isfile(cmd_all))
             {
                 parse_command_line_process_file(cmd_all, &command_line->path, &command_line->file,
-                                &list, &command_line->collection_list, &first_dir);
+                                                &list, &command_line->collection_list, &first_dir);
             }
-            else if (strncmp(cmd_line, "--debug", 7) == 0 && (cmd_line[7] == '\0' || cmd_line[7] == '='))
+            else if (strncmp(cmd_line, "--debug", 7) == 0 && (cmd_line[7] == '\0' ||
+                                                              cmd_line[7] == '='))
             {
                 /* do nothing but do not produce warnings */
             }
@@ -411,14 +415,10 @@ static void parse_command_line(gint argc, gchar *argv[])
 
     if (command_line->startup_blank)
     {
-        g_free(command_line->path);
-        command_line->path = NULL;
-        g_free(command_line->file);
-        command_line->file = NULL;
-        filelist_free(command_line->cmd_list);
-        command_line->cmd_list = NULL;
-        string_list_free(command_line->collection_list);
-        command_line->collection_list = NULL;
+        g_clear_pointer(&command_line->path, g_free);
+        g_clear_pointer(&command_line->file, g_free);
+        g_clear_pointer(&command_line->cmd_list, filelist_free);
+        g_clear_pointer(&command_line->collection_list, string_list_free);
     }
 }
 
@@ -503,16 +503,13 @@ static void mkdir_if_not_exists(const gchar *path)
 }
 
 
-/* We add to duplicate and modify  gtk_accel_map_print() and gtk_accel_map_save()
+/* We add to duplicate and modify gtk_accel_map_print() and gtk_accel_map_save()
  * to improve the reliability in special cases (especially when disk is full)
  * These functions are now using secure saving stuff.
  */
-static void gq_accel_map_print(
-            gpointer    data,
-            const gchar *accel_path,
-            guint   accel_key,
-            GdkModifierType accel_mods,
-            gboolean    changed)
+static void gq_accel_map_print(gpointer data, const gchar *accel_path,
+                               guint accel_key, GdkModifierType accel_mods,
+                               gboolean changed)
 {
     GString *gstring = g_string_new(changed ? NULL : "; ");
     SecureSaveInfo *ssi = data;
@@ -570,7 +567,7 @@ static gboolean gq_accel_map_save(const gchar *path)
     if (secure_close(ssi))
     {
         log_printf(_("error saving file: %s\nerror: %s\n"), path,
-               secsave_strerror(secsave_errno));
+                   secsave_strerror(secsave_errno));
         return FALSE;
     }
 
@@ -584,20 +581,15 @@ static gchar *accep_map_filename(void)
 
 static void accel_map_save(void)
 {
-    gchar *path;
-
-    path = accep_map_filename();
+    gchar *path = accep_map_filename();
     gq_accel_map_save(path);
     g_free(path);
 }
 
 static void accel_map_load(void)
 {
-    gchar *path;
-    gchar *pathl;
-
-    path = accep_map_filename();
-    pathl = path_from_utf8(path);
+    gchar *path = accep_map_filename();
+    gchar *pathl = path_from_utf8(path);
     gtk_accel_map_load(pathl);
     g_free(pathl);
     g_free(path);
@@ -605,13 +597,10 @@ static void accel_map_load(void)
 
 static void gtkrc_load(void)
 {
-    gchar *path;
-    gchar *pathl;
-
     /* If a gtkrc file exists in the rc directory, add it to the
      * list of files to be parsed at the end of gtk_init() */
-    path = g_build_filename(get_rc_dir(), "gtkrc", NULL);
-    pathl = path_from_utf8(path);
+    gchar *path = g_build_filename(get_rc_dir(), "gtkrc", NULL);
+    gchar *pathl = path_from_utf8(path);
     if (access(pathl, R_OK) == 0)
         gtk_rc_add_default_file(pathl);
     g_free(pathl);
@@ -620,9 +609,8 @@ static void gtkrc_load(void)
 
 static void exit_program_final(void)
 {
-    LayoutWindow *lw = NULL;
-
-     /* make sure that external editors are loaded, we would save incomplete configuration otherwise */
+     /* make sure that external editors are loaded, we
+      * would save incomplete configuration otherwise */
     layout_editors_reload_finish();
 
     remote_close(remote_connection);
@@ -633,10 +621,12 @@ static void exit_program_final(void)
     keys_save();
     accel_map_save();
 
-    if (layout_valid(&lw))
-    {
+#ifdef DEBUG
+    /* for clean valgrind output maybe */
+    LayoutWindow *lw = NULL;
+    while (layout_valid(&lw))
         layout_free(lw);
-    }
+#endif
 
     gtk_main_quit();
 }
@@ -658,10 +648,6 @@ static void exit_confirm_exit_cb(GenericDialog *gd, gpointer data)
 
 static gint exit_confirm_dlg(void)
 {
-    GtkWidget *parent;
-    LayoutWindow *lw;
-    gchar *msg;
-
     if (exit_dialog)
     {
         gtk_window_present(GTK_WINDOW(exit_dialog->dialog));
@@ -670,13 +656,12 @@ static gint exit_confirm_dlg(void)
 
     if (!collection_window_modified_exists()) return FALSE;
 
-    parent = NULL;
-    lw = NULL;
+    GtkWidget *parent = NULL;
+    LayoutWindow *lw = NULL;
     if (layout_valid(&lw))
-    {
         parent = lw->window;
-    }
 
+    gchar *msg;
     msg = g_strdup_printf("%s - %s", GQ_APPNAME, _("exit"));
     exit_dialog = generic_dialog_new(msg,
                 "exit", parent, FALSE,
@@ -695,7 +680,8 @@ static gint exit_confirm_dlg(void)
 
 static void exit_program_write_metadata_cb(gint success, const gchar *dest_path, gpointer data)
 {
-    if (success) exit_program();
+    if (success)
+        exit_program();
 }
 
 void exit_program(void)
@@ -724,7 +710,8 @@ static void sigbus_handler_cb(int signum, siginfo_t *info, void *context)
 {
     unsigned long pagesize = sysconf(_SC_PAGE_SIZE);
     DEBUG_1("SIGBUS %p", info->si_addr);
-    mmap((void *)(((unsigned long)info->si_addr / pagesize) * pagesize), pagesize, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    mmap((void *)(((unsigned long)info->si_addr / pagesize) * pagesize), pagesize,
+         PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 #endif
 
@@ -751,7 +738,6 @@ gint main(gint argc, gchar *argv[])
 #endif
     gdk_threads_init();
     gdk_threads_enter();
-
 #endif
 
     /* init execution time counter (debug only) */
@@ -777,16 +763,17 @@ gint main(gint argc, gchar *argv[])
 #endif
 
     /* setup random seed for random slideshow */
+    /* XXX use g_random_* instead */
     srand(time(NULL));
 
     setup_sigbus_handler();
 
     /* register global notify functions */
-    file_data_register_notify_func(cache_notify_cb, NULL, NOTIFY_PRIORITY_HIGH);
-    file_data_register_notify_func(thumb_notify_cb, NULL, NOTIFY_PRIORITY_HIGH);
-    file_data_register_notify_func(histogram_notify_cb, NULL, NOTIFY_PRIORITY_HIGH);
+    file_data_register_notify_func(cache_notify_cb,           NULL, NOTIFY_PRIORITY_HIGH);
+    file_data_register_notify_func(thumb_notify_cb,           NULL, NOTIFY_PRIORITY_HIGH);
+    file_data_register_notify_func(histogram_notify_cb,       NULL, NOTIFY_PRIORITY_HIGH);
     file_data_register_notify_func(collect_manager_notify_cb, NULL, NOTIFY_PRIORITY_LOW);
-    file_data_register_notify_func(metadata_notify_cb, NULL, NOTIFY_PRIORITY_LOW);
+    file_data_register_notify_func(metadata_notify_cb,        NULL, NOTIFY_PRIORITY_LOW);
 
     bookmark_register_update(layout_bookmarks_update_all, NULL);
 
@@ -834,12 +821,13 @@ gint main(gint argc, gchar *argv[])
     DEBUG_1("%s main: load_options", get_exec_time());
     if (!load_options(options))
     {
-        /* load_options calls these functions after it parses global options, we have to call it here if it fails */
+        /* load_options calls these functions after it parses global options,
+         * we have to call it here if it fails */
         filter_add_defaults();
         filter_rebuild();
     }
 
-    /* handle missing config file and commandline additions*/
+    /* handle missing config file and commandline additions */
     if (!layout_window_list)
     {
         /* broken or no config file */
@@ -850,32 +838,22 @@ gint main(gint argc, gchar *argv[])
 
     if (command_line->collection_list && !command_line->startup_command_line_collection)
     {
-        GList *work;
-
-        work = command_line->collection_list;
-        while (work)
+        for (GList *work = command_line->collection_list; work; work = work->next)
         {
-            CollectWindow *cw;
-            const gchar *path;
-
-            path = work->data;
-            work = work->next;
-
-            cw = collection_window_new(path);
-            if (!first_collection && cw) first_collection = cw->cd;
+            const gchar *path = work->data;
+            CollectWindow *cw = collection_window_new(path);
+            if (!first_collection && cw)
+                first_collection = cw->cd;
         }
     }
 
     if (command_line->cmd_list ||
-        (command_line->startup_command_line_collection && command_line->collection_list))
+        (command_line->startup_command_line_collection &&
+         command_line->collection_list))
     {
-        GList *work;
-
         if (command_line->startup_command_line_collection)
         {
-            CollectWindow *cw;
-
-            cw = collection_window_new("");
+            CollectWindow *cw = collection_window_new("");
             cd = cw->cd;
         }
         else
@@ -883,28 +861,21 @@ gint main(gint argc, gchar *argv[])
             cd = collection_new("");    /* if we pass NULL, untitled counter is falsely increm. */
         }
 
-        g_free(cd->path);
-        cd->path = NULL;
+        g_clear_pointer(&cd->path, g_free);
+
         g_free(cd->name);
         cd->name = g_strdup(_("Command line"));
 
         collection_path_changed(cd);
 
-        work = command_line->cmd_list;
-        while (work)
-        {
+        for (GList *work = command_line->cmd_list; work; work = work->next)
             collection_add(cd, (FileData *)work->data, FALSE);
-            work = work->next;
-        }
 
-        work = command_line->collection_list;
-        while (work)
-        {
+        for (GList *work = command_line->collection_list; work; work = work->next)
             collection_load(cd, (gchar *)work->data, COLLECTION_LOAD_APPEND);
-            work = work->next;
-        }
 
-        if (cd->list) layout_image_set_collection(NULL, cd, cd->list->data);
+        if (cd->list)
+            layout_image_set_collection(NULL, cd, cd->list->data);
 
         /* mem leak, we never unref this collection when !startup_command_line_collection
          * (the image view of the main window does not hold a ref to the collection)
@@ -918,7 +889,7 @@ gint main(gint argc, gchar *argv[])
     else if (first_collection)
     {
         layout_image_set_collection(NULL, first_collection,
-                        collection_get_first(first_collection));
+                                    collection_get_first(first_collection));
     }
 
     //gchar *buf = g_build_filename(get_rc_dir(), ".command", NULL);
