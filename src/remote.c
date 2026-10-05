@@ -137,7 +137,7 @@ static void remote_server_client_add(RemoteConnection *rc, gint fd)
 
     channel = g_io_channel_unix_new(fd);
     client->channel_id = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, G_IO_IN | G_IO_HUP,
-                         remote_server_client_cb, client, NULL);
+                                             remote_server_client_cb, client, NULL);
     g_io_channel_unref(channel);
 
     rc->clients = g_list_append(rc->clients, client);
@@ -229,7 +229,7 @@ static RemoteConnection *remote_server_open(const gchar *path)
     g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
 
     rc->channel_id = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, G_IO_IN,
-                         remote_server_read_cb, rc, NULL);
+                                         remote_server_read_cb, rc, NULL);
     g_io_channel_unref(channel);
 
     return rc;
@@ -268,6 +268,7 @@ static RemoteConnection *remote_client_open(const gchar *path)
     }
 
     rc = g_new0(RemoteConnection, 1);
+
     rc->server = FALSE;
     rc->fd = fd;
     rc->path = g_strdup(path);
@@ -285,7 +286,7 @@ static void sighandler_sigpipe(gint sig)
 static gboolean remote_client_send(RemoteConnection *rc, const gchar *text)
 {
     struct sigaction new_action, old_action;
-    gboolean ret = FALSE;
+    gboolean ret = TRUE;
     GError *error = NULL;
     GIOChannel *channel;
 
@@ -312,10 +313,6 @@ static gboolean remote_client_send(RemoteConnection *rc, const gchar *text)
         log_printf("error reading socket: %s\n", error->message);
         g_error_free(error);
         ret = FALSE;
-    }
-    else
-    {
-        ret = TRUE;
     }
 
     if (ret)
@@ -468,9 +465,7 @@ static void gr_tools_show(const gchar *text, GIOChannel *channel, gpointer data)
     gboolean hidden;
 
     if (layout_tools_float_get(NULL, &popped, &hidden) && hidden)
-    {
         layout_tools_float_set(NULL, popped, FALSE);
-    }
 }
 
 static void gr_tools_hide(const gchar *text, GIOChannel *channel, gpointer data)
@@ -479,9 +474,7 @@ static void gr_tools_hide(const gchar *text, GIOChannel *channel, gpointer data)
     gboolean hidden;
 
     if (layout_tools_float_get(NULL, &popped, &hidden) && !hidden)
-    {
         layout_tools_float_set(NULL, popped, TRUE);
-    }
 }
 
 static gboolean gr_quit_idle_cb(gpointer data)
@@ -494,98 +487,74 @@ static gboolean gr_quit_idle_cb(gpointer data)
 static void gr_quit(const gchar *text, GIOChannel *channel, gpointer data)
 {
     /* schedule exit when idle, if done from within a
-     * remote handler remote_close will crash
-     */
+     * remote handler remote_close will crash */
     g_idle_add(gr_quit_idle_cb, NULL);
 }
 
 static void gr_file_load(const gchar *text, GIOChannel *channel, gpointer data)
 {
-    gchar *filename = expand_tilde(text);
-
-    if (isfile(filename))
+    if (isfile(text))
     {
-        if (file_extension_match(filename, GQ_COLLECTION_EXT))
-        {
-            collection_window_new(filename);
-        }
+        if (file_extension_match(text, GQ_COLLECTION_EXT))
+            collection_window_new(text);
         else
-        {
-            layout_set_path(NULL, filename);
-        }
+            layout_set_path(NULL, text);
     }
-    else if (isdir(filename))
+    else if (isdir(text))
     {
-        layout_set_path(NULL, filename);
+        layout_set_path(NULL, text);
     }
     else
     {
-        log_printf("remote sent filename that does not exist:\"%s\"\n", filename);
+        log_printf("remote sent filename that does not exist:\"%s\"\n", text);
         layout_set_path(NULL, homedir());
     }
-
-    g_free(filename);
 }
 
 static void gr_config_load(const gchar *text, GIOChannel *channel, gpointer data)
 {
-    gchar *filename = expand_tilde(text);
-
-    if (isfile(filename))
+    if (isfile(text))
     {
-        load_config_from_file(filename, FALSE);
+        load_config_from_file(text, FALSE);
     }
     else
     {
-        log_printf("remote sent filename that does not exist:\"%s\"\n", filename);
+        log_printf("remote sent filename that does not exist:\"%s\"\n", text);
         layout_set_path(NULL, homedir());
     }
-
-    g_free(filename);
 }
 
 static void gr_get_sidecars(const gchar *text, GIOChannel *channel, gpointer data)
 {
-    gchar *filename = expand_tilde(text);
-    FileData *fd = file_data_new_group(filename);
+    FileData *fd = file_data_new_group(text);
 
-    GList *work;
     if (fd->parent) fd = fd->parent;
 
     g_io_channel_write_chars(channel, fd->path, -1, NULL, NULL);
     g_io_channel_write_chars(channel, "\n", -1, NULL, NULL);
 
-    work = fd->sidecar_files;
-
-    while (work)
+    for (GList *work = fd->sidecar_files; work; work = work->next)
     {
         fd = work->data;
-        work = work->next;
         g_io_channel_write_chars(channel, fd->path, -1, NULL, NULL);
         g_io_channel_write_chars(channel, "\n", -1, NULL, NULL);
     }
-    g_free(filename);
 }
 
 static void gr_get_destination(const gchar *text, GIOChannel *channel, gpointer data)
 {
-    gchar *filename = expand_tilde(text);
-    FileData *fd = file_data_new_group(filename);
+    FileData *fd = file_data_new_group(text);
 
     if (fd->change && fd->change->dest)
     {
         g_io_channel_write_chars(channel, fd->change->dest, -1, NULL, NULL);
         g_io_channel_write_chars(channel, "\n", -1, NULL, NULL);
     }
-    g_free(filename);
 }
 
 static void gr_file_view(const gchar *text, GIOChannel *channel, gpointer data)
 {
-    gchar *filename = expand_tilde(text);
-
-    view_window_new(file_data_new_group(filename));
-    g_free(filename);
+    view_window_new(file_data_new_group(text));
 }
 
 static void gr_list_clear(const gchar *text, GIOChannel *channel, gpointer data)
@@ -606,12 +575,9 @@ static void gr_list_add(const gchar *text, GIOChannel *channel, gpointer data)
 
     if (!remote_data->command_collection)
     {
-        CollectionData *cd;
+        CollectionData *cd = collection_new("");
 
-        cd = collection_new("");
-
-        g_free(cd->path);
-        cd->path = NULL;
+        g_clear_pointer(&cd->path, g_free);
         g_free(cd->name);
         cd->name = g_strdup(_("Command line"));
 
@@ -619,14 +585,12 @@ static void gr_list_add(const gchar *text, GIOChannel *channel, gpointer data)
     }
     else
     {
-        new = (!collection_get_first(remote_data->command_collection));
+        new = !collection_get_first(remote_data->command_collection);
     }
 
     if (collection_add(remote_data->command_collection, file_data_new_group(text), FALSE) && new)
-    {
         layout_image_set_collection(NULL, remote_data->command_collection,
-                        collection_get_first(remote_data->command_collection));
-    }
+                                    collection_get_first(remote_data->command_collection));
 }
 
 static void gr_raise(const gchar *text, GIOChannel *channel, gpointer data)
@@ -634,9 +598,7 @@ static void gr_raise(const gchar *text, GIOChannel *channel, gpointer data)
     LayoutWindow *lw = NULL;
 
     if (layout_valid(&lw))
-    {
         gtk_window_present(GTK_WINDOW(lw->window));
-    }
 }
 
 typedef struct RemoteCommandEntry RemoteCommandEntry;
@@ -675,7 +637,7 @@ static RemoteCommandEntry remote_commands[] = {
     { NULL, "--list-clear",         gr_list_clear,          FALSE, FALSE, NULL, N_("clear command line collection list") },
     { NULL, "--list-add:",          gr_list_add,            TRUE,  FALSE, N_("<FILE>"), N_("add FILE to command line collection list") },
     { NULL, "raise",                gr_raise,               FALSE, FALSE, NULL, N_("bring the Geeqie window to the top") },
-    { NULL, NULL, NULL, FALSE, FALSE, NULL }
+    { NULL, NULL, NULL, FALSE, FALSE, NULL, NULL }
 };
 
 static RemoteCommandEntry *remote_command_find(const gchar *text, const gchar **offset)
@@ -695,7 +657,7 @@ static RemoteCommandEntry *remote_command_find(const gchar *text, const gchar **
                 return &remote_commands[i];
             }
             else if (remote_commands[i].opt_l &&
-                 strncmp(remote_commands[i].opt_l, text, strlen(remote_commands[i].opt_l)) == 0)
+                     strncmp(remote_commands[i].opt_l, text, strlen(remote_commands[i].opt_l)) == 0)
             {
                 if (offset) *offset = text + strlen(remote_commands[i].opt_l);
                 return &remote_commands[i];
@@ -724,13 +686,9 @@ static void remote_cb(RemoteConnection *rc, const gchar *text, GIOChannel *chann
 
     entry = remote_command_find(text, &offset);
     if (entry && entry->func)
-    {
         entry->func(offset, channel, data);
-    }
     else
-    {
         log_printf("unknown remote command:%s\n", text);
-    }
 }
 
 void remote_help(void)
@@ -749,10 +707,10 @@ void remote_help(void)
             s_opt_param = g_strconcat(remote_commands[i].opt_s, remote_commands[i].parameter, NULL);
             l_opt_param = g_strconcat(remote_commands[i].opt_l, remote_commands[i].parameter, NULL);
             printf_term("  %-11s%-1s %-30s%-s\n",
-                    (remote_commands[i].opt_s) ? s_opt_param : "",
-                    (remote_commands[i].opt_s && remote_commands[i].opt_l) ? "," : " ",
-                    (remote_commands[i].opt_l) ? l_opt_param : "",
-                    _(remote_commands[i].description));
+                        (remote_commands[i].opt_s) ? s_opt_param : "",
+                        (remote_commands[i].opt_s && remote_commands[i].opt_l) ? "," : " ",
+                        (remote_commands[i].opt_l) ? l_opt_param : "",
+                        _(remote_commands[i].description));
             g_free(s_opt_param);
             g_free(l_opt_param);
         }
@@ -763,23 +721,17 @@ void remote_help(void)
 
 GList *remote_build_list(GList *list, gint argc, gchar *argv[], GList **errors)
 {
-    gint i;
+    gint i = 0;
 
-    i = 1;
-    while (i < argc)
+    while (++i < argc)
     {
         RemoteCommandEntry *entry;
 
         entry = remote_command_find(argv[i], NULL);
         if (entry)
-        {
             list = g_list_append(list, argv[i]);
-        }
         else if (errors && !isfile(argv[i]))
-        {
             *errors = g_list_append(*errors, argv[i]);
-        }
-        i++;
     }
 
     return list;
@@ -793,7 +745,7 @@ GList *remote_build_list(GList *list, gint argc, gchar *argv[], GList **errors)
  * \param collection_list List of all collections in argv
  */
 void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path,
-            GList *cmd_list, GList *collection_list)
+                    GList *cmd_list, GList *collection_list)
 {
     RemoteConnection *rc;
     gboolean started = FALSE;
@@ -804,7 +756,6 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
     if (!rc)
     {
         GString *command;
-        GList *work;
         gint retry_count = 12;
         gboolean blank = FALSE;
 
@@ -812,16 +763,11 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
 
         command = g_string_new(arg_exec);
 
-        work = remote_list;
-        while (work)
+        for (GList *work = remote_list; work; work = work->next)
         {
-            gchar *text;
-            RemoteCommandEntry *entry;
+            gchar *text = work->data;
+            RemoteCommandEntry *entry = remote_command_find(text, NULL);
 
-            text = work->data;
-            work = work->next;
-
-            entry = remote_command_find(text, NULL);
             if (entry)
             {
                 if (entry->prefer_command_line)
@@ -837,8 +783,10 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
             }
         }
 
-        if (blank || cmd_list || path) g_string_append(command, " --blank");
-        if (get_debug_level()) g_string_append(command, " --debug");
+        if (blank || cmd_list || path)
+            g_string_append(command, " --blank");
+        if (get_debug_level())
+            g_string_append(command, " --debug");
 
         g_string_append(command, " &");
         runcmd(command->str);
@@ -860,24 +808,21 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
 
     if (rc)
     {
-        GList *work;
         const gchar *prefix;
         gboolean use_path = TRUE;
         gboolean sent = FALSE;
 
-        work = remote_list;
-        while (work)
+        for (GList *work = remote_list; work; work = work->next)
         {
-            gchar *text;
-            RemoteCommandEntry *entry;
+            gchar *text = work->data;
+            RemoteCommandEntry *entry = remote_command_find(text, NULL);
 
-            text = work->data;
-            work = work->next;
-
-            entry = remote_command_find(text, NULL);
             if (entry &&
                 entry->opt_l &&
-                strcmp(entry->opt_l, "file:") == 0) use_path = FALSE;
+                strcmp(entry->opt_l, "file:") == 0)
+            {
+                use_path = FALSE;
+            }
 
             remote_client_send(rc, text);
 
@@ -894,16 +839,12 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
             prefix = "file:";
         }
 
-        work = cmd_list;
+        for (GList *work = cmd_list; work; work = work->next)
         while (work)
         {
-            FileData *fd;
-            gchar *text;
+            FileData *fd = work->data;
+            gchar *text = g_strconcat(prefix, fd->path, NULL);
 
-            fd = work->data;
-            work = work->next;
-
-            text = g_strconcat(prefix, fd->path, NULL);
             remote_client_send(rc, text);
             g_free(text);
 
@@ -921,16 +862,11 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
             sent = TRUE;
         }
 
-        work = collection_list;
-        while (work)
+        for (GList *work = collection_list; work; work = work->next)
         {
-            const gchar *name;
-            gchar *text;
+            const gchar *name = work->data;
+            gchar *text = g_strdup_printf("file:%s", name);
 
-            name = work->data;
-            work = work->next;
-
-            text = g_strdup_printf("file:%s", name);
             remote_client_send(rc, text);
             g_free(text);
 
@@ -938,9 +874,7 @@ void remote_control(const gchar *arg_exec, GList *remote_list, const gchar *path
         }
 
         if (!started && !sent)
-        {
             remote_client_send(rc, "raise");
-        }
     }
     else
     {
