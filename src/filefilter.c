@@ -46,18 +46,17 @@ static GList *file_sidecar_list = NULL; /* files with allowed sidecar */
 
 
 static FilterEntry *filter_entry_new(const gchar *key, const gchar *description,
-                     const gchar *extensions, FileFormatClass file_class,
-                     gboolean writable, gboolean allow_sidecar, gboolean enabled)
+                                     const gchar *extensions, FileFormatClass file_class,
+                                     gboolean writable, gboolean allow_sidecar, gboolean enabled)
 {
-    FilterEntry *fe;
+    FilterEntry *fe = g_new0(FilterEntry, 1);
 
-    fe = g_new0(FilterEntry, 1);
-    fe->key = g_strdup(key);
-    fe->description = g_strdup(description);
-    fe->extensions = g_strdup(extensions);
-    fe->enabled = enabled;
-    fe->file_class = file_class;
-    fe->writable = writable;
+    fe->key           = g_strdup(key);
+    fe->description   = g_strdup(description);
+    fe->extensions    = g_strdup(extensions);
+    fe->enabled       = enabled;
+    fe->file_class    = file_class;
+    fe->writable      = writable;
     fe->allow_sidecar = allow_sidecar;
 
     return fe;
@@ -80,27 +79,23 @@ GList *filter_get_list(void)
 
 void filter_remove_entry(FilterEntry *fe)
 {
-    if (!g_list_find(filter_list, fe)) return;
+    GList *link = g_list_find(filter_list, fe);
+    if (!link) return;
 
-    filter_list = g_list_remove(filter_list, fe);
+    filter_list = g_list_delete_link(filter_list, link);
     filter_entry_free(fe);
 }
 
 static FilterEntry *filter_get_by_key(const gchar *key)
 {
-    GList *work;
-
     if (!key) return NULL;
 
-    work = filter_list;
-    while (work)
+    for (GList *work = filter_list; work; work = work->next)
     {
         FilterEntry *fe = work->data;
-        work = work->next;
-
-        if (strcmp(fe->key, key) == 0) return fe;
+        if (strcmp(fe->key, key) == 0)
+            return fe;
     }
-
     return NULL;
 }
 
@@ -109,18 +104,22 @@ static gboolean filter_key_exists(const gchar *key)
     return (filter_get_by_key(key) != NULL);
 }
 
-void filter_add(const gchar *key, const gchar *description, const gchar *extensions, FileFormatClass file_class, gboolean writable, gboolean allow_sidecar, gboolean enabled)
+void filter_add(const gchar *key, const gchar *description, const gchar *extensions,
+                FileFormatClass file_class, gboolean writable,
+                gboolean allow_sidecar, gboolean enabled)
 {
-    filter_list = g_list_append(filter_list, filter_entry_new(key, description, extensions, file_class, writable, allow_sidecar, enabled));
+    filter_list = g_list_append(filter_list,
+                                filter_entry_new(key, description, extensions,
+                                                 file_class, writable,
+                                                 allow_sidecar, enabled));
 }
 
-void filter_add_unique(const gchar *description, const gchar *extensions, FileFormatClass file_class, gboolean writable, gboolean allow_sidecar, gboolean enabled)
+void filter_add_unique(const gchar *description, const gchar *extensions,
+                       FileFormatClass file_class, gboolean writable,
+                       gboolean allow_sidecar, gboolean enabled)
 {
-    gchar *key;
-    guint n;
-
-    key = g_strdup("user0");
-    n = 1;
+    gchar *key = g_strdup("user0");
+    guint n = 1;
     while (filter_key_exists(key))
     {
         g_free(key);
@@ -133,21 +132,20 @@ void filter_add_unique(const gchar *description, const gchar *extensions, FileFo
     g_free(key);
 }
 
-static void filter_add_if_missing(const gchar *key, const gchar *description, const gchar *extensions, FileFormatClass file_class, gboolean writable, gboolean allow_sidecar, gboolean enabled)
+static void filter_add_if_missing(const gchar *key,
+                                  const gchar *description, const gchar *extensions,
+                                  FileFormatClass file_class, gboolean writable,
+                                  gboolean allow_sidecar, gboolean enabled)
 {
-    GList *work;
-
     if (!key) return;
 
-    work = filter_list;
-    while (work)
+    for (GList *work = filter_list; work; work = work->next)
     {
         FilterEntry *fe = work->data;
-        work = work->next;
         if (fe->key && strcmp(fe->key, key) == 0)
         {
             if (fe->file_class == FORMAT_CLASS_UNKNOWN)
-                fe->file_class = file_class;    /* for compatibility */
+                fe->file_class = file_class; /* for compatibility */
 
             if (fe->writable && fe->allow_sidecar)
             {
@@ -163,29 +161,18 @@ static void filter_add_if_missing(const gchar *key, const gchar *description, co
 
 void filter_reset(void)
 {
-    g_list_free_full(filter_list, (GDestroyNotify)filter_entry_free);
-    filter_list = NULL;
+    g_clear_list(&filter_list, (GDestroyNotify)filter_entry_free);
 }
 
 void filter_add_defaults(void)
 {
-    GSList *list, *work;
-
-    list = gdk_pixbuf_get_formats();
-    work = list;
-    while (work)
+    GSList *list = gdk_pixbuf_get_formats();
+    for (GSList *work = list; work; work = work->next)
     {
-        GdkPixbufFormat *format;
-        gchar *name;
-        gchar *desc;
-        gchar **extensions;
         GString *filter = NULL;
-        guint i;
 
-        format = work->data;
-        work = work->next;
-
-        name = gdk_pixbuf_format_get_name(format);
+        GdkPixbufFormat *format = work->data;
+        gchar *name = gdk_pixbuf_format_get_name(format);
 
         if (strcmp(name, "Digital camera RAW") == 0)
         {
@@ -194,11 +181,10 @@ void filter_add_defaults(void)
             continue;
         }
 
-        desc = gdk_pixbuf_format_get_description(format);
-        extensions = gdk_pixbuf_format_get_extensions(format);
+        gchar *desc = gdk_pixbuf_format_get_description(format);
+        gchar **extensions; extensions = gdk_pixbuf_format_get_extensions(format);
 
-        i = 0;
-        while (extensions[i])
+        for (guint i = 0; extensions[i]; i++)
         {
             if (!filter)
             {
@@ -210,7 +196,6 @@ void filter_add_defaults(void)
                 filter = g_string_append(filter, ";.");
                 filter = g_string_append(filter, extensions[i]);
             }
-            i++;
         }
 
         DEBUG_1("loader reported [%s] [%s] [%s]", name, desc, filter->str);
@@ -225,80 +210,77 @@ void filter_add_defaults(void)
     g_slist_free(list);
 
     /* add defaults even if gdk-pixbuf does not have them, but disabled */
-    filter_add_if_missing("jpeg", "JPEG group", ".jpg;.jpeg;.jpe", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("png", "Portable Network Graphic", ".png", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("tiff", "Tiff", ".tif;.tiff", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("pnm", "Packed Pixel formats", ".pbm;.pgm;.pnm;.ppm", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("gif", "Graphics Interchange Format", ".gif", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("xbm", "X bitmap", ".xbm", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("xpm", "X pixmap", ".xpm", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("bmp", "Bitmap", ".bmp", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("ico", "Icon file", ".ico;.cur", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("ras", "Raster", ".ras", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("svg", "Scalable Vector Graphics", ".svg", FORMAT_CLASS_IMAGE, TRUE, FALSE, FALSE);
-    filter_add_if_missing("psd", "Adobe Photoshop Document", ".psd;.psb", FORMAT_CLASS_IMAGE, FALSE, FALSE, TRUE);
+    filter_add_if_missing("jpeg", "JPEG group",                  ".jpg;.jpeg;.jpe",     FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("png",  "Portable Network Graphic",    ".png",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("tiff", "Tiff",                        ".tif;.tiff",          FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("pnm",  "Packed Pixel formats",        ".pbm;.pgm;.pnm;.ppm", FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("gif",  "Graphics Interchange Format", ".gif",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("xbm",  "X bitmap",                    ".xbm",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("xpm",  "X pixmap",                    ".xpm",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("bmp",  "Bitmap",                      ".bmp",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("ico",  "Icon file",                   ".ico;.cur",           FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("ras",  "Raster",                      ".ras",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("svg",  "Scalable Vector Graphics",    ".svg",                FORMAT_CLASS_IMAGE, TRUE,  FALSE, FALSE);
+    filter_add_if_missing("psd",  "Adobe Photoshop Document",    ".psd;.psb",           FORMAT_CLASS_IMAGE, FALSE, FALSE, TRUE);
 
     /* special formats for stereo */
-    filter_add_if_missing("jps", "Stereo side-by-side jpeg", ".jps", FORMAT_CLASS_IMAGE, TRUE, FALSE, TRUE);
-    filter_add_if_missing("mpo", "Stereo multi-image jpeg", ".mpo", FORMAT_CLASS_IMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("jps", "Stereo side-by-side jpeg", ".jps", FORMAT_CLASS_IMAGE, TRUE,  FALSE, TRUE);
+    filter_add_if_missing("mpo", "Stereo multi-image jpeg",  ".mpo", FORMAT_CLASS_IMAGE, FALSE, TRUE,  TRUE);
 
     /* non-image files that might be desirable to show */
-    filter_add_if_missing("xmp", "XMP sidecar", ".xmp", FORMAT_CLASS_META, TRUE, FALSE, TRUE);
-    filter_add_if_missing("gqv", GQ_APPNAME " image collection", GQ_COLLECTION_EXT, FORMAT_CLASS_META, FALSE, FALSE, TRUE);
-    filter_add_if_missing("ufraw", "UFRaw ID file", ".ufraw", FORMAT_CLASS_META, FALSE, FALSE, TRUE);
-    filter_add_if_missing("pto", "Panorama script file", ".pto", FORMAT_CLASS_META, FALSE, FALSE, TRUE);
-    filter_add_if_missing("mkv", "Matroska video", ".mkv;.webm", FORMAT_CLASS_VIDEO, FALSE, FALSE, TRUE);
+    filter_add_if_missing("xmp",   "XMP sidecar",                  ".xmp",            FORMAT_CLASS_META,  TRUE,  FALSE, TRUE);
+    filter_add_if_missing("gqv",   GQ_APPNAME " image collection", GQ_COLLECTION_EXT, FORMAT_CLASS_META,  FALSE, FALSE, TRUE);
+    filter_add_if_missing("ufraw", "UFRaw ID file",                ".ufraw",          FORMAT_CLASS_META,  FALSE, FALSE, TRUE);
+    filter_add_if_missing("pto",   "Panorama script file",         ".pto",            FORMAT_CLASS_META,  FALSE, FALSE, TRUE);
+    filter_add_if_missing("mkv",   "Matroska video",               ".mkv;.webm",      FORMAT_CLASS_VIDEO, FALSE, FALSE, TRUE);
 
     /* These are the raw camera formats with embedded jpeg/exif.
      * (see format_raw.c and/or exiv2.cc)
      */
-    filter_add_if_missing("arw", "Sony raw format", ".arw;.srf;.sr2", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("crw", "Canon raw format", ".crw;.cr2", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("kdc", "Kodak raw format", ".kdc;.dcr;.k25", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("raf", "Fujifilm raw format", ".raf", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("mef", "Mamiya raw format", ".mef;.mos", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("mrw", "Minolta raw format", ".mrw", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("nef", "Nikon raw format", ".nef", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("orf", "Olympus raw format", ".orf", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("pef", "Pentax or Samsung raw format", ".pef;.ptx", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("dng", "Adobe Digital Negative raw format", ".dng", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("x3f", "Sigma raw format", ".x3f", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("raw", "Panasonic raw format", ".raw", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("r3d", "Red raw format", ".r3d", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("3fr", "Hasselblad raw format", ".3fr", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("erf", "Epson raw format", ".erf", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("srw", "Samsung raw format", ".srw", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
-    filter_add_if_missing("rw2", "Panasonic raw format", ".rw2", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("arw", "Sony raw format",                   ".arw;.srf;.sr2", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("crw", "Canon raw format",                  ".crw;.cr2",      FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("kdc", "Kodak raw format",                  ".kdc;.dcr;.k25", FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("raf", "Fujifilm raw format",               ".raf",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("mef", "Mamiya raw format",                 ".mef;.mos",      FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("mrw", "Minolta raw format",                ".mrw",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("nef", "Nikon raw format",                  ".nef",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("orf", "Olympus raw format",                ".orf",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("pef", "Pentax or Samsung raw format",      ".pef;.ptx",      FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("dng", "Adobe Digital Negative raw format", ".dng",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("x3f", "Sigma raw format",                  ".x3f",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("raw", "Panasonic raw format",              ".raw",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("r3d", "Red raw format",                    ".r3d",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("3fr", "Hasselblad raw format",             ".3fr",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("erf", "Epson raw format",                  ".erf",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("srw", "Samsung raw format",                ".srw",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
+    filter_add_if_missing("rw2", "Panasonic raw format",              ".rw2",           FORMAT_CLASS_RAWIMAGE, FALSE, TRUE, TRUE);
 }
 
 GList *filter_to_list(const gchar *extensions)
 {
     GList *list = NULL;
-    const gchar *p;
 
     if (!extensions) return NULL;
 
-    p = extensions;
+    const gchar *p = extensions;
     while (*p != '\0')
     {
-        const gchar *b;
-        gchar *ext;
+        const gchar *b = p;
         gint file_class = -1;
         guint l = 0;
 
-        b = p;
         while (*p != '\0' && *p != ';')
         {
             p++;
             l++;
         }
 
-        ext = g_strndup(b, l);
+        gchar *ext = g_strndup(b, l);
 
-        if (g_ascii_strcasecmp(ext, "%image") == 0) file_class = FORMAT_CLASS_IMAGE;
-        else if (g_ascii_strcasecmp(ext, "%raw") == 0) file_class = FORMAT_CLASS_RAWIMAGE;
-        else if (g_ascii_strcasecmp(ext, "%meta") == 0) file_class = FORMAT_CLASS_META;
-        else if (g_ascii_strcasecmp(ext, "%video") == 0) file_class = FORMAT_CLASS_VIDEO;
+        if      (g_ascii_strcasecmp(ext, "%image")   == 0) file_class = FORMAT_CLASS_IMAGE;
+        else if (g_ascii_strcasecmp(ext, "%raw")     == 0) file_class = FORMAT_CLASS_RAWIMAGE;
+        else if (g_ascii_strcasecmp(ext, "%meta")    == 0) file_class = FORMAT_CLASS_META;
+        else if (g_ascii_strcasecmp(ext, "%video")   == 0) file_class = FORMAT_CLASS_VIDEO;
         else if (g_ascii_strcasecmp(ext, "%unknown") == 0) file_class = FORMAT_CLASS_UNKNOWN;
 
         if (file_class == -1)
@@ -330,46 +312,31 @@ static gint filter_sort_ext_len_cb(gconstpointer a, gconstpointer b)
     return 0;
 }
 
-
 void filter_rebuild(void)
 {
-    GList *work;
-    guint i;
+    g_clear_pointer(&extension_list,     string_list_free);
+    g_clear_pointer(&file_writable_list, string_list_free);
+    g_clear_pointer(&file_sidecar_list,  string_list_free);
 
-    string_list_free(extension_list);
-    extension_list = NULL;
+    for (guint i = 0; i < FILE_FORMAT_CLASSES; i++)
+        g_clear_pointer(file_class_extension_list + i, string_list_free);
 
-    string_list_free(file_writable_list);
-    file_writable_list = NULL;
-
-    string_list_free(file_sidecar_list);
-    file_sidecar_list = NULL;
-
-    for (i = 0; i < FILE_FORMAT_CLASSES; i++)
+    for (GList *work = filter_list; work; work = work->next)
     {
-        string_list_free(file_class_extension_list[i]);
-        file_class_extension_list[i] = NULL;
-    }
-
-    work = filter_list;
-    while (work)
-    {
-        FilterEntry *fe;
-
-        fe = work->data;
-        work = work->next;
+        FilterEntry *fe = work->data;
 
         if (fe->enabled)
         {
-            GList *ext;
-
-            ext = filter_to_list(fe->extensions);
-            if (ext) extension_list = g_list_concat(extension_list, ext);
+            GList *ext = filter_to_list(fe->extensions);
+            if (ext)
+                extension_list = g_list_concat(extension_list, ext);
 
             if (fe->file_class < FILE_FORMAT_CLASSES)
             {
                 ext = filter_to_list(fe->extensions);
-                if (ext) file_class_extension_list[fe->file_class] = g_list_concat(file_class_extension_list[fe->file_class], ext);
+                if (ext)
+                    file_class_extension_list[fe->file_class] =
+                        g_list_concat(file_class_extension_list[fe->file_class], ext);
             }
             else
             {
@@ -379,13 +346,15 @@ void filter_rebuild(void)
             if (fe->writable)
             {
                 ext = filter_to_list(fe->extensions);
-                if (ext) file_writable_list = g_list_concat(file_writable_list, ext);
+                if (ext)
+                    file_writable_list = g_list_concat(file_writable_list, ext);
             }
 
             if (fe->allow_sidecar)
             {
                 ext = filter_to_list(fe->extensions);
-                if (ext) file_sidecar_list = g_list_concat(file_sidecar_list, ext);
+                if (ext)
+                    file_sidecar_list = g_list_concat(file_sidecar_list, ext);
             }
 
         }
@@ -393,18 +362,15 @@ void filter_rebuild(void)
 
     /* make sure registered_extension_from_path finds the longer match first */
     extension_list = g_list_sort(extension_list, filter_sort_ext_len_cb);
-    sidecar_ext_parse(options->sidecar.ext); /* this must be updated after changed file extensions */
+    /* this must be updated after changed file extensions */
+    sidecar_ext_parse(options->sidecar.ext);
 }
 
 /* return the extension part of the name or NULL */
 static const gchar *filter_name_find(GList *filter, const gchar *name)
 {
-    GList *work;
-    guint ln;
-
-    ln = strlen(name);
-    work = filter;
-    while (work)
+    guint ln = strlen(name);
+    for (GList *work = filter; work; work = work->next)
     {
         gchar *filter = work->data;
         guint lf = strlen(filter);
@@ -412,11 +378,10 @@ static const gchar *filter_name_find(GList *filter, const gchar *name)
         if (ln >= lf)
         {
             /* FIXME: utf8 */
-            if (g_ascii_strncasecmp(name + ln - lf, filter, lf) == 0) return name + ln - lf;
+            if (g_ascii_strncasecmp(name + ln - lf, filter, lf) == 0)
+                return name + ln - lf;
         }
-        work = work->next;
     }
-
     return NULL;
 }
 const gchar *registered_extension_from_path(const gchar *name)
@@ -454,16 +419,12 @@ gboolean filter_name_allow_sidecar(const gchar *name)
 
 void filter_write_list(GString *outstr, gint indent)
 {
-    GList *work;
-
     WRITE_NL(); WRITE_STRING("<filter>");
     indent++;
 
-    work = filter_list;
-    while (work)
+    for (GList *work = filter_list; work; work = work->next)
     {
         FilterEntry *fe = work->data;
-        work = work->next;
 
         WRITE_NL(); WRITE_STRING("<file_type ");
         WRITE_CHAR(*fe, key);
@@ -479,7 +440,8 @@ void filter_write_list(GString *outstr, gint indent)
     WRITE_NL(); WRITE_STRING("</filter>");
 }
 
-void filter_load_file_type(const gchar **attribute_names, const gchar **attribute_values)
+void filter_load_file_type(const gchar **attribute_names,
+                           const gchar **attribute_values)
 {
     FilterEntry fe;
     FilterEntry *old_fe;
@@ -487,7 +449,7 @@ void filter_load_file_type(const gchar **attribute_names, const gchar **attribut
     while (*attribute_names)
     {
         const gchar *option = *attribute_names++;
-        const gchar *value = *attribute_values++;
+        const gchar *value  = *attribute_values++;
 
         if (READ_CHAR(fe, key)) continue;
         if (READ_BOOL(fe, enabled)) continue;
@@ -499,14 +461,17 @@ void filter_load_file_type(const gchar **attribute_names, const gchar **attribut
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
-    if (fe.file_class >= FILE_FORMAT_CLASSES) fe.file_class = FORMAT_CLASS_UNKNOWN;
+    if (fe.file_class >= FILE_FORMAT_CLASSES)
+        fe.file_class = FORMAT_CLASS_UNKNOWN;
 
     if (fe.key && fe.key[0] != 0)
     {
         old_fe = filter_get_by_key(fe.key);
 
-        if (old_fe != NULL) filter_remove_entry(old_fe);
-        filter_add(fe.key, fe.description, fe.extensions, fe.file_class, fe.writable, fe.allow_sidecar, fe.enabled);
+        if (old_fe)
+            filter_remove_entry(old_fe);
+        filter_add(fe.key, fe.description, fe.extensions, fe.file_class,
+                   fe.writable, fe.allow_sidecar, fe.enabled);
     }
     g_free(fe.key);
     g_free(fe.extensions);
