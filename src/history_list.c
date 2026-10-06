@@ -24,7 +24,6 @@
 #include "secure_save.h"
 #include "ui_fileops.h"
 
-
 /*
  *-----------------------------------------------------------------------------
  * Implements a history chain. Used by the Back and Forward toolbar buttons.
@@ -34,10 +33,11 @@
  * The chain always increases and is deleted at the end of the session
  *-----------------------------------------------------------------------------
  */
+/* XXX skip over images that are deleted, instead of doing nothing with no feedback */
 
 typedef struct {
-    GList  *chain;
-    guint   index;
+    GList   *chain;
+    guint    index;
     gboolean nav_button;
 } HistoryChain;
 
@@ -47,6 +47,7 @@ static HistoryChain img_chain  = { NULL, G_MAXUINT, FALSE };
 static const gchar *hchain_back(HistoryChain *hc)
 {
     if (!hc->chain) return NULL;
+
     hc->nav_button = TRUE;
     hc->index = hc->index > 0 ? hc->index - 1 : 0;
     return g_list_nth_data(hc->chain, hc->index);
@@ -55,6 +56,7 @@ static const gchar *hchain_back(HistoryChain *hc)
 static const gchar *hchain_forward(HistoryChain *hc)
 {
     if (!hc->chain) return NULL;
+
     hc->nav_button = TRUE;
     guint last = g_list_length(hc->chain) - 1;
     hc->index = hc->index < last ? hc->index + 1 : last;
@@ -101,14 +103,14 @@ static void hchain_append(HistoryChain *hc, const gchar *path, gboolean reset)
     }
 }
 
-const gchar *history_chain_back(void)        { return hchain_back(&dir_chain); }
-const gchar *history_chain_forward(void)     { return hchain_forward(&dir_chain); }
+const gchar *history_chain_back(void)            { return hchain_back(&dir_chain); }
+const gchar *history_chain_forward(void)         { return hchain_forward(&dir_chain); }
 void history_chain_append_end(const gchar *path) { hchain_append(&dir_chain, path, TRUE); }
 
-const gchar *image_chain_back(void)          { return hchain_back(&img_chain); }
-const gchar *image_chain_forward(void)       { return hchain_forward(&img_chain); }
-void image_chain_nav_done(void)              { img_chain.nav_button = FALSE; }
-void image_chain_append_end(const gchar *path) { hchain_append(&img_chain, path, FALSE); }
+const gchar *image_chain_back(void)              { return hchain_back(&img_chain); }
+const gchar *image_chain_forward(void)           { return hchain_forward(&img_chain); }
+void image_chain_nav_done(void)                  { img_chain.nav_button = FALSE; }
+void image_chain_append_end(const gchar *path)   { hchain_append(&img_chain, path, FALSE); }
 void image_chain_clear(void)
 {
     g_list_free_full(img_chain.chain, g_free);
@@ -232,9 +234,7 @@ gboolean history_list_save(const gchar *path)
     list = g_list_last(history_list);
     while (list && secsave_errno == SS_ERR_NONE)
     {
-        HistoryData *hd;
-
-        hd = list->data;
+        HistoryData *hd = list->data;
         list = list->prev;
 
         secure_fprintf(ssi, "[%s]\n", hd->key);
@@ -260,16 +260,9 @@ gboolean history_list_save(const gchar *path)
 
 static void history_list_free(HistoryData *hd)
 {
-    GList *work;
-
     if (!hd) return;
 
-    work = hd->list;
-    while (work)
-    {
-        g_free(work->data);
-        work = work->next;
-    }
+    g_clear_list(&hd->list, g_free);
 
     g_free(hd->key);
     g_free(hd);
@@ -277,24 +270,20 @@ static void history_list_free(HistoryData *hd)
 
 static HistoryData *history_list_find_by_key(const gchar *key)
 {
-    GList *work = history_list;
-
     if (!key) return NULL;
 
-    while (work)
+    for (GList *work = history_list; work; work = work->next)
     {
         HistoryData *hd = work->data;
-        if (strcmp(hd->key, key) == 0) return hd;
-        work = work->next;
+        if (strcmp(hd->key, key) == 0)
+            return hd;
     }
     return NULL;
 }
 
 const gchar *history_list_find_last_path_by_key(const gchar *key)
 {
-    HistoryData *hd;
-
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd || !hd->list) return NULL;
 
     return hd->list->data;
@@ -302,8 +291,7 @@ const gchar *history_list_find_last_path_by_key(const gchar *key)
 
 void history_list_free_key(const gchar *key)
 {
-    HistoryData *hd;
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd) return;
 
     history_list = g_list_remove(history_list, hd);
@@ -312,12 +300,9 @@ void history_list_free_key(const gchar *key)
 
 void history_list_add_to_key(const gchar *key, const gchar *path, gint max)
 {
-    HistoryData *hd;
-    GList *work;
-
     if (!key || !path) return;
 
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd)
     {
         hd = g_new(HistoryData, 1);
@@ -327,8 +312,7 @@ void history_list_add_to_key(const gchar *key, const gchar *path, gint max)
     }
 
     /* if already in the list, simply move it to the top */
-    work = hd->list;
-    while (work)
+    for (GList *work = hd->list; work; work = work->next)
     {
         gchar *buf = work->data;
 
@@ -337,12 +321,11 @@ void history_list_add_to_key(const gchar *key, const gchar *path, gint max)
             /* if not first, move it */
             if (work != hd->list)
             {
-                hd->list = g_list_remove(hd->list, buf);
+                hd->list = g_list_delete_link(hd->list, work);
                 hd->list = g_list_prepend(hd->list, buf);
             }
             return;
         }
-        work = work->next;
     }
 
     hd->list = g_list_prepend(hd->list, g_strdup(path));
@@ -351,82 +334,73 @@ void history_list_add_to_key(const gchar *key, const gchar *path, gint max)
     if (max > 0)
     {
         gint len = 0;
-        GList *work = hd->list;
         GList *last = NULL;
 
-        while (work)
+        for (GList *work = hd->list; work; work = work->next)
         {
             len++;
             last = work;
-            work = work->next;
         }
 
-        work = last;
-        while (work && len > max)
+        for (GList *work = last, *prev; work; work = prev)
         {
-            GList *node = work;
-            work = work->prev;
+            if (len-- <= max)
+                break;
 
-            g_free(node->data);
-            hd->list = g_list_delete_link(hd->list, node);
-            len--;
+            prev = work->prev;
+
+            g_free(work->data);
+            hd->list = g_list_delete_link(hd->list, work);
         }
     }
 }
 
-void history_list_item_change(const gchar *key, const gchar *oldpath, const gchar *newpath)
+void history_list_item_change(const gchar *key,
+                              const gchar *oldpath,
+                              const gchar *newpath)
 {
-    HistoryData *hd;
-    GList *work;
-
     if (!oldpath) return;
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd) return;
 
-    work = hd->list;
-    while (work)
+    for (GList *work = hd->list, *next; work; work = next)
     {
         gchar *buf = work->data;
+        next = work->next;
+
         if (strcmp(buf, oldpath) == 0)
         {
             if (newpath)
-            {
                 work->data = g_strdup(newpath);
-            }
             else
-            {
-                hd->list = g_list_remove(hd->list, buf);
-            }
+                hd->list = g_list_delete_link(hd->list, work);
             g_free(buf);
             return;
         }
-        work = work->next;
     }
 }
 
 void history_list_item_move(const gchar *key, const gchar *path, gint direction)
 {
-    HistoryData *hd;
-    GList *work;
     gint p = 0;
 
     if (!path) return;
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd) return;
 
-    work = hd->list;
-    while (work)
+    for (GList *work = hd->list; work; work = work->next)
     {
         gchar *buf = work->data;
+
         if (strcmp(buf, path) == 0)
         {
             p += direction;
             if (p < 0) return;
-            hd->list = g_list_remove(hd->list, buf);
+            /* return so don't care that work->next is invalidated here */
+            hd->list = g_list_delete_link(hd->list, work);
             hd->list = g_list_insert(hd->list, buf, p);
             return;
         }
-        work = work->next;
         p++;
     }
 }
@@ -438,9 +412,7 @@ void history_list_item_remove(const gchar *key, const gchar *path)
 
 GList *history_list_get_by_key(const gchar *key)
 {
-    HistoryData *hd;
-
-    hd = history_list_find_by_key(key);
+    HistoryData *hd = history_list_find_by_key(key);
     if (!hd) return NULL;
 
     return hd->list;
