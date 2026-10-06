@@ -1,6 +1,20 @@
 #include "main.h"
 #include "vptree.h"
 
+/* https://en.wikipedia.org/wiki/Vantage-point_tree
+ * A vantage-point tree (or VP tree) is a metric tree that segregates data in a
+ * metric space by choosing a position in the space (the "vantage point") and
+ * partitioning the data points into two parts: those points that are nearer to
+ * the vantage point than a threshold, and those points that are not. By
+ * recursively applying this procedure to partition the data into smaller and
+ * smaller sets, a tree data structure is created where neighbors in the tree
+ * are likely to be neighbors in the space.
+ */
+
+/* Or in other words, make a structure that makes looking up duplicates way
+ * faster than comparing them all to each other. In particular, creating
+ * the vptree is around O(n log n) and searching the tree is O(log n). */
+
 typedef struct VPNode VPNode;
 struct VPNode
 {
