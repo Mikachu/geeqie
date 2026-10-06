@@ -49,109 +49,61 @@ struct KnownPanes
 };
 
 static const gchar default_config_histogram[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_histogram id = 'histogram' expanded = 'true' histogram_channel = '4' histogram_mode = '0' />"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_histogram id = 'histogram' expanded = 'true' histogram_channel = '4' histogram_mode = '0' />";
 
 static const gchar default_config_title[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_comment id = 'title' expanded = 'true' key = 'Xmp.dc.title' height = '40' />"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_comment id = 'title' expanded = 'true' key = 'Xmp.dc.title' height = '40' />";
 
 static const gchar default_config_keywords[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_keywords id = 'keywords' expanded = 'true' key = '" KEYWORD_KEY "' />"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_keywords id = 'keywords' expanded = 'true' key = '" KEYWORD_KEY "' />";
 
 static const gchar default_config_comment[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_comment id = 'comment' expanded = 'true' key = '" COMMENT_KEY "' height = '150' />"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_comment id = 'comment' expanded = 'true' key = '" COMMENT_KEY "' height = '150' />";
 
 static const gchar default_config_exif[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_exif id = 'exif' expanded = 'true' >"
-"                <entry key = 'formatted.Camera' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.DateTime' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.ShutterSpeed' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.Aperture' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.ExposureBias' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.ISOSpeedRating' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.FocalLength' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.FocalLength35mmFilm' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.Flash' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Exif.Photo.ExposureProgram' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Exif.Photo.MeteringMode' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Exif.Photo.LightSource' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.ColorProfile' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.SubjectDistance' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.Resolution' if_set = 'true' editable = 'false' />"
-"                <entry key = '" ORIENTATION_KEY "' if_set = 'true' editable = 'false' />"
-"            </pane_exif>"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_exif id = 'exif' expanded = 'true' >"
+"    <entry key = 'formatted.Camera' if_set              = 'true' editable = 'false' />"
+"    <entry key = 'formatted.DateTime' if_set            = 'true' editable = 'false' />"
+"    <entry key = 'formatted.ShutterSpeed' if_set        = 'true' editable = 'false' />"
+"    <entry key = 'formatted.Aperture' if_set            = 'true' editable = 'false' />"
+"    <entry key = 'formatted.ExposureBias' if_set        = 'true' editable = 'false' />"
+"    <entry key = 'formatted.ISOSpeedRating' if_set      = 'true' editable = 'false' />"
+"    <entry key = 'formatted.FocalLength' if_set         = 'true' editable = 'false' />"
+"    <entry key = 'formatted.FocalLength35mmFilm' if_set = 'true' editable = 'false' />"
+"    <entry key = 'formatted.Flash' if_set               = 'true' editable = 'false' />"
+"    <entry key = 'Exif.Photo.ExposureProgram' if_set    = 'true' editable = 'false' />"
+"    <entry key = 'Exif.Photo.MeteringMode' if_set       = 'true' editable = 'false' />"
+"    <entry key = 'Exif.Photo.LightSource' if_set        = 'true' editable = 'false' />"
+"    <entry key = 'formatted.ColorProfile' if_set        = 'true' editable = 'false' />"
+"    <entry key = 'formatted.SubjectDistance' if_set     = 'true' editable = 'false' />"
+"    <entry key = 'formatted.Resolution' if_set          = 'true' editable = 'false' />"
+"    <entry key = '" ORIENTATION_KEY "' if_set           = 'true' editable = 'false' />"
+"</pane_exif>";
 
 static const gchar default_config_file_info[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_exif id = 'file_info' expanded = 'true' >"
-"                <entry key = 'file.mode' if_set = 'false' editable = 'false' />"
-"                <entry key = 'file.date' if_set = 'false' editable = 'false' />"
-"                <entry key = 'file.size' if_set = 'false' editable = 'false' />"
-"            </pane_exif>"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_exif id = 'file_info' expanded = 'true' >"
+"    <entry key = 'file.mode' if_set = 'false' editable = 'false' />"
+"    <entry key = 'file.date' if_set = 'false' editable = 'false' />"
+"    <entry key = 'file.size' if_set = 'false' editable = 'false' />"
+"</pane_exif>";
 
 static const gchar default_config_location[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_exif id = 'location' expanded = 'true' >"
-"                <entry key = 'formatted.GPSPosition' if_set = 'true' editable = 'false' />"
-"                <entry key = 'formatted.GPSAltitude' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Xmp.photoshop.Country' if_set = 'false' editable = 'true' />"
-"                <entry key = 'Xmp.iptc.CountryCode' if_set = 'false' editable = 'true' />"
-"                <entry key = 'Xmp.photoshop.State' if_set = 'false' editable = 'true' />"
-"                <entry key = 'Xmp.photoshop.City' if_set = 'false' editable = 'true' />"
-"                <entry key = 'Xmp.iptc.Location' if_set = 'false' editable = 'true' />"
-"            </pane_exif>"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_exif id = 'location' expanded = 'true' >"
+"    <entry key = 'formatted.GPSPosition' if_set = 'true' editable = 'false' />"
+"    <entry key = 'formatted.GPSAltitude' if_set = 'true' editable = 'false' />"
+"    <entry key = 'Xmp.photoshop.Country' if_set = 'false' editable = 'true' />"
+"    <entry key = 'Xmp.iptc.CountryCode' if_set = 'false' editable = 'true' />"
+"    <entry key = 'Xmp.photoshop.State' if_set = 'false' editable = 'true' />"
+"    <entry key = 'Xmp.photoshop.City' if_set = 'false' editable = 'true' />"
+"    <entry key = 'Xmp.iptc.Location' if_set = 'false' editable = 'true' />"
+"</pane_exif>";
 
 static const gchar default_config_copyright[] =
-"<gq>"
-"    <layout id = '_current_'>"
-"        <bar>"
-"            <pane_exif id = 'copyright' expanded = 'true' >"
-"                <entry key = 'Xmp.dc.creator' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Xmp.dc.contributor' if_set = 'true' editable = 'false' />"
-"                <entry key = 'Xmp.dc.rights' if_set = 'false' editable = 'false' />"
-"            </pane_exif>"
-"        </bar>"
-"    </layout>"
-"</gq>";
+"<pane_exif id = 'copyright' expanded = 'true' >"
+"    <entry key = 'Xmp.dc.creator' if_set = 'true' editable = 'false' />"
+"    <entry key = 'Xmp.dc.contributor' if_set = 'true' editable = 'false' />"
+"    <entry key = 'Xmp.dc.rights' if_set = 'false' editable = 'false' />"
+"</pane_exif>";
 
 static const KnownPanes known_panes[] = {
 /* default sidebar */
@@ -237,6 +189,7 @@ static void bar_expander_add_cb(GtkWidget *widget, gpointer data)
     const KnownPanes *pane = known_panes;
     const gchar *id = g_object_get_data(G_OBJECT(widget), "pane_add_id");
     const gchar *config;
+    GtkWidget *bar = data;
 
     if (!id) return;
 
@@ -248,7 +201,7 @@ static void bar_expander_add_cb(GtkWidget *widget, gpointer data)
     if (!pane->id) return;
 
     config = bar_pane_get_default_config(id);
-    if (config) load_config_from_buf(config, strlen(config), FALSE);
+    if (config) load_bar_config_from_buf(config, strlen(config), bar);
 }
 
 static void bar_menu_popup(GtkWidget *widget, GdkEventButton *bevent)
@@ -502,7 +455,7 @@ void bar_populate_default(GtkWidget *bar)
     {
         const gchar *config = bar_pane_get_default_config(*id);
         if (config)
-            load_config_from_buf(config, strlen(config), FALSE);
+            load_bar_config_from_buf(config, strlen(config), bar);
         id++;
     }
 }

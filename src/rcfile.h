@@ -88,6 +88,7 @@ gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options);
 
 gboolean load_config_from_buf(const gchar *buf, gsize size, gboolean startup);
 gboolean load_config_from_file(const gchar *utf8_path, gboolean startup);
+gboolean load_bar_config_from_buf(const gchar *buf, gsize size, GtkWidget *bar);
 
 
 #endif
