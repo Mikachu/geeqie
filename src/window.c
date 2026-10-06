@@ -26,23 +26,19 @@
 #include "ui_fileops.h"
 #include "ui_help.h"
 
-GtkWidget *window_new(GtkWindowType type, const gchar *role, const gchar *icon,
-              const gchar *icon_file, const gchar *subtitle)
+GtkWidget *window_new(GtkWindowType type, const gchar *role,
+                      const gchar *icon, const gchar *icon_file,
+                      const gchar *subtitle)
 {
-    gchar *title;
-    GtkWidget *window;
+    GtkWidget *window = gtk_window_new(type);
 
-    window = gtk_window_new(type);
     if (!window) return NULL;
 
+    gchar *title;
     if (subtitle)
-    {
         title = g_strdup_printf("%s - %s", subtitle, GQ_APPNAME);
-    }
     else
-    {
         title = g_strdup_printf("%s", GQ_APPNAME);
-    }
 
     gtk_window_set_title(GTK_WINDOW(window), title);
     g_free(title);
@@ -55,13 +51,12 @@ GtkWidget *window_new(GtkWindowType type, const gchar *role, const gchar *icon,
 
 void window_set_icon(GtkWidget *window, const gchar *icon, const gchar *file)
 {
-    if (!icon && !file) icon = PIXBUF_INLINE_ICON;
+    if (!icon && !file)
+        icon = PIXBUF_INLINE_ICON;
 
     if (icon)
     {
-        GdkPixbuf *pixbuf;
-
-        pixbuf = pixbuf_inline(icon);
+        GdkPixbuf *pixbuf = pixbuf_inline(icon);
         if (pixbuf)
         {
             gtk_window_set_icon(GTK_WINDOW(window), pixbuf);
@@ -76,11 +71,9 @@ void window_set_icon(GtkWidget *window, const gchar *icon, const gchar *file)
 
 gboolean window_maximized(GtkWidget *window)
 {
-    GdkWindowState state;
-
     if (!window || !gtk_widget_get_window(window)) return FALSE;
 
-    state = gdk_window_get_state(gtk_widget_get_window(window));
+    GdkWindowState state = gdk_window_get_state(gtk_widget_get_window(window));
     return !!(state & GDK_WINDOW_STATE_MAXIMIZED);
 }
 
@@ -93,7 +86,6 @@ gboolean window_maximized(GtkWidget *window)
 static gchar *command_result(const gchar *binary, const gchar *command)
 {
     gchar *result = NULL;
-    FILE *f;
     gchar buf[2048];
     gint l;
 
@@ -103,7 +95,7 @@ static gchar *command_result(const gchar *binary, const gchar *command)
     if (!command || command[0] == '\0') return g_strdup(binary);
     if (command[0] == '!') return g_strdup(command + 1);
 
-    f = popen(command, "r");
+    FILE *f = popen(command, "r");
     if (!f) return NULL;
 
     while ((l = fread(buf, sizeof(gchar), sizeof(buf), f)) > 0)
@@ -124,22 +116,19 @@ static gchar *command_result(const gchar *binary, const gchar *command)
 
 static int help_browser_command(const gchar *command, const gchar *path)
 {
-    gchar *result;
-    gchar *buf;
-    gchar *begin;
-    gchar *end;
     int retval = -1;
 
     if (!command || !path) return retval;
 
     DEBUG_1("Help command pre \"%s\", \"%s\"", command, path);
 
-    buf = g_strdup(command);
-    begin = strstr(buf, "%s");
+    gchar *buf = g_strdup(command);
+    gchar *begin = strstr(buf, "%s");
+    gchar *result;
     if (begin)
     {
         *begin = '\0';
-        end = begin + 2;
+        gchar *end = begin + 2;
         begin = buf;
 
         result = g_strdup_printf("%s%s%s &", begin, path, end);
@@ -167,6 +156,7 @@ static int help_browser_command(const gchar *command, const gchar *path)
  *        string   exec string and use results for command line
  *        !string  use text following ! as command line, replacing optional %s with html file path
 */
+/* XXX lol */
 static gchar *html_browsers[] =
 {
     /* Our specific script */
@@ -191,12 +181,11 @@ static gchar *html_browsers[] =
 static void help_browser_run(void)
 {
     gchar *name = options->helpers.html_browser.command_name;
-    gchar *cmd = options->helpers.html_browser.command_line;
+    gchar *cmd  = options->helpers.html_browser.command_line;
     gchar *path = g_build_filename(GQ_HTMLDIR, "index.html", NULL);
     gchar *result = NULL;
-    gint i;
 
-    i = 0;
+    gint i = 0;
     while (!result)
     {
         if ((name && *name) || (cmd && *cmd)) {
@@ -210,8 +199,8 @@ static void help_browser_run(void)
                 if (ret == 0) break;
                 g_free(result);
                 result = NULL;
+            }
         }
-    }
         if (!html_browsers[i]) break;
         name = html_browsers[i++];
         cmd = html_browsers[i++];
@@ -242,8 +231,6 @@ static void help_window_destroy_cb(GtkWidget *window, gpointer data)
 
 void help_window_show(const gchar *key)
 {
-    gchar *path;
-
     if (key && strcmp(key, "html_contents") == 0)
     {
         help_browser_run();
@@ -257,11 +244,11 @@ void help_window_show(const gchar *key)
         return;
     }
 
-    path = g_build_filename(GQ_HELPDIR, "README", NULL);
+    gchar *path = g_build_filename(GQ_HELPDIR, "README", NULL);
     help_window = help_window_new(_("Help"), "help", path, key);
     g_free(path);
 
     g_signal_connect(G_OBJECT(help_window), "destroy",
-             G_CALLBACK(help_window_destroy_cb), NULL);
+                     G_CALLBACK(help_window_destroy_cb), NULL);
 }
 
