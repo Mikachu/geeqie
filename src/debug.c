@@ -60,7 +60,6 @@ void log_domain_printf(const gchar *domain, const gchar *format, ...)
         g_idle_add(log_normal_cb, buf);
     else
         g_idle_add(log_msg_cb, buf);
-
 }
 
 /*
@@ -70,7 +69,6 @@ void log_domain_printf(const gchar *domain, const gchar *format, ...)
 #ifdef DEBUG
 
 static gint debug_level = DEBUG_LEVEL_MIN;
-
 
 gint get_debug_level(void)
 {
@@ -108,7 +106,7 @@ static gint timeval_delta(struct timeval *result, struct timeval *x, struct time
         y->tv_sec -= nsec;
     }
 
-    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_sec  = x->tv_sec  - y->tv_sec;
     result->tv_usec = x->tv_usec - y->tv_usec;
 
     return x->tv_sec < y->tv_sec;
@@ -117,16 +115,17 @@ static gint timeval_delta(struct timeval *result, struct timeval *x, struct time
 const gchar *get_exec_time(void)
 {
     static gchar timestr[30];
-    static struct timeval start_tv = {0, 0};
-    static struct timeval previous = {0, 0};
+    static struct timeval start_tv = { 0, 0 };
+    static struct timeval previous = { 0, 0 };
     static gint started = 0;
 
-    struct timeval tv = {0, 0};
-    static struct timeval delta = {0, 0};
+    struct timeval tv = { 0, 0 };
+    static struct timeval delta = { 0, 0 };
 
     gettimeofday(&tv, NULL);
 
-    if (start_tv.tv_sec == 0) start_tv = tv;
+    if (start_tv.tv_sec == 0)
+        start_tv = tv;
 
     tv.tv_sec -= start_tv.tv_sec;
     if (tv.tv_usec >= start_tv.tv_usec)
@@ -137,12 +136,15 @@ const gchar *get_exec_time(void)
         tv.tv_sec -= 1;
     }
 
-    if (started) timeval_delta(&delta, &tv, &previous);
+    if (started)
+        timeval_delta(&delta, &tv, &previous);
 
     previous = tv;
     started = 1;
 
-    g_snprintf(timestr, sizeof(timestr), "%5d.%06d (+%05d.%06d)", (gint)tv.tv_sec, (gint)tv.tv_usec, (gint)delta.tv_sec, (gint)delta.tv_usec);
+    g_snprintf(timestr, sizeof(timestr), "%5d.%06d (+%05d.%06d)",
+               (gint)tv.tv_sec,    (gint)tv.tv_usec,
+               (gint)delta.tv_sec, (gint)delta.tv_usec);
 
     return timestr;
 }
