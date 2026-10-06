@@ -23,8 +23,8 @@
 #define DND_H
 
 #define TARGET_APP_COLLECTION_MEMBER_STRING "application/x-" GQ_APPNAME_LC "-collection-member"
-#define TARGET_APP_EXIF_ENTRY_STRING "application/x-" GQ_APPNAME_LC "-exif-entry"
-#define TARGET_APP_KEYWORD_PATH_STRING "application/x-" GQ_APPNAME_LC "-keyword-path"
+#define TARGET_APP_EXIF_ENTRY_STRING        "application/x-" GQ_APPNAME_LC "-exif-entry"
+#define TARGET_APP_KEYWORD_PATH_STRING      "application/x-" GQ_APPNAME_LC "-keyword-path"
 
 enum {
     TARGET_APP_COLLECTION_MEMBER,

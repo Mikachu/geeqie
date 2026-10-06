@@ -27,59 +27,50 @@
 #include "ui_fileops.h"
 #include "pixbuf_util.h"
 
-
 GtkTargetEntry dnd_file_drag_types[] = {
     { "text/uri-list", 0, TARGET_URI_LIST },
-    { "text/plain", 0, TARGET_TEXT_PLAIN }
+    { "text/plain",    0, TARGET_TEXT_PLAIN }
 };
 gint dnd_file_drag_types_count = 2;
 
 GtkTargetEntry dnd_file_drop_types[] = {
     { TARGET_APP_COLLECTION_MEMBER_STRING, 0, TARGET_APP_COLLECTION_MEMBER },
-    { "text/uri-list", 0, TARGET_URI_LIST },
-    { "text/plain", 0, TARGET_TEXT_PLAIN },
+    { "text/uri-list",                     0, TARGET_URI_LIST },
+    { "text/plain",                        0, TARGET_TEXT_PLAIN },
 };
 gint dnd_file_drop_types_count = 3;
 
-
 #define DND_ICON_SIZE (options->dnd_icon_size)
-
 
 static void pixbuf_draw_border(GdkPixbuf *pixbuf, gint w, gint h)
 {
-    gboolean alpha;
-    gint rs;
-    guchar *pix;
-    guchar *p;
-    gint i;
+    gboolean alpha = gdk_pixbuf_get_has_alpha(pixbuf);
+    gint rs        = gdk_pixbuf_get_rowstride(pixbuf);
+    guchar *pix    = gdk_pixbuf_get_pixels(pixbuf), *p = pix;
 
-    alpha = gdk_pixbuf_get_has_alpha(pixbuf);
-    rs = gdk_pixbuf_get_rowstride(pixbuf);
-    pix = gdk_pixbuf_get_pixels(pixbuf);
-
-    p = pix;
-    for (i = 0; i < w; i++)
+    for (gint i = 0; i < w; i++)
     {
-        *p = 0; p++; *p = 0; p++; *p = 0; p++;
-        if (alpha) { *p= 255; p++; }
+        *p++ = 0; *p++ = 0; *p++ = 0;
+        if (alpha) *p++ = 255;
     }
 
     const gint p_step = alpha ? 4 : 3;
-    for (i = 1; i < h - 1; i++)
+    for (gint i = 1; i < h - 1; i++)
     {
         p = pix + rs * i;
-        *p = 0; p++; *p = 0; p++; *p = 0; p++;
-        if (alpha) *p= 255;
+        *p++ = 0; *p++ = 0; *p++ = 0;
+        if (alpha) *p = 255;
 
         p = pix + rs * i + (w - 1) * p_step;
-        *p = 0; p++; *p = 0; p++; *p = 0; p++;
-        if (alpha) *p= 255;
+        *p++ = 0; *p++ = 0; *p++ = 0;
+        if (alpha) *p = 255;
     }
+
     p = pix + rs * (h - 1);
-    for (i = 0; i < w; i++)
+    for (gint i = 0; i < w; i++)
     {
-        *p = 0; p++; *p = 0; p++; *p = 0; p++;
-        if (alpha) { *p= 255; p++; }
+        *p++ = 0; *p++ = 0; *p++ = 0;
+        if (alpha) *p++ = 255;
     }
 }
 
@@ -111,18 +102,14 @@ static void pixbuf_draw_rect(GdkPixbuf *pixbuf, gint x, gint y, gint w, gint h, 
     }
 }
 */
-void dnd_set_drag_icon(GtkWidget *widget, GdkDragContext *context, GdkPixbuf *pixbuf, gint items)
+
+void dnd_set_drag_icon(GtkWidget *widget, GdkDragContext *context,
+                       GdkPixbuf *pixbuf, gint items)
 {
-    GdkPixbuf *dest;
+    gint sw = gdk_pixbuf_get_width(pixbuf);
+    gint sh = gdk_pixbuf_get_height(pixbuf);
+    gint x = 0, y = 0;
     gint w, h;
-    gint sw, sh;
-    PangoLayout *layout = NULL;
-    gint x, y;
-
-    x = y = 0;
-
-    sw = gdk_pixbuf_get_width(pixbuf);
-    sh = gdk_pixbuf_get_height(pixbuf);
 
     if (sw <= DND_ICON_SIZE && sh <= DND_ICON_SIZE)
     {
@@ -140,19 +127,18 @@ void dnd_set_drag_icon(GtkWidget *widget, GdkDragContext *context, GdkPixbuf *pi
         h = sh * DND_ICON_SIZE / sw;
     }
 
-    dest = gdk_pixbuf_scale_simple(pixbuf, w, h, GDK_INTERP_BILINEAR);
+    GdkPixbuf *dest = gdk_pixbuf_scale_simple(pixbuf, w, h, GDK_INTERP_BILINEAR);
     pixbuf_draw_border(dest, w, h);
 
+    PangoLayout *layout = NULL;
     if (items > 1)
     {
-        gchar *buf;
-        gint lw,lh;
-
         layout = gtk_widget_create_pango_layout(widget, NULL);
-        buf = g_strdup_printf("<small> %d </small>", items);
+        gchar *buf = g_strdup_printf("<small> %d </small>", items);
         pango_layout_set_markup(layout, buf, -1);
         g_free(buf);
 
+        gint lw, lh;
         pango_layout_get_pixel_size(layout, &lw, &lh);
 
         x = MAX(0, w - lw);
@@ -165,8 +151,8 @@ void dnd_set_drag_icon(GtkWidget *widget, GdkDragContext *context, GdkPixbuf *pi
 
     if (layout)
     {
-        pixbuf_draw_layout(dest, layout, x+1, y+1, 0, 0, 0, 255);
-        pixbuf_draw_layout(dest, layout, x, y, 255, 255, 255, 255);
+        pixbuf_draw_layout(dest, layout, x+1, y+1, 0,   0,   0,   255);
+        pixbuf_draw_layout(dest, layout, x,   y,   255, 255, 255, 255);
 
         g_object_unref(G_OBJECT(layout));
     }
@@ -185,18 +171,15 @@ static void dnd_set_drag_label_end_cb(GtkWidget *widget, GdkDragContext *context
 
 void dnd_set_drag_label(GtkWidget *widget, GdkDragContext *context, const gchar *text)
 {
-    GtkWidget *window;
-    GtkWidget *label;
-
-    window = gtk_window_new(GTK_WINDOW_POPUP);
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_POPUP);
     gtk_widget_realize (window);
 
-    label = gtk_label_new(text);
+    GtkWidget *label = gtk_label_new(text);
     gtk_container_add(GTK_CONTAINER (window), label);
     gtk_widget_show(label);
     gtk_drag_set_icon_widget(context, window, -15, 10);
     g_signal_connect(G_OBJECT(widget), "drag_end",
-             G_CALLBACK(dnd_set_drag_label_end_cb), window);
+                     G_CALLBACK(dnd_set_drag_label_end_cb), window);
 }
 
 
