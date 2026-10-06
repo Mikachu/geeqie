@@ -365,6 +365,7 @@ void collection_load_stop(CollectionData *cd)
     g_clear_pointer(&cd->thumb_loader, thumb_loader_free);
 }
 
+extern const gchar no_quote_utf[];
 static gboolean collection_save_private(CollectionData *cd, const gchar *path)
 {
     SecureSaveInfo *ssi;
@@ -394,7 +395,7 @@ static gboolean collection_save_private(CollectionData *cd, const gchar *path)
     for (GList *work = cd->list; work; work = work->next)
     {
         CollectInfo *ci = work->data;
-        gchar *esc = g_strescape(ci->fd->path, NULL);
+        gchar *esc = g_strescape(ci->fd->path, no_quote_utf + 1);
         secure_fprintf(ssi, "\"%s\"\n", esc);
         g_free(esc);
         if (secsave_errno)

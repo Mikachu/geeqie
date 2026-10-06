@@ -132,29 +132,31 @@ struct HistoryData
 
 static GList *history_list = NULL;
 
-
-static gchar *quoted_from_text(const gchar *text)
+static gchar *quoted_from_text(gchar *text)
 {
-    const gchar *ptr;
     gint c = 0;
-    gint l = strlen(text);
 
-    if (l == 0) return NULL;
+    if (!*text) return NULL;
 
-    while (c < l && text[c] !='"') c++;
+    while (text[c] && text[c] != '"') c++;
     if (text[c] == '"')
     {
-        gint e;
         c++;
-        ptr = text + c;
-        e = c;
-        while (e < l && text[e] !='"') e++;
-        if (text[e] == '"')
+        const gchar *ptr = text + c;
+        gint e = c;
+
+        while (text[e])
         {
-            if (e - c > 0)
-            {
-                return g_strndup(ptr, e - c);
-            }
+            if (text[e] == '\\' && text[e+1])
+                e++;
+            else if (text[e] == '"')
+                break;
+            e++;
+        }
+        if (text[e] == '"' && e - c > 0)
+        {
+            text[e] = '\0';
+            return g_strcompress(ptr);
         }
     }
     return NULL;
@@ -185,11 +187,9 @@ gboolean history_list_load(const gchar *path)
         if (s_buf[0]=='#') continue;
         if (s_buf[0]=='[')
         {
-            gint c;
-            gchar *ptr;
+            gchar *ptr = s_buf + 1;
+            gint c = 0;
 
-            ptr = s_buf + 1;
-            c = 0;
             while (ptr[c] != ']' && ptr[c] != '\n' && ptr[c] != '\0') c++;
 
             g_free(key);
@@ -197,13 +197,9 @@ gboolean history_list_load(const gchar *path)
         }
         else
         {
-            gchar *value;
-
-            value = quoted_from_text(s_buf);
+            gchar *value = quoted_from_text(s_buf);
             if (value && key)
-            {
                 history_list_add_to_key(key, value, 0);
-            }
             g_free(value);
         }
     }
@@ -215,6 +211,7 @@ gboolean history_list_load(const gchar *path)
     return TRUE;
 }
 
+extern const gchar no_quote_utf[];
 gboolean history_list_save(const gchar *path)
 {
     SecureSaveInfo *ssi;
@@ -236,7 +233,6 @@ gboolean history_list_save(const gchar *path)
     while (list && secsave_errno == SS_ERR_NONE)
     {
         HistoryData *hd;
-        GList *work;
 
         hd = list->data;
         list = list->prev;
@@ -246,11 +242,13 @@ gboolean history_list_save(const gchar *path)
         /* save them inverted (oldest to newest)
          * so that when reading they are added correctly
          */
-        work = g_list_last(hd->list);
-        while (work && secsave_errno == SS_ERR_NONE)
+        for (GList *work = g_list_last(hd->list); work; work = work->prev)
         {
-            secure_fprintf(ssi, "\"%s\"\n", (gchar *)work->data);
-            work = work->prev;
+            gchar *esc = g_strescape((gchar *)work->data, no_quote_utf + 1);
+            secure_fprintf(ssi, "\"%s\"\n", esc);
+            g_free(esc);
+            if (secsave_errno)
+                break;
         }
         secure_fputc(ssi, '\n');
     }
