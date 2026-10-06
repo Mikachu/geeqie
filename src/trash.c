@@ -28,7 +28,6 @@
 #include "ui_fileops.h"
 #include "ui_misc.h"
 
-
 /*
  *--------------------------------------------------------------------------
  * Safe Delete
@@ -37,15 +36,9 @@
 
 static gint file_util_safe_number(gint64 free_space)
 {
-    gint n = 0;
-    gint64 total = 0;
     GList *list;
-    GList *work;
-    gboolean sorted = FALSE;
-    gboolean warned = FALSE;
-    FileData *dir_fd;
+    FileData *dir_fd = file_data_new_dir(options->file_ops.safe_delete_path);
 
-    dir_fd = file_data_new_dir(options->file_ops.safe_delete_path);
     if (!filelist_read(dir_fd, &list, NULL))
     {
         file_data_unref(dir_fd);
@@ -53,41 +46,38 @@ static gint file_util_safe_number(gint64 free_space)
     }
     file_data_unref(dir_fd);
 
-    work = list;
-    while (work)
+    gint n = 0;
+    gint64 total = 0;
+    for (GList *work = list; work; work = work->next)
     {
-        FileData *fd;
-        gint v;
-
-        fd = work->data;
-        work = work->next;
-
-        v = (gint)strtol(fd->name, NULL, 10);
+        FileData *fd = work->data;
+        gint v = (gint)strtol(fd->name, NULL, 10);
         if (v >= n) n = v + 1;
 
         total += fd->size;
     }
 
+    gboolean sorted = FALSE;
+    gboolean warned = FALSE;
     while (options->file_ops.safe_delete_folder_maxsize > 0 && list &&
-           (free_space < 0 || total + free_space > (gint64)options->file_ops.safe_delete_folder_maxsize * 1048576) )
+           (free_space < 0 ||
+            total + free_space > (gint64)options->file_ops.safe_delete_folder_maxsize * 1048576))
     {
-        FileData *fd;
-
         if (!sorted)
         {
             list = filelist_sort(list, SORT_NAME, TRUE);
             sorted = TRUE;
         }
 
-        fd = list->data;
-        list = g_list_remove(list, fd);
+        FileData *fd = list->data;
+        list = g_list_delete_link(list, list);
 
         DEBUG_1("expunging from trash for space: %s", fd->name);
         if (!unlink_file(fd->path) && !warned)
         {
             file_util_warning_dialog(_("Delete failed"),
-                         _("Unable to remove old file from trash folder"),
-                         GTK_STOCK_DIALOG_WARNING, NULL);
+                                     _("Unable to remove old file from trash folder"),
+                                     GTK_STOCK_DIALOG_WARNING, NULL);
             warned = TRUE;
         }
         total -= fd->size;
@@ -106,13 +96,9 @@ void file_util_trash_clear(void)
 
 static gchar *file_util_safe_dest(const gchar *path)
 {
-    gint n;
-    gchar *name;
-    gchar *dest;
-
-    n = file_util_safe_number(filesize(path));
-    name = g_strdup_printf("%06d_%s", n, filename_from_path(path));
-    dest = g_build_filename(options->file_ops.safe_delete_path, name, NULL);
+    gint n = file_util_safe_number(filesize(path));
+    gchar *name = g_strdup_printf("%06d_%s", n, filename_from_path(path));
+    gchar *dest = g_build_filename(options->file_ops.safe_delete_path, name, NULL);
     g_free(name);
 
     return dest;
@@ -120,7 +106,8 @@ static gchar *file_util_safe_dest(const gchar *path)
 
 static void file_util_safe_del_toggle_cb(GtkWidget *button, gpointer data)
 {
-    options->file_ops.safe_delete_enable = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button));
+    options->file_ops.safe_delete_enable =
+        gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button));
 }
 
 static void file_util_safe_del_close_cb(GtkWidget *dialog, gpointer data)
@@ -141,7 +128,8 @@ gboolean file_util_safe_unlink(const gchar *path)
     if (!isdir(options->file_ops.safe_delete_path))
     {
         DEBUG_1("creating trash: %s", options->file_ops.safe_delete_path);
-        if (!options->file_ops.safe_delete_path || !mkdir_utf8(options->file_ops.safe_delete_path, 0755))
+        if (!options->file_ops.safe_delete_path ||
+            !mkdir_utf8(options->file_ops.safe_delete_path, 0755))
         {
             result = _("Could not create folder");
             success = FALSE;
@@ -150,9 +138,7 @@ gboolean file_util_safe_unlink(const gchar *path)
 
     if (success)
     {
-        gchar *dest;
-
-        dest = file_util_safe_dest(path);
+        gchar *dest = file_util_safe_dest(path);
         if (dest)
         {
             DEBUG_1("safe deleting %s to %s", path, dest);
@@ -164,31 +150,26 @@ gboolean file_util_safe_unlink(const gchar *path)
         }
 
         if (!success && !access_file(path, W_OK))
-        {
             result = _("Permission denied");
-        }
         g_free(dest);
     }
 
     if (result && !gd)
     {
-        GtkWidget *button;
-        gchar *buf;
-
-        buf = g_strdup_printf(_("Unable to access or create the trash folder.\n\"%s\""), options->file_ops.safe_delete_path);
+        gchar *buf = g_strdup_printf(_("Unable to access or create the trash folder.\n\"%s\""),
+                                     options->file_ops.safe_delete_path);
         gd = file_util_warning_dialog(result, buf, GTK_STOCK_DIALOG_WARNING, NULL);
         g_free(buf);
 
-        button = gtk_check_button_new_with_label(_("Turn off safe delete"));
+        GtkWidget *button = gtk_check_button_new_with_label(_("Turn off safe delete"));
         g_signal_connect(G_OBJECT(button), "toggled",
-                 G_CALLBACK(file_util_safe_del_toggle_cb), NULL);
+                         G_CALLBACK(file_util_safe_del_toggle_cb), NULL);
         gtk_box_pack_start(GTK_BOX(gd->vbox), button, FALSE, FALSE, 0);
         gtk_widget_show(button);
 
         g_signal_connect(G_OBJECT(gd->dialog), "destroy",
-                 G_CALLBACK(file_util_safe_del_close_cb), &gd);
+                         G_CALLBACK(file_util_safe_del_close_cb), &gd);
     }
-
     return success;
 }
 
@@ -206,11 +187,13 @@ gchar *file_util_safe_delete_status(void)
         {
             gchar *buf2;
             if (options->file_ops.safe_delete_folder_maxsize > 0)
-                buf2 = g_strdup_printf(_(" (max. %d MiB)"), options->file_ops.safe_delete_folder_maxsize);
+                buf2 = g_strdup_printf(_(" (max. %d MiB)"),
+                                       options->file_ops.safe_delete_folder_maxsize);
             else
                 buf2 = g_strdup("");
 
-            buf = g_strdup_printf(_("Safe delete: %s%s\nTrash: %s"), _("on"), buf2, options->file_ops.safe_delete_path);
+            buf = g_strdup_printf(_("Safe delete: %s%s\nTrash: %s"),
+                                  _("on"), buf2, options->file_ops.safe_delete_path);
             g_free(buf2);
         }
         else
@@ -218,6 +201,5 @@ gchar *file_util_safe_delete_status(void)
             buf = g_strdup_printf(_("Safe delete: %s"), _("off"));
         }
     }
-
     return buf;
 }
