@@ -36,44 +36,23 @@
 
 #define MD5_SIZE 16
 
-/**
- * md5_update_from_file: get the md5 hash of a file
- * @md5: MD5 checksumming context
- * @path: file name
- * @return: TRUE on success
- *
- * Get the md5 hash of a file.
- **/
 static gboolean md5_update_from_file(GChecksum *md5, const gchar *path)
 {
     guchar tmp_buf[1024];
     gint nb_bytes_read;
-    FILE *fp;
-    gint success;
 
-    fp = fopen(path, "r");
+    FILE *fp = fopen(path, "r");
     if (!fp) return FALSE;
 
     while ((nb_bytes_read = fread(tmp_buf, sizeof (guchar), sizeof(tmp_buf), fp)) > 0)
-    {
         g_checksum_update(md5, tmp_buf, nb_bytes_read);
-    }
 
-    success = (ferror(fp) == 0);
+    gint success = (ferror(fp) == 0);
     fclose(fp);
 
     return success;
 }
 
-/**
- * md5_get_string: get the md5 hash of a buffer
- * @buffer: byte buffer
- * @buffer_size: buffer size (in bytes)
- * @return: hash as a hexadecimal string
- *
- * Get the md5 hash of a buffer. The result is returned
- * as a hexadecimal string.
- **/
 gchar *md5_get_string(const guchar *buffer, gint buffer_size)
 {
     GChecksum *md5 = g_checksum_new(G_CHECKSUM_MD5);
@@ -87,15 +66,6 @@ gchar *md5_get_string(const guchar *buffer, gint buffer_size)
     return result;
 }
 
-/**
- * md5_get_digest_from_file: get the md5 hash of a file
- * @filename: file name
- * @digest: 16 bytes buffer receiving the hash code.
- * @return: TRUE on success
- *
- * Get the md5 hash of a file. The result is put in
- * the 16 bytes buffer @digest .
- **/
 gboolean md5_get_digest_from_file(const gchar *path, guchar digest[16])
 {
     GChecksum *md5 = g_checksum_new(G_CHECKSUM_MD5);
@@ -114,14 +84,6 @@ gboolean md5_get_digest_from_file(const gchar *path, guchar digest[16])
     return digest_size == MD5_SIZE;
 }
 
-/**
- * md5_get_string_from_file: get the md5 hash of a file
- * @filename: file name
- * @return: hash as a hexadecimal string
- *
- * Get the md5 hash of a file. The result is returned
- * as a hexadecimal string.
- **/
 gchar *md5_get_string_from_file(const gchar *path)
 {
     GChecksum *md5 = g_checksum_new(G_CHECKSUM_MD5);
@@ -140,13 +102,6 @@ gchar *md5_get_string_from_file(const gchar *path)
     return result;
 }
 
-/* these to and from text string converters were borrowed from
- * the libgnomeui library, where they are name thumb_digest_to/from_ascii
- *
- * this version of the from text util does buffer length checking,
- * and assumes a NULL terminated string.
- */
-
 gchar *md5_digest_to_text(guchar digest[16])
 {
     static gchar hex_digits[] = "0123456789abcdef";
@@ -156,7 +111,7 @@ gchar *md5_digest_to_text(guchar digest[16])
     result = g_malloc(result_size + 1);
     for (gsize i = 0; i < MD5_SIZE; i++)
     {
-        result[2*i] = hex_digits[digest[i] >> 4];
+        result[2*i]   = hex_digits[digest[i] >> 4];
         result[2*i+1] = hex_digits[digest[i] & 0xf];
     }
     result[result_size] = '\0';
@@ -170,7 +125,7 @@ gboolean md5_digest_from_text(const gchar *text, guchar digest[16])
     {
         if (text[2*i] == '\0' || text[2*i+1] == '\0') return FALSE;
         digest[i] = g_ascii_xdigit_value(text[2*i]) << 4 |
-                g_ascii_xdigit_value(text[2*i + 1]);
+                    g_ascii_xdigit_value(text[2*i + 1]);
     }
 
     return TRUE;
