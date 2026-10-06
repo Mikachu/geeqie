@@ -47,24 +47,19 @@ static void menu_item_finish(GtkWidget *menu, GtkWidget *item, GCallback func, g
 }
 
 GtkWidget *menu_item_add(GtkWidget *menu, const gchar *label,
-             GCallback func, gpointer data)
+                         GCallback func, gpointer data)
 {
-    GtkWidget *item;
-
-    item = gtk_menu_item_new_with_mnemonic(label);
+    GtkWidget *item = gtk_menu_item_new_with_mnemonic(label);
     menu_item_finish(menu, item, func, data);
 
     return item;
 }
 
 GtkWidget *menu_item_add_stock(GtkWidget *menu, const gchar *label, const gchar *stock_id,
-                   GCallback func, gpointer data)
+                               GCallback func, gpointer data)
 {
-    GtkWidget *item;
-    GtkWidget *image;
-
-    item = gtk_image_menu_item_new_with_mnemonic(label);
-    image = gtk_image_new_from_stock(stock_id, GTK_ICON_SIZE_MENU);
+    GtkWidget *item = gtk_image_menu_item_new_with_mnemonic(label);
+    GtkWidget *image = gtk_image_new_from_stock(stock_id, GTK_ICON_SIZE_MENU);
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
     gtk_widget_show(image);
     menu_item_finish(menu, item, func, data);
@@ -73,41 +68,37 @@ GtkWidget *menu_item_add_stock(GtkWidget *menu, const gchar *label, const gchar 
 }
 
 GtkWidget *menu_item_add_sensitive(GtkWidget *menu, const gchar *label, gboolean sensitive,
-                   GCallback func, gpointer data)
+                                   GCallback func, gpointer data)
 {
-    GtkWidget *item;
-
-    item = menu_item_add(menu, label, func, data);
+    GtkWidget *item = menu_item_add(menu, label, func, data);
     gtk_widget_set_sensitive(item, sensitive);
 
     return item;
 }
 
-GtkWidget *menu_item_add_stock_sensitive(GtkWidget *menu, const gchar *label, const gchar *stock_id, gboolean sensitive,
-                     GCallback func, gpointer data)
+GtkWidget *menu_item_add_stock_sensitive(GtkWidget *menu, const gchar *label,
+                                         const gchar *stock_id, gboolean sensitive,
+                                         GCallback func, gpointer data)
 {
-    GtkWidget *item;
-
-    item = menu_item_add_stock(menu, label, stock_id, func, data);
+    GtkWidget *item = menu_item_add_stock(menu, label, stock_id, func, data);
     gtk_widget_set_sensitive(item, sensitive);
 
     return item;
 }
 
-GtkWidget *menu_item_add_check(GtkWidget *menu, const gchar *label, gboolean active,
-                   GCallback func, gpointer data)
+GtkWidget *menu_item_add_check(GtkWidget *menu, const gchar *label,
+                               gboolean active, GCallback func, gpointer data)
 {
-    GtkWidget *item;
-
-    item = gtk_check_menu_item_new_with_mnemonic(label);
+    GtkWidget *item = gtk_check_menu_item_new_with_mnemonic(label);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), active);
     menu_item_finish(menu, item, func, data);
 
     return item;
 }
 
-GtkWidget *menu_item_add_radio(GtkWidget *menu, const gchar *label, gpointer item_data, gboolean active,
-                   GCallback func, gpointer data)
+GtkWidget *menu_item_add_radio(GtkWidget *menu, const gchar *label,
+                               gpointer item_data, gboolean active,
+                               GCallback func, gpointer data)
 {
     GtkWidget *item = menu_item_add_check(menu, label, active, func, data);
     g_object_set_data(G_OBJECT(item), "menu_item_radio_data", item_data);
@@ -125,7 +116,7 @@ void menu_item_add_divider(GtkWidget *menu)
 }
 
 GtkWidget *menu_item_add_simple(GtkWidget *menu, const gchar *label,
-                GCallback func, gpointer data)
+                                GCallback func, gpointer data)
 {
     GtkWidget *item = gtk_menu_item_new_with_label(label);
     menu_item_finish(menu, item, func, data);
@@ -147,19 +138,19 @@ static void popup_menu_short_lived_cb(GtkWidget *widget, gpointer data)
 
 GtkWidget *popup_menu_short_lived(void)
 {
-    GtkWidget *menu;
-
-    menu = gtk_menu_new();
+    GtkWidget *menu = gtk_menu_new();
 
     /* take ownership of menu */
     g_object_ref_sink(G_OBJECT(menu));
 
     g_signal_connect(G_OBJECT(menu), "selection_done",
-             G_CALLBACK(popup_menu_short_lived_cb), menu);
+                     G_CALLBACK(popup_menu_short_lived_cb), menu);
     return menu;
 }
 
-void widget_coords_to_root(GtkWidget *widget, gint x, gint y, gdouble *root_x, gdouble *root_y)
+void widget_coords_to_root(GtkWidget *widget,
+                           gint x, gint y,
+                           gdouble *root_x, gdouble *root_y)
 {
     gint rx, ry;
     gdk_window_get_root_coords(gtk_widget_get_window(widget), x, y, &rx, &ry);
@@ -167,7 +158,8 @@ void widget_coords_to_root(GtkWidget *widget, gint x, gint y, gdouble *root_x, g
     *root_y = ry;
 }
 
-void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
+void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y,
+                         gboolean *push_in, gpointer data)
 {
     GdkEventButton *event = data;
     *x = event->x_root;
@@ -179,22 +171,18 @@ void popup_menu_at_event(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpo
 gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
 {
     gboolean adjusted = FALSE;
-    gint w, h;
-    gint xw, xh;
+
     GtkRequisition requisition;
-    GdkScreen *screen;
-    GdkRectangle monitor;
-    gint monitor_num;
-
     gtk_widget_get_requisition(GTK_WIDGET(menu), &requisition);
-    w = requisition.width;
-    h = requisition.height;
+    gint w = requisition.width;
+    gint h = requisition.height;
 
-    screen = gtk_widget_get_screen(GTK_WIDGET(menu));
-    monitor_num = gdk_screen_get_monitor_at_point(screen, *x, *y);
+    GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(menu));
+    gint monitor_num = gdk_screen_get_monitor_at_point(screen, *x, *y);
+    GdkRectangle monitor;
     gdk_screen_get_monitor_geometry(screen, monitor_num, &monitor);
-    xw = monitor.x + monitor.width;
-    xh = monitor.y + monitor.height;
+    gint xw = monitor.x + monitor.width;
+    gint xh = monitor.y + monitor.height;
 
     if (*x + w > xw)
     {
@@ -204,21 +192,19 @@ gboolean popup_menu_position_clamp(GtkMenu *menu, gint *x, gint *y, gint height)
     if (*y + h > xh)
     {
         if (height)
-        {
             *y = MAX(0, *y - h - height);
-        }
         else
-        {
             *y = xh - h;
-        }
+
         adjusted = TRUE;
-    };
+    }
 
     if (*x < monitor.x)
     {
         *x = monitor.x;
         adjusted = TRUE;
     }
+
     if (*y < monitor.y)
     {
         *y = monitor.y;
