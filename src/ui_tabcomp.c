@@ -39,7 +39,6 @@
 #include "ui_tabcomp.h"
 
 #include "history_list.h"
-#include "misc.h"   /* expand_tilde() */
 #include "ui_fileops.h"
 #include "ui_spinner.h"
 #include "ui_utildlg.h"
@@ -155,6 +154,52 @@ static void tab_completion_destroy(GtkWidget *widget, gpointer data)
     g_free(td->initial_dir);
 
     g_free(td);
+}
+
+static gchar *expand_tilde(const gchar *filename)
+{
+#ifndef G_OS_UNIX
+    return g_strdup(filename);
+#else
+    const gchar *notilde;
+    const gchar *slash;
+    const gchar *home;
+
+    if (filename[0] != '~')
+        return g_strdup(filename);
+
+    notilde = filename + 1;
+    slash = strchr(notilde, G_DIR_SEPARATOR);
+    if (slash == notilde || !*notilde)
+    {
+        home = g_get_home_dir();
+        if (!home)
+            return g_strdup(filename);
+    }
+    else
+    {
+        gchar *username;
+        struct passwd *passwd;
+
+        if (slash)
+            username = g_strndup(notilde, slash - notilde);
+        else
+            username = g_strdup(notilde);
+
+        passwd = getpwnam(username);
+        g_free(username);
+
+        if (!passwd)
+            return g_strdup(filename);
+
+        home = passwd->pw_dir;
+    }
+
+    if (slash)
+        return g_build_filename(home, G_DIR_SEPARATOR_S, slash + 1, NULL);
+    else
+        return g_build_filename(home, G_DIR_SEPARATOR_S, NULL);
+#endif
 }
 
 static gchar *tab_completion_get_text(TabCompData *td)
