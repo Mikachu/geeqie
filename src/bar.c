@@ -131,6 +131,76 @@ struct BarData
     gint width;
 };
 
+static void bar_pane_exif_parse_entry(GQParserData *parser_data, GMarkupParseContext *context,
+                                      const gchar *element_name, const gchar **attribute_names,
+                                      const gchar **attribute_values, gpointer data, GError **error)
+{
+    GtkWidget *pane = data;
+
+    if (g_ascii_strcasecmp(element_name, "entry") == 0)
+        bar_pane_exif_entry_add_from_config(pane, attribute_names, attribute_values);
+    else
+        log_printf("unexpected in <pane_exif>: <%s>\n", element_name);
+
+    options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
+}
+
+typedef GtkWidget *(*BarPaneNewFunc)(const gchar **attribute_names,
+                                     const gchar **attribute_values);
+typedef void (*BarPaneUpdateFunc)(GtkWidget *pane,
+                                  const gchar **attribute_names,
+                                  const gchar **attribute_values);
+
+static const struct {
+    const gchar       *element;           /* e.g. "pane_exif" */
+    PaneType           type;
+    BarPaneNewFunc     new_from_config;
+    BarPaneUpdateFunc  update_from_config;
+    GQParserStartFunc  child_parser;      /* NULL if the pane has no child elements */
+} pane_parsers[] = {
+    { "pane_comment",   PANE_COMMENT,   bar_pane_comment_new_from_config,
+                                        bar_pane_comment_update_from_config,   NULL },
+    { "pane_exif",      PANE_EXIF,      bar_pane_exif_new_from_config,
+                                        bar_pane_exif_update_from_config,      bar_pane_exif_parse_entry },
+    { "pane_histogram", PANE_HISTOGRAM, bar_pane_histogram_new_from_config,
+                                        bar_pane_histogram_update_from_config, NULL },
+    { "pane_keywords",  PANE_KEYWORDS,  bar_pane_keywords_new_from_config,
+                                        bar_pane_keywords_update_from_config,  NULL },
+    { NULL, PANE_UNDEF, NULL, NULL, NULL }
+};
+
+gboolean bar_parse_pane(GQParserData *parser_data, GtkWidget *bar,
+                        const gchar *element_name,
+                        const gchar **attribute_names, const gchar **attribute_values)
+{
+    for (guint i = 0; pane_parsers[i].element; i++)
+    {
+        if (g_ascii_strcasecmp(element_name, pane_parsers[i].element) != 0)
+            continue;
+
+        GtkWidget *pane = bar_find_pane_by_id(bar, pane_parsers[i].type,
+                                              options_get_id(attribute_names,
+                                                             attribute_values));
+        if (pane)
+        {
+            pane_parsers[i].update_from_config(pane, attribute_names, attribute_values);
+        }
+        else
+        {
+            pane = pane_parsers[i].new_from_config(attribute_names, attribute_values);
+            bar_add(bar, pane);
+        }
+
+        options_parse_func_push(parser_data,
+                                pane_parsers[i].child_parser
+                                    ? pane_parsers[i].child_parser
+                                    : options_parse_leaf,
+                                NULL, pane);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void bar_expander_move(GtkWidget *widget, gpointer data,
                               gboolean up, gboolean single_step)
 {

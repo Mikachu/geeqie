@@ -26,22 +26,17 @@
 #include "rcfile.h"
 
 #include "bar.h"
-#include "bar_comment.h"
-#include "bar_exif.h"
-#include "bar_histogram.h"
-#include "bar_keywords.h"
 #include "bar_sort.h"
 #include "editors.h"
 #include "filefilter.h"
+#include "layout.h"
+#include "layout_util.h"
+#include "metadata.h"
 #include "misc.h"
 #include "pixbuf-renderer.h"
 #include "secure_save.h"
 #include "slideshow.h"
 #include "ui_fileops.h"
-#include "layout.h"
-#include "layout_util.h"
-#include "bar.h"
-#include "metadata.h"
 
 /*
  *-----------------------------------------------------------------------------
@@ -818,7 +813,7 @@ struct GQParserData
     gboolean startup; /* reading config for the first time - add commandline and defaults */
 };
 
-static const gchar *options_get_id(const gchar **attribute_names, const gchar **attribute_values)
+const gchar *options_get_id(const gchar **attribute_names, const gchar **attribute_values)
 {
     while (*attribute_names)
     {
@@ -1032,94 +1027,19 @@ static void options_parse_global_end(GQParserData *parser_data, GMarkupParseCont
 #endif
 }
 
-static void options_parse_pane_exif(GQParserData *parser_data, GMarkupParseContext *context,
-                                    const gchar *element_name, const gchar **attribute_names,
-                                    const gchar **attribute_values, gpointer data, GError **error)
-{
-    GtkWidget *pane = data;
-    if (g_ascii_strcasecmp(element_name, "entry") == 0)
-    {
-        bar_pane_exif_entry_add_from_config(pane, attribute_names, attribute_values);
-        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
-    }
-    else
-    {
-        log_printf("unexpected in <pane_exif>: <%s>\n", element_name);
-        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
-    }
-}
-
 static void options_parse_bar(GQParserData *parser_data, GMarkupParseContext *context,
                               const gchar *element_name, const gchar **attribute_names,
                               const gchar **attribute_values, gpointer data, GError **error)
 {
     GtkWidget *bar = data;
-    if (g_ascii_strcasecmp(element_name, "pane_comment") == 0)
-    {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_COMMENT,
-                                              options_get_id(attribute_names, attribute_values));
-        if (pane)
-        {
-            bar_pane_comment_update_from_config(pane, attribute_names, attribute_values);
-        }
-        else
-        {
-            pane = bar_pane_comment_new_from_config(attribute_names, attribute_values);
-            bar_add(bar, pane);
-        }
-        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
-    }
-    else if (g_ascii_strcasecmp(element_name, "pane_exif") == 0)
-    {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_EXIF,
-                                              options_get_id(attribute_names, attribute_values));
-        if (pane)
-        {
-            bar_pane_exif_update_from_config(pane, attribute_names, attribute_values);
-        }
-        else
-        {
-            pane = bar_pane_exif_new_from_config(attribute_names, attribute_values);
-            bar_add(bar, pane);
-        }
-        options_parse_func_push(parser_data, options_parse_pane_exif, NULL, pane);
-    }
-    else if (g_ascii_strcasecmp(element_name, "pane_histogram") == 0)
-    {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_HISTOGRAM,
-                                              options_get_id(attribute_names, attribute_values));
-        if (pane)
-        {
-            bar_pane_histogram_update_from_config(pane, attribute_names, attribute_values);
-        }
-        else
-        {
-            pane = bar_pane_histogram_new_from_config(attribute_names, attribute_values);
-            bar_add(bar, pane);
-        }
-        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
-    }
-    else if (g_ascii_strcasecmp(element_name, "pane_keywords") == 0)
-    {
-        GtkWidget *pane = bar_find_pane_by_id(bar, PANE_KEYWORDS,
-                                              options_get_id(attribute_names, attribute_values));
-        if (pane)
-        {
-            bar_pane_keywords_update_from_config(pane, attribute_names, attribute_values);
-        }
-        else
-        {
-            pane = bar_pane_keywords_new_from_config(attribute_names, attribute_values);
-            bar_add(bar, pane);
-        }
-        options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
-    }
-    else if (g_ascii_strcasecmp(element_name, "clear") == 0)
+
+    if (g_ascii_strcasecmp(element_name, "clear") == 0)
     {
         bar_clear(bar);
         options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);
     }
-    else
+    else if (!bar_parse_pane(parser_data, bar, element_name,
+                             attribute_names, attribute_values))
     {
         log_printf("unexpected in <bar>: <%s>\n", element_name);
         options_parse_func_push(parser_data, options_parse_leaf, NULL, NULL);

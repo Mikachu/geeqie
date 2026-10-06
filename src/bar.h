@@ -22,6 +22,8 @@
 #ifndef BAR_H
 #define BAR_H
 
+#include "rcfile.h"
+
 typedef enum {
     PANE_UNDEF = 0,
     PANE_COMMENT,
@@ -75,5 +77,8 @@ GtkWidget *bar_pane_expander_title(const gchar *title);
 void bar_update_expander(GtkWidget *pane);
 gboolean bar_pane_translate_title(PaneType type, const gchar *id, gchar **title);
 const gchar *bar_pane_get_default_config(const gchar *id);
+
+gboolean bar_parse_pane(GQParserData *parser_data, GtkWidget *bar, const gchar *element_name,
+                        const gchar **attribute_names, const gchar **attribute_values);
 
 #endif
