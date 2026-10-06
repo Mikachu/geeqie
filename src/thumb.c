@@ -94,9 +94,7 @@ static gboolean thumb_loader_save_thumbnail(ThumbLoader *tl, gboolean mark_failu
 
             ut.actime = ut.modtime = filetime(tl->fd->path);
             if (ut.modtime > 0)
-            {
                 utime(pathl, &ut);
-            }
         }
         else
         {
@@ -123,21 +121,18 @@ static void thumb_loader_percent_cb(ImageLoader *il, gdouble percent, gpointer d
 
 static void thumb_loader_set_fallback(ThumbLoader *tl)
 {
-    if (tl->fd->thumb_pixbuf) g_object_unref(tl->fd->thumb_pixbuf);
+    g_clear_object(&tl->fd->thumb_pixbuf);
     tl->fd->thumb_pixbuf = pixbuf_fallback(tl->fd, tl->max_w, tl->max_h);
 }
 
 static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
 {
     ThumbLoader *tl = data;
-    GdkPixbuf *pixbuf;
-    gint pw, ph;
-    gint save;
     GdkPixbuf *rotated = NULL;
 
     DEBUG_1("thumb done: %s", tl->fd->path);
 
-    pixbuf = image_loader_get_pixbuf(tl->il);
+    GdkPixbuf *pixbuf = image_loader_get_pixbuf(tl->il);
     if (!pixbuf)
     {
         DEBUG_1("...but no pixbuf: %s", tl->fd->path);
@@ -145,13 +140,12 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
         return;
     }
 
-
     if (!tl->cache_hit && options->image.exif_rotate_enable)
     {
         if (!tl->fd->exif_orientation)
-        {
-            tl->fd->exif_orientation = metadata_read_int(tl->fd, ORIENTATION_KEY, EXIF_ORIENTATION_TOP_LEFT);
-        }
+            tl->fd->exif_orientation = metadata_read_int(tl->fd,
+                                                         ORIENTATION_KEY,
+                                                         EXIF_ORIENTATION_TOP_LEFT);
 
         if (tl->fd->exif_orientation != EXIF_ORIENTATION_TOP_LEFT)
         {
@@ -160,8 +154,8 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
         }
     }
 
-    pw = gdk_pixbuf_get_width(pixbuf);
-    ph = gdk_pixbuf_get_height(pixbuf);
+    gint pw = gdk_pixbuf_get_width(pixbuf);
+    gint ph = gdk_pixbuf_get_height(pixbuf);
 
     if (tl->cache_hit && pw != tl->max_w && ph != tl->max_h)
     {
@@ -171,12 +165,12 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
 
         thumb_loader_setup(tl, tl->fd);
 
-        g_signal_connect(G_OBJECT(tl->il), "done", (GCallback)thumb_loader_done_cb, tl);
+        g_signal_connect(G_OBJECT(tl->il), "done",
+                         (GCallback)thumb_loader_done_cb, tl);
 
         if (!image_loader_start(tl->il))
         {
-            image_loader_free(tl->il);
-            tl->il = NULL;
+            g_clear_pointer(&tl->il, image_loader_free);
 
             DEBUG_1("regeneration failure: %s", tl->fd->path);
             thumb_loader_error_cb(tl->il, tl);
@@ -184,16 +178,17 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
         return;
     }
 
-    /* scale ?? */
-
+    /* scale? */
+    gint save;
     if (pw > tl->max_w || ph > tl->max_h)
     {
         if (tl->fd)
         {
             gint w, h;
             pixbuf_scale_aspect(tl->max_w, tl->max_h, pw, ph, &w, &h);
-            if (tl->fd->thumb_pixbuf) g_object_unref(tl->fd->thumb_pixbuf);
-            tl->fd->thumb_pixbuf = gdk_pixbuf_scale_simple(pixbuf, w, h, (GdkInterpType)options->thumbnails.quality);
+            g_clear_object(&tl->fd->thumb_pixbuf);
+            tl->fd->thumb_pixbuf = gdk_pixbuf_scale_simple(pixbuf, w, h,
+                                   (GdkInterpType)options->thumbnails.quality);
         }
         save = TRUE;
     }
@@ -201,19 +196,18 @@ static void thumb_loader_done_cb(ImageLoader *il, gpointer data)
     {
         if (tl->fd)
         {
-            if (tl->fd->thumb_pixbuf) g_object_unref(tl->fd->thumb_pixbuf);
+            g_clear_object(&tl->fd->thumb_pixbuf);
             tl->fd->thumb_pixbuf = g_object_ref(pixbuf);
         }
         save = image_loader_get_shrunk(il);
     }
 
-    if (rotated) g_object_unref(rotated);
+    if (rotated)
+        g_object_unref(rotated);
 
-    /* save it ? */
+    /* save it? */
     if (tl->cache_enable && save)
-    {
         thumb_loader_save_thumbnail(tl, FALSE);
-    }
 
     if (tl->func_done) tl->func_done(tl, tl->data);
 }
@@ -231,8 +225,7 @@ static void thumb_loader_error_cb(ImageLoader *il, gpointer data)
 
     DEBUG_1("thumb error: %s", tl->fd->path);
 
-    image_loader_free(tl->il);
-    tl->il = NULL;
+    g_clear_pointer(&tl->il, image_loader_free);
 
     thumb_loader_set_fallback(tl);
 
@@ -252,7 +245,8 @@ static gboolean thumb_loader_done_delay_cb(gpointer data)
 
 static void thumb_loader_delay_done(ThumbLoader *tl)
 {
-    if (!tl->idle_done_id) tl->idle_done_id = g_idle_add(thumb_loader_done_delay_cb, tl);
+    if (!tl->idle_done_id)
+        tl->idle_done_id = g_idle_add(thumb_loader_done_delay_cb, tl);
 }
 
 static void thumb_loader_setup(ThumbLoader *tl, FileData *fd)
@@ -264,42 +258,48 @@ static void thumb_loader_setup(ThumbLoader *tl, FileData *fd)
     /* this will speed up jpegs by up to 3x in some cases */
     image_loader_set_requested_size(tl->il, tl->max_w, tl->max_h);
 
-    g_signal_connect(G_OBJECT(tl->il), "error", (GCallback)thumb_loader_error_cb, tl);
-    if (tl->func_progress) g_signal_connect(G_OBJECT(tl->il), "percent", (GCallback)thumb_loader_percent_cb, tl);
+    g_signal_connect(G_OBJECT(tl->il), "error",
+                     (GCallback)thumb_loader_error_cb, tl);
+    if (tl->func_progress)
+        g_signal_connect(G_OBJECT(tl->il), "percent",
+                         (GCallback)thumb_loader_percent_cb, tl);
 }
 
 void thumb_loader_set_callbacks(ThumbLoader *tl,
-                ThumbLoaderFunc func_done,
-                ThumbLoaderFunc func_error,
-                ThumbLoaderFunc func_progress,
-                gpointer data)
+                                ThumbLoaderFunc func_done,
+                                ThumbLoaderFunc func_error,
+                                ThumbLoaderFunc func_progress,
+                                gpointer data)
 {
     if (!tl) return;
 
     if (tl->standard_loader)
     {
         thumb_loader_std_set_callbacks((ThumbLoaderStd *)tl,
-                           (ThumbLoaderStdFunc) func_done,
-                           (ThumbLoaderStdFunc) func_error,
-                           (ThumbLoaderStdFunc) func_progress,
-                           data);
+                                       (ThumbLoaderStdFunc)func_done,
+                                       (ThumbLoaderStdFunc)func_error,
+                                       (ThumbLoaderStdFunc)func_progress,
+                                       data);
         return;
     }
 
-    tl->func_done = func_done;
-    tl->func_error = func_error;
+    tl->func_done     = func_done;
+    tl->func_error    = func_error;
     tl->func_progress = func_progress;
 
     tl->data = data;
 }
 
-void thumb_loader_set_cache(ThumbLoader *tl, gboolean enable_cache, gboolean local, gboolean retry_failed)
+void thumb_loader_set_cache(ThumbLoader *tl,
+                            gboolean enable_cache, gboolean local,
+                            gboolean retry_failed)
 {
     if (!tl) return;
 
     if (tl->standard_loader)
     {
-        thumb_loader_std_set_cache((ThumbLoaderStd *)tl, enable_cache, local, retry_failed);
+        thumb_loader_std_set_cache((ThumbLoaderStd *)tl,
+                                   enable_cache, local, retry_failed);
         return;
     }
 
@@ -314,13 +314,12 @@ gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd)
     if (!tl) return FALSE;
 
     if (tl->standard_loader)
-    {
         return thumb_loader_std_start((ThumbLoaderStd *)tl, fd);
-    }
 
     if (!tl->fd && !fd) return FALSE;
 
-    if (!tl->fd) tl->fd = file_data_ref(fd);
+    if (!tl->fd)
+        tl->fd = file_data_ref(fd);
 
 
     if (tl->cache_enable)
@@ -345,15 +344,14 @@ gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd)
             }
             else
             {
-                g_free(cache_path);
-                cache_path = NULL;
+                g_clear_pointer(&cache_path, g_free);
             }
         }
     }
 
     if (!cache_path && options->thumbnails.use_xvpics)
     {
-        if (tl->fd->thumb_pixbuf) g_object_unref(tl->fd->thumb_pixbuf);
+        g_clear_object(&tl->fd->thumb_pixbuf);
         tl->fd->thumb_pixbuf = get_xv_thumbnail(tl->fd->path, tl->max_w, tl->max_h);
         if (tl->fd->thumb_pixbuf)
         {
@@ -375,7 +373,8 @@ gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd)
         thumb_loader_setup(tl, tl->fd);
     }
 
-    g_signal_connect(G_OBJECT(tl->il), "done", (GCallback)thumb_loader_done_cb, tl);
+    g_signal_connect(G_OBJECT(tl->il), "done",
+                     (GCallback)thumb_loader_done_cb, tl);
     if (!image_loader_start(tl->il))
     {
         /* try from original if cache attempt */
@@ -385,21 +384,19 @@ gboolean thumb_loader_start(ThumbLoader *tl, FileData *fd)
             log_printf("%s", _("Thumbnail image in cache failed to load, trying to recreate.\n"));
 
             thumb_loader_setup(tl, tl->fd);
-            g_signal_connect(G_OBJECT(tl->il), "done", (GCallback)thumb_loader_done_cb, tl);
-            if (image_loader_start(tl->il)) return TRUE;
+            g_signal_connect(G_OBJECT(tl->il), "done",
+                             (GCallback)thumb_loader_done_cb, tl);
+            if (image_loader_start(tl->il))
+                return TRUE;
         }
         /* mark failed thumbnail in cache with 0 byte file */
         if (tl->cache_enable)
-        {
             thumb_loader_save_thumbnail(tl, TRUE);
-        }
 
-        image_loader_free(tl->il);
-        tl->il = NULL;
+        g_clear_pointer(&tl->il, image_loader_free);
         thumb_loader_set_fallback(tl);
         return FALSE;
     }
-
     return TRUE;
 }
 
@@ -408,36 +405,26 @@ GdkPixbuf *thumb_loader_get_pixbuf(ThumbLoader *tl)
     GdkPixbuf *pixbuf;
 
     if (tl && tl->standard_loader)
-    {
         return thumb_loader_std_get_pixbuf((ThumbLoaderStd *)tl);
-    }
 
     if (tl && tl->fd && tl->fd->thumb_pixbuf)
-    {
         pixbuf = g_object_ref(tl->fd->thumb_pixbuf);
-    }
     else
-    {
         pixbuf = pixbuf_fallback(NULL, tl->max_w, tl->max_h);
-    }
 
     return pixbuf;
 }
 
 ThumbLoader *thumb_loader_new(gint width, gint height)
 {
-    ThumbLoader *tl;
-
     /* non-std thumb loader is more effective for configurations with disabled caching
        because it loads the thumbnails at the required size. loader_std loads
        the thumbnails at the sizes appropriate for standard cache (typically 256x256 pixels)
        and then performs one additional scaling */
     if (options->thumbnails.spec_standard && options->thumbnails.enable_caching)
-    {
         return (ThumbLoader *)thumb_loader_std_new(width, height);
-    }
 
-    tl = g_new0(ThumbLoader, 1);
+    ThumbLoader *tl = g_new0(ThumbLoader, 1);
 
     tl->cache_enable = options->thumbnails.enable_caching;
     tl->percent_done = 0.0;
@@ -460,7 +447,8 @@ void thumb_loader_free(ThumbLoader *tl)
     image_loader_free(tl->il);
     file_data_unref(tl->fd);
 
-    if (tl->idle_done_id) g_source_remove(tl->idle_done_id);
+    if (tl->idle_done_id)
+        g_source_remove(tl->idle_done_id);
 
     g_free(tl);
 }
@@ -471,11 +459,9 @@ void thumb_notify_cb(FileData *fd, NotifyType type, gpointer data)
     if ((type & (NOTIFY_REREAD | NOTIFY_CHANGE)) && fd->thumb_pixbuf)
     {
         DEBUG_1("Notify thumb: %s %04x", fd->path, type);
-        g_object_unref(fd->thumb_pixbuf);
-        fd->thumb_pixbuf = NULL;
+        g_clear_object(&fd->thumb_pixbuf);
     }
 }
-
 
 /*
  *-----------------------------------------------------------------------------
@@ -483,31 +469,22 @@ void thumb_notify_cb(FileData *fd, NotifyType type, gpointer data)
  *-----------------------------------------------------------------------------
  */
 
-/*
- * xvpics code originally supplied by:
- * "Diederen Damien" <D.Diederen@student.ulg.ac.be>
- *
- * Note: Code has been modified to fit the style of the other code, and to use
- *       a few more glib-isms.
- * 08-28-2000: Updated to return a gdk_pixbuf, Imlib is dieing a death here.
- */
-
 #define XV_BUFFER 2048
 static guchar *load_xv_thumbnail(gchar *filename, gint *widthp, gint *heightp)
 {
-    FILE *file;
     gchar buffer[XV_BUFFER];
     guchar *data = NULL;
 
-    file = fopen(filename, "rt");
+    FILE *file = fopen(filename, "rt");
     if (!file) return NULL;
 
-    if (fgets(buffer, XV_BUFFER, file) != NULL
-        && strncmp(buffer, "P7 332", 6) == 0)
+    if (fgets(buffer, XV_BUFFER, file) &&
+        strncmp(buffer, "P7 332", 6) == 0)
     {
         gint width, height, depth;
 
-        while (fgets(buffer, XV_BUFFER, file) && buffer[0] == '#') /* do_nothing() */;
+        while (fgets(buffer, XV_BUFFER, file) && buffer[0] == '#')
+            /* do_nothing() */;
 
         if (sscanf(buffer, "%d %d %d", &width, &height, &depth) == 3)
         {
@@ -516,12 +493,11 @@ static guchar *load_xv_thumbnail(gchar *filename, gint *widthp, gint *heightp)
             data = g_new(guchar, size);
             if (data && fread(data, 1, size, file) == size)
             {
-                *widthp = width;
+                *widthp  = width;
                 *heightp = height;
             }
         }
     }
-
     fclose(file);
     return data;
 }
@@ -535,33 +511,24 @@ static void free_rgb_buffer(guchar *pixels, gpointer data)
 static GdkPixbuf *get_xv_thumbnail(gchar *thumb_filename, gint max_w, gint max_h)
 {
     gint width, height;
-    gchar *thumb_name;
-    gchar *path;
-    gchar *directory;
-    gchar *name;
-    guchar *packed_data;
 
-    path = path_from_utf8(thumb_filename);
-    directory = g_path_get_dirname(path);
-    name = g_path_get_basename(path);
+    gchar *path      = path_from_utf8(thumb_filename);
+    gchar *directory = g_path_get_dirname(path);
+    gchar *name      = g_path_get_basename(path);
 
-    thumb_name = g_build_filename(directory, ".xvpics", name, NULL);
+    gchar *thumb_name = g_build_filename(directory, ".xvpics", name, NULL);
 
     g_free(name);
     g_free(directory);
     g_free(path);
 
-    packed_data = load_xv_thumbnail(thumb_name, &width, &height);
+    guchar *packed_data = load_xv_thumbnail(thumb_name, &width, &height);
     g_free(thumb_name);
 
     if (packed_data)
     {
-        guchar *rgb_data;
-        GdkPixbuf *pixbuf;
-        gint i;
-
-        rgb_data = g_new(guchar, width * height * 3);
-        for (i = 0; i < width * height; i++)
+        guchar *rgb_data = g_new(guchar, width * height * 3);
+        for (gint i = 0; i < width * height; i++)
         {
             rgb_data[i * 3 + 0] = (packed_data[i] >> 5) * 36;
             rgb_data[i * 3 + 1] = ((packed_data[i] & 28) >> 2) * 36;
@@ -569,21 +536,18 @@ static GdkPixbuf *get_xv_thumbnail(gchar *thumb_filename, gint max_w, gint max_h
         }
         g_free(packed_data);
 
-        pixbuf = gdk_pixbuf_new_from_data(rgb_data, GDK_COLORSPACE_RGB, FALSE, 8,
-                          width, height, 3 * width, free_rgb_buffer, NULL);
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_data(rgb_data, GDK_COLORSPACE_RGB, FALSE, 8,
+                                                     width, height, 3 * width,
+                                                     free_rgb_buffer, NULL);
 
         if (pixbuf_scale_aspect(width, height, max_w, max_h, &width, &height))
         {
             /* scale */
-            GdkPixbuf *tmp;
-
-            tmp = pixbuf;
+            GdkPixbuf *tmp = pixbuf;
             pixbuf = gdk_pixbuf_scale_simple(tmp, width, height, GDK_INTERP_NEAREST);
             g_object_unref(tmp);
         }
-
         return pixbuf;
     }
-
     return NULL;
 }
