@@ -43,8 +43,7 @@ static void lirc_cleanup(void)
     if (config)
     {
         g_source_remove(input_tag);
-        lirc_freeconfig(config);
-        config = NULL;
+        g_clear_pointer(&config, lirc_freeconfig);
     }
     if (lirc_fd != -1)
     {
@@ -58,8 +57,9 @@ static void lirc_cleanup(void)
     }
 }
 
-static gboolean lirc_input_callback(GIOChannel *source, GIOCondition condition,
-                    gpointer data)
+static gboolean lirc_input_callback(GIOChannel *source,
+                                    GIOCondition condition,
+                                    gpointer data)
 {
     LayoutWindow *lw = layout_find_by_layout_id(LAYOUT_ID_CURRENT);
     gchar *ptr;
@@ -201,24 +201,22 @@ static gboolean lirc_input_callback(GIOChannel *source, GIOCondition condition,
         free(code);
         if (ret == -1) break;
     }
+
     if (x != 0 || y != 0)
-    {
         layout_image_scroll(lw, x, y, FALSE);
-    }
 
     if (ret == -1)
     {
         /* something went badly wrong */
         g_fprintf(stderr, _("disconnected from LIRC\n"));
         lirc_cleanup();
-        return (gboolean)FALSE;
+        return FALSE;
     }
-    return (gboolean)TRUE;
+    return TRUE;
 }
 
 void lirc_init_subsystem(void)
 {
-    gint flags;
     gboolean lirc_verbose = (get_debug_level() >= 2);
 
     /* already inited */
@@ -237,22 +235,24 @@ void lirc_init_subsystem(void)
         lirc_deinit();
         
         g_fprintf(stderr,
-            _("could not read LIRC config file\n"
-            "please read the documentation of LIRC to \n"
-            "know how to create a proper config file\n"));
+                  _("could not read LIRC config file\n"
+                    "please read the documentation of LIRC to\n"
+                    "know how to create a proper config file\n"));
         fflush(stderr);
 
         DEBUG_1("Failed to read LIRC config file");
         return;
     }
-    if (lirc_verbose) fflush(stderr);
+    if (lirc_verbose)
+        fflush(stderr);
 
     gio_chan = g_io_channel_unix_new(lirc_fd);
     input_tag = g_io_add_watch(gio_chan, G_IO_IN,
-                   lirc_input_callback, NULL);
+                               lirc_input_callback, NULL);
     fcntl(lirc_fd, F_SETOWN, getpid());
-    flags = fcntl(lirc_fd, F_GETFL, 0);
-    if (flags != -1) fcntl(lirc_fd, F_SETFL, flags|O_NONBLOCK);
+    gint flags = fcntl(lirc_fd, F_GETFL, 0);
+    if (flags != -1)
+        fcntl(lirc_fd, F_SETFL, flags|O_NONBLOCK);
 }
 
 #endif /* HAVE_LIRC */
