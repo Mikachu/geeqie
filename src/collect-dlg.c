@@ -29,7 +29,6 @@
 #include "ui_tabcomp.h"
 #include "ui_utildlg.h"
 
-
 enum {
     DIALOG_SAVE,
     DIALOG_SAVE_CLOSE,
@@ -37,9 +36,7 @@ enum {
     DIALOG_APPEND
 };
 
-
 static gboolean collection_save_confirmed(FileDialog *fd, gboolean overwrite, CollectionData *cd);
-
 
 static void collection_confirm_ok_cb(GenericDialog *gd, gpointer data)
 {
@@ -64,24 +61,25 @@ static gboolean collection_save_confirmed(FileDialog *fd, gboolean overwrite, Co
 
     if (isdir(fd->dest_path))
     {
-        buf = g_strdup_printf(_("Specified path:\n%s\nis a folder, collections are files"), fd->dest_path);
-        file_util_warning_dialog(_("Invalid filename"), buf, GTK_STOCK_DIALOG_INFO, GENERIC_DIALOG(fd)->dialog);
+        buf = g_strdup_printf(_("Specified path:\n%s\nis a folder, collections are files"),
+                              fd->dest_path);
+        file_util_warning_dialog(_("Invalid filename"), buf,
+                                 GTK_STOCK_DIALOG_INFO, GENERIC_DIALOG(fd)->dialog);
         g_free(buf);
         return FALSE;
     }
 
     if (!overwrite && isfile(fd->dest_path))
     {
-        GenericDialog *gd;
-
-        gd = file_util_gen_dlg(_("Overwrite File"), "dlg_confirm",
-                    GENERIC_DIALOG(fd)->dialog, TRUE,
-                    collection_confirm_cancel_cb, fd);
+        GenericDialog *gd = file_util_gen_dlg(_("Overwrite File"), "dlg_confirm",
+                                              GENERIC_DIALOG(fd)->dialog, TRUE,
+                                              collection_confirm_cancel_cb, fd);
 
         generic_dialog_add_message(gd, GTK_STOCK_DIALOG_QUESTION,
-                       _("Overwrite existing file?"), fd->dest_path);
+                                   _("Overwrite existing file?"), fd->dest_path);
 
-        generic_dialog_add_button(gd, GTK_STOCK_OK, _("_Overwrite"), collection_confirm_ok_cb, TRUE);
+        generic_dialog_add_button(gd, GTK_STOCK_OK, _("_Overwrite"),
+                                  collection_confirm_ok_cb, TRUE);
 
         gtk_widget_show(gd->dialog);
 
@@ -91,14 +89,16 @@ static gboolean collection_save_confirmed(FileDialog *fd, gboolean overwrite, Co
     if (!collection_save(cd, fd->dest_path))
     {
         buf = g_strdup_printf(_("Failed to save the collection:\n%s"), fd->dest_path);
-        file_util_warning_dialog(_("Save Failed"), buf, GTK_STOCK_DIALOG_ERROR, GENERIC_DIALOG(fd)->dialog);
+        file_util_warning_dialog(_("Save Failed"), buf,
+                                 GTK_STOCK_DIALOG_ERROR, GENERIC_DIALOG(fd)->dialog);
         g_free(buf);
     }
 
     collection_unref(cd);
     file_dialog_sync_history(fd, TRUE);
 
-    if (fd->type == DIALOG_SAVE_CLOSE) collection_window_close_by_collection(cd);
+    if (fd->type == DIALOG_SAVE_CLOSE)
+        collection_window_close_by_collection(cd);
     file_dialog_close(fd);
 
     return TRUE;
@@ -107,15 +107,12 @@ static gboolean collection_save_confirmed(FileDialog *fd, gboolean overwrite, Co
 static void collection_save_cb(FileDialog *fd, gpointer data)
 {
     CollectionData *cd = data;
-    const gchar *path;
-
-    path = fd->dest_path;
+    const gchar *path = fd->dest_path;
 
     /* FIXME: utf8 */
     if (!file_extension_match(path, GQ_COLLECTION_EXT))
     {
-        gchar *buf;
-        buf = g_strconcat(path, GQ_COLLECTION_EXT, NULL);
+        gchar *buf = g_strconcat(path, GQ_COLLECTION_EXT, NULL);
         gtk_entry_set_text(GTK_ENTRY(fd->entry), buf);
         g_free(buf);
     }
@@ -150,7 +147,7 @@ static void real_collection_button_pressed(FileDialog *fd, gpointer data, gint a
         {
             file_util_warning_dialog(_("Can not open collection file"), text, GTK_STOCK_DIALOG_ERROR, NULL);
             g_free(text);
-    }
+        }
         return;
     }
 
@@ -187,11 +184,8 @@ static void collection_save_or_load_dialog_close_cb(FileDialog *fd, gpointer dat
 }
 
 static void collection_save_or_load_dialog(const gchar *path,
-                       gint type, CollectionData *cd)
+                                           gint type, CollectionData *cd)
 {
-    FileDialog *fd;
-    GtkWidget *parent = NULL;
-    CollectWindow *cw;
     const gchar *title;
     const gchar *btntext;
     gpointer btnfunc;
@@ -223,17 +217,19 @@ static void collection_save_or_load_dialog(const gchar *path,
 
     if (cd) collection_ref(cd);
 
-    cw = collection_window_find(cd);
+    CollectWindow *cw = collection_window_find(cd);
+    GtkWidget *parent = NULL;
     if (cw) parent = cw->window;
 
-    fd = file_util_file_dlg(title, "dlg_collection", parent,
-                 collection_save_or_load_dialog_close_cb, cd);
+    FileDialog *fd = file_util_file_dlg(title, "dlg_collection", parent,
+                                        collection_save_or_load_dialog_close_cb, cd);
 
     generic_dialog_add_message(GENERIC_DIALOG(fd), NULL, title, NULL);
     file_dialog_add_button(fd, stock_id, btntext, btnfunc, TRUE);
 
     file_dialog_add_path_widgets(fd, get_collections_dir(), path,
-                     "collection_load_save", GQ_COLLECTION_EXT, _("Collection Files"));
+                                 "collection_load_save", GQ_COLLECTION_EXT,
+                                 _("Collection Files"));
 
     fd->type = type;
 
