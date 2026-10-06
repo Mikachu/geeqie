@@ -44,16 +44,17 @@ static gpointer image_loader_psd_new(ImageLoaderBackendCbAreaUpdated area_update
     ImageLoaderPsd *loader = g_new0(ImageLoaderPsd, 1);
 
     loader->area_updated_cb = area_updated_cb;
-    loader->size_cb = size_cb;
-    loader->data = data;
+    loader->size_cb         = size_cb;
+    loader->data            = data;
 
-    return (gpointer) loader;
+    return (gpointer)loader;
 }
 
 static void image_loader_psd_set_size(gpointer loader, int width, int height)
 {
-    ImageLoaderPsd *lp = (ImageLoaderPsd *) loader;
-    lp->requested_width = width;
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
+
+    lp->requested_width  = width;
     lp->requested_height = height;
 }
 
@@ -98,7 +99,7 @@ static GdkPixbuf *psd_extract_embedded_thumbnail(const guchar *data, gsize len,
     if (pos + 4 > len) return NULL;
     guint32 image_resources_len = psd_read_u32(data + pos); pos += 4;
     gsize resources_start = pos;
-    gsize resources_end = resources_start + image_resources_len;
+    gsize resources_end   = resources_start + image_resources_len;
     if (resources_end > len) return NULL;
     *resources_end_out = resources_end;
 
@@ -125,7 +126,7 @@ static GdkPixbuf *psd_extract_embedded_thumbnail(const guchar *data, gsize len,
 
         if ((resource_id == 1036 || resource_id == 1033) && resource_size > 28)
         {
-            guint32 format = psd_read_u32(data + pos);
+            guint32 format  = psd_read_u32(data + pos);
             guint32 thumb_w = psd_read_u32(data + pos + 4);
             guint32 thumb_h = psd_read_u32(data + pos + 8);
             /* widthBytes, totalSize, sizeAfterCompression, bitsPerPixel, planes: skipped */
@@ -207,7 +208,10 @@ static inline gboolean psd_decode_rle_channel(const guchar *data, gsize len,
             if (n >= 0)
             {
                 guint32 count = (guint32) n + 1;
-                for (guint32 j = 0; j < count && src_pos < line_bytes && raw_bytes_written < raw_bytes_needed; j++)
+                for (guint32 j = 0;
+                     j < count && src_pos < line_bytes &&
+                     raw_bytes_written < raw_bytes_needed;
+                     j++)
                 {
                     if (byte_in_sample == 0)
                     {
@@ -215,7 +219,9 @@ static inline gboolean psd_decode_rle_channel(const guchar *data, gsize len,
                         dest_offset += dest_stride;
                     }
                     else
+                    {
                         src_pos++;
+                    }
                     byte_in_sample = !byte_in_sample % bytes_per_sample;
                     raw_bytes_written++;
                 }
@@ -240,10 +246,8 @@ static inline gboolean psd_decode_rle_channel(const guchar *data, gsize len,
             }
             /* n == -128 is a no-op */
         }
-
         pos += line_bytes;
     }
-
     *pos_io = pos;
     return TRUE;
 }
@@ -278,14 +282,14 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
                                        ImageLoaderPsd *lp,
                                        gsize pos, const PsdHeader *header)
 {
-    guint32 width = header->width;
+    guint32 width  = header->width;
     guint32 height = header->height;
 
     if (g_atomic_int_get(&lp->abort)) return NULL;
 
     if (header->depth != 8 && header->depth != 16) return NULL;
-    if (header->color_mode != 3) return NULL; /* RGB only */
-    if (header->channels < 3) return NULL; /* only handle actual RGB/RGBA for now */
+    if (header->color_mode != 3)   return NULL; /* RGB only */
+    if (header->channels < 3)      return NULL; /* only handle actual RGB/RGBA for now */
     if (width == 0 || height == 0) return NULL;
     guint32 limit = header->version == 1 ? 30000 : 300000;
     if (width > limit || height > limit) return NULL;
@@ -311,15 +315,15 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
     if (compression > 1) return NULL; /* only raw or RLE supported */
 
     guint32 bytes_per_sample = header->depth / 8;
-    guint64 channel_size = (gsize) width * height * bytes_per_sample;
-    guint32 channels = header->channels;
-    gboolean has_alpha = channels >= 4;
-    guint32 stride = has_alpha ? 4 : 3;
+    guint64 channel_size     = (gsize) width * height * bytes_per_sample;
+    guint32 channels         = header->channels;
+    gboolean has_alpha       = channels >= 4;
+    guint32 stride           = has_alpha ? 4 : 3;
 
     if ((guint64) width * height * stride > 1024ULL * 1024 * 1024) return NULL;
 
     guchar *rgba = g_malloc((gsize) width * height * stride);
-    memset(rgba, 255, (gsize) width * height * stride);
+    memset(rgba, 255,       (gsize) width * height * stride);
 
     if (compression == 0)
     {
@@ -332,8 +336,8 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
         {
             if (g_atomic_int_get(&lp->abort)) { g_free(rgba); return NULL; }
             guint32 px = i / bytes_per_sample;
-            if (channels >= 1) rgba[px * stride + 0] = plane_src[i];
-            if (channels >= 2) rgba[px * stride + 1] = plane_src[channel_size + i];
+            if (channels >= 1) rgba[px * stride + 0] = plane_src[                   i];
+            if (channels >= 2) rgba[px * stride + 1] = plane_src[channel_size     + i];
             if (channels >= 3) rgba[px * stride + 2] = plane_src[channel_size * 2 + i];
             if (channels >= 4) rgba[px * stride + 3] = plane_src[channel_size * 3 + i];
         }
@@ -368,7 +372,6 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
                                                height, width,
                                                rgba + c, stride);
         }
-
         g_free(byte_counts);
         if (!ok) { g_free(rgba); return NULL; }
     }
@@ -396,15 +399,18 @@ static gboolean psd_read_header(const guchar *data, gsize len, PsdHeader *header
 
     if (len < 26 || memcmp(data, "8BPS", 4) != 0) return FALSE;
     pos += 4;
-    header_out->version = psd_read_u16(data + pos); pos += 2;
+
+    header_out->version    = psd_read_u16(data + pos); pos += 2;
+
     if (!(header_out->version == 1 ||
           header_out->version == 2))
         return FALSE;
     pos += 6; /* reserved */
-    header_out->channels = psd_read_u16(data + pos); pos += 2;
-    header_out->height = psd_read_u32(data + pos); pos += 4;
-    header_out->width = psd_read_u32(data + pos); pos += 4;
-    header_out->depth = psd_read_u16(data + pos); pos += 2;
+
+    header_out->channels   = psd_read_u16(data + pos); pos += 2;
+    header_out->height     = psd_read_u32(data + pos); pos += 4;
+    header_out->width      = psd_read_u32(data + pos); pos += 4;
+    header_out->depth      = psd_read_u16(data + pos); pos += 2;
     header_out->color_mode = psd_read_u16(data + pos); pos += 2;
 
     return TRUE;
@@ -413,7 +419,8 @@ static gboolean psd_read_header(const guchar *data, gsize len, PsdHeader *header
 static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
                                       gsize count, GError **error)
 {
-    ImageLoaderPsd *lp = (ImageLoaderPsd *) loader;
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
+
     PsdHeader header;
     gsize resources_end = 0;
     GdkPixbuf *embedded_thumb;
@@ -433,7 +440,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
      * request, image_loader_size_cb() now recognizes our "photoshop" mime
      * type and calls image_loader_psd_set_size() with the aspect-correct
      * target size, overwriting these before we read them below. */
-    lp->requested_width = header.width;
+    lp->requested_width  = header.width;
     lp->requested_height = header.height;
     if (lp->size_cb) lp->size_cb(lp, header.width, header.height, lp->data);
 
@@ -446,7 +453,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
     /* Prefer the thumbnail if it satisfies the requested width, otherwise use
      * the full size composite image */
     if (embedded_thumb &&
-        gdk_pixbuf_get_width(embedded_thumb) >= (gint) lp->requested_width &&
+        gdk_pixbuf_get_width(embedded_thumb)  >= (gint) lp->requested_width &&
         gdk_pixbuf_get_height(embedded_thumb) >= (gint) lp->requested_height)
     {
         DEBUG_1("psd: embedded thumbnail is large enough for the request, skipping composite decode");
@@ -459,7 +466,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
 
         if (lp->pixbuf)
         {
-            if (embedded_thumb) g_object_unref(embedded_thumb);
+            g_clear_object(&embedded_thumb);
         }
         else if (embedded_thumb)
         {
@@ -475,11 +482,15 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
     if (!lp->pixbuf)
     {
         gboolean aborted = g_atomic_int_get(&lp->abort);
-        if (error && !aborted) g_set_error(error, GDK_PIXBUF_ERROR, 0, "psd: no decodable image data found");
+        if (error && !aborted)
+            g_set_error(error, GDK_PIXBUF_ERROR, 0, "psd: no decodable image data found");
         return FALSE;
     }
 
-    if (lp->area_updated_cb) lp->area_updated_cb(lp, 0, 0, gdk_pixbuf_get_width(lp->pixbuf), gdk_pixbuf_get_height(lp->pixbuf), lp->data);
+    if (lp->area_updated_cb)
+        lp->area_updated_cb(lp, 0, 0,
+                            gdk_pixbuf_get_width(lp->pixbuf),
+                            gdk_pixbuf_get_height(lp->pixbuf), lp->data);
 
     return TRUE;
 }
@@ -491,7 +502,7 @@ static gboolean image_loader_psd_close(gpointer loader, GError **error)
 
 static GdkPixbuf *image_loader_psd_get_pixbuf(gpointer loader)
 {
-    ImageLoaderPsd *lp = (ImageLoaderPsd *) loader;
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
     return lp->pixbuf;
 }
 
@@ -502,34 +513,34 @@ static gchar *image_loader_psd_get_format_name(gpointer loader)
 
 static gchar **image_loader_psd_get_format_mime_types(gpointer loader)
 {
-    static gchar *mime[] = {"image/vnd.adobe.photoshop", NULL};
+    static gchar *mime[] = { "image/vnd.adobe.photoshop", NULL };
     return g_strdupv(mime);
 }
 
 static void image_loader_psd_abort(gpointer loader)
 {
-    ImageLoaderPsd *lp = (ImageLoaderPsd *) loader;
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
     g_atomic_int_set(&lp->abort, TRUE);
 }
 
 static void image_loader_psd_free(gpointer loader)
 {
-    ImageLoaderPsd *lp = (ImageLoaderPsd *) loader;
-    if (lp->pixbuf) g_object_unref(lp->pixbuf);
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
+    g_clear_object(&lp->pixbuf);
     g_free(lp);
 }
 
 void image_loader_backend_set_psd(ImageLoaderBackend *funcs)
 {
     funcs->loader_new = image_loader_psd_new;
-    funcs->set_size = image_loader_psd_set_size;
-    funcs->load = image_loader_psd_load;
-    funcs->write = NULL;
+    funcs->set_size   = image_loader_psd_set_size;
+    funcs->load       = image_loader_psd_load;
+    funcs->write      = NULL;
     funcs->get_pixbuf = image_loader_psd_get_pixbuf;
-    funcs->close = image_loader_psd_close;
-    funcs->abort = image_loader_psd_abort;
-    funcs->free = image_loader_psd_free;
+    funcs->close      = image_loader_psd_close;
+    funcs->abort      = image_loader_psd_abort;
+    funcs->free       = image_loader_psd_free;
 
-    funcs->get_format_name = image_loader_psd_get_format_name;
+    funcs->get_format_name       = image_loader_psd_get_format_name;
     funcs->get_format_mime_types = image_loader_psd_get_format_mime_types;
 }
