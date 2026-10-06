@@ -84,6 +84,11 @@ void options_parse_func_push(GQParserData *parser_data, GQParserStartFunc start_
 void options_parse_func_pop(GQParserData *parser_data);
 void options_parse_func_set_data(GQParserData *parser_data, gpointer data);
 
+const gchar *options_get_id(const gchar **attribute_names, const gchar **attribute_values);
+void options_parse_leaf(GQParserData *parser_data, GMarkupParseContext *context,
+                        const gchar *element_name, const gchar **attribute_names,
+                        const gchar **attribute_values, gpointer data, GError **error);
+
 gboolean save_config_to_file(const gchar *utf8_path, ConfOptions *options);
 
 gboolean load_config_from_buf(const gchar *buf, gsize size, gboolean startup);
