@@ -47,9 +47,8 @@
  *-----------------------------------------------------------------------------
  */
 
-
 gboolean format_fuji_raw(guchar *data, const guint len,
-                 guint *image_offset, guint *exif_offset)
+                         guint *image_offset, guint *exif_offset)
 {
     guint io;
     guint eo;
@@ -66,15 +65,13 @@ gboolean format_fuji_raw(guchar *data, const guint len,
 
     /* verify jpeg marker */
     if (memcmp(data + io, "\xff\xd8\xff\xe1", 4) != 0)
-    {
         return FALSE;
-    }
 
     /* Exif is stored in the jpeg, so use the same offset */
-    eo=io;
+    eo = io;
 
     if (image_offset) *image_offset = io;
-    if (exif_offset) *exif_offset = eo;
+    if (exif_offset)  *exif_offset  = eo;
 
     return TRUE;
 }
@@ -155,36 +152,30 @@ static ExifTextList FujiTagNoYes[]= {
 
 
 static ExifMarker FujiExifMarkersList[] = {
-{ 0x1000,   EXIF_FORMAT_STRING, 8,      "Fuji.Quality",     "Quality",  NULL },
-{ 0x1001,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.Sharpness",   "Sharpness",    FujiTagSharpness },
-{ 0x1002,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.WhiteBalance",    "White balance",FujiTagWhiteBalance },
-{ 0x1003,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.Color",       "Color",    FujiTagColorTone },
-{ 0x1004,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.Tone",        "Tone",     FujiTagColorTone },
-{ 0x1010,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.FlashMode",   "Flash mode",   FujiTagFlashMode },
-{ 0x1011,   EXIF_FORMAT_RATIONAL, 1,    "Fuji.FlashStrength",   "Flash strength", NULL },
-{ 0x1020,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.Macro",       "Macro",    FujiTagOffOn },
-{ 0x1021,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.FocusMode",   "Focus mode",   FujiTagFocusMode },
-{ 0x1030,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.SlowSync",    "Slow synchro", FujiTagOffOn },
-{ 0x1031,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.PictureMode", "Picture mode", FujiTagPictureMode },
-{ 0x1100,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.ContTake/Bracket",
-                            "Continuous / Auto bracket",    FujiTagOffOn },
-{ 0x1300,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.BlurWarning", "Blue warning", FujiTagNoYes },
-{ 0x1301,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.FocusWarning",    "Focus warning",FujiTagNoYes },
-{ 0x1302,   EXIF_FORMAT_SHORT_UNSIGNED, 1,  "Fuji.AEWarning",   "AE warning",   FujiTagNoYes },
+{ 0x1000,   EXIF_FORMAT_STRING,         8,      "Fuji.Quality",          "Quality",                   NULL },
+{ 0x1001,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.Sharpness",        "Sharpness",                 FujiTagSharpness },
+{ 0x1002,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.WhiteBalance",     "White balance",             FujiTagWhiteBalance },
+{ 0x1003,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.Color",            "Color",                     FujiTagColorTone },
+{ 0x1004,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.Tone",             "Tone",                      FujiTagColorTone },
+{ 0x1010,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.FlashMode",        "Flash mode",                FujiTagFlashMode },
+{ 0x1011,   EXIF_FORMAT_RATIONAL,       1,      "Fuji.FlashStrength",    "Flash strength",            NULL },
+{ 0x1020,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.Macro",            "Macro",                     FujiTagOffOn },
+{ 0x1021,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.FocusMode",        "Focus mode",                FujiTagFocusMode },
+{ 0x1030,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.SlowSync",         "Slow synchro",              FujiTagOffOn },
+{ 0x1031,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.PictureMode",      "Picture mode",              FujiTagPictureMode },
+{ 0x1100,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.ContTake/Bracket", "Continuous / Auto bracket", FujiTagOffOn },
+{ 0x1300,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.BlurWarning",      "Blue warning",              FujiTagNoYes },
+{ 0x1301,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.FocusWarning",     "Focus warning",             FujiTagNoYes },
+{ 0x1302,   EXIF_FORMAT_SHORT_UNSIGNED, 1,      "Fuji.AEWarning",        "AE warning",                FujiTagNoYes },
 EXIF_MARKER_LIST_END
 };
 
-
-
 gboolean format_fuji_makernote(ExifData *exif, guchar *tiff, guint offset,
-                   guint size, ExifByteOrder bo)
+                               guint size, ExifByteOrder bo)
 {
-    guchar *data;
-    guint ifdstart;
-
     if (offset + 8 + 4 >= size) return FALSE;
 
-    data = tiff + offset;
+    guchar *data = tiff + offset;
 
     /* Fuji tag format starts with "FUJIFILM",
      * followed by 4 bytes indicating offset to IFD directory using Fuji tags,
@@ -192,16 +183,11 @@ gboolean format_fuji_makernote(ExifData *exif, guchar *tiff, guint offset,
      */
     if (memcmp(data, "FUJIFILM", 8) != 0) return FALSE;
 
-    ifdstart = exif_byte_get_int32(data + 8, EXIF_BYTE_ORDER_INTEL);
+    guint ifdstart = exif_byte_get_int32(data + 8, EXIF_BYTE_ORDER_INTEL);
     if (offset + ifdstart >= size) return FALSE;
 
-    if (exif_parse_IFD_table(exif, tiff + offset, ifdstart, size - offset,
-                 EXIF_BYTE_ORDER_INTEL, 0, FujiExifMarkersList) != 0)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
+    return exif_parse_IFD_table(exif, tiff + offset, ifdstart, size - offset,
+                                EXIF_BYTE_ORDER_INTEL, 0, FujiExifMarkersList) == 0;
 }
 
 #endif
