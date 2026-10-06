@@ -27,25 +27,22 @@
 
 static gchar* image_loader_gdk_get_format_name(gpointer loader)
 {
-    GdkPixbufFormat *format;
+    GdkPixbufFormat *format = gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader));
 
-    format = gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader));
     if (format)
-    {
         return gdk_pixbuf_format_get_name(format);
-    }
     else
-    {
         return NULL;
-    }
 }
 
 static gchar** image_loader_gdk_get_format_mime_types(gpointer loader)
 {
-    return gdk_pixbuf_format_get_mime_types(gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader)));
+    return gdk_pixbuf_format_get_mime_types(
+               gdk_pixbuf_loader_get_format(GDK_PIXBUF_LOADER(loader)));
 }
 
-static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_updated_cb, ImageLoaderBackendCbSize size_cb, gpointer data)
+static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_updated_cb,
+                                     ImageLoaderBackendCbSize size_cb, gpointer data)
 {
     ImageLoader *il = (ImageLoader *)data;
     GdkPixbufLoader *loader;
@@ -56,8 +53,10 @@ static gpointer image_loader_gdk_new(ImageLoaderBackendCbAreaUpdated area_update
     else
         loader = gdk_pixbuf_loader_new();
 
-    g_signal_connect(G_OBJECT(loader), "area_updated", G_CALLBACK(area_updated_cb), data);
-    g_signal_connect(G_OBJECT(loader), "size_prepared", G_CALLBACK(size_cb), data);
+    g_signal_connect(G_OBJECT(loader), "area_updated",
+                     G_CALLBACK(area_updated_cb), data);
+    g_signal_connect(G_OBJECT(loader), "size_prepared",
+                     G_CALLBACK(size_cb), data);
     return (gpointer) loader;
 }
 
@@ -73,15 +72,15 @@ static void image_loader_gdk_free(gpointer loader)
 void image_loader_backend_set_default(ImageLoaderBackend *funcs)
 {
     funcs->loader_new = image_loader_gdk_new;
-    funcs->set_size = (ImageLoaderBackendFuncSetSize) gdk_pixbuf_loader_set_size;
-    funcs->load = NULL;
-    funcs->write = (ImageLoaderBackendFuncWrite) gdk_pixbuf_loader_write;
+    funcs->set_size   = (ImageLoaderBackendFuncSetSize) gdk_pixbuf_loader_set_size;
+    funcs->load       = NULL;
+    funcs->write      = (ImageLoaderBackendFuncWrite) gdk_pixbuf_loader_write;
     funcs->get_pixbuf = (ImageLoaderBackendFuncGetPixbuf) gdk_pixbuf_loader_get_pixbuf;
-    funcs->close = (ImageLoaderBackendFuncClose) gdk_pixbuf_loader_close;
-    funcs->abort = image_loader_gdk_abort;
-    funcs->free = image_loader_gdk_free;
+    funcs->close      = (ImageLoaderBackendFuncClose) gdk_pixbuf_loader_close;
+    funcs->abort      = image_loader_gdk_abort;
+    funcs->free       = image_loader_gdk_free;
 
-    funcs->get_format_name = image_loader_gdk_get_format_name;
+    funcs->get_format_name       = image_loader_gdk_get_format_name;
     funcs->get_format_mime_types = image_loader_gdk_get_format_mime_types;
 }
 
