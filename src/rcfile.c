@@ -1302,29 +1302,32 @@ static GMarkupParser parser = {
  *-----------------------------------------------------------------------------
  */
 
-gboolean load_config_from_buf(const gchar *buf, gsize size, gboolean startup)
+static gboolean parse_config_buf(const gchar *buf, gsize size, gboolean startup,
+                                 GQParserStartFunc root_func, gpointer root_data)
 {
-    GMarkupParseContext *context;
-    gboolean ret = TRUE;
-    GQParserData *parser_data;
-
-    parser_data = g_new0(GQParserData, 1);
-
+    GQParserData *parser_data = g_new0(GQParserData, 1);
     parser_data->startup = startup;
-    options_parse_func_push(parser_data, options_parse_toplevel, NULL, NULL);
+    options_parse_func_push(parser_data, root_func, NULL, root_data);
 
-    context = g_markup_parse_context_new(&parser, 0, parser_data, NULL);
+    GMarkupParseContext *context = g_markup_parse_context_new(&parser, 0, parser_data, NULL);
 
-    if (g_markup_parse_context_parse(context, buf, size, NULL) == FALSE)
-    {
-        ret = FALSE;
-        DEBUG_1("Parse failed");
-    }
-
-    g_free(parser_data);
+    gboolean ret = g_markup_parse_context_parse(context, buf, size, NULL) &&
+                   g_markup_parse_context_end_parse(context, NULL);
+    if (!ret) DEBUG_1("Parse failed");
 
     g_markup_parse_context_free(context);
+    g_free(parser_data);
     return ret;
+}
+
+gboolean load_config_from_buf(const gchar *buf, gsize size, gboolean startup)
+{
+    return parse_config_buf(buf, size, startup, options_parse_toplevel, NULL);
+}
+
+gboolean load_bar_config_from_buf(const gchar *buf, gsize size, GtkWidget *bar)
+{
+    return parse_config_buf(buf, size, FALSE, options_parse_bar, bar);
 }
 
 gboolean load_config_from_file(const gchar *utf8_path, gboolean startup)
