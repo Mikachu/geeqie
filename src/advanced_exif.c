@@ -31,9 +31,6 @@
 #include "window.h"
 #include "dnd.h"
 
-/* FIXME: not needed when bar_exif.c is improved */
-#include "bar_exif.h"
-
 #include <math.h>
 
 #define ADVANCED_EXIF_DATA_COLUMN_WIDTH 200
@@ -69,59 +66,43 @@ enum {
 
 static gboolean advanced_exif_row_enabled(const gchar *name)
 {
-    GList *list;
-
     if (!name) return FALSE;
 
-    list = history_list_get_by_key("exif_extras");
-    while (list)
-    {
-        if (strcmp(name, (gchar *)(list->data)) == 0) return TRUE;
-        list = list->next;
-    }
+    for (GList *work = history_list_get_by_key("exif_extras");
+         work;
+         work = work->next)
+        if (strcmp(name, (gchar *)(work->data)) == 0)
+            return TRUE;
 
     return FALSE;
 }
 
 static void advanced_exif_update(ExifWin *ew)
 {
-    ExifData *exif;
-
-    GtkListStore *store;
-    GtkTreeIter iter;
-    ExifData *exif_original;
-    ExifItem *item;
-
-    exif = exif_read_fd(ew->fd);
+    ExifData *exif = exif_read_fd(ew->fd);
 
     gtk_widget_set_sensitive(ew->scrolled, !!exif);
 
     if (!exif) return;
 
-    exif_original = exif_get_original(exif);
+    ExifData *exif_original = exif_get_original(exif);
 
-    store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ew->listview)));
+    GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ew->listview)));
     gtk_list_store_clear(store);
 
-    item = exif_get_first_item(exif_original);
+    ExifItem *item = exif_get_first_item(exif_original);
     while (item)
     {
-        gchar *tag;
-        gchar *tag_name;
-        gchar *text;
-        gchar *utf8_text;
-        const gchar *format;
-        gchar *elements;
-        gchar *description;
+        GtkTreeIter iter;
 
-        tag = g_strdup_printf("0x%04x", exif_item_get_tag_id(item));
-        tag_name = exif_item_get_tag_name(item);
-        format = exif_item_get_format_name(item, TRUE);
-        text = exif_item_get_data_as_text(item, exif);
-        utf8_text = utf8_validate_or_convert(text);
+        gchar *tag          = g_strdup_printf("0x%04x", exif_item_get_tag_id(item));
+        gchar *tag_name     = exif_item_get_tag_name(item);
+        const gchar *format = exif_item_get_format_name(item, TRUE);
+        gchar *text         = exif_item_get_data_as_text(item, exif);
+        gchar *utf8_text    = utf8_validate_or_convert(text);
         g_free(text);
-        elements = g_strdup_printf("%d", exif_item_get_elements(item));
-        description = exif_item_get_description(item);
+        gchar *elements     = g_strdup_printf("%d", exif_item_get_elements(item));
+        gchar *description  = exif_item_get_description(item);
         if (!description || *description == '\0')
         {
             g_free(description);
@@ -130,12 +111,12 @@ static void advanced_exif_update(ExifWin *ew)
 
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
-                           EXIF_ADVCOL_ENABLED, advanced_exif_row_enabled(tag_name),
-                           EXIF_ADVCOL_TAG, tag,
-                           EXIF_ADVCOL_NAME, tag_name,
-                           EXIF_ADVCOL_VALUE, utf8_text,
-                           EXIF_ADVCOL_FORMAT, format,
-                           EXIF_ADVCOL_ELEMENTS, elements,
+                           EXIF_ADVCOL_ENABLED,     advanced_exif_row_enabled(tag_name),
+                           EXIF_ADVCOL_TAG,         tag,
+                           EXIF_ADVCOL_NAME,        tag_name,
+                           EXIF_ADVCOL_VALUE,       utf8_text,
+                           EXIF_ADVCOL_FORMAT,      format,
+                           EXIF_ADVCOL_ELEMENTS,    elements,
                            EXIF_ADVCOL_DESCRIPTION, description, -1);
         g_free(tag);
         g_free(utf8_text);
@@ -158,9 +139,7 @@ static void advanced_exif_clear(ExifWin *ew)
 
 void advanced_exif_set_fd(GtkWidget *window, FileData *fd)
 {
-    ExifWin *ew;
-
-    ew = g_object_get_data(G_OBJECT(window), "advanced_exif_data");
+    ExifWin *ew = g_object_get_data(G_OBJECT(window), "advanced_exif_data");
     if (!ew) return;
 
     /* store this, advanced view toggle needs to reload data */
@@ -178,12 +157,10 @@ static GtkTargetEntry advanced_exif_drag_types[] = {
 };
 static gint n_exif_drag_types = 1;
 
-
 static void advanced_exif_dnd_get(GtkWidget *listview, GdkDragContext *context,
                                   GtkSelectionData *selection_data, guint info,
                                   guint time, gpointer data)
 {
-    //ExifWin *ew = data;
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
     GtkTreeIter iter;
 
@@ -194,16 +171,13 @@ static void advanced_exif_dnd_get(GtkWidget *listview, GdkDragContext *context,
 
         gtk_tree_model_get(store, &iter, EXIF_ADVCOL_NAME, &key, -1);
         gtk_selection_data_set_text(selection_data, key, -1);
-        //printf("%s\n",key);
         g_free(key);
     }
-
 }
 
-
-static void advanced_exif_dnd_begin(GtkWidget *listview, GdkDragContext *context, gpointer data)
+static void advanced_exif_dnd_begin(GtkWidget *listview,
+                                    GdkDragContext *context, gpointer data)
 {
-    //ExifWin *ew = data;
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(listview));
     GtkTreeIter iter;
 
@@ -221,12 +195,10 @@ static void advanced_exif_dnd_begin(GtkWidget *listview, GdkDragContext *context
 
 
 
-static void advanced_exif_add_column(GtkWidget *listview, const gchar *title, gint n, gboolean sizable)
+static void advanced_exif_add_column(GtkWidget *listview, const gchar *title,
+                                     gint n, gboolean sizable)
 {
-    GtkTreeViewColumn *column;
-    GtkCellRenderer *renderer;
-
-    column = gtk_tree_view_column_new();
+    GtkTreeViewColumn *column = gtk_tree_view_column_new();
     gtk_tree_view_column_set_title(column, title);
 
     if (sizable)
@@ -242,7 +214,7 @@ static void advanced_exif_add_column(GtkWidget *listview, const gchar *title, gi
     gtk_tree_view_column_set_resizable(column, TRUE);
     gtk_tree_view_column_set_sort_column_id(column, n);
 
-    renderer = gtk_cell_renderer_text_new();
+    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
     gtk_tree_view_column_pack_start(column, renderer, TRUE);
     gtk_tree_view_column_add_attribute(column, renderer, "text", n);
     gtk_tree_view_append_column(GTK_TREE_VIEW(listview), column);
@@ -262,7 +234,8 @@ static void advanced_exif_destroy(GtkWidget *widget, gpointer data)
     g_free(ew);
 }
 
-static gint advanced_exif_sort_cb(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gpointer data)
+static gint advanced_exif_sort_cb(GtkTreeModel *model,
+                                  GtkTreeIter *a, GtkTreeIter *b, gpointer data)
 {
     gint n = GPOINTER_TO_INT(data);
     gint ret = 0;
@@ -293,13 +266,12 @@ static gint advanced_exif_sort_cb(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIt
 
             g_free(s1);
             g_free(s2);
-        }
             break;
+        }
 
-            default:
-                g_return_val_if_reached(0);
+        default:
+            g_return_val_if_reached(0);
     }
-
     return ret;
 }
 
@@ -317,25 +289,23 @@ static gboolean advanced_exif_keypress(GtkWidget *widget, GdkEventKey *event, gp
                 stop_signal = TRUE;
                 break;
         }
-    } // if (event->state & GDK_CONTROL...
-
+    }
     return stop_signal;
-} // static gboolean advanced_exif_...
+}
 
 GtkWidget *advanced_exif_new(void)
 {
-    ExifWin *ew;
     GtkListStore *store;
     GdkGeometry geometry;
     GtkTreeSortable *sortable;
     GtkWidget *box;
     gint n;
 
-    ew = g_new0(ExifWin, 1);
+    ExifWin *ew = g_new0(ExifWin, 1);
 
     ew->window = window_new(GTK_WINDOW_TOPLEVEL, "view", NULL, NULL, _("Metadata"));
 
-    geometry.min_width = 900;
+    geometry.min_width  = 900;
     geometry.min_height = 600;
     gtk_window_set_geometry_hints(GTK_WINDOW(ew->window), NULL, &geometry, GDK_HINT_MIN_SIZE);
 
@@ -382,11 +352,11 @@ GtkWidget *advanced_exif_new(void)
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(ew->listview), TRUE);
 
     advanced_exif_add_column(ew->listview, _("Description"), EXIF_ADVCOL_DESCRIPTION, FALSE);
-    advanced_exif_add_column(ew->listview, _("Value"), EXIF_ADVCOL_VALUE, TRUE);
-    advanced_exif_add_column(ew->listview, _("Name"), EXIF_ADVCOL_NAME, FALSE);
-    advanced_exif_add_column(ew->listview, _("Tag"), EXIF_ADVCOL_TAG, FALSE);
-    advanced_exif_add_column(ew->listview, _("Format"), EXIF_ADVCOL_FORMAT, FALSE);
-    advanced_exif_add_column(ew->listview, _("Elements"), EXIF_ADVCOL_ELEMENTS, FALSE);
+    advanced_exif_add_column(ew->listview, _("Value"),       EXIF_ADVCOL_VALUE,       TRUE);
+    advanced_exif_add_column(ew->listview, _("Name"),        EXIF_ADVCOL_NAME,        FALSE);
+    advanced_exif_add_column(ew->listview, _("Tag"),         EXIF_ADVCOL_TAG,         FALSE);
+    advanced_exif_add_column(ew->listview, _("Format"),      EXIF_ADVCOL_FORMAT,      FALSE);
+    advanced_exif_add_column(ew->listview, _("Elements"),    EXIF_ADVCOL_ELEMENTS,    FALSE);
 
 
     gtk_drag_source_set(ew->listview,
