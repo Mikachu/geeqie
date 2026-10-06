@@ -30,7 +30,7 @@ void warning_dialog_dnd_uri_error(GList *uri_error_list)
     GList *work = uri_error_list;
     guint count = g_list_length(work);
     gchar *msg = g_strdup_printf("Failed to convert %d dropped item(s) to files\n", count);
-    if(count < 10)
+    if (count < 10)
     {
         while (work)
         {
@@ -46,21 +46,16 @@ void warning_dialog_dnd_uri_error(GList *uri_error_list)
 
 gchar **uris_from_pathlist(GList *list)
 {
-    GList *work;
     guint i = 0;
     guint num = g_list_length(list);
     gchar **uris = g_new0(gchar *, num + 1);
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         const gchar *path = work->data;
         gchar *local_path = path_from_utf8(path);
-        uris[i] = g_filename_to_uri(local_path, NULL, NULL);
+        uris[i++] = g_filename_to_uri(local_path, NULL, NULL);
         g_free(local_path);
-
-        i++;
-        work = work->next;
     }
 
     uris[i] = NULL;
@@ -81,7 +76,7 @@ gboolean uri_selection_data_set_uris_from_filelist(GtkSelectionData *selection_d
     gboolean ret = gtk_selection_data_set_uris(selection_data, uris);
     if (!ret)
     {
-        char *str = g_strjoinv("\r\n", uris);
+        gchar *str = g_strjoinv("\r\n", uris);
         ret = gtk_selection_data_set_text(selection_data, str, -1);
         g_free(str);
     }
@@ -93,10 +88,9 @@ gboolean uri_selection_data_set_uris_from_filelist(GtkSelectionData *selection_d
 GList *uri_pathlist_from_uris(gchar **uris, GList **uri_error_list)
 {
     GList *list = NULL;
-    guint i = 0;
     GError *error = NULL;
 
-    while (uris[i])
+    for (guint i = 0; uris[i]; i++)
     {
         gchar *local_path = g_filename_from_uri(uris[i], NULL, &error);
         if (error)
@@ -108,7 +102,7 @@ GList *uri_pathlist_from_uris(gchar **uris, GList **uri_error_list)
                 GError *retry_error = NULL;
                 gchar *escaped = g_uri_escape_string(uris[i], ":/", TRUE);
                 local_path = g_filename_from_uri(escaped, NULL, &retry_error);
-                if(retry_error)
+                if (retry_error)
                 {
                     DEBUG_1("manually escaped uri \"%s\" also failed g_filename_from_uri", escaped);
                     DEBUG_1("   error %d: %s", retry_error->code, retry_error->message);
@@ -121,14 +115,12 @@ GList *uri_pathlist_from_uris(gchar **uris, GList **uri_error_list)
             if (!local_path)
             {
                 *uri_error_list = g_list_prepend(*uri_error_list, g_strdup(uris[i]));
-                i++;
                 continue;
             }
         }
         gchar *path = path_to_utf8(local_path);
         g_free(local_path);
         list = g_list_prepend(list, path);
-        i++;
     }
 
     *uri_error_list = g_list_reverse(*uri_error_list);
@@ -148,7 +140,7 @@ GList *uri_filelist_from_gtk_selection_data(GtkSelectionData *selection_data)
     GList *errors = NULL;
     gchar **uris = gtk_selection_data_get_uris(selection_data);
     GList *ret = uri_filelist_from_uris(uris, &errors);
-    if(errors)
+    if (errors)
     {
         warning_dialog_dnd_uri_error(errors);
         string_list_free(errors);
@@ -156,6 +148,3 @@ GList *uri_filelist_from_gtk_selection_data(GtkSelectionData *selection_data)
     g_strfreev(uris);
     return ret;
 }
-
-
-
