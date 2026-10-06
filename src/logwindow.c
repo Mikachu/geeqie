@@ -26,9 +26,7 @@
 
 #include <gdk/gdkkeysyms.h>
 
-
 typedef struct LogWindow LogWindow;
-
 struct LogWindow
 {
     GtkWidget *window;
@@ -50,10 +48,10 @@ struct LogDef
 
 /* Keep LogType order !! */
 static LogDef logdefs[LOG_COUNT] = {
-    { LOG_NORMAL,   "normal",   "black"  },
-    { LOG_MSG,  "message",  "blue"   },
-    { LOG_WARN, "warning",  "orange" },
-    { LOG_ERROR,    "error",    "red"    },
+    { LOG_NORMAL, "normal",  "black"  },
+    { LOG_MSG,    "message", "blue"   },
+    { LOG_WARN,   "warning", "orange" },
+    { LOG_ERROR,  "error",   "red"    },
 };
 
 static LogWindow *logwindow = NULL;
@@ -63,7 +61,7 @@ static void hide_cb(GtkWidget *widget, LogWindow *logwin)
 }
 
 static gboolean key_pressed(GtkWidget *widget, GdkEventKey *event,
-                LogWindow *logwin)
+                            LogWindow *logwin)
 {
     if (event && event->keyval == GDK_KEY_Escape)
         gtk_widget_hide(logwin->window);
@@ -72,30 +70,27 @@ static gboolean key_pressed(GtkWidget *widget, GdkEventKey *event,
 
 static LogWindow *log_window_create(void)
 {
-    LogWindow *logwin;
-    GtkWidget *window;
-    GtkWidget *scrolledwin;
-    GtkWidget *text;
+    GtkWidget *window, *scrolledwin, *text;
     GtkTextBuffer *buffer;
     GtkTextIter iter;
 
-    logwin = g_new0(LogWindow, 1);
+    LogWindow *logwin = g_new0(LogWindow, 1);
 
     window = window_new(GTK_WINDOW_TOPLEVEL, "log", NULL, NULL, _("Log"));
     gtk_widget_set_size_request(window, 520, 400);
     g_signal_connect(G_OBJECT(window), "delete_event",
-             G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+                     G_CALLBACK(gtk_widget_hide_on_delete), NULL);
     g_signal_connect(G_OBJECT(window), "key_press_event",
-             G_CALLBACK(key_pressed), logwin);
+                     G_CALLBACK(key_pressed), logwin);
     g_signal_connect(G_OBJECT(window), "hide",
-             G_CALLBACK(hide_cb), logwin);
+                     G_CALLBACK(hide_cb), logwin);
     gtk_widget_realize(window);
 
     scrolledwin = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwin),
-                       GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+                                   GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolledwin),
-                        GTK_SHADOW_IN);
+                                        GTK_SHADOW_IN);
     gtk_container_add(GTK_CONTAINER(window), scrolledwin);
     gtk_widget_show(scrolledwin);
 
@@ -108,18 +103,16 @@ static LogWindow *log_window_create(void)
     gtk_container_add(GTK_CONTAINER(scrolledwin), text);
     gtk_widget_show(text);
 
-    logwin->window = window;
+    logwin->window      = window;
     logwin->scrolledwin = scrolledwin;
-    logwin->text = text;
-    logwin->lines = 1;
+    logwin->text        = text;
+    logwin->lines       = 1;
 
     return logwin;
 }
 
 static void log_window_init(LogWindow *logwin)
 {
-    GtkTextBuffer *buffer;
-    GdkColormap *colormap;
     gboolean success[LOG_COUNT];
     gint i;
 
@@ -134,41 +127,35 @@ static void log_window_init(LogWindow *logwin)
         memcpy(&logwin->colors[i], &logwin->colors[LOG_NORMAL], sizeof(GdkColor));
     }
 
-    colormap = gdk_drawable_get_colormap(gtk_widget_get_window(logwin->window));
+    GdkColormap *colormap = gdk_drawable_get_colormap(gtk_widget_get_window(logwin->window));
     gdk_colormap_alloc_colors(colormap, logwin->colors, LOG_COUNT, FALSE, TRUE, success);
 
     for (i = LOG_NORMAL; i < LOG_COUNT; i++)
     {
         if (success[i] == FALSE)
         {
-            GtkStyle *style;
-            gint j;
-
             g_warning("LogWindow: color allocation failed\n");
-            style = gtk_widget_get_style(logwin->window);
-            for (j = LOG_NORMAL; j < LOG_COUNT; j++)
+            GtkStyle *style = gtk_widget_get_style(logwin->window);
+            for (gint j = LOG_NORMAL; j < LOG_COUNT; j++)
                 logwin->colors[j] = style->black;
             break;
         }
     }
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(logwin->text));
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(logwin->text));
     for (i = LOG_NORMAL; i < LOG_COUNT; i++)
         gtk_text_buffer_create_tag(buffer, logdefs[i].tag,
-                       "foreground-gdk", &logwin->colors[i],
-                       "family", "MonoSpace",
-                       NULL);
+                                   "foreground-gdk", &logwin->colors[i],
+                                   "family", "MonoSpace",
+                                   NULL);
 }
 
 static void log_window_show(LogWindow *logwin)
 {
-    GtkTextView *text = GTK_TEXT_VIEW(logwin->text);
-    GtkTextBuffer *buffer;
-    GtkTextMark *mark;
-
     g_assert(logwin != NULL);
 
-    buffer = gtk_text_view_get_buffer(text);
-    mark = gtk_text_buffer_get_mark(buffer, "end");
+    GtkTextView   *text   = GTK_TEXT_VIEW(logwin->text);
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text);
+    GtkTextMark   *mark   = gtk_text_buffer_get_mark(buffer, "end");
     gtk_text_view_scroll_mark_onscreen(text, mark);
 
     gtk_window_present(GTK_WINDOW(logwin->window));
@@ -180,9 +167,7 @@ void log_window_new(void)
 {
     if (logwindow == NULL)
     {
-        LogWindow *logwin;
-
-        logwin = log_window_create();
+        LogWindow *logwin = log_window_create();
         log_window_init(logwin);
         logwindow = logwin;
     }
@@ -197,25 +182,18 @@ struct LogMsg {
     LogType type;
 };
 
-
 static void log_window_insert_text(GtkTextBuffer *buffer, GtkTextIter *iter,
-                   const gchar *text, const gchar *tag)
+                                   const gchar *text, const gchar *tag)
 {
-    gchar *str_utf8;
-
     if (!text || !*text) return;
 
-    str_utf8 = utf8_validate_or_convert(text);
+    gchar *str_utf8 = utf8_validate_or_convert(text);
     gtk_text_buffer_insert_with_tags_by_name(buffer, iter, str_utf8, -1, tag, NULL);
     g_free(str_utf8);
 }
 
-
 void log_window_append(const gchar *str, LogType type)
 {
-    GtkTextView *text;
-    GtkTextBuffer *buffer;
-    GtkTextIter iter;
     guint line_limit = 1000; //FIXME: option
     static GList *memory = NULL;
 
@@ -227,6 +205,7 @@ void log_window_append(const gchar *str, LogType type)
             msg->text = g_strdup(str);
             msg->type = type;
 
+            /* XXX QGueue */
             memory = g_list_prepend(memory, msg);
 
             while (g_list_length(memory) >= line_limit)
@@ -241,8 +220,8 @@ void log_window_append(const gchar *str, LogType type)
         return;
     }
 
-    text = GTK_TEXT_VIEW(logwindow->text);
-    buffer = gtk_text_view_get_buffer(text);
+    GtkTextView   *text   = GTK_TEXT_VIEW(logwindow->text);
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text);
 
     if (line_limit > 0 && logwindow->lines >= line_limit)
     {
@@ -254,31 +233,24 @@ void log_window_append(const gchar *str, LogType type)
         gtk_text_buffer_delete(buffer, &start, &end);
     }
 
+    GtkTextIter iter;
     gtk_text_buffer_get_end_iter(buffer, &iter);
 
+    for (GList *work = g_list_last(memory), *prev; work; work = prev)
     {
-    GList *work = g_list_last(memory);
-
-    while (work)
-    {
-        GList *prev;
         LogMsg *oldest_msg = work->data;
 
         log_window_insert_text(buffer, &iter, oldest_msg->text, logdefs[oldest_msg->type].tag);
 
         prev = work->prev;
         memory = g_list_delete_link(memory, work);
-        work = prev;
-    }
     }
 
     log_window_insert_text(buffer, &iter, str, logdefs[type].tag);
 
     if (gtk_widget_get_visible(GTK_WIDGET(text)))
     {
-        GtkTextMark *mark;
-
-        mark = gtk_text_buffer_get_mark(buffer, "end");
+        GtkTextMark *mark = gtk_text_buffer_get_mark(buffer, "end");
         gtk_text_view_scroll_mark_onscreen(text, mark);
     }
 
