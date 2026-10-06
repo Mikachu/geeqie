@@ -23,16 +23,17 @@
 
 gdouble get_zoom_increment(void)
 {
-    return ((options->image.zoom_increment != 0) ? (gdouble)options->image.zoom_increment / 100.0 : 1.0);
+    return ((options->image.zoom_increment != 0)
+            ? (gdouble)options->image.zoom_increment / 100.0
+            : 1.0);
 }
 
+/* XXX very questionable function */
 gchar *utf8_validate_or_convert(const gchar *text)
 {
-    gint len;
-
     if (!text) return NULL;
 
-    len = strlen(text);
+    gint len = strlen(text);
     if (!g_utf8_validate(text, len, NULL))
         return g_convert(text, len, "UTF-8", "ISO-8859-1", NULL, NULL, NULL);
 
@@ -75,54 +76,6 @@ gint utf8_compare(const gchar *s1, const gchar *s2, gboolean case_sensitive)
 
     return ret;
 }
-
-/* Borrowed from gtkfilesystemunix.c */
-gchar *expand_tilde(const gchar *filename)
-{
-#ifndef G_OS_UNIX
-    return g_strdup(filename);
-#else
-    const gchar *notilde;
-    const gchar *slash;
-    const gchar *home;
-
-    if (filename[0] != '~')
-        return g_strdup(filename);
-
-    notilde = filename + 1;
-    slash = strchr(notilde, G_DIR_SEPARATOR);
-    if (slash == notilde || !*notilde)
-    {
-        home = g_get_home_dir();
-        if (!home)
-            return g_strdup(filename);
-    }
-    else
-    {
-        gchar *username;
-        struct passwd *passwd;
-
-        if (slash)
-            username = g_strndup(notilde, slash - notilde);
-        else
-            username = g_strdup(notilde);
-
-        passwd = getpwnam(username);
-        g_free(username);
-
-        if (!passwd)
-            return g_strdup(filename);
-
-        home = passwd->pw_dir;
-    }
-
-    if (slash)
-        return g_build_filename(home, G_DIR_SEPARATOR_S, slash + 1, NULL);
-    else
-        return g_build_filename(home, G_DIR_SEPARATOR_S, NULL);
-#endif
-}
-
 
 /* Run a command like system() but may output debug messages. */
 int runcmd(gchar *cmd)

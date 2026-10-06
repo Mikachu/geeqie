@@ -24,7 +24,6 @@
 gdouble get_zoom_increment(void);
 gchar *utf8_validate_or_convert(const gchar *text);
 gint utf8_compare(const gchar *s1, const gchar *s2, gboolean case_sensitive);
-gchar *expand_tilde(const gchar *filename);
 int runcmd(gchar *cmd);
 
 #endif /* MISC_H */
