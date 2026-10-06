@@ -38,8 +38,6 @@ static void bar_pane_comment_changed(GtkTextBuffer *buffer, gpointer data);
  *-------------------------------------------------------------------
  */
 
-
-
 typedef struct PaneCommentData PaneCommentData;
 struct PaneCommentData
 {
@@ -51,35 +49,27 @@ struct PaneCommentData
     gint height;
 };
 
-
 static void bar_pane_comment_write(PaneCommentData *pcd)
 {
-    gchar *comment;
-
     if (!pcd->fd) return;
 
-    comment = text_widget_text_pull(pcd->comment_view);
+    gchar *comment = text_widget_text_pull(pcd->comment_view);
 
     metadata_write_string(pcd->fd, pcd->key, comment);
     g_free(comment);
 }
 
-
 static void bar_pane_comment_update(PaneCommentData *pcd)
 {
-    gchar *comment = NULL;
-    gchar *orig_comment = NULL;
-    gchar *comment_not_null;
     GtkTextBuffer *comment_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pcd->comment_view));
 
-    orig_comment = text_widget_text_pull(pcd->comment_view);
-    comment = metadata_read_string(pcd->fd, pcd->key, METADATA_PLAIN);
-    comment_not_null = (comment) ? comment : "";
+    gchar *orig_comment = text_widget_text_pull(pcd->comment_view);
+    gchar *comment = metadata_read_string(pcd->fd, pcd->key, METADATA_PLAIN);
 
-    if (strcmp(orig_comment, comment_not_null) != 0)
+    if (g_strcmp0(orig_comment, comment) != 0)
     {
         g_signal_handlers_block_by_func(comment_buffer, bar_pane_comment_changed, pcd);
-        gtk_text_buffer_set_text(comment_buffer, comment_not_null, -1);
+        gtk_text_buffer_set_text(comment_buffer, comment, -1);
         g_signal_handlers_unblock_by_func(comment_buffer, bar_pane_comment_changed, pcd);
     }
     g_free(comment);
@@ -90,30 +80,20 @@ static void bar_pane_comment_update(PaneCommentData *pcd)
 
 static void bar_pane_comment_set_selection(PaneCommentData *pcd, gboolean append)
 {
-    GList *list = NULL;
-    GList *work;
-    gchar *comment = NULL;
+    gchar *comment = text_widget_text_pull(pcd->comment_view);
 
-    comment = text_widget_text_pull(pcd->comment_view);
-
-    list = layout_selection_list(pcd->pane.lw);
+    GList *list = layout_selection_list(pcd->pane.lw);
     list = file_data_process_groups_in_selection(list, FALSE, NULL);
 
-    work = list;
-    while (work)
+    for (GList *work = list; work; work = work->next)
     {
         FileData *fd = work->data;
-        work = work->next;
         if (fd == pcd->fd) continue;
 
         if (append)
-        {
             metadata_append_string(fd, pcd->key, comment);
-        }
         else
-        {
             metadata_write_string(fd, pcd->key, comment);
-        }
     }
 
     filelist_free(list);
@@ -134,12 +114,9 @@ static void bar_pane_comment_sel_replace_cb(GtkWidget *button, gpointer data)
     bar_pane_comment_set_selection(pcd, FALSE);
 }
 
-
 static void bar_pane_comment_set_fd(GtkWidget *bar, FileData *fd)
 {
-    PaneCommentData *pcd;
-
-    pcd = g_object_get_data(G_OBJECT(bar), "pane_data");
+    PaneCommentData *pcd = g_object_get_data(G_OBJECT(bar), "pane_data");
     if (!pcd) return;
 
     file_data_unref(pcd->fd);
@@ -150,26 +127,24 @@ static void bar_pane_comment_set_fd(GtkWidget *bar, FileData *fd)
 
 static gint bar_pane_comment_event(GtkWidget *bar, GdkEvent *event)
 {
-    PaneCommentData *pcd;
-
-    pcd = g_object_get_data(G_OBJECT(bar), "pane_data");
+    PaneCommentData *pcd = g_object_get_data(G_OBJECT(bar), "pane_data");
     if (!pcd) return FALSE;
 
-    if (gtk_widget_has_focus(pcd->comment_view)) return gtk_widget_event(pcd->comment_view, event);
+    if (gtk_widget_has_focus(pcd->comment_view))
+        return gtk_widget_event(pcd->comment_view, event);
 
     return FALSE;
 }
 
 static void bar_pane_comment_write_config(GtkWidget *pane, GString *outstr, gint indent)
 {
-    PaneCommentData *pcd;
-
-    pcd = g_object_get_data(G_OBJECT(pane), "pane_data");
+    PaneCommentData *pcd = g_object_get_data(G_OBJECT(pane), "pane_data");
     if (!pcd) return;
 
     WRITE_NL(); WRITE_STRING("<pane_comment ");
     write_char_option(outstr, indent, "id", pcd->pane.id);
-    write_char_option(outstr, indent, "title", gtk_label_get_text(GTK_LABEL(pcd->pane.title)));
+    write_char_option(outstr, indent, "title",
+                      gtk_label_get_text(GTK_LABEL(pcd->pane.title)));
     WRITE_BOOL(pcd->pane, expanded);
     WRITE_CHAR(*pcd, key);
     WRITE_INT(*pcd, height);
@@ -179,7 +154,8 @@ static void bar_pane_comment_write_config(GtkWidget *pane, GString *outstr, gint
 static void bar_pane_comment_notify_cb(FileData *fd, NotifyType type, gpointer data)
 {
     PaneCommentData *pcd = data;
-    if ((type & (NOTIFY_REREAD | NOTIFY_CHANGE | NOTIFY_METADATA)) && fd == pcd->fd)
+    if ((type & (NOTIFY_REREAD | NOTIFY_CHANGE | NOTIFY_METADATA)) &&
+        fd == pcd->fd)
     {
         DEBUG_1("Notify pane_comment: %s %04x", fd->path, type);
 
@@ -194,14 +170,15 @@ static void bar_pane_comment_changed(GtkTextBuffer *buffer, gpointer data)
     bar_pane_comment_write(pcd);
 }
 
-
 static void bar_pane_comment_populate_popup(GtkTextView *textview, GtkMenu *menu, gpointer data)
 {
     PaneCommentData *pcd = data;
 
     menu_item_add_divider(GTK_WIDGET(menu));
-    menu_item_add_stock(GTK_WIDGET(menu), _("Add text to selected files"), GTK_STOCK_ADD, G_CALLBACK(bar_pane_comment_sel_add_cb), pcd);
-    menu_item_add_stock(GTK_WIDGET(menu), _("Replace existing text in selected files"), GTK_STOCK_CONVERT, G_CALLBACK(bar_pane_comment_sel_replace_cb), data);
+    menu_item_add_stock(GTK_WIDGET(menu), _("Add text to selected files"), GTK_STOCK_ADD,
+                        G_CALLBACK(bar_pane_comment_sel_add_cb), pcd);
+    menu_item_add_stock(GTK_WIDGET(menu), _("Replace existing text in selected files"), GTK_STOCK_CONVERT,
+                        G_CALLBACK(bar_pane_comment_sel_replace_cb), data);
 }
 
 static void bar_pane_comment_destroy(GtkWidget *widget, gpointer data)
@@ -212,43 +189,37 @@ static void bar_pane_comment_destroy(GtkWidget *widget, gpointer data)
 
     file_data_unref(pcd->fd);
     g_free(pcd->key);
-
     g_free(pcd->pane.id);
-
     g_free(pcd);
 }
 
-
-static GtkWidget *bar_pane_comment_new(const gchar *id, const gchar *title, const gchar *key, gboolean expanded, gint height)
+static GtkWidget *bar_pane_comment_new(const gchar *id, const gchar *title, const gchar *key,
+                                       gboolean expanded, gint height)
 {
-    PaneCommentData *pcd;
-    GtkWidget *scrolled;
-    GtkTextBuffer *buffer;
+    PaneCommentData *pcd = g_new0(PaneCommentData, 1);
 
-    pcd = g_new0(PaneCommentData, 1);
-
-    pcd->pane.pane_set_fd = bar_pane_comment_set_fd;
-    pcd->pane.pane_event = bar_pane_comment_event;
+    pcd->pane.pane_set_fd       = bar_pane_comment_set_fd;
+    pcd->pane.pane_event        = bar_pane_comment_event;
     pcd->pane.pane_write_config = bar_pane_comment_write_config;
-    pcd->pane.title = bar_pane_expander_title(title);
-    pcd->pane.id = g_strdup(id);
-    pcd->pane.type = PANE_COMMENT;
+    pcd->pane.title             = bar_pane_expander_title(title);
+    pcd->pane.id                = g_strdup(id);
+    pcd->pane.type              = PANE_COMMENT;
 
     pcd->pane.expanded = expanded;
 
-    pcd->key = g_strdup(key);
+    pcd->key    = g_strdup(key);
     pcd->height = height;
 
-    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *scrolled = gtk_scrolled_window_new(NULL, NULL);
 
     pcd->widget = scrolled;
     g_object_set_data(G_OBJECT(pcd->widget), "pane_data", pcd);
     g_signal_connect(G_OBJECT(pcd->widget), "destroy",
-             G_CALLBACK(bar_pane_comment_destroy), pcd);
+                     G_CALLBACK(bar_pane_comment_destroy), pcd);
 
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled), GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
-                       GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
     gtk_widget_set_size_request(pcd->widget, -1, height);
     gtk_widget_show(scrolled);
@@ -257,27 +228,26 @@ static GtkWidget *bar_pane_comment_new(const gchar *id, const gchar *title, cons
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(pcd->comment_view), GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(scrolled), pcd->comment_view);
     g_signal_connect(G_OBJECT(pcd->comment_view), "populate-popup",
-             G_CALLBACK(bar_pane_comment_populate_popup), pcd);
+                     G_CALLBACK(bar_pane_comment_populate_popup), pcd);
     gtk_widget_show(pcd->comment_view);
 
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pcd->comment_view));
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pcd->comment_view));
     g_signal_connect(G_OBJECT(buffer), "changed",
-             G_CALLBACK(bar_pane_comment_changed), pcd);
-
+                     G_CALLBACK(bar_pane_comment_changed), pcd);
 
     file_data_register_notify_func(bar_pane_comment_notify_cb, pcd, NOTIFY_PRIORITY_LOW);
 
     return pcd->widget;
 }
 
-GtkWidget *bar_pane_comment_new_from_config(const gchar **attribute_names, const gchar **attribute_values)
+GtkWidget *bar_pane_comment_new_from_config(const gchar **attribute_names,
+                                            const gchar **attribute_values)
 {
     gchar *title = NULL;
     gchar *key = g_strdup(COMMENT_KEY);
     gboolean expanded = TRUE;
     gint height = 50;
     gchar *id = g_strdup("comment");
-    GtkWidget *ret;
 
     while (*attribute_names)
     {
@@ -290,23 +260,23 @@ GtkWidget *bar_pane_comment_new_from_config(const gchar **attribute_names, const
         if (READ_INT_FULL("height", height)) continue;
         if (READ_CHAR_FULL("id", id)) continue;
 
-
         log_printf("unknown attribute %s = %s\n", option, value);
     }
-
     bar_pane_translate_title(PANE_COMMENT, id, &title);
-    ret = bar_pane_comment_new(id, title, key, expanded, height);
+
+    GtkWidget *bar = bar_pane_comment_new(id, title, key, expanded, height);
+
     g_free(title);
     g_free(key);
     g_free(id);
-    return ret;
+    return bar;
 }
 
-void bar_pane_comment_update_from_config(GtkWidget *pane, const gchar **attribute_names, const gchar **attribute_values)
+void bar_pane_comment_update_from_config(GtkWidget *pane,
+                                         const gchar **attribute_names,
+                                         const gchar **attribute_values)
 {
-    PaneCommentData *pcd;
-
-    pcd = g_object_get_data(G_OBJECT(pane), "pane_data");
+    PaneCommentData *pcd = g_object_get_data(G_OBJECT(pane), "pane_data");
     if (!pcd) return;
 
     gchar *title = NULL;
@@ -321,7 +291,6 @@ void bar_pane_comment_update_from_config(GtkWidget *pane, const gchar **attribut
         if (READ_BOOL_FULL("expanded", pcd->pane.expanded)) continue;
         if (READ_INT_FULL("height", pcd->height)) continue;
         if (READ_CHAR_FULL("id", pcd->pane.id)) continue;
-
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
