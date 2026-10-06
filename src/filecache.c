@@ -39,9 +39,6 @@ struct FileCacheEntry {
     gulong size;
 };
 
-static void file_cache_notify_cb(FileData *fd, NotifyType type, gpointer data);
-static void file_cache_remove_fd(FileCacheData *fc, FileData *fd);
-
 static gint file_cache_entry_compare_fd(gconstpointer a, gconstpointer b)
 {
     const FileCacheEntry *fe = a;
@@ -61,18 +58,14 @@ static void file_cache_remove_entry(FileCacheData *fc, GList *link)
     g_free(fe);
 }
 
-FileCacheData *file_cache_new(FileCacheReleaseFunc release, gulong max_size)
+static void file_cache_remove_fd(FileCacheData *fc, FileData *fd)
 {
-    FileCacheData *fc = g_new(FileCacheData, 1);
+    if (debug_file_cache) file_cache_dump(fc);
 
-    fc->release = release;
-    fc->list = NULL;
-    fc->max_size = max_size;
-    fc->size = 0;
+    GList *list = g_list_find_custom(fc->list, fd, file_cache_entry_compare_fd);
+    if (!list) return;
 
-    file_data_register_notify_func(file_cache_notify_cb, fc, NOTIFY_PRIORITY_HIGH);
-
-    return fc;
+    file_cache_remove_entry(fc, list);
 }
 
 gboolean file_cache_get(FileCacheData *fc, FileData *fd)
@@ -110,29 +103,28 @@ gboolean file_cache_get(FileCacheData *fc, FileData *fd)
 
 void file_cache_set_size(FileCacheData *fc, gulong size)
 {
-    GList *work;
-
     if (debug_file_cache) file_cache_dump(fc);
 
-    work = g_list_last(fc->list);
-    while (fc->size > size && work)
+    for (GList *work = g_list_last(fc->list), *prev; work; work = prev)
     {
-        GList *prev = work->prev;
+        prev = work->prev;
         file_cache_remove_entry(fc, work);
-        work = prev;
+        if (fc->size <= size)
+            break;
     }
 }
 
 void file_cache_put(FileCacheData *fc, FileData *fd, gulong size)
 {
-    FileCacheEntry *fe;
-
     if (file_cache_get(fc, fd)) return;
 
     DEBUG_2("cache add: fc=%p %s", fc, fd->path);
-    fe = g_new(FileCacheEntry, 1);
-    fe->fd = file_data_ref(fd);
+
+    FileCacheEntry *fe = g_new(FileCacheEntry, 1);
+
+    fe->fd   = file_data_ref(fd);
     fe->size = size;
+
     fc->list = g_list_prepend(fc->list, fe);
     fc->size += size;
 
@@ -155,31 +147,6 @@ void file_cache_set_max_size(FileCacheData *fc, gulong size)
     file_cache_set_size(fc, fc->max_size);
 }
 
-static void file_cache_remove_fd(FileCacheData *fc, FileData *fd)
-{
-    if (debug_file_cache) file_cache_dump(fc);
-
-    GList *list = g_list_find_custom(fc->list, fd, file_cache_entry_compare_fd);
-    if (!list) return;
-
-    file_cache_remove_entry(fc, list);
-}
-
-void file_cache_dump(FileCacheData *fc)
-{
-    GList *work = fc->list;
-    gulong n = 0;
-
-    DEBUG_1("cache dump: fc=%p max size:%ld size:%ld", fc, fc->max_size, fc->size);
-
-    while (work)
-    {
-        FileCacheEntry *fe = work->data;
-        work = work->next;
-        DEBUG_1("cache entry: fc=%p [%lu] %s %ld", fc, ++n, fe->fd->path, fe->size);
-    }
-}
-
 static void file_cache_notify_cb(FileData *fd, NotifyType type, gpointer data)
 {
     FileCacheData *fc = data;
@@ -188,5 +155,32 @@ static void file_cache_notify_cb(FileData *fd, NotifyType type, gpointer data)
     {
         DEBUG_1("Notify cache: %s %04x", fd->path, type);
         file_cache_remove_fd(fc, fd);
+    }
+}
+
+FileCacheData *file_cache_new(FileCacheReleaseFunc release, gulong max_size)
+{
+    FileCacheData *fc = g_new(FileCacheData, 1);
+
+    fc->release  = release;
+    fc->list     = NULL;
+    fc->max_size = max_size;
+    fc->size     = 0;
+
+    file_data_register_notify_func(file_cache_notify_cb, fc, NOTIFY_PRIORITY_HIGH);
+
+    return fc;
+}
+
+void file_cache_dump(FileCacheData *fc)
+{
+    gulong n = 0;
+
+    DEBUG_1("cache dump: fc=%p max size:%ld size:%ld", fc, fc->max_size, fc->size);
+
+    for (GList *work = fc->list; work; work = work->next)
+    {
+        FileCacheEntry *fe = work->data;
+        DEBUG_1("cache entry: fc=%p [%lu] %s %ld", fc, ++n, fe->fd->path, fe->size);
     }
 }
