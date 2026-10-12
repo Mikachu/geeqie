@@ -1121,7 +1121,6 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         }
         else
         {
-            gint max_t = dw->rot_invariant_sim ? 8 : 1;
             for (GList *w = build_list; w; w = w->next)
             {
                 DupeItem *di = w->data;
@@ -1129,15 +1128,12 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                 if (!di->simd || !di->simd->filled) continue;
                 if (!di->simd->coarse_filled)
                     image_sim_calc_coarse(di->simd);
-                for (gint t = 0; t < max_t; t++)
-                {
-                    SimVPEntry *e = g_new(SimVPEntry, 1);
-                    image_sim_coarse_rot(di->simd, t, e->coarse_r, e->coarse_g, e->coarse_b);
-                    e->user_data = di;
-                    dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
-                }
+                SimVPEntry *e = g_new(SimVPEntry, 1);
+                image_sim_coarse_rot(di->simd, 0, e->coarse_r, e->coarse_g, e->coarse_b);
+                e->user_data = di;
+                dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
-            dw->vptree = image_sim_vptree_build(dw->vptree_entries);
+            dw->vptree = image_sim_vptree_build(dw->vptree_entries, dw->rot_invariant_sim);
         }
         dw->vptree_seen_gen = g_new0(guint, idx);
         dw->vptree_current_gen = 1;
@@ -1154,8 +1150,6 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
             m = (gdouble)dw->duplicates_similarity_threshold / 100.0;
         else                                             m = 0.85;
 
-        /* Query with needle's identity coarse grid; rotated entries in the
-         * tree ensure all 8 transformations of each candidate are covered. */
         SimVPEntry query;
         image_sim_coarse_rot(needle->simd, 0, query.coarse_r, query.coarse_g, query.coarse_b);
         query.user_data = needle;
@@ -2998,8 +2992,8 @@ static void dupe_window_rotation_invariant_cb(GtkWidget *widget, gpointer data)
 {
     DupeWindow *dw = data;
 
-    options->rot_invariant_sim = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-    dw->rot_invariant_sim = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+    options->rot_invariant_sim =
+         dw->rot_invariant_sim = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
     dupe_window_recompare(dw);
 }
 

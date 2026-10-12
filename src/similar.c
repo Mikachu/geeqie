@@ -157,8 +157,9 @@ void image_sim_calc_coarse(ImageSimilarityData *sd)
     sd->coarse_filled = TRUE;
 }
 
-void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
-                          guint8 out_r[16], guint8 out_g[16], guint8 out_b[16])
+void image_sim_coarse_rot_grid(const guint8 in_r[16], const guint8 in_g[16], const guint8 in_b[16],
+                               guint8 out_r[16], guint8 out_g[16], guint8 out_b[16],
+                               gint transfo)
 {
     for (gint cy = 0; cy < 4; cy++)
     for (gint cx = 0; cx < 4; cx++)
@@ -170,16 +171,22 @@ void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
         if (transfo & 4) si = 3 - si;
         gint src = si * 4 + sj;
         gint dst = cy * 4 + cx;
-        out_r[dst] = sd->coarse_r[src];
-        out_g[dst] = sd->coarse_g[src];
-        out_b[dst] = sd->coarse_b[src];
+        out_r[dst] = in_r[src];
+        out_g[dst] = in_g[src];
+        out_b[dst] = in_b[src];
     }
+}
+
+void image_sim_coarse_rot(const ImageSimilarityData *sd, gint transfo,
+                          guint8 out_r[16], guint8 out_g[16], guint8 out_b[16])
+{
+    image_sim_coarse_rot_grid(sd->coarse_r, sd->coarse_g, sd->coarse_b,
+                              out_r, out_g, out_b, transfo);
 }
 
 static gint sim_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
-    const SimVPEntry *ea = a;
-    const SimVPEntry *eb = b;
+    const SimVPEntry *ea = a, *eb = b;
     gint d = 0;
     for (gint i = 0; i < 16; i++)
     {
@@ -190,9 +197,30 @@ static gint sim_vp_entry_dist(gconstpointer a, gconstpointer b)
     return d;
 }
 
-VPTree *image_sim_vptree_build(GList *entries)
+static gint sim_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
 {
-    return vptree_build(entries, sim_vp_entry_dist);
+    const SimVPEntry *ea = a, *eb = b;
+    gint best = G_MAXINT;
+    for (gint t = 0; t < 8; t++)
+    {
+        guint8 ar[16], ag[16], ab[16];
+        image_sim_coarse_rot_grid(ea->coarse_r, ea->coarse_g, ea->coarse_b, ar, ag, ab, t);
+        gint d = 0;
+        for (gint i = 0; i < 16; i++)
+        {
+            d += abs(ar[i] - eb->coarse_r[i]);
+            d += abs(ag[i] - eb->coarse_g[i]);
+            d += abs(ab[i] - eb->coarse_b[i]);
+        }
+        if (best > d)
+            best = d;
+    }
+    return best;
+}
+
+VPTree *image_sim_vptree_build(GList *entries, gboolean rot)
+{
+    return vptree_build(entries, rot ? sim_vp_entry_dist_orb : sim_vp_entry_dist);
 }
 
 GList *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius)

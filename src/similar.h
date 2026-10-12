@@ -57,9 +57,9 @@ ImageSimilarityData *image_sim_new(void);
 void image_sim_free(ImageSimilarityData *sd);
 
 void image_sim_calc_coarse(ImageSimilarityData *sd);
-void image_sim_coarse_rot(ImageSimilarityData *sd, gint transfo,
+void image_sim_coarse_rot(const ImageSimilarityData *sd, gint transfo,
                           guint8 out_r[16], guint8 out_g[16], guint8 out_b[16]);
-VPTree *image_sim_vptree_build(GList *entries);
+VPTree *image_sim_vptree_build(GList *entries, gboolean rot);
 GList  *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius);
 
 void image_sim_calc_phash(ImageSimilarityData *sd);
