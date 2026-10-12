@@ -58,9 +58,69 @@ void image_sim_free(ImageSimilarityData *sd)
     g_free(sd);
 }
 
+/* Maps vals[] index n (scan order: u=0..7,v=0..7, skipping (0,0)) to the
+ * index holding the transposed coefficient (v,u). Built once at first use. */
+static guint8 phash_transpose_perm[63];
+static gboolean phash_transpose_perm_init = FALSE;
+
+static void phash_init_transpose_perm(void)
+{
+    gint idx[8][8];
+    gint n = 0;
+    for (int u = 0; u < 8; u++)
+    for (int v = !u; v < 8; v++)
+        idx[u][v] = n++;
+
+    n = 0;
+    for (int u = 0; u < 8; u++)
+    for (int v = !u; v < 8; v++)
+        phash_transpose_perm[n++] = idx[v][u];
+
+    phash_transpose_perm_init = TRUE;
+}
+
+/* Given a 63-bit hash built by image_sim_calc_phash()'s threshold loop
+ * (vals[i] occupies bit i), returns the hash that would result from
+ * applying the same threshold to a vals[] array permuted by perm[], i.e.
+ * vals_new[i] = vals[perm[i]]. Since median/threshold only depend on the
+ * *set* of values, and transpose is a pure index permutation of dct[][]
+ * (no sign change), this is exact - no recomputation needed. */
+static guint64 phash_permute_bits(guint64 h, const guint8 perm[63])
+{
+    guint64 out = 0;
+    for (gint i = 0; i < 63; i++)
+        out |= ((h >> perm[i]) & 1) << i;
+
+    return out;
+}
+
+/* Computes the 63-bit median-threshold hash for one 8x8 coefficient grid. */
+static guint64 phash_hash_from_dct(float dct[8][8])
+{
+    float *vals = &dct[0][1], sorted[63];
+    memcpy(sorted, vals, 63 * sizeof(float));
+
+    for (int i = 1; i < 63; i++)
+    {
+        float key = sorted[i];
+        int j = i - 1;
+        while (j >= 0 && sorted[j] > key) { sorted[j+1] = sorted[j]; j--; }
+        sorted[j+1] = key;
+    }
+    float median = sorted[31];
+
+    guint64 hash = 0;
+    for (int i = 0; i < 63; i++)
+        if (vals[i] > median) hash |= 1ULL << i;
+
+    return hash;
+}
+
 void image_sim_calc_phash(ImageSimilarityData *sd)
 {
     if (!sd || !sd->filled) return;
+
+    if (!phash_transpose_perm_init) phash_init_transpose_perm();
 
     /* Precomputed cosine table: cos_table[n][k] = cosf(M_PI * (2*n+1) * k / 64.0f) */
     static float cos_table[32][8];
@@ -94,35 +154,42 @@ void image_sim_calc_phash(ImageSimilarityData *sd)
         dct[u][v] = sum;
     }
 
-    /* Collect 63 non-DC coefficients (skip dct[0][0]) */
-    float vals[63];
-    int n = 0;
+    /* Four "representative" sign variants of the same DCT grid: identity,
+     * horizontal flip ((-1)^u), vertical flip ((-1)^v), 180-deg rotation
+     * ((-1)^(u+v)). Each requires its own sort+threshold pass. */
+    float dct_id[8][8], dct_h[8][8], dct_v[8][8], dct_r[8][8];
     for (int u = 0; u < 8; u++)
     for (int v = 0; v < 8; v++)
-        if (u != 0 || v != 0)
-            vals[n++] = dct[u][v];
-
-    /* Find median via insertion sort of a copy */
-    float sorted[63];
-    for (int i = 0; i < 63; i++) sorted[i] = vals[i];
-    for (int i = 1; i < 63; i++)
     {
-        float key = sorted[i];
-        int j = i - 1;
-        while (j >= 0 && sorted[j] > key) { sorted[j+1] = sorted[j]; j--; }
-        sorted[j+1] = key;
-    }
-    float median = sorted[31]; /* middle of 63 elements */
-
-    /* Build 63-bit hash: bit i set if vals[i] > median */
-    guint64 hash = 0;
-    for (int i = 0; i < 63; i++)
-    {
-        hash <<= 1;
-        if (vals[i] > median) hash |= 1;
+        float val = dct[u][v];
+        dct_id[u][v] = val;
+        dct_h[u][v]  = (u & 1) ? -val : val;
+        dct_v[u][v]  = (v & 1) ? -val : val;
+        dct_r[u][v]  = ((u + v) & 1) ? -val : val;
     }
 
-    sd->phash = hash;
+    guint64 h_id = phash_hash_from_dct(dct_id);
+    guint64 h_h  = phash_hash_from_dct(dct_h);
+    guint64 h_v  = phash_hash_from_dct(dct_v);
+    guint64 h_r  = phash_hash_from_dct(dct_r);
+
+    /* The remaining 4 orientations (transpose, 90, 270, anti-transpose) are
+     * each exactly the matrix-transpose of one of the above grids, so their
+     * hashes are obtained via a fixed bit permutation - no resort needed. */
+    guint64 h_t    = phash_permute_bits(h_id, phash_transpose_perm); /* transpose */
+    guint64 h_90   = phash_permute_bits(h_h,  phash_transpose_perm); /* 90 deg */
+    guint64 h_270  = phash_permute_bits(h_v,  phash_transpose_perm); /* 270 deg */
+    guint64 h_anti = phash_permute_bits(h_r,  phash_transpose_perm); /* anti-transpose */
+
+    sd->phash[0] = h_id;
+    sd->phash[1] = h_h;
+    sd->phash[2] = h_v;
+    sd->phash[3] = h_r;
+    sd->phash[4] = h_t;
+    sd->phash[5] = h_90;
+    sd->phash[6] = h_270;
+    sd->phash[7] = h_anti;
+
     sd->phash_filled = TRUE;
 }
 
@@ -130,12 +197,29 @@ static gint sim_phash_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
     const SimVPEntry *ea = a;
     const SimVPEntry *eb = b;
-    return __builtin_popcountll(ea->phash ^ eb->phash);
+    return __builtin_popcountll(ea->phash[0] ^ eb->phash[0]);
 }
 
-VPTree *image_sim_phash_vptree_build(GList *entries)
+static gint sim_phash_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
 {
-    return vptree_build(entries, sim_phash_vp_entry_dist);
+    const SimVPEntry *ea = a;
+    const SimVPEntry *eb = b;
+    /* Only ea's identity-orientation hash is needed: eb already carries all
+     * 8 orientations, so the minimum over them covers every relative
+     * rotation/reflection between the two images. */
+    gint best = G_MAXINT;
+    for (gint t = 0; t < 8; t++)
+    {
+        gint d = __builtin_popcountll(ea->phash[0] ^ eb->phash[t]);
+        if (best > d)
+            best = d;
+    }
+    return best;
+}
+
+VPTree *image_sim_phash_vptree_build(GList *entries, gboolean rot)
+{
+    return vptree_build(entries, rot ? sim_phash_vp_entry_dist_orb : sim_phash_vp_entry_dist);
 }
 
 void image_sim_calc_coarse(ImageSimilarityData *sd)

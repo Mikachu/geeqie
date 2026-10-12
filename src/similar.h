@@ -35,7 +35,7 @@ struct ImageSimilarityData
     guint8 coarse_g[16];
     guint8 coarse_b[16];
 
-    guint64 phash;
+    guint64 phash[8];
 
     gboolean filled;
     gboolean coarse_filled;
@@ -48,7 +48,9 @@ struct SimVPEntry
     guint8 coarse_r[16];
     guint8 coarse_g[16];
     guint8 coarse_b[16];
-    guint64 phash;
+
+    guint64 phash[8];
+
     gpointer user_data;
 };
 
@@ -63,7 +65,7 @@ VPTree *image_sim_vptree_build(GList *entries, gboolean rot);
 GList  *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius);
 
 void image_sim_calc_phash(ImageSimilarityData *sd);
-VPTree *image_sim_phash_vptree_build(GList *entries);
+VPTree *image_sim_phash_vptree_build(GList *entries, gboolean rot);
 
 void image_sim_fill_data(ImageSimilarityData *sd, const GdkPixbuf *pixbuf);
 ImageSimilarityData *image_sim_new_from_pixbuf(const GdkPixbuf *pixbuf);

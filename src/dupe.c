@@ -47,11 +47,7 @@
 #include "window.h"
 
 #include <gdk/gdkkeysyms.h> /* for keyboard values */
-
-
-#include <sys/xattr.h>
 #include <math.h>
-
 
 #define DUPE_DEF_WIDTH 800
 #define DUPE_DEF_HEIGHT 400
@@ -290,58 +286,12 @@ static DupeItem *dupe_item_find_fd(DupeWindow *dw, FileData *fd)
  * ------------------------------------------------------------------
  */
 
-static void dupe_item_read_phash_xattr(DupeItem *di)
-{
-    if (di->simd && di->simd->phash_filled) return;
-
-    char mtime_buf[64];
-    ssize_t len = getxattr(di->fd->path, DUPE_PHASH_MTIME_XATTR,
-                           mtime_buf, sizeof(mtime_buf) - 1);
-    if (len <= 0) return;
-    mtime_buf[len] = '\0';
-
-    gchar *end;
-    glong stored_sec  = (glong)g_ascii_strtoll(mtime_buf, &end, 10);
-    if (!end || *end != '.') return;
-    glong stored_nsec = (glong)g_ascii_strtoll(end + 1, NULL, 10);
-
-    if (stored_sec  != (glong)di->fd->dat.tv_sec ||
-        stored_nsec != di->fd->dat.tv_nsec) return;
-
-    char hash_buf[32];
-    len = getxattr(di->fd->path, DUPE_PHASH_XATTR,
-                   hash_buf, sizeof(hash_buf) - 1);
-    if (len <= 0) return;
-    hash_buf[len] = '\0';
-
-    guint64 hash = g_ascii_strtoull(hash_buf, NULL, 10);
-
-    if (!di->simd) di->simd = image_sim_new();
-    di->simd->phash = hash;
-    di->simd->phash_filled = TRUE;
-}
-
-static void dupe_item_write_phash_xattr(DupeItem *di)
-{
-    if (!di->simd || !di->simd->phash_filled) return;
-
-    char buf[32];
-    gint len = g_snprintf(buf, sizeof(buf), "%" G_GUINT64_FORMAT, di->simd->phash);
-    setxattr(di->fd->path, DUPE_PHASH_XATTR, buf, len, 0);
-
-    char mtime_buf[64];
-    len = g_snprintf(mtime_buf, sizeof(mtime_buf), "%ld.%ld",
-                     (glong)di->fd->dat.tv_sec, di->fd->dat.tv_nsec);
-    setxattr(di->fd->path, DUPE_PHASH_MTIME_XATTR, mtime_buf, len, 0);
-}
-
 static void dupe_item_read_cache(DupeItem *di)
 {
     gchar *path;
     CacheData *cd;
 
     if (!di) return;
-    //dupe_item_read_phash_xattr(di);
 
     path = cache_find_location(CACHE_TYPE_SIM, di->fd->path);
     if (!path) return;
@@ -359,15 +309,8 @@ static void dupe_item_read_cache(DupeItem *di)
     {
         if (cd->sim && (!di->simd || !di->simd->filled))
         {
-            if (di->simd && di->simd->phash_filled)
-            {
-                /* Preserve phash loaded from xattr */
-                cd->sim->phash = di->simd->phash;
-                cd->sim->phash_filled = TRUE;
-                image_sim_free(di->simd);
-            }
-            di->simd = cd->sim;
-            cd->sim = NULL;
+            image_sim_free(di->simd);
+            di->simd = g_steal_pointer(&cd->sim);
         }
         if (di->width == 0 && di->height == 0 && cd->dimensions)
         {
@@ -1073,7 +1016,13 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b,
         if (!a->simd || !b->simd ||
             !a->simd->phash_filled || !b->simd->phash_filled)
             return FALSE;
-        gint hamming = __builtin_popcountll(a->simd->phash ^ b->simd->phash);
+        gint hamming = G_MAXINT;
+        gint max_t = dw->rot_invariant_sim ? 8 : 1;
+        for (gint t = 0; t < max_t; t++)
+        {
+            gint d = __builtin_popcountll(a->simd->phash[0] ^ b->simd->phash[t]);
+            if (d < hamming) hamming = d;
+        }
         *rank = (64 - hamming) / 64.0 * 100.0;
         threshold = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold
                             / 100.0) * 64);
@@ -1110,14 +1059,13 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     if (!di->simd->filled) continue;
                     image_sim_calc_phash(di->simd);
                     if (!di->simd->phash_filled) continue;
-                    //dupe_item_write_phash_xattr(di);
                 }
                 SimVPEntry *e = g_new(SimVPEntry, 1);
-                e->phash = di->simd->phash;
+                memcpy(e->phash, di->simd->phash, sizeof(e->phash));
                 e->user_data = di;
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
             }
-            dw->vptree = image_sim_phash_vptree_build(dw->vptree_entries);
+            dw->vptree = image_sim_phash_vptree_build(dw->vptree_entries, dw->rot_invariant_sim);
         }
         else
         {
@@ -1180,12 +1128,11 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
     {
         gboolean had_phash = needle->simd->phash_filled;
         if (!had_phash) image_sim_calc_phash(needle->simd);
-        if (!had_phash && needle->simd->phash_filled)
-            ;//dupe_item_write_phash_xattr(needle);
         if (needle->simd->phash_filled)
         {
             SimVPEntry query;
-            query.phash = needle->simd->phash;
+            /* query only needs the identity orientation */
+            query.phash[0] = needle->simd->phash[0];
             gint radius = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold
                                   / 100.0) * 64);
             query.user_data = needle;
