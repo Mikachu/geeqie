@@ -1542,7 +1542,9 @@ static gboolean search_file_do_extra(SearchData *sd, FileData *fd, gint *match,
             gdouble result;
 
             result = image_sim_compare_fast(sd->search_similarity_cd->sim, sd->img_cd->sim,
-                                            (gdouble)sd->search_similarity / 100.0);
+                                            (gdouble)sd->search_similarity / 100.0,
+                                            /* XXX per-search window option? */
+                                            options->rot_invariant_sim);
             result *= 100.0;
             if (result >= (gdouble)sd->search_similarity)
             {

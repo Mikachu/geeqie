@@ -361,9 +361,9 @@ gdouble image_sim_compare_transfo(ImageSimilarityData *a, ImageSimilarityData *b
     return 1.0 - ((gdouble)sim / (255.0 * 1024.0 * 3.0));
 }
 
-gdouble image_sim_compare(ImageSimilarityData *a, ImageSimilarityData *b)
+gdouble image_sim_compare(ImageSimilarityData *a, ImageSimilarityData *b, gboolean rot)
 {
-    gint max_t = (options->rot_invariant_sim ? 8 : 1);
+    gint max_t = rot ? 8 : 1;
 
     gdouble score, max_score = 0;
 
@@ -441,11 +441,12 @@ static const transfo_fn transfo_funcs[8] = {
     image_sim_compare_fast_5, image_sim_compare_fast_7,
 };
 
-gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b, gdouble min)
+gdouble image_sim_compare_fast(ImageSimilarityData *a, ImageSimilarityData *b,
+                               gdouble min, gboolean rot)
 {
     if (!a || !b || !a->filled || !b->filled) return 0.0;
 
-    gint max_t = (options->rot_invariant_sim ? 8 : 1);
+    gint max_t = rot ? 8 : 1;
     gint max_sim = (gint)((1.0 - min) * (255.0 * 1024.0 * 3.0));
     gdouble score, max_score = 0.0;
     for (gint t = 0; t < max_t; t++)

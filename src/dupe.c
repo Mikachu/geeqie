@@ -1056,9 +1056,9 @@ static gboolean dupe_match(DupeItem *a, DupeItem *b,
         else m = 0.85;
 
         if (fast)
-            f = image_sim_compare_fast(a->simd, b->simd, m);
+            f = image_sim_compare_fast(a->simd, b->simd, m, dw->rot_invariant_sim);
         else
-            f = image_sim_compare(a->simd, b->simd);
+            f = image_sim_compare(a->simd, b->simd, dw->rot_invariant_sim);
 
         *rank = f * 100.0;
 
