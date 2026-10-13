@@ -269,6 +269,24 @@ void image_sim_coarse_rot(const ImageSimilarityData *sd, gint transfo,
                               out_r, out_g, out_b, transfo);
 }
 
+/* coarse_perm[t][dst] = src: cell dst of the t-th orientation comes from
+ * cell src of the original grid. Same mapping as image_sim_coarse_rot_grid(),
+ * tabulated once by rotating an identity grid. */
+static guint8 coarse_perm[8][16];
+static gboolean coarse_perm_init = FALSE;
+
+static void coarse_perm_init_tables(void)
+{
+    guint8 id[16], sink[16];
+    for (gint i = 0; i < 16; i++)
+        id[i] = i;
+
+    for (gint t = 0; t < 8; t++)
+        image_sim_coarse_rot_grid(id, id, id, coarse_perm[t], sink, sink, t);
+
+    coarse_perm_init = TRUE;
+}
+
 static gint sim_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
     const SimVPEntry *ea = a, *eb = b;
@@ -288,14 +306,14 @@ static gint sim_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
     gint best = G_MAXINT;
     for (gint t = 0; t < 8; t++)
     {
-        guint8 ar[16], ag[16], ab[16];
-        image_sim_coarse_rot_grid(ea->coarse_r, ea->coarse_g, ea->coarse_b, ar, ag, ab, t);
+        const guint8 *perm = coarse_perm[t];
         gint d = 0;
         for (gint i = 0; i < 16; i++)
         {
-            d += abs(ar[i] - eb->coarse_r[i]);
-            d += abs(ag[i] - eb->coarse_g[i]);
-            d += abs(ab[i] - eb->coarse_b[i]);
+            const gint s = perm[i];
+            d += abs(ea->coarse_r[s] - eb->coarse_r[i]);
+            d += abs(ea->coarse_g[s] - eb->coarse_g[i]);
+            d += abs(ea->coarse_b[s] - eb->coarse_b[i]);
         }
         if (best > d)
             best = d;
@@ -305,6 +323,7 @@ static gint sim_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
 
 VPTree *image_sim_vptree_build(GList *entries, gboolean rot)
 {
+    if (rot && !coarse_perm_init) coarse_perm_init_tables();
     return vptree_build(entries, rot ? sim_vp_entry_dist_orb : sim_vp_entry_dist);
 }
 
