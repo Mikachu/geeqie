@@ -49,6 +49,12 @@ struct SimVPEntry
     guint8 coarse_g[16];
     guint8 coarse_b[16];
 
+    gpointer user_data;
+};
+
+typedef struct SimVPHEntry SimVPHEntry;
+struct SimVPHEntry
+{
     guint64 phash[8];
 
     gpointer user_data;
@@ -62,7 +68,7 @@ void image_sim_calc_coarse(ImageSimilarityData *sd);
 void image_sim_coarse_rot(const ImageSimilarityData *sd, gint transfo,
                           guint8 out_r[16], guint8 out_g[16], guint8 out_b[16]);
 VPTree *image_sim_vptree_build(GList *entries, gboolean rot);
-GList  *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius);
+GList  *image_sim_vptree_query(VPTree *tree, gpointer query, gint radius);
 
 void image_sim_calc_phash(ImageSimilarityData *sd);
 VPTree *image_sim_phash_vptree_build(GList *entries, gboolean rot);

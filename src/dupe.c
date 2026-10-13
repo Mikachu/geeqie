@@ -1060,7 +1060,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
                     image_sim_calc_phash(di->simd);
                     if (!di->simd->phash_filled) continue;
                 }
-                SimVPEntry *e = g_new(SimVPEntry, 1);
+                SimVPHEntry *e = g_new(SimVPHEntry, 1);
                 memcpy(e->phash, di->simd->phash, sizeof(e->phash));
                 e->user_data = di;
                 dw->vptree_entries = g_list_prepend(dw->vptree_entries, e);
@@ -1130,7 +1130,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
         if (!had_phash) image_sim_calc_phash(needle->simd);
         if (needle->simd->phash_filled)
         {
-            SimVPEntry query;
+            SimVPHEntry query;
             /* query only needs the identity orientation */
             query.phash[0] = needle->simd->phash[0];
             gint radius = (gint)((1.0 - (gdouble)dw->duplicates_similarity_threshold
@@ -1139,7 +1139,7 @@ static void dupe_list_check_match(DupeWindow *dw, DupeItem *needle, GList *start
             GList *candidates = image_sim_vptree_query(dw->vptree, &query, radius);
             for (GList *work = candidates; work; work = work->next)
             {
-                SimVPEntry *e = work->data;
+                SimVPHEntry *e = work->data;
                 DupeItem *di = e->user_data;
                 if (di == needle) continue;
                 if (dw->vptree_seen_gen[di->vptree_idx] == dw->vptree_current_gen) continue;

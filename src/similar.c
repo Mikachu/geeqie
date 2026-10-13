@@ -195,15 +195,15 @@ void image_sim_calc_phash(ImageSimilarityData *sd)
 
 static gint sim_phash_vp_entry_dist(gconstpointer a, gconstpointer b)
 {
-    const SimVPEntry *ea = a;
-    const SimVPEntry *eb = b;
+    const SimVPHEntry *ea = a;
+    const SimVPHEntry *eb = b;
     return __builtin_popcountll(ea->phash[0] ^ eb->phash[0]);
 }
 
 static gint sim_phash_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
 {
-    const SimVPEntry *ea = a;
-    const SimVPEntry *eb = b;
+    const SimVPHEntry *ea = a;
+    const SimVPHEntry *eb = b;
     /* Only ea's identity-orientation hash is needed: eb already carries all
      * 8 orientations, so the minimum over them covers every relative
      * rotation/reflection between the two images. */
@@ -307,7 +307,7 @@ VPTree *image_sim_vptree_build(GList *entries, gboolean rot)
     return vptree_build(entries, rot ? sim_vp_entry_dist_orb : sim_vp_entry_dist);
 }
 
-GList *image_sim_vptree_query(VPTree *tree, SimVPEntry *query, gint radius)
+GList *image_sim_vptree_query(VPTree *tree, gpointer query, gint radius)
 {
     return vptree_range_query(tree, query, radius);
 }
