@@ -61,7 +61,7 @@ void image_sim_free(ImageSimilarityData *sd)
 /* Maps vals[] index n (scan order: u=0..7,v=0..7, skipping (0,0)) to the
  * index holding the transposed coefficient (v,u). Built once at first use. */
 static guint8 phash_transpose_perm[63];
-static gboolean phash_transpose_perm_init = FALSE;
+static gsize phash_transpose_perm_init = FALSE; /* only access through g_once_* */
 
 static void phash_init_transpose_perm(void)
 {
@@ -75,8 +75,6 @@ static void phash_init_transpose_perm(void)
     for (int u = 0; u < 8; u++)
     for (int v = !u; v < 8; v++)
         phash_transpose_perm[n++] = idx[v][u];
-
-    phash_transpose_perm_init = TRUE;
 }
 
 /* Given a 63-bit hash built by image_sim_calc_phash()'s threshold loop
@@ -115,17 +113,21 @@ void image_sim_calc_phash(ImageSimilarityData *sd)
 {
     if (!sd || !sd->filled) return;
 
-    if (!phash_transpose_perm_init) phash_init_transpose_perm();
+    if (g_once_init_enter(&phash_transpose_perm_init))
+    {
+        phash_init_transpose_perm();
+        g_once_init_leave(&phash_transpose_perm_init, TRUE);
+    }
 
     /* Precomputed cosine table: cos_table[n][k] = cosf(M_PI * (2*n+1) * k / 64.0f) */
     static float cos_table[32][8];
-    static gboolean cos_table_init = FALSE;
-    if (!cos_table_init)
+    static gsize cos_table_init = FALSE; /* only access through g_once_* */
+    if (g_once_init_enter(&cos_table_init))
     {
         for (int n = 0; n < 32; n++)
         for (int k = 0; k < 8; k++)
             cos_table[n][k] = cosf((float)M_PI * (2*n+1) * k / 64.0f);
-        cos_table_init = TRUE;
+        g_once_init_leave(&cos_table_init, TRUE);
     }
 
     /* Convert to grayscale (luminance) */
@@ -273,7 +275,7 @@ void image_sim_coarse_rot(const ImageSimilarityData *sd, gint transfo,
  * cell src of the original grid. Same mapping as image_sim_coarse_rot_grid(),
  * tabulated once by rotating an identity grid. */
 static guint8 coarse_perm[8][16];
-static gboolean coarse_perm_init = FALSE;
+static gsize coarse_perm_init = FALSE; /* only access through g_once_* */
 
 static void coarse_perm_init_tables(void)
 {
@@ -283,8 +285,6 @@ static void coarse_perm_init_tables(void)
 
     for (gint t = 0; t < 8; t++)
         image_sim_coarse_rot_grid(id, id, id, coarse_perm[t], sink, sink, t);
-
-    coarse_perm_init = TRUE;
 }
 
 static gint sim_vp_entry_dist(gconstpointer a, gconstpointer b)
@@ -323,7 +323,11 @@ static gint sim_vp_entry_dist_orb(gconstpointer a, gconstpointer b)
 
 VPTree *image_sim_vptree_build(GList *entries, gboolean rot)
 {
-    if (rot && !coarse_perm_init) coarse_perm_init_tables();
+    if (rot && g_once_init_enter(&coarse_perm_init))
+    {
+        coarse_perm_init_tables();
+        g_once_init_leave(&coarse_perm_init, TRUE);
+    }
     return vptree_build(entries, rot ? sim_vp_entry_dist_orb : sim_vp_entry_dist);
 }
 
