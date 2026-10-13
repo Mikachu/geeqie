@@ -57,26 +57,25 @@ static void file_data_disconnect_sidecar_file(FileData *target, FileData *sfd);
  *-----------------------------------------------------------------------------
  */
 
-/* try to ensure we use ',' for thousands separators if the locale
- * doesn't specify one */
-static gpointer init_locale(gpointer data)
-{
-    locale_t english = NULL;
-    if (localeconv()->thousands_sep[0] == '\0') {
-        english = newlocale(LC_NUMERIC_MASK, "en_US.utf8", (locale_t) 0);
-        if (!english)
-            english = newlocale(LC_NUMERIC_MASK, "en_US", (locale_t) 0);
-    }
-    if (!english)
-        english = LC_GLOBAL_LOCALE; /* give up */
-    return english;
-}
-
 gchar *text_from_size(gint64 size)
 {
-    static GOnce once = G_ONCE_INIT;
-    g_once(&once, init_locale, NULL);
-    locale_t prev = uselocale((locale_t)once.retval);
+    static gsize locale_init = FALSE;
+    static locale_t english = NULL;
+    if (g_once_init_enter(&locale_init))
+    {
+        /* try to ensure we use ',' for thousands separators if the locale
+         * doesn't specify one */
+        if (localeconv()->thousands_sep[0] == '\0')
+        {
+            english = newlocale(LC_NUMERIC_MASK, "en_US.utf8", (locale_t) 0);
+            if (!english)
+                english = newlocale(LC_NUMERIC_MASK, "en_US", (locale_t) 0);
+        }
+        if (!english)
+            english = LC_GLOBAL_LOCALE; /* give up */
+        g_once_init_leave(&locale_init, TRUE);
+    }
+    locale_t prev = uselocale(english);
 
     gchar *ret = g_strdup_printf("%'"G_GUINT64_FORMAT, size);
 
