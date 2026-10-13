@@ -139,19 +139,25 @@ void image_sim_calc_phash(ImageSimilarityData *sd)
         gray[i] = 0.299f * sd->avg_r[i] + 0.587f * sd->avg_g[i] + 0.114f * sd->avg_b[i];
 
     /* Compute 8x8 top-left block of the 2D DCT */
-    float dct[8][8];
-    for (int u = 0; u < 8; u++)
-    for (int v = 0; v < 8; v++)
+
+    /* Separable: transform each row once (keeping only the 8 lowest
+     * horizontal frequencies), then transform the columns. */
+    float rows[32][8] = { { 0 } };
+    for (int y = 0; y < 32; y++)
+    for (int x = 0; x < 32; x++)
     {
-        float sum = 0.0f;
-        for (int y = 0; y < 32; y++)
-        {
-            float row_sum = 0.0f;
-            for (int x = 0; x < 32; x++)
-                row_sum += gray[y*32+x] * cos_table[x][u];
-            sum += row_sum * cos_table[y][v];
-        }
-        dct[u][v] = sum;
+        float g = gray[y*32 + x];
+        for (int u = 0; u < 8; u++)
+            rows[y][u] += g * cos_table[x][u];
+    }
+
+    float dct[8][8] = { { 0 } };
+    for (int y = 0; y < 32; y++)
+    for (int u = 0; u < 8; u++)
+    {
+        float r = rows[y][u];
+        for (int v = 0; v < 8; v++)
+            dct[u][v] += r * cos_table[y][v];
     }
 
     /* Four "representative" sign variants of the same DCT grid: identity,
