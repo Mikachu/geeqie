@@ -53,7 +53,7 @@ struct ImageLoaderTiff {
     toff_t pos;
 };
 
-static void free_buffer (guchar *pixels, gpointer data)
+static void free_buffer(guchar *pixels, gpointer data)
 {
     g_free (pixels);
 }

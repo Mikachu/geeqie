@@ -22,7 +22,7 @@
 #ifndef PIXBUF_UTIL_H
 #define PIXBUF_UTIL_H
 
-gboolean pixbuf_to_file_as_png (GdkPixbuf *pixbuf, const gchar *filename);
+gboolean pixbuf_to_file_as_png(GdkPixbuf *pixbuf, const gchar *filename);
 gboolean pixbuf_to_file_as_jpg(GdkPixbuf *pixbuf, const gchar *filename, gint quality);
 
 void pixbuf_inline_register_stock_icons(void);
