@@ -36,6 +36,7 @@ struct ImageLoaderPsd {
     guint requested_height;
 
     gboolean abort;
+    gboolean is_psb;
 };
 
 static gpointer image_loader_psd_new(ImageLoaderBackendCbAreaUpdated area_updated_cb,
@@ -83,8 +84,7 @@ struct PsdHeader {
  * into the in-memory buffer.
  * On return, *resources_end_out is set to the absolute offset just past
  * the Image Resources section (needed by the caller to locate the Layer
- * and Mask Information section for the composite-image fallback), and
- * *header_out is filled in regardless of whether a thumbnail was found. */
+ * and Mask Information section for the composite-image fallback). */
 static GdkPixbuf *psd_extract_embedded_thumbnail(const guchar *data, gsize len,
                                                  ImageLoaderPsd *lp,
                                                  gsize *resources_end_out)
@@ -129,7 +129,8 @@ static GdkPixbuf *psd_extract_embedded_thumbnail(const guchar *data, gsize len,
             guint32 format  = psd_read_u32(data + pos);
             guint32 thumb_w = psd_read_u32(data + pos + 4);
             guint32 thumb_h = psd_read_u32(data + pos + 8);
-            /* widthBytes, totalSize, sizeAfterCompression, bitsPerPixel, planes: skipped */
+            guint32 width_b = psd_read_u32(data + pos + 12);
+            /* totalSize, sizeAfterCompression, bitsPerPixel, planes: skipped */
             gsize payload_offset = pos + 28;
             guint32 payload_size = resource_size - 28;
 
@@ -157,12 +158,13 @@ static GdkPixbuf *psd_extract_embedded_thumbnail(const guchar *data, gsize len,
             else if (format == 0)
             {
                 /* format == 0: raw interleaved RGB payload. */
-                if ((gsize) payload_size >= (gsize) thumb_w * thumb_h * 3)
+                guint64 raw_size = (guint64)width_b * thumb_h;
+                if (width_b >= thumb_w * 3 && (gsize)payload_size >= raw_size)
                 {
-                    guchar *rgba = g_memdup2(data + payload_offset, (gsize) thumb_w * thumb_h * 3);
-                    return gdk_pixbuf_new_from_data(rgba, GDK_COLORSPACE_RGB, FALSE, 8,
-                                                    thumb_w, thumb_h, (gsize) thumb_w * 3,
-                                                    (GdkPixbufDestroyNotify) g_free, NULL);
+                    guchar *rgb = g_memdup2(data + payload_offset, raw_size);
+                    return gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, FALSE, 8,
+                                                    thumb_w, thumb_h, (gsize)width_b,
+                                                    (GdkPixbufDestroyNotify)g_free, NULL);
                 }
             }
         }
@@ -186,10 +188,10 @@ static inline gboolean psd_decode_rle_channel(const guchar *data, gsize len,
                                               guchar *dest, guint32 dest_stride)
 {
     gsize pos = *pos_io;
-    guint32 dest_offset = 0;
 
     for (guint32 line = 0; line < height; line++)
     {
+        gsize dest_offset = (gsize)line * width * dest_stride;
         guint32 line_bytes = byte_counts[line];
         if (pos + line_bytes > len) return FALSE;
 
@@ -272,10 +274,29 @@ static gboolean psd_decode_rle_channel_16(const guchar *data, gsize len,
                                   height, width, 2, dest, dest_stride);
 }
 
+/* TRUE if the first extra channel of the merged image is transparency:
+ * the layer count (first int16 of the Layer Info block) is negative. */
+static gboolean psd_merged_has_transparency(const guchar *data, gsize len,
+                                            gsize pos, const PsdHeader *h)
+{
+    const gsize lf = h->version == 1 ? 4 : 8;   /* length field size */
+
+    if (len < pos || len - pos < lf) return FALSE;
+    guint64 section = lf == 4 ? psd_read_u32(data + pos) : psd_read_u64(data + pos);
+    pos += lf;
+    if (section == 0 || len - pos < lf + 2) return FALSE;
+
+    guint64 info = lf == 4 ? psd_read_u32(data + pos) : psd_read_u64(data + pos);
+    pos += lf;
+    if (info < 2) return FALSE;
+
+    return (gint16) psd_read_u16(data + pos) < 0;
+}
+
 /* Fallback used when no embedded thumbnail resource (1033/1036) is present:
  * decode the full composite image data (skipping the Layer and Mask
  * Information section) and downscale it ourselves. Ported from the second
- * half of the reference PSDParser::ExtractThumbnail(). Only 8-bit-per-
+ * half of the reference PSDParser::ExtractThumbnail(). Only 8/16-bit-per-
  * channel RGB/RGBA (color_mode == 3) and uncompressed/PackBits compression
  * are supported, matching the reference implementation's own limitations. */
 static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
@@ -293,6 +314,11 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
     if (width == 0 || height == 0) return NULL;
     guint32 limit = header->version == 1 ? 30000 : 300000;
     if (width > limit || height > limit) return NULL;
+
+    /* Must look at the Layer and Mask section header, so before it's skipped.
+     * pos is still at its length field here. */
+    const gboolean has_alpha = header->channels >= 4 &&
+                               psd_merged_has_transparency(data, len, pos, header);
 
     /* Skip Layer and Mask Information section */
     if (header->version == 1)
@@ -317,7 +343,6 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
     guint32 bytes_per_sample = header->depth / 8;
     guint64 channel_size     = (gsize) width * height * bytes_per_sample;
     guint32 channels         = header->channels;
-    gboolean has_alpha       = channels >= 4;
     guint32 stride           = has_alpha ? 4 : 3;
 
     if ((guint64) width * height * stride > 1024ULL * 1024 * 1024) return NULL;
@@ -336,28 +361,27 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
         {
             if (g_atomic_int_get(&lp->abort)) { g_free(rgba); return NULL; }
             guint32 px = i / bytes_per_sample;
-            if (channels >= 1) rgba[px * stride + 0] = plane_src[                   i];
-            if (channels >= 2) rgba[px * stride + 1] = plane_src[channel_size     + i];
-            if (channels >= 3) rgba[px * stride + 2] = plane_src[channel_size * 2 + i];
-            if (channels >= 4) rgba[px * stride + 3] = plane_src[channel_size * 3 + i];
+            rgba[px * stride + 0] = plane_src[                   i];
+            rgba[px * stride + 1] = plane_src[channel_size     + i];
+            rgba[px * stride + 2] = plane_src[channel_size * 2 + i];
+            if (has_alpha) /* unindent for alignment */
+            rgba[px * stride + 3] = plane_src[channel_size * 3 + i];
         }
     }
     else /* compression == 1, PackBits RLE */
     {
-        guint32 scanline_count = height * channels;
-        if (pos + (gsize) scanline_count * 2 * header->version > len) { g_free(rgba); return NULL; }
+        gsize scanline_count = height * channels;
+        if (pos + scanline_count * 2 * header->version > len) { g_free(rgba); return NULL; }
 
         guint32 *byte_counts = g_new(guint32, scanline_count);
-        for (guint32 i = 0; i < scanline_count; i++)
+        for (gsize i = 0; i < scanline_count; i++)
         {
             if (header->version == 1) { byte_counts[i] = psd_read_u16(data + pos); pos += 2; }
             else                      { byte_counts[i] = psd_read_u32(data + pos); pos += 4; }
         }
 
         gboolean ok = TRUE;
-        /* XXX some of my psb files seem to have garbage alpha in the composited
-         * image, so better just ignore it? */
-        for (guint32 c = 0; c < 3 /*stride*/ && ok; c++)
+        for (gsize c = 0; c < stride && ok; c++)
         {
             /* channels 0..3 map directly to R,G,B,A in the interleaved
              * buffer; anything beyond that (spot channels) is ignored */
@@ -442,6 +466,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
      * target size, overwriting these before we read them below. */
     lp->requested_width  = header.width;
     lp->requested_height = header.height;
+    lp->is_psb = header.version == 2;
     if (lp->size_cb) lp->size_cb(lp, header.width, header.height, lp->data);
 
     /* Parse the resources section regardless, since we need `resources_end`
@@ -508,7 +533,8 @@ static GdkPixbuf *image_loader_psd_get_pixbuf(gpointer loader)
 
 static gchar *image_loader_psd_get_format_name(gpointer loader)
 {
-    return g_strdup("psd");
+    ImageLoaderPsd *lp = (ImageLoaderPsd *)loader;
+    return g_strdup(lp->is_psb ? "psb" : "psd");
 }
 
 static gchar **image_loader_psd_get_format_mime_types(gpointer loader)
