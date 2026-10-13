@@ -527,7 +527,18 @@ static void image_loader_size_cb(gpointer loader,
 
     g_mutex_lock(il->data_mutex);
 
-    if (width > il->requested_width || height > il->requested_height)
+    if (il->requested_min)
+    {
+        /* Only worth asking for a reduced decode if the image exceeds
+         * the minimum on both axes; otherwise the loader would run
+         * through every scale and decode at full size anyway. */
+        if (width > il->requested_width && height > il->requested_height)
+        {
+            il->backend.set_size(loader, il->requested_width, il->requested_height);
+            il->shrunk = TRUE;
+        }
+    }
+    else if (width > il->requested_width || height > il->requested_height)
     {
         pixbuf_scale_aspect(il->requested_width, il->requested_height,
                             width, height,
@@ -1110,6 +1121,18 @@ void image_loader_set_requested_size(ImageLoader *il, gint width, gint height)
     g_mutex_lock(il->data_mutex);
     il->requested_width  = width;
     il->requested_height = height;
+    il->requested_min    = FALSE;
+    g_mutex_unlock(il->data_mutex);
+}
+
+void image_loader_set_requested_min_size(ImageLoader *il, gint width, gint height)
+{
+    if (!il) return;
+
+    g_mutex_lock(il->data_mutex);
+    il->requested_width  = width;
+    il->requested_height = height;
+    il->requested_min    = TRUE;
     g_mutex_unlock(il->data_mutex);
 }
 

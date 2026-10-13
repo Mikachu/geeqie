@@ -1460,7 +1460,7 @@ static gboolean dupe_check_cb(gpointer data)
 
                     dw->img_loader = image_loader_new(di->fd);
                     image_loader_set_buffer_size(dw->img_loader, 8);
-                    image_loader_set_requested_size(dw->img_loader, 32, 32);
+                    image_loader_set_requested_min_size(dw->img_loader, 128, 128);
                     g_signal_connect(G_OBJECT(dw->img_loader), "error",
                                      G_CALLBACK(dupe_loader_done_cb), dw);
                     g_signal_connect(G_OBJECT(dw->img_loader), "done",

@@ -78,6 +78,7 @@ struct ImageLoader
 
     gint requested_width;
     gint requested_height;
+    gboolean requested_min;
 
     gint actual_width;
     gint actual_height;
@@ -141,10 +142,12 @@ void image_loader_abort(ImageLoader *il);
 void image_loader_delay_area_ready(ImageLoader *il, gboolean enable);
 
 /* Speed up loading when you only need at most width x height size image,
- * only the jpeg GdkPixbuf loader benefits from it - so there is no
- * guarantee that the image will scale down to the requested size..
- */
+ * there is no guarantee that the image will scale down to the requested size */
 void image_loader_set_requested_size(ImageLoader *il, gint width, gint height);
+/* same but for similarity code, which will scale to 32x32 ignoring aspect ratio,
+ * so do not adjust the requested size by aspect ratio since then one axis may
+ * undershoot */
+void image_loader_set_requested_min_size(ImageLoader *il, gint width, gint height);
 
 void image_loader_set_buffer_size(ImageLoader *il, guint size);
 
