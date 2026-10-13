@@ -318,102 +318,99 @@ GList *image_sim_vptree_query(VPTree *tree, gpointer query, gint radius)
     return vptree_range_query(tree, query, radius);
 }
 
+/* Split n source pixels into 32 cells. For n >= 32 the cells are contiguous
+ * and cover the axis; for n < 32 each cell is one sampled pixel. */
+static void image_sim_cell_bounds(gint n, gint start[32], gint len[32])
+{
+    if (n < 32)
+    {
+        for (gint k = 0; k < 32; k++)
+        {
+            start[k] = (gint)((gfloat)n / 32 * k);
+            len[k] = 1;
+        }
+        return;
+    }
+
+    gint pos = 0, left = n;
+    for (gint k = 0; k < 32; k++)
+    {
+        gint inc = (gint)roundf((gfloat)left / (32 - k));
+        start[k] = pos;
+        len[k] = inc;
+        pos += inc;
+        left -= inc;
+    }
+}
+
 void image_sim_fill_data(ImageSimilarityData *sd, const GdkPixbuf *pixbuf)
 {
-    gboolean x_small = FALSE;   /* if less than 32 w or h, set TRUE */
-    gboolean y_small = FALSE;
     if (!sd || !pixbuf) return;
 
-    gint w             = gdk_pixbuf_get_width(pixbuf);
-    gint h             = gdk_pixbuf_get_height(pixbuf);
-    gint rs            = gdk_pixbuf_get_rowstride(pixbuf);
-    const guchar *pix  = gdk_pixbuf_read_pixels(pixbuf);
-    gboolean has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
+    const gint w              = gdk_pixbuf_get_width(pixbuf);
+    const gint h              = gdk_pixbuf_get_height(pixbuf);
+    const gsize rs            = gdk_pixbuf_get_rowstride(pixbuf);
+    const guchar *pix         = gdk_pixbuf_read_pixels(pixbuf);
+    const gboolean has_alpha  = gdk_pixbuf_get_has_alpha(pixbuf);
+    const gint p_step         = has_alpha ? 4 : 3;
 
-    gint p_step = has_alpha ? 4 : 3;
-    gint x_inc = w / 32;
-    gint y_inc = h / 32;
-    gint w_left, h_left;
+    gint xs_start[32], xs_len[32], ys_start[32], ys_len[32];
+    image_sim_cell_bounds(w, xs_start, xs_len);
+    image_sim_cell_bounds(h, ys_start, ys_len);
 
-    if (x_inc < 1)
-    {
-        x_inc = 1;
-        x_small = TRUE;
-    }
-    if (y_inc < 1)
-    {
-        y_inc = 1;
-        y_small = TRUE;
-    }
-
-    gint j = 0;
-
-    h_left = h;
     for (gint ys = 0; ys < 32; ys++)
     {
-        if (y_small) j = (gfloat)h / 32 * ys;
-        else     y_inc = (gint)roundf((gfloat)h_left/(32 - ys));
-        gint i = 0;
+        guint32 sum[32][3] = { { 0 } };
+        guint32 cnt[32]    = { 0 };   /* pixels counted (opaque ones if alpha) */
 
-        w_left = w;
-        for (gint xs = 0; xs < 32; xs++)
+        for (gint y = ys_start[ys]; y < ys_start[ys] + ys_len[ys]; y++)
         {
-            gint r = 0, g = 0, b = 0;
+            const guchar *row = pix + (gsize)y * rs;
 
-            if (x_small) i = (gfloat)w / 32 * xs;
-            else     x_inc = (gint)roundf((gfloat)w_left/(32 - xs));
-            const guchar *xpos = pix + (i * p_step);
+            for (gint xs = 0; xs < 32; xs++)
+            {
+                const guchar *p = row + (gsize)xs_start[xs] * p_step;
+                const gint n = xs_len[xs];
+                guint32 r = 0, g = 0, b = 0;
 
-            if (has_alpha) {
-                gint opaque = 0;
-                for (gint y = j; y < j + y_inc; y++)
+                if (has_alpha)
                 {
-                    const guchar *p = xpos + (y * rs);
-                    for (gint x = i; x < i + x_inc; x++)
+                    guint32 opaque = 0;
+                    for (gint x = 0; x < n; x++, p += 4)
                     {
-                        gint visible = !!p[3];
+                        guint32 visible = !!p[3];
                         r += p[0] * visible;
                         g += p[1] * visible;
                         b += p[2] * visible;
-                        p += 4;
                         opaque += visible;
                     }
+                    cnt[xs] += opaque;
                 }
-
-                if (!opaque) opaque = 1;
-                r /= opaque;
-                g /= opaque;
-                b /= opaque;
-            } else {
-                gint xy_inc = x_inc * y_inc;
-                for (gint y = j; y < j + y_inc; y++)
+                else
                 {
-                    const guchar *p = xpos + (y * rs);
-                    for (gint x = i; x < i + x_inc; x++)
+                    for (gint x = 0; x < n; x++, p += 3)
                     {
                         r += p[0];
                         g += p[1];
                         b += p[2];
-                        p += 3;
                     }
+                    cnt[xs] += n;
                 }
 
-                r /= xy_inc;
-                g /= xy_inc;
-                b /= xy_inc;
+                sum[xs][0] += r;
+                sum[xs][1] += g;
+                sum[xs][2] += b;
             }
-
-            gint t = ys * 32 + xs;
-            sd->avg_r[t] = r;
-            sd->avg_g[t] = g;
-            sd->avg_b[t] = b;
-
-            i += x_inc;
-            w_left -= x_inc;
         }
 
-        j += y_inc;
-        h_left -= y_inc;
+        for (gint xs = 0; xs < 32; xs++)
+        {
+            guint32 c = cnt[xs] ? cnt[xs] : 1;
+            gint t = ys * 32 + xs;
+            sd->avg_r[t] = sum[xs][0] / c;
+            sd->avg_g[t] = sum[xs][1] / c;
+            sd->avg_b[t] = sum[xs][2] / c;
+        }
     }
 
     sd->filled = TRUE;
