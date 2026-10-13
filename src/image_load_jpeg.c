@@ -92,7 +92,7 @@ static void convert_cmyk_to_rgb(struct jpeg_decompress_struct *cinfo, guchar **l
 
     for (gint i = cinfo->rec_outbuf_height - 1; i >= 0; i--) {
         guchar *p = lines[i];
-        for (gint j = 0; j < cinfo->output_width; j++) {
+        for (guint j = 0; j < cinfo->output_width; j++) {
             gint c = p[0];
             gint m = p[1];
             gint y = p[2];
@@ -151,13 +151,22 @@ static void fatal_error_handler(j_common_ptr cinfo)
     g_assert_not_reached();
 }
 
-static void output_message_handler (j_common_ptr cinfo)
+static void output_message_handler(j_common_ptr cinfo)
 {
   /* This method keeps libjpeg from dumping crap to stderr */
 
   /* do nothing */
 }
 
+/* jpeg_mem_src() reports a truncated file as a warning and feeds libjpeg a
+ * fake EOI, so the missing rows come out as flat gray. Treat it as an error
+ * instead: the rows decoded so far have already been passed to
+ * area_updated_cb, and the load then fails without drawing the rest. */
+static void emit_message_handler(j_common_ptr cinfo, int msg_level)
+{
+    if (msg_level < 0 && cinfo->err->msg_code == JWRN_JPEG_EOF)
+        (*cinfo->err->error_exit)(cinfo);
+}
 
 void image_loader_jpeg_read_scanline(struct jpeg_decompress_struct *cinfo,
                                      guchar **dptr, guint rowstride)
@@ -188,56 +197,6 @@ void image_loader_jpeg_read_scanline(struct jpeg_decompress_struct *cinfo,
     }
 }
 
-
-static void init_source(j_decompress_ptr cinfo)
-{
-}
-
-static boolean fill_input_buffer(j_decompress_ptr cinfo)
-{
-    ERREXIT(cinfo, JERR_INPUT_EMPTY);
-    return TRUE;
-}
-
-static void skip_input_data(j_decompress_ptr cinfo, glong num_bytes)
-{
-    struct jpeg_source_mgr *src = (struct jpeg_source_mgr *)cinfo->src;
-
-    if (num_bytes > src->bytes_in_buffer)
-    {
-        ERREXIT(cinfo, JERR_INPUT_EOF);
-    }
-    else if (num_bytes > 0)
-    {
-        src->next_input_byte += (size_t) num_bytes;
-        src->bytes_in_buffer -= (size_t) num_bytes;
-    }
-}
-static void term_source(j_decompress_ptr cinfo)
-{
-}
-
-static void set_mem_src(j_decompress_ptr cinfo, gpointer buffer, glong nbytes)
-{
-    struct jpeg_source_mgr *src;
-
-    if (cinfo->src == NULL)
-        /* first time for this JPEG object? */
-        cinfo->src = (struct jpeg_source_mgr *)(*cinfo->mem->alloc_small)(
-                         (j_common_ptr)cinfo, JPOOL_PERMANENT,
-                         sizeof(struct jpeg_source_mgr));
-
-    src = (struct jpeg_source_mgr *)cinfo->src;
-
-    src->init_source       = init_source;
-    src->fill_input_buffer = fill_input_buffer;
-    src->skip_input_data   = skip_input_data;
-    src->resync_to_restart = jpeg_resync_to_restart; /* use default method */
-    src->term_source       = term_source;
-    src->bytes_in_buffer   = nbytes;
-    src->next_input_byte   = (JOCTET*)buffer;
-}
-
 struct progress_mgr_data {
     struct jpeg_progress_mgr pub;
     ImageLoaderJpeg *lj;
@@ -251,12 +210,19 @@ static void progress_monitor(j_common_ptr cinfo)
         siglongjmp(pmgr->jerr->setjmp_buffer, 1);
 }
 
+/* True if [offset, offset + length) is a non-empty range inside a buffer of
+ * 'total' bytes. Written to avoid overflow in offset + length. */
+static gboolean mpo_range_ok(gsize total, gsize offset, gsize length)
+{
+    return length > 0 && offset <= total && length <= total - offset;
+}
+
 static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
                                        gsize count, GError **error)
 {
     ImageLoaderJpeg *lj = (ImageLoaderJpeg *)loader;
-    struct jpeg_decompress_struct cinfo;
-    struct jpeg_decompress_struct cinfo2;
+    struct jpeg_decompress_struct cinfo = { 0 };
+    struct jpeg_decompress_struct cinfo2 = { 0 };
     guchar *dptr, *dptr2;
     guint rowstride;
     guchar *stereo_buf2 = NULL;
@@ -283,12 +249,23 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
 
         if (idx1 >= 0 && idx2 >= 0)
         {
-            lj->stereo = TRUE;
-            /* watch out, this uses buf just before modifying buf */
-            stereo_buf2 = (guchar *)buf + mpo->images[idx2].offset;
-            buf         = (guchar *)buf + mpo->images[idx1].offset;
-            stereo_length = mpo->images[idx2].length;
-            count         = mpo->images[idx1].length;
+            const gsize off1 = mpo->images[idx1].offset,
+                        len1 = mpo->images[idx1].length,
+                        off2 = mpo->images[idx2].offset,
+                        len2 = mpo->images[idx2].length;
+            /* Both ranges are checked against the original buffer size,
+             * before buf/count are overwritten. If either is bogus, fall
+             * back to a plain single-image load of the whole buffer. */
+            if (mpo_range_ok(count, off1, len1) &&
+                mpo_range_ok(count, off2, len2))
+            {
+                lj->stereo = TRUE;
+                /* watch out, this uses buf just before modifying buf */
+                stereo_buf2 = (guchar *)buf + off2;
+                buf         = (guchar *)buf + off1;
+                stereo_length = len2;
+                count         = len1;
+            }
         }
     }
     jpeg_mpo_data_free(mpo);
@@ -300,11 +277,12 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
 
     jerr.pub.error_exit     = fatal_error_handler;
     jerr.pub.output_message = output_message_handler;
+    jerr.pub.emit_message   = emit_message_handler;
 
     jerr.error = error;
 
 
-    if (setjmp(jerr.setjmp_buffer))
+    if (sigsetjmp(jerr.setjmp_buffer, 0))
     {
         /* If we get here, the JPEG code has signaled an error.
          * We need to clean up the JPEG object, close the input file, and return.
@@ -320,14 +298,14 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
 
     jpeg_create_decompress(&cinfo);
 
-    set_mem_src(&cinfo, (guchar *)buf, count);
+    jpeg_mem_src(&cinfo, buf, count);
 
     jpeg_read_header(&cinfo, TRUE);
 
     if (lj->stereo)
     {
         jpeg_create_decompress(&cinfo2);
-        set_mem_src(&cinfo2, stereo_buf2, stereo_length);
+        jpeg_mem_src(&cinfo2, stereo_buf2, stereo_length);
         jpeg_read_header(&cinfo2, TRUE);
 
         if (cinfo.image_width  != cinfo2.image_width ||
@@ -339,6 +317,14 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
         }
     }
 
+    /* Report actual image size to the client via size_cb. Note that
+     * size_cb may synchronously call backend.set_size() (see
+     * image_loader_size_cb in image-load.c), which overwrites
+     * lj->requested_width/height with the *target* size.
+     * The scale_num loop below then selects the smallest num/8 decode
+     * that is still >= that target; if set_size was never called,
+     * requested_* still holds the full dims and we decode at 8/8. */
+
     lj->requested_width  = lj->stereo ? cinfo.image_width * 2: cinfo.image_width;
     lj->requested_height = cinfo.image_height;
     lj->size_cb(loader, lj->requested_width, lj->requested_height, lj->data);
@@ -346,7 +332,7 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
     cinfo.scale_denom = 8;
     for (cinfo.scale_num = 1; cinfo.scale_num < 8; cinfo.scale_num++) {
         jpeg_calc_output_dimensions(&cinfo);
-        if (cinfo.output_height >= lj->requested_height ||
+        if (cinfo.output_height >= lj->requested_height &&
             cinfo.output_width  >= (lj->stereo ? lj->requested_width / 2
                                                : lj->requested_width))
             break;
@@ -423,12 +409,21 @@ static gboolean image_loader_jpeg_load(gpointer loader, const guchar *buf,
                                 cinfo2.output_width, cinfo2.rec_outbuf_height, lj->data);
         }
     }
+    /* Cancelled mid-decode: finish_decompress would raise
+     * JERR_TOO_LITTLE_DATA and set a misleading GError. */
+    if (cinfo.output_scanline < cinfo.output_height)
+    {
+        jpeg_destroy_decompress(&cinfo);
+        if (lj->stereo)
+            jpeg_destroy_decompress(&cinfo2);
+        return FALSE;
+    }
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
     if (lj->stereo)
     {
-        jpeg_finish_decompress(&cinfo);
-        jpeg_destroy_decompress(&cinfo);
+        jpeg_finish_decompress(&cinfo2);
+        jpeg_destroy_decompress(&cinfo2);
     }
     return TRUE;
 }
