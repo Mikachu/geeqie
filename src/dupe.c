@@ -3400,8 +3400,10 @@ static void dupe_dnd_data_get(GtkWidget *widget, GdkDragContext *context,
                               GtkSelectionData *selection_data, guint info,
                               guint time, DupeWindow *dw)
 {
-    if (dw->add_files_queue_id > 0)
+    if (dw->add_files_queue_id > 0 &&
+        dw->second_drop != (dw->second_set && widget == dw->second_listview))
     {
+        /* XXX handle this less badly */
         warning_dialog(_("Find duplicates"),
                        _("Please wait for the current file selection to be loaded."),
                        GTK_STOCK_DIALOG_INFO, dw->window);
