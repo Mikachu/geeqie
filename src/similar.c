@@ -97,21 +97,16 @@ static guint64 phash_permute_bits(guint64 h, const guint8 perm[63])
 /* Computes the 63-bit median-threshold hash for one 8x8 coefficient grid. */
 static guint64 phash_hash_from_dct(float dct[8][8])
 {
-    float *vals = &dct[0][1], sorted[63];
-    memcpy(sorted, vals, 63 * sizeof(float));
-
-    for (int i = 1; i < 63; i++)
-    {
-        float key = sorted[i];
-        int j = i - 1;
-        while (j >= 0 && sorted[j] > key) { sorted[j+1] = sorted[j]; j--; }
-        sorted[j+1] = key;
-    }
-    float median = sorted[31];
-
+    const float *vals = &dct[0][1];
     guint64 hash = 0;
+
     for (int i = 0; i < 63; i++)
-        if (vals[i] > median) hash |= 1ULL << i;
+    {
+        int less = 0;
+        for (int j = 0; j < 63; j++)
+            less += vals[j] < vals[i];
+        hash |= (guint64)(less >= 32) << i;
+    }
 
     return hash;
 }
