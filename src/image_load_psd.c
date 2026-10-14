@@ -21,6 +21,7 @@
 
 #include "image-load.h"
 #include "image_load_psd.h"
+#include "filedata.h"
 
 #include <string.h>
 
@@ -440,6 +441,210 @@ static gboolean psd_read_header(const guchar *data, gsize len, PsdHeader *header
     return TRUE;
 }
 
+#define PSD_MAX_LAYER_CHANNELS 16
+
+typedef struct PsdLayer PsdLayer;
+struct PsdLayer {
+    gint32  top, left, bottom, right;
+    guint   nchannels;                      /* stored, clamped to the max */
+    gint16  chan_id[PSD_MAX_LAYER_CHANNELS];
+    guint64 chan_len[PSD_MAX_LAYER_CHANNELS];
+    guint64 data_off;                       /* absolute offset of first channel's data */
+};
+
+/* Offset of the Layer and Mask Information section (just past the Image
+ * Resources section). Assumes psd_read_header() already checked len >= 26. */
+static gboolean psd_layer_section_pos(const guchar *data, gsize len, gsize *pos_out)
+{
+    gsize pos = 26;
+    if (len - pos < 4) return FALSE;
+    guint32 n = psd_read_u32(data + pos); pos += 4;
+    if (n > len - pos) return FALSE;
+    pos += n;                               /* color mode data */
+
+    if (len - pos < 4) return FALSE;
+    n = psd_read_u32(data + pos); pos += 4;
+    if (n > len - pos) return FALSE;
+    *pos_out = pos + n;                     /* image resources */
+    return TRUE;
+}
+
+static gboolean psd_layer_drawable(const PsdLayer *L, guint32 limit)
+{
+    gint64 w = (gint64) L->right - L->left;
+    gint64 h = (gint64) L->bottom - L->top;
+    if (w <= 0 || h <= 0 || w > limit || h > limit) return FALSE;
+
+    guint have = 0;
+    for (guint c = 0; c < L->nchannels; c++)
+        if (L->chan_id[c] >= 0 && L->chan_id[c] <= 2)
+            have |= 1u << L->chan_id[c];
+    return have == 7;
+}
+
+/* Walks the layer records. *total receives the number of drawable layers.
+ * If want >= 0, *out receives the want-th drawable layer in record order
+ * (bottom-up) and FALSE is returned if there is no such layer. */
+static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
+                                const PsdHeader *h, gint want,
+                                PsdLayer *out, guint *total)
+{
+    const gsize lf = h->version == 1 ? 4 : 8;
+    const guint32 limit = h->version == 1 ? 30000 : 300000;
+    guint64 v;
+
+    if (total) *total = 0;
+
+    if (pos > len || len - pos < lf) return FALSE;
+    v = lf == 4 ? psd_read_u32(data + pos) : psd_read_u64(data + pos);
+    pos += lf;
+    if (v == 0 || v > len - pos) return FALSE;      /* no layer data */
+
+    if (len - pos < lf + 2) return FALSE;
+    v = lf == 4 ? psd_read_u32(data + pos) : psd_read_u64(data + pos);
+    pos += lf;
+    if (v < 2 || v > len - pos) return FALSE;
+    const gsize end = pos + v;                      /* end of layer info */
+
+    const gint count = abs((gint16) psd_read_u16(data + pos));
+    pos += 2;
+
+    guint ndraw = 0;
+    guint64 rel = 0;                                /* channel data, relative */
+    gboolean found = FALSE;
+
+    for (gint i = 0; i < count; i++)
+    {
+        PsdLayer L = { 0 };
+
+        if (end - pos < 18) return FALSE;
+        L.top    = (gint32) psd_read_u32(data + pos);
+        L.left   = (gint32) psd_read_u32(data + pos + 4);
+        L.bottom = (gint32) psd_read_u32(data + pos + 8);
+        L.right  = (gint32) psd_read_u32(data + pos + 12);
+        guint nch = psd_read_u16(data + pos + 16);
+        pos += 18;
+
+        if ((guint64) nch * (2 + lf) > end - pos) return FALSE;
+
+        guint64 chan_total = 0;
+        for (guint c = 0; c < nch; c++)
+        {
+            gint16 id = (gint16) psd_read_u16(data + pos);
+            guint64 clen = lf == 4 ? psd_read_u32(data + pos + 2)
+                                   : psd_read_u64(data + pos + 2);
+            pos += 2 + lf;
+            if (clen > len) return FALSE;
+            if (c < PSD_MAX_LAYER_CHANNELS)
+            {
+                L.chan_id[c]  = id;
+                L.chan_len[c] = clen;
+                L.nchannels   = c + 1;
+            }
+            chan_total += clen;
+        }
+
+        /* blend sig + key (8), opacity/clip/flags/filler (4), extra length (4) */
+        if (end - pos < 16) return FALSE;
+        pos += 12;
+        guint32 extra = psd_read_u32(data + pos); pos += 4;
+        if (extra > end - pos) return FALSE;
+        pos += extra;               /* mask data, blend ranges, name, extra blocks */
+
+        L.data_off = rel;
+        rel += chan_total;
+
+        if (psd_layer_drawable(&L, limit))
+        {
+            if (want >= 0 && (guint) want == ndraw && out)
+            {
+                *out = L;
+                found = TRUE;
+            }
+            ndraw++;
+        }
+    }
+
+    if (rel > end - pos) return FALSE;
+    if (found) out->data_off += pos;                /* pos == end of records */
+    if (total) *total = ndraw;
+    return want < 0 || found;
+}
+
+static GdkPixbuf *psd_decode_layer(const guchar *data, gsize len,
+                                   ImageLoaderPsd *lp, const PsdHeader *h,
+                                   const PsdLayer *L)
+{
+    if (h->color_mode != 3 || (h->depth != 8 && h->depth != 16)) return NULL;
+
+    const guint32 w   = (guint32) ((gint64) L->right  - L->left);
+    const guint32 ht  = (guint32) ((gint64) L->bottom - L->top);
+    const guint32 bps = h->depth / 8;
+
+    gboolean has_alpha = FALSE;
+    for (guint c = 0; c < L->nchannels; c++)
+        if (L->chan_id[c] == -1) has_alpha = TRUE;
+    const guint32 stride = has_alpha ? 4 : 3;
+
+    guint64 size = (guint64) w * ht * stride;
+    if (size > 1024ULL * 1024 * 1024) return NULL;
+    guchar *px = g_try_malloc(size);
+    if (!px) return NULL;
+    memset(px, 255, size);
+
+    guint64 off = L->data_off;
+    for (guint c = 0; c < L->nchannels; c++)
+    {
+        const gint id = L->chan_id[c];
+        const gint plane = (id >= 0 && id <= 2) ? id : (id == -1 ? 3 : -1);
+        const guint64 clen = L->chan_len[c];
+        gsize pos = off;
+        off += clen;
+        if (plane < 0) continue;                    /* user masks etc. */
+
+        if (clen < 2 || off > len) goto fail;
+        guint16 comp = psd_read_u16(data + pos); pos += 2;
+
+        if (comp == 0)                              /* raw */
+        {
+            if (clen - 2 < (guint64) w * ht * bps) goto fail;
+            for (guint32 y = 0; y < ht; y++)
+            {
+                if (g_atomic_int_get(&lp->abort)) goto fail;
+                guchar *d = px + (gsize) y * w * stride + plane;
+                const guchar *s = data + pos + (gsize) y * w * bps;
+                for (guint32 x = 0; x < w; x++)
+                    d[(gsize) x * stride] = s[(gsize) x * bps];     /* MSB */
+            }
+        }
+        else if (comp == 1)                         /* PackBits */
+        {
+            if (clen - 2 < (guint64) ht * 2 * h->version) goto fail;
+            guint32 *counts = g_try_new(guint32, ht);
+            if (!counts) goto fail;
+            for (guint32 y = 0; y < ht; y++)
+            {
+                if (h->version == 1) { counts[y] = psd_read_u16(data + pos); pos += 2; }
+                else                 { counts[y] = psd_read_u32(data + pos); pos += 4; }
+            }
+            gboolean ok = bps == 1
+                ? psd_decode_rle_channel_8 (data, len, lp, &pos, counts, ht, w, px + plane, stride)
+                : psd_decode_rle_channel_16(data, len, lp, &pos, counts, ht, w, px + plane, stride);
+            g_free(counts);
+            if (!ok) goto fail;
+        }
+        else
+            goto fail;                              /* ZIP (2, 3) unsupported */
+    }
+
+    return gdk_pixbuf_new_from_data(px, GDK_COLORSPACE_RGB, has_alpha, 8,
+                                    w, ht, (gsize) w * stride,
+                                    (GdkPixbufDestroyNotify) g_free, NULL);
+fail:
+    g_free(px);
+    return NULL;
+}
+
 static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
                                       gsize count, GError **error)
 {
@@ -468,6 +673,43 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
     lp->requested_height = header.height;
     lp->is_psb = header.version == 2;
     if (lp->size_cb) lp->size_cb(lp, header.width, header.height, lp->data);
+
+    ImageLoader *il = (ImageLoader *) lp->data;    
+    guint page = (il && il->fd) ? il->fd->page_num : 0;
+    gsize layers_pos = 0;
+    guint nlayers = 0;
+
+    if (psd_layer_section_pos(buf, count, &layers_pos))
+        psd_walk_layers(buf, count, layers_pos, &header, -1, NULL, &nlayers);
+
+    if (il && il->fd) il->fd->page_total = 1 + nlayers;
+
+    if (page > 0 && page <= nlayers)
+    {
+        PsdLayer layer;
+        if (psd_walk_layers(buf, count, layers_pos, &header,
+                            (gint) (nlayers - page), &layer, NULL))
+        {
+            /* report the layer's size, not the canvas size */
+            if (lp->size_cb)
+                lp->size_cb(lp, layer.right - layer.left,
+                            layer.bottom - layer.top, lp->data);
+
+            lp->pixbuf = psd_decode_layer(buf, count, lp, &header, &layer);
+            if (!lp->pixbuf)
+            {
+                if (error && !g_atomic_int_get(&lp->abort))
+                    g_set_error(error, GDK_PIXBUF_ERROR, 0, "psd: cannot decode layer %u", page);
+                return FALSE;
+            }
+            if (lp->area_updated_cb)
+                lp->area_updated_cb(lp, 0, 0, gdk_pixbuf_get_width(lp->pixbuf),
+                                    gdk_pixbuf_get_height(lp->pixbuf), lp->data);
+            return TRUE;
+        }
+    }
+    
+    /* Decide which image to use for page 0 */
 
     /* Parse the resources section regardless, since we need `resources_end`
      * either way -- but don't decide whether to use the returned
