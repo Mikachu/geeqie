@@ -380,7 +380,9 @@ static void editor_list_window_selection_changed_cb(GtkWidget *widget, gpointer 
                            DESKTOP_FILE_COLUMN_PATH, &path,
                            -1);
 
-        gtk_widget_set_sensitive(ewl->delete_button, access_file(path, W_OK));
+        gchar *dir = remove_level_from_path(path);
+        gtk_widget_set_sensitive(ewl->delete_button, access_file(dir, W_OK));
+        g_free(dir);
         gtk_widget_set_sensitive(ewl->edit_button, TRUE);
         g_free(path);
     }
