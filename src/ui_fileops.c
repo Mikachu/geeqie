@@ -684,7 +684,11 @@ gchar *remove_level_from_path(const gchar *path)
 
 const gchar *extension_from_path(const gchar *path)
 {
-    return path ? strrchr(path, '.') : NULL;
+    const gchar *name = filename_from_path(path);
+    const gchar *dot = name ? strrchr(name, '.') : NULL;
+    /* don't treat extensionless dotfiles as
+     * having an extension and no basename */
+    return (dot && dot != name) ? dot : NULL;
 }
 
 gboolean file_extension_match(const gchar *path, const gchar *ext)
@@ -695,26 +699,23 @@ gboolean file_extension_match(const gchar *path, const gchar *ext)
     gint p = strlen(path);
     gint e = strlen(ext);
 
-    /* FIXME: utf8 */
-    return (p > e && g_ascii_strncasecmp(path + p - e, ext, e) == 0);
+    return (p > e && *(path + p - e - 1) != '/' &&
+            g_ascii_strncasecmp(path + p - e, ext, e) == 0);
 }
 
 gchar *remove_extension_from_path(const gchar *path)
 {
-    gint p = 0, n = -1;
-
     if (!path) return NULL;
 
-    while (path[p])
-    {
-        if (path[p] == '.')
-            n = p;
-        p++;
-    }
-    if (n < 0)
-        n = p;
+    const gchar *name = filename_from_path(path);
+    const gchar *dot = name ? strrchr(name, '.') : NULL;
 
-    return g_strndup(path, (gsize) n);
+    if (!dot || dot == name)
+        /* no extension — whole path is basename */
+        return g_strdup(path);
+
+    /* keep directory prefix */
+    return g_strndup(path, dot - path);
 }
 
 void parse_out_relatives(gchar *path)
