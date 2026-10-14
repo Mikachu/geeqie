@@ -1183,7 +1183,7 @@ static GList *view_window_get_fd_list(ViewWindow *vw)
 static GtkWidget *view_popup_menu(ViewWindow *vw)
 {
     GtkWidget *menu;
-    GtkWidget *item;
+    GtkWidget *item, *subitem;
     GList *editmenu_fd_list;
 
     menu = popup_menu_short_lived();
@@ -1204,9 +1204,13 @@ static GtkWidget *view_popup_menu(ViewWindow *vw)
     editmenu_fd_list = view_window_get_fd_list(vw);
     g_signal_connect(G_OBJECT(menu), "destroy",
              G_CALLBACK(view_popup_menu_destroy_cb), editmenu_fd_list);
-    item = submenu_add_edit(menu, NULL,
+    item = submenu_add_edit(menu, &subitem,
                             G_CALLBACK(view_edit_cb), vw, editmenu_fd_list);
-    menu_item_add_divider(item);
+    if (gtk_widget_get_visible(subitem))
+        menu_item_add_divider(item);
+    else
+        /* hidden if no editors, but we added the wallpaper entry */
+        gtk_widget_show(subitem);
     menu_item_add(item, _("Set as _wallpaper"),
                   G_CALLBACK(view_wallpaper_cb), vw);
 

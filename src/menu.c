@@ -76,8 +76,9 @@ static void edit_item_destroy_cb(GtkWidget *widget, gpointer data)
     g_free(data);
 }
 
-static void add_edit_items(GtkWidget *menu, GCallback func, GList *fd_list)
+static gint add_edit_items(GtkWidget *menu, GCallback func, GList *fd_list)
 {
+    gint count = 0;
     GList *editors_list = editor_list_get();
 
     for (GList *work = editors_list; work; work = work->next)
@@ -98,9 +99,11 @@ static void add_edit_items(GtkWidget *menu, GCallback func, GList *fd_list)
 
             GtkWidget *item = menu_item_add_stock(menu, editor->name, stock_id, func, key);
             g_signal_connect(G_OBJECT(item), "destroy", G_CALLBACK(edit_item_destroy_cb), key);
+            count++;
         }
     }
     g_list_free(editors_list);
+    return count;
 }
 
 
@@ -111,7 +114,8 @@ GtkWidget *submenu_add_edit(GtkWidget *menu, GtkWidget **menu_item,
     GtkWidget *submenu = gtk_menu_new();
 
     g_object_set_data(G_OBJECT(submenu), "submenu_data", data);
-    add_edit_items(submenu, func, fd_list);
+    if (add_edit_items(submenu, func, fd_list) == 0)
+        gtk_widget_hide(item);
 
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
 

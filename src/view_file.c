@@ -726,14 +726,14 @@ GtkWidget *vf_pop_menu(ViewFile *vf)
         g_free(str_sel_mark_minus);
     }
 
-    vf->editmenu_fd_list = vf_pop_menu_file_list(vf);
-    submenu_add_edit(menu, &item, G_CALLBACK(vf_pop_menu_edit_cb), vf, vf->editmenu_fd_list);
-    gtk_widget_set_sensitive(item, active);
-
     menu_item_add_stock_sensitive(menu, _("View in _new window"), GTK_STOCK_NEW, active,
                                   G_CALLBACK(vf_pop_menu_view_cb), vf);
 
     menu_item_add_divider(menu);
+
+    vf->editmenu_fd_list = vf_pop_menu_file_list(vf);
+    submenu_add_edit(menu, &item, G_CALLBACK(vf_pop_menu_edit_cb), vf, vf->editmenu_fd_list);
+    gtk_widget_set_sensitive(item, active);
     menu_item_add_stock_sensitive(menu, _("_Copy..."), GTK_STOCK_COPY, active,
                                   G_CALLBACK(vf_pop_menu_copy_cb), vf);
     menu_item_add_sensitive(menu, _("_Move..."), active,

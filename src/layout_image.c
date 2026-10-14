@@ -492,7 +492,11 @@ static GtkWidget *layout_image_pop_menu(LayoutWindow *lw)
     submenu = submenu_add_edit(menu, &item,
                                G_CALLBACK(li_pop_menu_edit_cb), lw, editmenu_fd_list);
     if (!path) gtk_widget_set_sensitive(item, FALSE);
-    menu_item_add_divider(submenu);
+    if (gtk_widget_get_visible(item))
+        menu_item_add_divider(submenu);
+    else
+        /* hidden if no editors, but we added the wallpaper entry */
+        gtk_widget_show(item);
     menu_item_add(submenu, _("Set as _wallpaper"),
                   G_CALLBACK(li_pop_menu_wallpaper_cb), lw);
 
