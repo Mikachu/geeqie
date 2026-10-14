@@ -291,10 +291,10 @@ static gboolean file_data_set_path(FileData *fd, const gchar *path)
     }
 
     fd->extension = registered_extension_from_path(fd->path);
-    if (fd->extension == NULL)
-    {
+    if (!fd->extension)
+        fd->extension = extension_from_path(fd->name);
+    if (!fd->extension)
         fd->extension = fd->name + strlen(fd->name);
-    }
 
     fd->sidecar_priority = sidecar_file_priority(fd->extension);
     file_data_set_collate_keys(fd);
