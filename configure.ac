@@ -476,11 +476,6 @@ AC_CONFIG_FILES([
     src/icons/svg/Makefile
     po/Makefile.in
     doc/Makefile
-    plugins/Makefile
-    plugins/symlink/Makefile
-    plugins/rotate/Makefile
-    plugins/ufraw/Makefile
-    plugins/import/Makefile
     geeqie.spec
 ])
 

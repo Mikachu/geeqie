@@ -35,9 +35,6 @@ Group:          Productivity/Graphics/Viewers
 Source:         geeqie-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 URL:            http://www.geeqie.org/
-#
-# these are requirements of the plugins
-Requires: exiv2 exiftran ImageMagick ufraw
 
 %description
 Geeqie is a browser for graphics files.

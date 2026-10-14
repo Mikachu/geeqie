@@ -37,18 +37,6 @@ Makefile.in
 /intltool-update.in
 /intltool-merge.in
 
-# /plugins/import/
-/plugins/import/*.desktop
-
-# /plugins/rotate/
-/plugins/rotate/*.desktop
-
-# /plugins/symlink/
-/plugins/symlink/*.desktop
-
-# /plugins/ufraw/
-/plugins/ufraw/*.desktop
-
 # /po/
 /po/Makefile.in.in
 /po/POTFILES
