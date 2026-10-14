@@ -836,13 +836,16 @@ static ViewWindow *real_view_window_new(FileData *fd, GList *list,
         if (h > mh) h = mh;
     }
 
-    gtk_window_set_default_size(GTK_WINDOW(vw->window), w, h);
-    req_size.x = req_size.y = 0;
-    req_size.width  = w;
-    req_size.height = h;
-    gtk_widget_size_allocate(GTK_WIDGET(vw->window), &req_size);
+    if (w > 0 && h > 0)
+    {
+        gtk_window_set_default_size(GTK_WINDOW(vw->window), w, h);
+        req_size.x = req_size.y = 0;
+        req_size.width  = w;
+        req_size.height = h;
+        gtk_widget_size_allocate(GTK_WIDGET(vw->window), &req_size);
 
-    gtk_widget_set_size_request(vw->imd->pr, w, h);
+        gtk_widget_set_size_request(vw->imd->pr, w, h);
+    }
 
     gtk_widget_show(vw->window);
 
