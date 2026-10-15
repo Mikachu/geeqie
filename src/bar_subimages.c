@@ -32,7 +32,6 @@ struct PaneSubimagesData
     GtkWidget *widget;   /* scrolled window */
     GtkWidget *view;     /* GtkTreeView */
     FileData *fd, *built_fd;
-    gint height;
     gboolean updating;   /* suppress "changed" during rebuild */
     gboolean new_file;
 };
@@ -182,7 +181,7 @@ static void bar_pane_subimages_write_config(GtkWidget *pane, GString *outstr,
     write_char_option(outstr, indent, "title",
                       gtk_label_get_text(GTK_LABEL(psd->pane.title)));
     WRITE_BOOL(psd->pane, expanded);
-    WRITE_INT(*psd, height);
+    WRITE_INT(psd->pane, height);
     WRITE_STRING("/>");
 }
 
@@ -209,8 +208,7 @@ static GtkWidget *bar_pane_subimages_new(const gchar *id, const gchar *title,
     psd->pane.id                = g_strdup(id);
     psd->pane.type              = PANE_SUBIMAGES;
     psd->pane.expanded          = expanded;
-
-    psd->height = height;
+    psd->pane.height            = height;
 
     psd->new_file = TRUE;
 
@@ -266,10 +264,10 @@ GtkWidget *bar_pane_subimages_new_from_config(const gchar **attribute_names,
         const gchar *option = *attribute_names++;
         const gchar *value = *attribute_values++;
 
-        if (READ_CHAR_FULL("title", title)) continue;
+        if (READ_CHAR_FULL("title",    title))    continue;
         if (READ_BOOL_FULL("expanded", expanded)) continue;
-        if (READ_INT_FULL("height", height)) continue;
-        if (READ_CHAR_FULL("id", id)) continue;
+        if (READ_INT_FULL("height",    height))   continue;
+        if (READ_CHAR_FULL("id",       id))       continue;
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -296,10 +294,10 @@ void bar_pane_subimages_update_from_config(GtkWidget *pane,
         const gchar *option = *attribute_names++;
         const gchar *value = *attribute_values++;
 
-        if (READ_CHAR_FULL("title", title)) continue;
+        if (READ_CHAR_FULL("title",    title))              continue;
         if (READ_BOOL_FULL("expanded", psd->pane.expanded)) continue;
-        if (READ_INT_FULL("height", psd->height)) continue;
-        if (READ_CHAR_FULL("id", psd->pane.id)) continue;
+        if (READ_INT_FULL("height",    psd->pane.height))   continue;
+        if (READ_CHAR_FULL("id",       psd->pane.id))       continue;
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -310,7 +308,7 @@ void bar_pane_subimages_update_from_config(GtkWidget *pane,
         gtk_label_set_text(GTK_LABEL(psd->pane.title), title);
         g_free(title);
     }
-    gtk_widget_set_size_request(psd->widget, -1, psd->height);
+    gtk_widget_set_size_request(psd->widget, -1, psd->pane.height);
     bar_update_expander(pane);
     bar_pane_subimages_update(psd);
 }

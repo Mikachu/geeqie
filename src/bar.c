@@ -281,6 +281,54 @@ static void bar_expander_add_cb(GtkWidget *widget, gpointer data)
     if (config) load_bar_config_from_buf(config, strlen(config), bar);
 }
 
+static void bar_expander_height_ok_cb(GenericDialog *gd, gpointer data)
+{
+    GtkWidget *spin = data;
+    GtkWidget *pane = g_object_get_data(G_OBJECT(spin), "pane");
+    PaneData *pd    = g_object_get_data(G_OBJECT(pane), "pane_data");
+
+    if (!pd) return;
+
+    pd->height = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin));
+    gtk_widget_set_size_request(pane, -1, pd->height);
+}
+
+static void bar_expander_set_height_cb(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *expander = data;
+    GtkWidget *pane = gtk_bin_get_child(GTK_BIN(expander));
+    PaneData *pd = g_object_get_data(G_OBJECT(pane), "pane_data");
+
+    if (!pd || pd->height <= 0) return;
+
+    GtkWidget *spin = gtk_spin_button_new_with_range(20, 2000, 10);
+    g_object_set_data(G_OBJECT(spin), "pane", pane);
+
+    GenericDialog *gd = generic_dialog_new(_("Pane height"), "pane_height",
+                                           expander, TRUE, NULL, spin);
+    g_signal_connect_object(G_OBJECT(pane), "destroy",
+                            G_CALLBACK(gtk_widget_destroy), gd->dialog,
+                            G_CONNECT_SWAPPED);
+
+    generic_dialog_add_button(gd, GTK_STOCK_OK, NULL,
+                              bar_expander_height_ok_cb, TRUE);
+
+    GtkWidget *hbox = gtk_hbox_new(FALSE, PREF_PAD_GAP);
+    gtk_box_pack_start(GTK_BOX(gd->vbox), hbox, FALSE, FALSE, 0);
+    gtk_widget_show(hbox);
+
+    GtkWidget *label = gtk_label_new(_("Height:"));
+    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+    gtk_widget_show(label);
+
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin), pd->height);
+    gtk_box_pack_start(GTK_BOX(hbox), spin, TRUE, TRUE, 0);
+    generic_dialog_attach_default(gd, spin);
+    gtk_widget_show(spin);
+
+    gtk_widget_show(gd->dialog);
+}
+
 static void bar_menu_popup(GtkWidget *widget, GdkEventButton *bevent)
 {
     GtkWidget *menu, *bar, *expander;
@@ -316,6 +364,13 @@ static void bar_menu_popup(GtkWidget *widget, GdkEventButton *bevent)
         menu_item_add_divider(menu);
         menu_item_add_stock(menu, _("Remove"), GTK_STOCK_DELETE,
                             G_CALLBACK(bar_expander_delete_cb), expander);
+        GtkWidget *pane_widget = gtk_bin_get_child(GTK_BIN(expander));
+        PaneData *pd = g_object_get_data(G_OBJECT(pane_widget), "pane_data");
+        GtkWidget *item = menu_item_add_stock(
+            menu, _("Set _height..."), GTK_STOCK_PREFERENCES,
+            G_CALLBACK(bar_expander_set_height_cb), expander);
+        if (!pd || pd->height <= 0)
+            gtk_widget_set_sensitive(item, FALSE);
         menu_item_add_divider(menu);
     }
 

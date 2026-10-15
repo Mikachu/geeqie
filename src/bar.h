@@ -45,6 +45,7 @@ struct PaneData {
     void (*pane_write_config)(GtkWidget *pane, GString *outstr, gint indent);
     GtkWidget *title;
     gboolean expanded;
+    gint height; /* -1 if not resizable */
     gchar *id;
     PaneType type;
 

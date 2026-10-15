@@ -121,7 +121,6 @@ struct PaneKeywordsData
     guint idle_id; /* event source id */
     FileData *fd;
     gchar *key;
-    gint height;
 };
 
 typedef struct ConfDialogData ConfDialogData;
@@ -250,7 +249,7 @@ static void bar_pane_keywords_write_config(GtkWidget *pane, GString *outstr, gin
     write_char_option(outstr, indent, "title", gtk_label_get_text(GTK_LABEL(pkd->pane.title)));
     WRITE_BOOL(pkd->pane, expanded);
     WRITE_CHAR(*pkd, key);
-    WRITE_INT(*pkd, height);
+    WRITE_INT(pkd->pane, height);
     WRITE_STRING("/>");
 }
 
@@ -1254,8 +1253,8 @@ static GtkWidget *bar_pane_keywords_new(const gchar *id, const gchar *title, con
     pkd->pane.id                = g_strdup(id);
     pkd->pane.type              = PANE_KEYWORDS;
     pkd->pane.expanded          = expanded;
+    pkd->pane.height            = height;
 
-    pkd->height = height;
     pkd->key = g_strdup(key);
 
     pkd->expand_checked = TRUE;
@@ -1432,6 +1431,7 @@ void bar_pane_keywords_update_from_config(GtkWidget *pane,
         if (READ_CHAR_FULL("key",      pkd->key))           continue;
         if (READ_BOOL_FULL("expanded", pkd->pane.expanded)) continue;
         if (READ_CHAR_FULL("id",       pkd->pane.id))       continue;
+        if (READ_INT_FULL("height",    pkd->pane.height))   continue;
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -1442,7 +1442,7 @@ void bar_pane_keywords_update_from_config(GtkWidget *pane,
         gtk_label_set_text(GTK_LABEL(pkd->pane.title), title);
         g_free(title);
     }
-
+    gtk_widget_set_size_request(pkd->widget, -1, pkd->pane.height);
     bar_update_expander(pane);
     bar_pane_keywords_update(pkd);
 }

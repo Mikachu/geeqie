@@ -46,7 +46,6 @@ struct PaneCommentData
     GtkWidget *comment_view;
     FileData *fd;
     gchar *key;
-    gint height;
 };
 
 static void bar_pane_comment_write(PaneCommentData *pcd)
@@ -147,7 +146,7 @@ static void bar_pane_comment_write_config(GtkWidget *pane, GString *outstr, gint
                       gtk_label_get_text(GTK_LABEL(pcd->pane.title)));
     WRITE_BOOL(pcd->pane, expanded);
     WRITE_CHAR(*pcd, key);
-    WRITE_INT(*pcd, height);
+    WRITE_INT(pcd->pane, height);
     WRITE_STRING("/>");
 }
 
@@ -204,11 +203,11 @@ static GtkWidget *bar_pane_comment_new(const gchar *id, const gchar *title, cons
     pcd->pane.title             = bar_pane_expander_title(title);
     pcd->pane.id                = g_strdup(id);
     pcd->pane.type              = PANE_COMMENT;
+    pcd->pane.height            = height;
 
     pcd->pane.expanded = expanded;
 
     pcd->key    = g_strdup(key);
-    pcd->height = height;
 
     GtkWidget *scrolled = gtk_scrolled_window_new(NULL, NULL);
 
@@ -254,11 +253,11 @@ GtkWidget *bar_pane_comment_new_from_config(const gchar **attribute_names,
         const gchar *option = *attribute_names++;
         const gchar *value = *attribute_values++;
 
-        if (READ_CHAR_FULL("title", title)) continue;
-        if (READ_CHAR_FULL("key", key)) continue;
+        if (READ_CHAR_FULL("title",    title))    continue;
+        if (READ_CHAR_FULL("key",      key))      continue;
         if (READ_BOOL_FULL("expanded", expanded)) continue;
-        if (READ_INT_FULL("height", height)) continue;
-        if (READ_CHAR_FULL("id", id)) continue;
+        if (READ_INT_FULL("height",    height))   continue;
+        if (READ_CHAR_FULL("id",       id))       continue;
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -286,11 +285,11 @@ void bar_pane_comment_update_from_config(GtkWidget *pane,
         const gchar *option = *attribute_names++;
         const gchar *value = *attribute_values++;
 
-        if (READ_CHAR_FULL("title", title)) continue;
-        if (READ_CHAR_FULL("key", pcd->key)) continue;
+        if (READ_CHAR_FULL("title",    title))              continue;
+        if (READ_CHAR_FULL("key",      pcd->key))           continue;
         if (READ_BOOL_FULL("expanded", pcd->pane.expanded)) continue;
-        if (READ_INT_FULL("height", pcd->height)) continue;
-        if (READ_CHAR_FULL("id", pcd->pane.id)) continue;
+        if (READ_INT_FULL("height",    pcd->pane.height))   continue;
+        if (READ_CHAR_FULL("id",       pcd->pane.id))       continue;
 
         log_printf("unknown attribute %s = %s\n", option, value);
     }
@@ -301,7 +300,7 @@ void bar_pane_comment_update_from_config(GtkWidget *pane,
         gtk_label_set_text(GTK_LABEL(pcd->pane.title), title);
         g_free(title);
     }
-    gtk_widget_set_size_request(pcd->widget, -1, pcd->height);
+    gtk_widget_set_size_request(pcd->widget, -1, pcd->pane.height);
     bar_update_expander(pane);
     bar_pane_comment_update(pcd);
 }
