@@ -11,6 +11,7 @@
 #include <ebml/EbmlHead.h>
 #include <ebml/EbmlStream.h>
 #include <ebml/EbmlSubHead.h>
+#include <ebml/EbmlUnicodeString.h>
 #include <ebml/EbmlVoid.h>
 #include <ebml/StdIOCallback.h>
 #include <matroska/KaxSegment.h>
@@ -108,17 +109,19 @@ extern "C" gboolean
 mkv_get_image_region(const gchar *path, guint index,
                      guchar **mmap_base_out, gsize *mmap_base_len_out,
                      guchar **image_data_out, gsize *image_len_out,
-                     guint *total_images_out)
+                     guint *total_images_out, gchar ***names_out)
 {
     int fd;
     struct stat st;
     guchar *base = NULL;
     gsize base_len = 0;
+    GSList *names = NULL;
 
     if (!path || !mmap_base_out || !mmap_base_len_out || !image_data_out || !image_len_out)
         return FALSE;
 
     if (total_images_out) *total_images_out = 0;
+    if (names_out)        *names_out = NULL;
 
     fd = open(path, O_RDONLY);
     if (fd == -1) return FALSE;
@@ -346,6 +349,7 @@ mkv_get_image_region(const gchar *path, guint index,
                 if (EbmlId(*attached_elem) == EBML_ID(KaxAttached))
                 {
                     std::string mime_type;
+                    std::string file_name;
                     guint64 data_start = 0;
                     guint64 data_len = 0;
                     bool have_data = false;
@@ -369,6 +373,13 @@ mkv_get_image_region(const gchar *path, guint index,
                             have_data = true;
                             attachedchild_elem->SkipData(aStream, EBML_CONTEXT(attachedchild_elem));
                         }
+                        else if (EbmlId(*attachedchild_elem) == EBML_ID(KaxFileName) &&
+                                 attachedchild_elem->GetSize() < 1024)
+                        {
+                            KaxFileName &fn = *static_cast<KaxFileName *>(attachedchild_elem);
+                            fn.ReadData(aStream.I_O());
+                            file_name = fn.GetValue().GetUTF8();
+                        }
                         else
                         {
                             attachedchild_elem->SkipData(aStream, EBML_CONTEXT(attachedchild_elem));
@@ -382,6 +393,11 @@ mkv_get_image_region(const gchar *path, guint index,
                     delete attachedchild_elem;
                     if (have_data && mime_type.size() >= 6 && mime_type.compare(0, 6, "image/") == 0)
                     {
+                        if (names_out && !file_name.empty())
+                            names = g_slist_append(names, g_strdup(file_name.c_str()));
+                        else if (names_out)
+                            names = g_slist_append(names, NULL);
+
                         if (image_count == index)
                         {
                             attachment_offset = data_start;
@@ -407,6 +423,16 @@ mkv_get_image_region(const gchar *path, guint index,
             goto fail;
         }
 
+        if (names_out && image_count > 0)
+        {
+            gchar **arr = g_new0(gchar *, image_count + 1);
+            guint i = 0;
+            for (GSList *l = names; l; l = l->next, i++)
+                arr[i] = (gchar *)g_steal_pointer(&l->data);
+            *names_out = arr;
+        }
+        g_slist_free(names);   /* strings were stolen */
+
         *mmap_base_out = base;
         *mmap_base_len_out = base_len;
         *image_data_out = base + attachment_offset;
@@ -417,6 +443,7 @@ mkv_get_image_region(const gchar *path, guint index,
     {
     }
 fail:
+    g_slist_free_full(names, g_free);
     munmap(base, base_len);
     return FALSE;
 }
@@ -424,10 +451,10 @@ fail:
 #else /* !HAVE_MATROSKA */
 
 extern "C" gboolean
-mkv_get_image_region(const gchar *path, guint index
-                      guchar **mmap_base_out, gsize *mmap_base_len_out,
-                      guchar **image_data_out, gsize *image_len_out,
-                      guint *total_images_out)
+mkv_get_image_region(const gchar *path, guint index,
+                     guchar **mmap_base_out, gsize *mmap_base_len_out,
+                     guchar **image_data_out, gsize *image_len_out,
+                     guint *total_images_out, gchar ***names_out)
 {
     (void) path;
     (void) index;
@@ -436,6 +463,7 @@ mkv_get_image_region(const gchar *path, guint index
     (void) image_data_out;
     (void) image_len_out;
     if (total_images_out) *total_images_out = 0;
+    if (names_out)        *names_out = NULL;
     return FALSE;
 }
 

@@ -30,6 +30,7 @@ typedef enum {
     PANE_EXIF,
     PANE_HISTOGRAM,
     PANE_KEYWORDS,
+    PANE_SUBIMAGES,
 } PaneType;
 
 struct FileData;

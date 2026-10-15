@@ -312,6 +312,7 @@ static GdkPixbuf *psd_decode_composite(const guchar *data, gsize len,
     if (header->depth != 8 && header->depth != 16) return NULL;
     if (header->color_mode != 3)   return NULL; /* RGB only */
     if (header->channels < 3)      return NULL; /* only handle actual RGB/RGBA for now */
+    if (header->channels > 56)     return NULL; /* max according to spec */
     if (width == 0 || height == 0) return NULL;
     guint32 limit = header->version == 1 ? 30000 : 300000;
     if (width > limit || height > limit) return NULL;
@@ -482,18 +483,93 @@ static gboolean psd_layer_drawable(const PsdLayer *L, guint32 limit)
     return have == 7;
 }
 
+/* Parse the "extra data" block of one PSD layer record and extract the
+ * layer name. Layout within extra:
+ *   [4] mask data length         -> skip 4 + len
+ *   [4] blending ranges length   -> skip 4 + len
+ *   [1] pascal name len          -> name bytes, padded to multiple of 4
+ *   remaining: additional layer info blocks, each
+ *     [4] "8BIM"/"8B64"  [4] key  [4] len  [len] data (padded to even)
+ * We prefer the Unicode name from the 'luni' block (UTF-16BE) when it
+ * exists, falling back to the Pascal string (interpreted as Latin-1,
+ * which is what the spec effectively amounts to for non-MacRoman names).
+ * Returns NULL if no usable name is found. */
+static gchar *psd_layer_name_from_extra(const guchar *extra, gsize extra_len)
+{
+    gsize pos = 0;
+
+    if (extra_len < 4) return NULL;
+    guint32 mask_len = psd_read_u32(extra + pos); pos += 4;
+    if (pos + mask_len > extra_len) return NULL;
+    pos += mask_len;
+
+    if (pos + 4 > extra_len) return NULL;
+    guint32 blend_len = psd_read_u32(extra + pos); pos += 4;
+    if (pos + blend_len > extra_len) return NULL;
+    pos += blend_len;
+
+    gchar *pascal_name = NULL;
+    if (pos < extra_len)
+    {
+        guint8 name_len = extra[pos];
+        if (name_len > 0 && pos + 1 + name_len <= extra_len)
+            pascal_name = g_convert((const gchar *)extra + pos + 1, name_len,
+                                    "UTF-8", "ISO-8859-1", NULL, NULL, NULL);
+        /* pascal string field is padded to a multiple of 4 bytes total */
+        gsize field_len = 1 + name_len;
+        field_len = (field_len + 3) & ~(gsize)3;
+        pos += field_len;
+    }
+
+    gchar *unicode_name = NULL;
+    while (pos + 12 <= extra_len)
+    {
+        if (memcmp(extra + pos, "8BIM", 4) != 0 &&
+            memcmp(extra + pos, "8B64", 4) != 0)
+            break;
+        guint32 key = psd_read_u32(extra + pos + 4);
+        guint32 blk_len = psd_read_u32(extra + pos + 8);
+        gsize data_start = pos + 12;
+        if (data_start + blk_len > extra_len) break;
+
+        if (key == 0x6C756E69 /* 'luni' */ && blk_len >= 4)
+        {
+            guint32 ulen = psd_read_u32(extra + data_start);
+            if (ulen > 0 && data_start + 4 + (gsize)ulen * 2 <= extra_len)
+            {
+                gunichar2 *u = g_new(gunichar2, ulen);
+                for (guint32 i = 0; i < ulen; i++)
+                    u[i] = psd_read_u16(extra + data_start + 4 + i * 2);
+                unicode_name = g_utf16_to_utf8(u, ulen, NULL, NULL, NULL);
+                g_free(u);
+            }
+        }
+
+        pos = data_start + blk_len;
+        if (blk_len % 2 != 0) pos += 1; /* additional info blocks pad to even */
+    }
+
+    if (unicode_name) { g_free(pascal_name); return unicode_name; }
+    return pascal_name;
+}
+
 /* Walks the layer records. *total receives the number of drawable layers.
  * If want >= 0, *out receives the want-th drawable layer in record order
- * (bottom-up) and FALSE is returned if there is no such layer. */
+ * (bottom-up) and FALSE is returned if there is no such layer.
+ * If names_out is non-NULL, *names_out receives a newly allocated array of
+ * gchar* (length == *total), indexed by drawable order; NULL entries for
+ * layers with no parseable name. Caller frees with g_strfreev(). */
 static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
                                 const PsdHeader *h, gint want,
-                                PsdLayer *out, guint *total)
+                                PsdLayer *out, guint *total,
+                                gchar ***names_out)
 {
     const gsize lf = h->version == 1 ? 4 : 8;
     const guint32 limit = h->version == 1 ? 30000 : 300000;
     guint64 v;
 
-    if (total) *total = 0;
+    if (total)     *total = 0;
+    if (names_out) *names_out = NULL;
 
     if (pos > len || len - pos < lf) return FALSE;
     v = lf == 4 ? psd_read_u32(data + pos) : psd_read_u64(data + pos);
@@ -512,6 +588,7 @@ static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
     guint ndraw = 0;
     guint64 rel = 0;                                /* channel data, relative */
     gboolean found = FALSE;
+    gchar **names = NULL;
 
     for (gint i = 0; i < count; i++)
     {
@@ -549,6 +626,9 @@ static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
         pos += 12;
         guint32 extra = psd_read_u32(data + pos); pos += 4;
         if (extra > end - pos) return FALSE;
+        gchar *name = NULL;
+        if (names_out)
+            name = psd_layer_name_from_extra(data + pos, extra);
         pos += extra;               /* mask data, blend ranges, name, extra blocks */
 
         L.data_off = rel;
@@ -556,6 +636,12 @@ static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
 
         if (psd_layer_drawable(&L, limit))
         {
+            if (names_out)
+            {
+                if (!names) *names_out = names = g_new0(gchar *, count);
+                /* we want this one so don't free it */
+                names[ndraw] = g_steal_pointer(&name);
+            }
             if (want >= 0 && (guint) want == ndraw && out)
             {
                 *out = L;
@@ -563,11 +649,13 @@ static gboolean psd_walk_layers(const guchar *data, gsize len, gsize pos,
             }
             ndraw++;
         }
+        g_free(name);
     }
 
     if (rel > end - pos) return FALSE;
     if (found) out->data_off += pos;                /* pos == end of records */
     if (total) *total = ndraw;
+    if (names_out) *names_out = names;
     return want < 0 || found;
 }
 
@@ -674,21 +762,38 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
     lp->is_psb = header.version == 2;
     if (lp->size_cb) lp->size_cb(lp, header.width, header.height, lp->data);
 
-    ImageLoader *il = (ImageLoader *) lp->data;    
+    ImageLoader *il = (ImageLoader *) lp->data;
     guint page = (il && il->fd) ? il->fd->page_num : 0;
     gsize layers_pos = 0;
     guint nlayers = 0;
+    gchar **names = NULL;
 
     if (psd_layer_section_pos(buf, count, &layers_pos))
-        psd_walk_layers(buf, count, layers_pos, &header, -1, NULL, &nlayers);
+        if (!psd_walk_layers(buf, count, layers_pos, &header, -1, NULL, &nlayers,
+                             il && il->fd ? &names : NULL))
+            g_strfreev(names);
 
-    if (il && il->fd) il->fd->page_total = 1 + nlayers;
+    if (il && il->fd)
+    {
+        g_clear_pointer(&il->fd->page_names, g_strfreev);
+        /* names_out[] is in file layer order; page order is reversed:
+         * page 0 = composite, page i>0 = layer (nlayers - i) */
+        if (names)
+        {
+            il->fd->page_names = g_new0(gchar *, nlayers + 2);
+            il->fd->page_names[0] = g_strdup(_("Preview"));
+            for (guint i = 1; i <= nlayers; i++)
+                il->fd->page_names[i] = g_steal_pointer(&names[nlayers - i]); /* may be NULL */
+        }
+        il->fd->page_total = 1 + nlayers;
+    }
+    g_free(names);
 
     if (page > 0 && page <= nlayers)
     {
         PsdLayer layer;
         if (psd_walk_layers(buf, count, layers_pos, &header,
-                            (gint) (nlayers - page), &layer, NULL))
+                            (gint) (nlayers - page), &layer, NULL, NULL))
         {
             /* report the layer's size, not the canvas size */
             if (lp->size_cb)
@@ -708,7 +813,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
             return TRUE;
         }
     }
-    
+
     /* Decide which image to use for page 0 */
 
     /* Parse the resources section regardless, since we need `resources_end`

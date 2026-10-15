@@ -36,6 +36,7 @@
 #include "bar_keywords.h"
 #include "bar_exif.h"
 #include "bar_histogram.h"
+#include "bar_subimages.h"
 #include "histogram.h"
 #include "rcfile.h"
 
@@ -105,6 +106,9 @@ static const gchar default_config_copyright[] =
 "    <entry key = 'Xmp.dc.rights' if_set = 'false' editable = 'false' />"
 "</pane_exif>";
 
+static const gchar default_config_subimages[] =
+"<pane_subimages id = 'subimages' expanded = 'true' height = '150' />";
+
 static const KnownPanes known_panes[] = {
 /* default sidebar */
     {PANE_HISTOGRAM,    "histogram",    N_("Histogram"),        default_config_histogram},
@@ -116,6 +120,7 @@ static const KnownPanes known_panes[] = {
     {PANE_EXIF,         "file_info",    N_("File info"),        default_config_file_info},
     {PANE_EXIF,         "location",     N_("Location and GPS"), default_config_location},
     {PANE_EXIF,         "copyright",    N_("Copyright"),        default_config_copyright},
+    {PANE_SUBIMAGES,    "subimages",    N_("Sub-images"),       default_config_subimages},
     {PANE_UNDEF,        NULL,           NULL,                   NULL}
 };
 
@@ -166,6 +171,8 @@ static const struct {
                                         bar_pane_histogram_update_from_config, NULL },
     { "pane_keywords",  PANE_KEYWORDS,  bar_pane_keywords_new_from_config,
                                         bar_pane_keywords_update_from_config,  NULL },
+    { "pane_subimages", PANE_SUBIMAGES, bar_pane_subimages_new_from_config,
+                                        bar_pane_subimages_update_from_config, NULL },
     { NULL, PANE_UNDEF, NULL, NULL, NULL }
 };
 

@@ -98,6 +98,8 @@ geeqie_SOURCES = \
 	bar_exif.h	\
 	bar_sort.c	\
 	bar_sort.h	\
+	bar_subimages.c	\
+	bar_subimages.h	\
 	cache.c		\
 	cache.h		\
 	cache-loader.c	\

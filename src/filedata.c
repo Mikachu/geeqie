@@ -503,6 +503,7 @@ static void file_data_free(FileData *fd)
     g_free(fd->collate_key_name_nocase);
     g_clear_object(&fd->thumb_pixbuf);
     histmap_free(fd->histmap);
+    g_strfreev(fd->page_names);
 
     g_assert(fd->sidecar_files == NULL); /* sidecar files must be freed before calling this */
 

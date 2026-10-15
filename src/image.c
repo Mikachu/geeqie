@@ -837,6 +837,12 @@ static void image_load_done_cb(ImageLoader *il, ImageWindow *imd)
         imd->image_fd->pixbuf = g_object_ref(image_loader_get_pixbuf(il));
         image_cache_set(imd, imd->image_fd);
     }
+    else if (imd->image_fd && image_loader_get_pixbuf(il))
+    {
+        /* pixbuf exists but wasn't (re)cached; fd->page_total etc
+         * still changed, listeners need to know */
+        file_data_send_notification(imd->image_fd, NOTIFY_PIXBUF);
+    }
 
     /* call the callback triggered by image_state after fd->pixbuf is set */
     g_object_set(G_OBJECT(imd->pr), "loading", FALSE, NULL);

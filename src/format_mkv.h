@@ -17,6 +17,10 @@ extern "C" {
  *     that must later be munmap()'d with this exact (pointer, length) pair.
  *   - image_data_out / image_len_out receive a pointer into that region
  *     (mmap_base + some offset) and length, ready to hand to a pixbuf loader.
+ *   - names_out, if non-NULL, receives a newly allocated, NULL-terminated
+ *     array of attachment names (from the FileName element), indexed in the
+ *     same attachment order as index. Entries may be NULL for unnamed
+ *     attachments; the array and entries are freed with g_strfreev().
  * On failure, returns FALSE and does not touch any of the output parameters
  * (any mmap() performed internally on a failure path is undone before
  * returning).
@@ -24,7 +28,7 @@ extern "C" {
 gboolean mkv_get_image_region(const gchar *path, guint index,
                               guchar **mmap_base_out, gsize *mmap_base_len_out,
                               guchar **image_data_out, gsize *image_len_out,
-                              guint *total_images_out);
+                              guint *total_images_out, gchar ***names_out);
 #ifdef __cplusplus
 }
 #endif

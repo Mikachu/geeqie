@@ -739,17 +739,21 @@ static gboolean image_loader_setup_source(ImageLoader *il)
         guchar *image_data = NULL;
         gsize image_len = 0;
         guint total_images = 0;
+        gchar **names = NULL;
 
         if (mkv_get_image_region(il->fd->path, il->fd->page_num,
                                  &base, &base_len,
                                  &image_data, &image_len,
-                                 &total_images))
+                                 &total_images, &names))
         {
+            g_strfreev(il->fd->page_names);
+
             il->mmap_base      = base;
             il->mmap_base_len  = base_len;
             il->mapped_file    = image_data;
             il->bytes_total    = image_len;
             il->fd->page_total = total_images;
+            il->fd->page_names = names;
             DEBUG_1("Usable embedded cover attachment loaded from file %s", il->fd->path);
             return TRUE;
         }

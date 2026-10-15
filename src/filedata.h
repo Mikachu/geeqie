@@ -126,6 +126,9 @@ struct FileData {
                         * (TIFF pages, MKV image attachments, ...); 0 by default */
     guint page_total;  /* number of sub-images/pages available, as discovered by the
                         * loader backend; 0 or 1 means "not a multi-image file" */
+    gchar **page_names;/* optional NULL-terminated list of sub-image names, indexed
+                        * like page_num (PSD layer names, MKV attachment names, ...);
+                        * NULL when the producer has no names; owned by this FileData */
 
     struct HistMap *histmap;
 
