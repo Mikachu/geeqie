@@ -1398,8 +1398,6 @@ static void file_util_dialog_init_simple_list(UtilityData *ud)
         box_append_safe_delete_status(ud->gd);
 
     gtk_widget_show(ud->gd->dialog);
-
-    file_util_dialog_list_select(ud->listview, 0);
 }
 
 static void file_util_dialog_init_dest_folder(UtilityData *ud)
