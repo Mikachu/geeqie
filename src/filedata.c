@@ -153,14 +153,23 @@ static gboolean file_data_check_changed_files_recursive(FileData *fd, struct sta
 
         if (!stat_utf8(sfd->path, &st))
         {
+            if (fd->size == 0 && fd->dat.tv_sec == 0 && fd->dat.tv_nsec == 0)
+                return FALSE;   /* already known missing — nothing new to report */
+
             fd->size = 0;
             fd->dat.tv_sec = 0;
             fd->dat.tv_nsec = 0;
+
             file_data_ref(sfd);
             file_data_disconnect_sidecar_file(fd, sfd);
             ret = TRUE;
+
+            file_data_increment_version(fd);
+            file_data_send_notification(fd, NOTIFY_GROUPING);
+
             file_data_increment_version(sfd);
             file_data_send_notification(sfd, NOTIFY_REREAD);
+
             file_data_unref(sfd);
             continue;
         }
@@ -180,6 +189,9 @@ gboolean file_data_check_changed_files(FileData *fd)
 
     if (!stat_utf8(fd->path, &st))
     {
+        if (fd->size == 0 && fd->dat.tv_sec == 0 && fd->dat.tv_nsec == 0)
+            return FALSE;   /* already known missing — nothing new to report */
+
         /* parent is missing, we have to rebuild whole group */
         ret = TRUE;
         fd->size = 0;
