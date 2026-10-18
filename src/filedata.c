@@ -707,6 +707,7 @@ static void file_data_check_sidecars(const GList *basename_list)
     }
     g_assert(parent_fd->sidecar_files == NULL);
     parent_fd->sidecar_files = g_list_reverse(new_sidecars);
+    file_data_increment_version(parent_fd);
     DEBUG_1("basename group changed for %s", parent_fd->path);
 }
 
