@@ -561,8 +561,10 @@ static void image_loader_stop_loader(ImageLoader *il)
         /* we are interested in the first error only */
         il->backend.close(il->loader, il->error ? NULL : &il->error);
         image_loader_sync_pixbuf(il);
-        il->backend.free(il->loader);
-        il->loader = NULL;
+        g_mutex_lock(il->data_mutex);
+        gpointer loader = g_steal_pointer(&il->loader);
+        g_mutex_unlock(il->data_mutex);
+        il->backend.free(loader);
     }
     g_mutex_lock(il->data_mutex);
     il->done = TRUE;
@@ -884,6 +886,8 @@ static void image_loader_stop(ImageLoader *il)
         /* stop loader in the other thread */
         g_mutex_lock(il->data_mutex);
         il->stopping = TRUE;
+        if (il->loader && il->backend.abort)
+            il->backend.abort(il->loader);
         while (!il->can_destroy) g_cond_wait(il->can_destroy_cond, il->data_mutex);
         g_mutex_unlock(il->data_mutex);
     }
