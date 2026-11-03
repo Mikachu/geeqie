@@ -1702,9 +1702,8 @@ static void image_notify_cb(FileData *fd, NotifyType type, gpointer data)
 {
     ImageWindow *imd = data;
 
-    if (!imd || !image_get_pixbuf(imd) ||
-        /* loading in progress - do not check - it should start from the beginning anyway */
-        /* imd->il || */
+    if (!imd ||
+        (!image_get_pixbuf(imd) && !imd->il) ||
         !imd->image_fd || /* nothing to reload */
         imd->state == IMAGE_STATE_NONE) /* loading not started, no need to reload */
         return;
