@@ -432,7 +432,6 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
             col_idx >= FILE_COLUMN_MARKS &&
             col_idx <= FILE_COLUMN_MARKS_LAST)
         {
-            gtk_tree_path_free(tpath);
             return FALSE;
         }
 
@@ -446,10 +445,7 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
 
         gtk_tree_model_get_iter(store, &iter, tpath);
         gtk_tree_model_get(store, &iter, FILE_COLUMN_POINTER, &fd, -1);
-    }
-    else
-    {
-        tpath = NULL;
+        gtk_tree_path_free(tpath);
     }
 
     VFLIST(vf)->click_fd = fd;
@@ -459,85 +455,22 @@ gboolean vflist_press_cb(GtkWidget *widget, GdkEventButton *bevent, gpointer dat
         vf->popup = vf_pop_menu(vf);
         gtk_menu_popup(GTK_MENU(vf->popup), NULL, NULL, popup_menu_at_event,
                        bevent, bevent->button, bevent->time);
-        gtk_tree_path_free(tpath);
         return TRUE;
     }
 
-    if (!fd)
-    {
-        gtk_tree_path_free(tpath);
-        return FALSE;
-    }
+    if (!fd) return FALSE;
 
     if (bevent->button == MOUSE_BUTTON_MIDDLE)
     {
         if (!vflist_row_is_selected(vf, fd))
             vflist_color_set(vf, fd, TRUE);
-        gtk_tree_path_free(tpath);
         return TRUE;
     }
 
-    if (bevent->button == MOUSE_BUTTON_LEFT &&
-        (bevent->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) == GDK_CONTROL_MASK)
-    {
-        GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-
-        if (gtk_tree_selection_path_is_selected(selection, tpath))
-            gtk_tree_selection_unselect_path(selection, tpath);
-        else
-            gtk_tree_selection_select_path(selection, tpath);
-
-        gtk_widget_grab_focus(widget);
-        gtk_tree_path_free(tpath);
-        return TRUE;
-    }
-
-	if (bevent->button == MOUSE_BUTTON_LEFT && bevent->type == GDK_BUTTON_PRESS &&
-	    (bevent->state & GDK_SHIFT_MASK) && (bevent->state & GDK_CONTROL_MASK))
-    {
-        GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-        GtkTreePath *anchor = NULL;
-        GList *selected;
-
-        /* read the focus row before set_cursor() overwrites it */
-        gtk_tree_view_get_cursor(GTK_TREE_VIEW(widget), &anchor, NULL);
-
-        if (anchor)
-        {
-            selected = gtk_tree_selection_get_selected_rows(selection, NULL);
-
-			/* reset selection and move focus to the clicked row;
-			 * pass an explicit column; GTK2 dereferences
-			 * priv->focus_column if it's NULL and it may not be
-			 * set yet */
-			gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), tpath,
-                                     gtk_tree_view_get_column(GTK_TREE_VIEW(widget), 0),
-                                     FALSE);
-
-            for (GList *work = selected; work; work = work->next)
-                gtk_tree_selection_select_path(selection, work->data);
-
-            if (gtk_tree_path_compare(anchor, tpath) <= 0)
-                gtk_tree_selection_select_range(selection, anchor, tpath);
-            else
-                gtk_tree_selection_select_range(selection, tpath, anchor);
-
-            gtk_widget_grab_focus(widget);
-
-            g_list_free_full(selected, (GDestroyNotify)gtk_tree_path_free);
-            gtk_tree_path_free(anchor);
-            gtk_tree_path_free(tpath);
-            return TRUE;   /* don't let GtkTreeView's default handler run */
-        }
-        /* no cursor (shouldn't happen on a real row) — fall through
-         * to default handling */
-    }
-
-    g_clear_pointer(&tpath, gtk_tree_path_free);
 
     if (bevent->button == MOUSE_BUTTON_LEFT && bevent->type == GDK_BUTTON_PRESS &&
-        !(bevent->state & GDK_SHIFT_MASK) &&
-        !(bevent->state & GDK_CONTROL_MASK) &&
+        !(bevent->state & GDK_SHIFT_MASK ) &&
+        !(bevent->state & GDK_CONTROL_MASK ) &&
         vflist_row_is_selected(vf, fd))
     {
         GtkTreeSelection *selection;
