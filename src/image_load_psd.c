@@ -771,7 +771,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
     if (psd_layer_section_pos(buf, count, &layers_pos))
         if (!psd_walk_layers(buf, count, layers_pos, &header, -1, NULL, &nlayers,
                              il && il->fd ? &names : NULL))
-            g_strfreev(names);
+            g_clear_pointer(&names, g_strfreev);
 
     if (il && il->fd)
     {
@@ -836,7 +836,7 @@ static gboolean image_loader_psd_load(gpointer loader, const guchar *buf,
         DEBUG_1("psd: decoding full composite image data");
         lp->pixbuf = psd_decode_composite(buf, count, lp, resources_end, &header);
 
-        if (lp->pixbuf)
+        if (lp->pixbuf || g_atomic_int_get(&lp->abort))
         {
             g_clear_object(&embedded_thumb);
         }
